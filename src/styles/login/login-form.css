@@ -1,0 +1,833 @@
+
+/* =========================================================
+   VG Automobiles Login Form
+   Premium glass design with geometric racing accents
+   ========================================================= */
+
+/* =========================================================
+   1. FORM PANEL
+   ========================================================= */
+
+.form-panel {
+    position: relative;
+    isolation: isolate;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 0;
+    padding: 30px 42px;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(5, 16, 37, 0.76),
+            rgba(7, 18, 39, 0.88)
+        );
+
+    color: #f8fafc;
+
+    border-left: 1px solid rgba(148, 163, 184, 0.18);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    transition: none;
+}
+
+/* Geometric background pattern */
+
+.form-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+
+    background:
+        linear-gradient(
+            135deg,
+            transparent 35%,
+            rgba(255, 255, 255, 0.045) 35.2%,
+            transparent 35.5%
+        ),
+        linear-gradient(
+            45deg,
+            transparent 65%,
+            rgba(255, 255, 255, 0.035) 65.2%,
+            transparent 65.5%
+        ),
+        radial-gradient(
+            circle at 80% 15%,
+            rgba(59, 130, 246, 0.18),
+            transparent 42%
+        );
+
+    pointer-events: none;
+}
+
+/* Red diagonal racing accents */
+
+.form-panel::after {
+    content: "";
+    position: absolute;
+
+    top: -20%;
+    right: -35%;
+    z-index: 0;
+
+    width: 70%;
+    height: 145%;
+
+    border-left: 2px solid rgba(239, 25, 55, 0.65);
+
+    background:
+        linear-gradient(
+            110deg,
+            transparent 35%,
+            rgba(220, 20, 50, 0.10) 36%,
+            rgba(220, 20, 50, 0.04) 55%,
+            transparent 56%
+        );
+
+    transform: rotate(35deg);
+
+    pointer-events: none;
+}
+
+/* Light theme */
+
+[data-theme="light"] .form-panel {
+    background:
+        linear-gradient(
+            145deg,
+            rgba(235, 241, 250, 0.82),
+            rgba(246, 249, 253, 0.91)
+        );
+
+    color: #172033;
+    border-left-color: rgba(51, 65, 85, 0.14);
+}
+
+[data-theme="light"] .form-panel::before {
+    background:
+        linear-gradient(
+            135deg,
+            transparent 35%,
+            rgba(30, 41, 59, 0.045) 35.2%,
+            transparent 35.5%
+        ),
+        linear-gradient(
+            45deg,
+            transparent 65%,
+            rgba(30, 41, 59, 0.035) 65.2%,
+            transparent 65.5%
+        ),
+        radial-gradient(
+            circle at 80% 15%,
+            rgba(59, 130, 246, 0.12),
+            transparent 42%
+        );
+}
+
+[data-theme="light"] .form-panel::after {
+    border-left-color: rgba(220, 20, 50, 0.45);
+}
+
+/* =========================================================
+   2. FORM CONTENT
+   ========================================================= */
+
+.form-content {
+    position: relative;
+    z-index: 1;
+
+    width: 100%;
+    max-width: 360px;
+    margin: auto;
+}
+
+/* =========================================================
+   3. MOBILE BRANDING
+   ========================================================= */
+
+.mobile-brand {
+    display: none;
+    align-items: center;
+    gap: 10px;
+
+    margin-bottom: 18px;
+
+    color: var(--text-primary);
+    text-decoration: none;
+
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.8px;
+}
+
+.mobile-brand-mark {
+    display: grid;
+    place-items: center;
+
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+
+    border: 1px solid rgba(239, 25, 55, 0.25);
+    border-radius: 11px;
+
+    background: #dc1432;
+    color: #ffffff;
+
+    box-shadow: 0 8px 20px rgba(220, 20, 50, 0.22);
+}
+
+.mobile-brand-name {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+
+    color: var(--text-primary);
+
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.6px;
+}
+
+.mobile-brand-name strong {
+    color: #ef334e;
+
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.3px;
+}
+
+/* =========================================================
+   4. FORM HEADING
+   ========================================================= */
+
+.form-header {
+    margin-bottom: 0;
+}
+
+.form-eyebrow {
+    display: inline-block;
+    margin-bottom: 8px;
+
+    color: #ef334e;
+
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 1.8px;
+}
+
+.form-heading {
+    margin: 0;
+
+    color: var(--text-primary);
+
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -1.2px;
+}
+
+.form-subtitle {
+    margin: 8px 0 22px;
+
+    color: var(--text-muted);
+
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+/* =========================================================
+   5. LOGIN FORM
+   ========================================================= */
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    width: 100%;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    width: 100%;
+}
+
+.form-label {
+    color: var(--text-secondary);
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* =========================================================
+   6. INPUT FIELDS
+   ========================================================= */
+
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.form-input {
+    display: block;
+
+    width: 100%;
+    height: 44px;
+
+    padding: 0 15px;
+
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 10px;
+
+    outline: none;
+
+    background: rgba(255, 255, 255, 0.075);
+    color: #f1f5f9;
+
+    -webkit-text-fill-color: #f1f5f9;
+    caret-color: #ef334e;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+
+    transition:
+        border-color 0.12s ease,
+        box-shadow 0.12s ease,
+        background 0.12s ease;
+}
+
+.form-input::placeholder {
+    color: #94a3b8;
+    -webkit-text-fill-color: #94a3b8;
+
+    opacity: 1;
+
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.form-input:hover {
+    border-color: rgba(239, 51, 78, 0.55);
+}
+
+.form-input:focus {
+    border-color: #ef334e;
+    background: rgba(255, 255, 255, 0.10);
+
+    box-shadow: 0 0 0 3px rgba(239, 51, 78, 0.13);
+}
+
+.form-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Light theme input */
+
+[data-theme="light"] .form-input {
+    background: rgba(255, 255, 255, 0.82);
+
+    color: #172033;
+    -webkit-text-fill-color: #172033;
+
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .form-input::placeholder {
+    color: #64748b;
+    -webkit-text-fill-color: #64748b;
+}
+
+[data-theme="light"] .form-input:focus {
+    background: #ffffff;
+}
+
+/* Selected text */
+
+.form-input::selection {
+    background: #dc1432;
+    color: #ffffff;
+}
+
+/* =========================================================
+   7. PASSWORD VISIBILITY TOGGLE
+   ========================================================= */
+
+.password-input {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+
+    display: grid;
+    place-items: center;
+
+    width: 30px;
+    height: 30px;
+    padding: 0;
+
+    border: 0;
+    border-radius: 7px;
+
+    background: transparent;
+    color: var(--text-muted);
+
+    transform: translateY(-50%);
+
+    cursor: pointer;
+
+    transition:
+        color 0.12s ease,
+        background 0.12s ease;
+}
+
+.password-toggle:hover {
+    background: var(--surface-hover);
+    color: #ef334e;
+}
+
+.password-toggle:focus-visible {
+    outline: 2px solid #ef334e;
+    outline-offset: 2px;
+}
+
+.password-toggle svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+}
+
+/* =========================================================
+   8. FORM OPTIONS
+   ========================================================= */
+
+.form-options {
+    display: flex;
+    justify-content: flex-end;
+
+    margin-top: -7px;
+}
+
+.forgot-password {
+    padding: 3px 0;
+
+    border: 0;
+
+    background: transparent;
+    color: #ef334e;
+
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition: color 0.12s ease;
+}
+
+.forgot-password:hover {
+    color: #ff526a;
+    text-decoration: underline;
+}
+
+/* =========================================================
+   9. FEEDBACK MESSAGE
+   ========================================================= */
+
+.form-message {
+    display: none;
+
+    width: 100%;
+    margin-top: 0;
+    padding: 8px 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 9px;
+
+    background: var(--surface);
+    color: var(--text-secondary);
+
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.form-message.is-visible {
+    display: block;
+    animation: form-message-enter 0.15s ease both;
+}
+
+.form-message.is-error {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.09);
+    color: var(--danger);
+}
+
+.form-message.is-success {
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.09);
+    color: var(--success);
+}
+
+/* =========================================================
+   10. SIGN IN BUTTON
+   ========================================================= */
+
+.login-button {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+
+    width: 100%;
+    min-height: 45px;
+
+    margin-top: 3px;
+    padding: 0 18px;
+
+    border: 1px solid transparent;
+    border-radius: 10px;
+
+    background: linear-gradient(110deg, #ed1c3b, #b90d2b);
+    color: #ffffff;
+
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.2px;
+
+    cursor: pointer;
+
+    box-shadow: 0 7px 18px rgba(220, 20, 50, 0.22);
+
+    transition:
+        box-shadow 0.15s ease,
+        transform 0.15s ease,
+        background 0.15s ease;
+}
+
+.login-button:hover {
+    background: linear-gradient(110deg, #ff304e, #cf1234);
+
+    box-shadow: 0 9px 24px rgba(220, 20, 50, 0.32);
+
+    transform: translateY(-1px);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.login-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+    transform: none;
+}
+
+.login-button svg {
+    flex-shrink: 0;
+
+    width: 17px;
+    height: 17px;
+
+    transition: transform 0.15s ease;
+}
+
+.login-button:hover svg {
+    transform: translateX(3px);
+}
+
+/* =========================================================
+   11. SECURITY NOTE
+   ========================================================= */
+
+.security-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    margin-top: 12px;
+
+    color: var(--text-muted);
+
+    font-size: 10px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.security-note svg {
+    flex-shrink: 0;
+
+    width: 14px;
+    height: 14px;
+
+    color: var(--success);
+}
+
+/* =========================================================
+   12. COPYRIGHT
+   ========================================================= */
+
+.form-copyright {
+    margin: 14px 0 0;
+
+    color: var(--text-muted);
+
+    font-size: 11px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* =========================================================
+   13. ANIMATIONS
+   ========================================================= */
+
+@keyframes form-message-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* =========================================================
+   14. COMPACT DESKTOP
+   ========================================================= */
+
+@media (max-height: 760px) and (min-width: 651px) {
+    .form-panel {
+        padding: 24px 36px;
+    }
+
+    .form-subtitle {
+        margin-bottom: 18px;
+    }
+
+    .login-form {
+        gap: 11px;
+    }
+
+    .form-input {
+        height: 42px;
+    }
+
+    .login-button {
+        min-height: 43px;
+    }
+
+    .security-note {
+        margin-top: 10px;
+    }
+
+    .form-copyright {
+        margin-top: 10px;
+    }
+}
+
+/* =========================================================
+   15. TABLET
+   ========================================================= */
+
+@media (max-width: 900px) and (min-width: 651px) {
+    .form-panel {
+        padding: 28px 26px;
+    }
+
+    .form-heading {
+        font-size: 27px;
+    }
+}
+
+/* =========================================================
+   16. MOBILE
+   ========================================================= */
+
+@media (max-width: 650px) {
+    .form-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        width: 100%;
+        min-height: 0;
+
+        padding: 22px 24px 20px;
+        overflow: hidden;
+
+        border-left: 0;
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+
+        background:
+            linear-gradient(
+                145deg,
+                rgba(5, 16, 37, 0.84),
+                rgba(7, 18, 39, 0.93)
+            );
+    }
+
+    [data-theme="light"] .form-panel {
+        background:
+            linear-gradient(
+                145deg,
+                rgba(235, 241, 250, 0.88),
+                rgba(246, 249, 253, 0.95)
+            );
+    }
+
+    .form-content {
+        width: 100%;
+        max-width: 360px;
+        margin: 0 auto;
+    }
+
+    .mobile-brand {
+        display: flex;
+        margin-bottom: 14px;
+    }
+
+    .form-eyebrow {
+        margin-bottom: 8px;
+        font-size: 10px;
+    }
+
+    .form-heading {
+        font-size: 27px;
+    }
+
+    .form-subtitle {
+        margin: 7px 0 16px;
+        font-size: 11px;
+    }
+
+    .login-form {
+        gap: 10px;
+    }
+
+    .form-group {
+        gap: 6px;
+    }
+
+    .form-input {
+        height: 43px;
+    }
+
+    .login-button {
+        min-height: 44px;
+    }
+
+    .security-note {
+        margin-top: 12px;
+        font-size: 9px;
+    }
+
+    .form-copyright {
+        margin-top: 10px;
+        font-size: 9px;
+    }
+}
+
+/* =========================================================
+   17. SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 380px) {
+    .form-panel {
+        padding: 18px 17px 16px;
+    }
+
+    .mobile-brand {
+        margin-bottom: 12px;
+    }
+
+    .form-heading {
+        font-size: 25px;
+    }
+
+    .form-subtitle {
+        margin-bottom: 14px;
+    }
+
+    .form-input {
+        height: 42px;
+        padding-left: 12px;
+        font-size: 13px;
+    }
+
+    .login-button {
+        min-height: 43px;
+    }
+
+    .security-note {
+        margin-top: 10px;
+    }
+
+    .form-copyright {
+        margin-top: 8px;
+    }
+}
+
+/* =========================================================
+   18. SHORT MOBILE SCREENS
+   ========================================================= */
+
+@media (max-width: 650px) and (max-height: 650px) {
+    .mobile-brand {
+        margin-bottom: 10px;
+    }
+
+    .form-subtitle {
+        margin-bottom: 12px;
+    }
+
+    .login-form {
+        gap: 9px;
+    }
+
+    .security-note {
+        margin-top: 9px;
+    }
+
+    .form-copyright {
+        margin-top: 7px;
+    }
+}
+
+/* =========================================================
+   19. ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .form-message {
+        animation: none !important;
+    }
+
+    .form-input,
+    .login-button,
+    .password-toggle,
+    .forgot-password {
+        transition: none !important;
+    }
+}

@@ -1,0 +1,410 @@
+
+/* =========================================================
+   VGSync Background Animation
+   Optimized for smooth rendering and instant theme changes
+   ========================================================= */
+
+/* Base */
+
+.background-animation {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+
+    overflow: hidden;
+    pointer-events: none;
+    isolation: isolate;
+
+    border-radius: inherit;
+}
+
+.background-animation--page {
+    position: fixed;
+    z-index: -1;
+
+    border-radius: 0;
+}
+
+
+/* =========================================================
+   1. TECHNICAL GRID
+   ========================================================= */
+
+.animation-grid {
+    position: absolute;
+    inset: -50%;
+
+    opacity: 0.22;
+
+    background-image:
+        linear-gradient(
+            rgba(148, 163, 184, 0.12) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(148, 163, 184, 0.12) 1px,
+            transparent 1px
+        );
+
+    background-size: 48px 48px;
+
+    mask-image: radial-gradient(
+        ellipse at center,
+        black 10%,
+        transparent 72%
+    );
+
+    -webkit-mask-image: radial-gradient(
+        ellipse at center,
+        black 10%,
+        transparent 72%
+    );
+
+    animation: grid-drift 35s linear infinite;
+}
+
+
+/* =========================================================
+   2. GRADIENT ORBS
+   ========================================================= */
+
+.animation-orb {
+    position: absolute;
+
+    width: 420px;
+    aspect-ratio: 1;
+
+    border-radius: 50%;
+
+    filter: blur(65px);
+    opacity: 0.2;
+
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.animation-orb--one {
+    top: -20%;
+    left: -12%;
+
+    background: #2563eb;
+
+    animation: orb-float-one 16s ease-in-out infinite alternate;
+}
+
+.animation-orb--two {
+    right: -15%;
+    bottom: -20%;
+
+    background: #06b6d4;
+
+    animation: orb-float-two 19s ease-in-out infinite alternate;
+}
+
+.animation-orb--three {
+    top: 35%;
+    left: 40%;
+
+    width: 280px;
+
+    background: #6366f1;
+
+    animation: orb-float-three 22s ease-in-out infinite alternate;
+}
+
+
+/* =========================================================
+   3. AMBIENT LIGHTING
+   ========================================================= */
+
+.animation-glow {
+    position: absolute;
+
+    width: 45%;
+    height: 45%;
+
+    border-radius: 50%;
+
+    filter: blur(75px);
+    opacity: 0.13;
+}
+
+.animation-glow--one {
+    top: 10%;
+    right: 10%;
+
+    background: #3b82f6;
+}
+
+.animation-glow--two {
+    bottom: 0;
+    left: 5%;
+
+    background: #0891b2;
+}
+
+
+/* =========================================================
+   4. FLOATING PARTICLES
+   ========================================================= */
+
+.animation-particles {
+    position: absolute;
+    inset: 0;
+}
+
+.animation-particle {
+    position: absolute;
+
+    left: calc(var(--particle-x) * 1%);
+    top: calc(var(--particle-y) * 1%);
+
+    width: 3px;
+    height: 3px;
+
+    border-radius: 50%;
+
+    background: #60a5fa;
+
+    box-shadow:
+        0 0 8px rgba(59, 130, 246, 0.65);
+
+    opacity: 0.5;
+
+    animation: particle-float 8s ease-in-out infinite;
+    animation-delay: calc(var(--particle-index) * -0.6s);
+}
+
+
+/* =========================================================
+   5. MOVING LIGHT TRAILS
+   ========================================================= */
+
+.animation-trail {
+    position: absolute;
+
+    width: 45%;
+    height: 1px;
+
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(59, 130, 246, 0.75),
+        transparent
+    );
+
+    opacity: 0.5;
+    filter: blur(1px);
+}
+
+.animation-trail--one {
+    top: 30%;
+    left: -50%;
+
+    animation: trail-move 12s linear infinite;
+}
+
+.animation-trail--two {
+    top: 72%;
+    left: -50%;
+
+    animation: trail-move 17s linear infinite;
+    animation-delay: -7s;
+}
+
+
+/* =========================================================
+   6. CENTRAL GLOW
+   ========================================================= */
+
+.animation-center-glow {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 55%;
+    height: 55%;
+
+    transform: translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    background: radial-gradient(
+        circle,
+        rgba(37, 99, 235, 0.08),
+        transparent 70%
+    );
+
+    animation: center-pulse 8s ease-in-out infinite alternate;
+}
+
+
+/* =========================================================
+   7. ANIMATIONS
+   ========================================================= */
+
+@keyframes grid-drift {
+    from {
+        transform: translate3d(0, 0, 0);
+    }
+
+    to {
+        transform: translate3d(48px, 48px, 0);
+    }
+}
+
+@keyframes orb-float-one {
+    from {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    to {
+        transform: translate3d(100px, 60px, 0) scale(1.15);
+    }
+}
+
+@keyframes orb-float-two {
+    from {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    to {
+        transform: translate3d(-90px, -70px, 0) scale(1.2);
+    }
+}
+
+@keyframes orb-float-three {
+    from {
+        transform: translate3d(-30px, 20px, 0);
+    }
+
+    to {
+        transform: translate3d(50px, -50px, 0);
+    }
+}
+
+@keyframes particle-float {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0);
+        opacity: 0.2;
+    }
+
+    50% {
+        transform: translate3d(12px, -22px, 0);
+        opacity: 0.7;
+    }
+}
+
+@keyframes trail-move {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(350%);
+    }
+}
+
+@keyframes center-pulse {
+    from {
+        opacity: 0.4;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.15);
+    }
+}
+
+
+/* =========================================================
+   8. LIGHT THEME
+   No transition: theme changes immediately
+   ========================================================= */
+
+[data-theme="light"] .animation-grid {
+    opacity: 0.32;
+
+    background-image:
+        linear-gradient(
+            rgba(71, 85, 105, 0.09) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(71, 85, 105, 0.09) 1px,
+            transparent 1px
+        );
+}
+
+[data-theme="light"] .animation-orb {
+    opacity: 0.12;
+}
+
+[data-theme="light"] .animation-glow {
+    opacity: 0.08;
+}
+
+[data-theme="light"] .animation-particle {
+    background: #2563eb;
+    opacity: 0.35;
+}
+
+[data-theme="light"] .animation-trail {
+    opacity: 0.3;
+}
+
+
+/* =========================================================
+   9. MOBILE OPTIMIZATION
+   ========================================================= */
+
+@media (max-width: 650px) {
+    .animation-orb {
+        width: 260px;
+        filter: blur(50px);
+    }
+
+    .animation-orb--three {
+        width: 180px;
+    }
+
+    .animation-grid {
+        background-size: 36px 36px;
+    }
+
+    .animation-particle {
+        width: 2px;
+        height: 2px;
+    }
+
+    .animation-trail {
+        width: 65%;
+    }
+
+    .animation-glow {
+        filter: blur(55px);
+    }
+}
+
+
+/* =========================================================
+   10. ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .background-animation *,
+    .background-animation *::before,
+    .background-animation *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .animation-orb {
+        will-change: auto;
+    }
+}
