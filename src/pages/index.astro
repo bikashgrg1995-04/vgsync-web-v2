@@ -4,7 +4,6 @@ import Layout from '../layouts/Layout.astro';
 
 import ThemeToggle from '../components/common/ThemeToggle.astro';
 
-import BackgroundAnimation from '../components/login/BackgroundAnimation.astro';
 import LoginShowcase from '../components/login/LoginShowcase.astro';
 import LoginForm from '../components/login/LoginForm.astro';
 
@@ -13,14 +12,37 @@ import '../styles/login/login.css';
 
 <Layout title="VG Automobiles | Business Management">
     <main class="login-page">
-        <BackgroundAnimation variant="page" />
-
         <ThemeToggle />
 
         <div class="login-shell">
             <LoginShowcase />
             <LoginForm />
         </div>
+
+        <footer class="page-footer">
+            <span class="page-footer-message">
+                <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z" />
+                    <path d="m9 12 2 2 4-4" />
+                </svg>
+
+                <span>
+                    Drive Your Passion with <strong>VG Automobiles</strong>
+                </span>
+            </span>
+
+            <span class="page-footer-copyright">
+                © 2026 VG Automobiles. All rights reserved.
+            </span>
+        </footer>
     </main>
 </Layout>
 

@@ -1,4 +1,3 @@
-
 ---
 import '../../styles/login/login-form.css';
 ---
@@ -7,24 +6,58 @@ import '../../styles/login/login-form.css';
     <div class="form-content">
 
         <header class="form-header">
-            <span class="form-eyebrow">DEALER MANAGEMENT PORTAL</span>
-            <h2 class="form-heading">Welcome back.</h2>
+            <div class="form-brand" aria-hidden="true">
+                <span class="form-brand-mark">
+                    <svg viewBox="0 0 48 20" fill="none" aria-hidden="true">
+                        <path
+                            d="M2 14C8 6 14 4 20 6C26 8 30 12 36 10C40 9 44 6 46 4"
+                            stroke="url(#form-logo-grad)"
+                            stroke-width="3.2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                        <defs>
+                            <linearGradient id="form-logo-grad" x1="2" y1="10" x2="46" y2="10">
+                                <stop stop-color="#ff2d4a" />
+                                <stop offset="1" stop-color="#c80d31" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </span>
+                <span class="form-brand-name">
+                    <span class="form-brand-vg">VG</span>
+                    <span class="form-brand-rest">Automobiles</span>
+                </span>
+            </div>
+
+            <h2 class="form-heading">Welcome Back</h2>
             <p class="form-subtitle" id="login-description">
-                Sign in to access your branch dashboard and manage your automotive business.
+                Sign in to continue
             </p>
         </header>
 
         <form class="login-form" id="login-form" aria-describedby="login-description">
 
             <div class="form-group">
-                <label class="form-label" for="branch-code">Branch Code</label>
-                <div class="input-wrapper">
+                <label class="form-label visually-hidden" for="branch-code">Branch Code</label>
+                <div class="input-wrapper has-leading-icon">
+                    <span class="input-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 21h18" />
+                            <path d="M5 21V7l7-4 7 4v14" />
+                            <path d="M9 21v-6h6v6" />
+                            <path d="M9 9h.01" />
+                            <path d="M15 9h.01" />
+                            <path d="M9 13h.01" />
+                            <path d="M15 13h.01" />
+                        </svg>
+                    </span>
                     <input
                         class="form-input"
                         type="text"
                         id="branch-code"
                         name="branch_code"
-                        placeholder="Enter your branch code"
+                        placeholder="Branch Code"
                         autocomplete="organization"
                         autocapitalize="characters"
                         spellcheck="false"
@@ -34,14 +67,20 @@ import '../../styles/login/login-form.css';
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="username">Username</label>
-                <div class="input-wrapper">
+                <label class="form-label visually-hidden" for="username">Username</label>
+                <div class="input-wrapper has-leading-icon">
+                    <span class="input-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                    </span>
                     <input
                         class="form-input"
                         type="text"
                         id="username"
                         name="username"
-                        placeholder="Enter your username"
+                        placeholder="Username"
                         autocomplete="username"
                         autocapitalize="none"
                         spellcheck="false"
@@ -51,14 +90,20 @@ import '../../styles/login/login-form.css';
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="password">Password</label>
-                <div class="input-wrapper">
+                <label class="form-label visually-hidden" for="password">Password</label>
+                <div class="input-wrapper has-leading-icon">
+                    <span class="input-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                    </span>
                     <input
                         class="form-input password-input"
                         type="password"
                         id="password"
                         name="password"
-                        placeholder="Enter your password"
+                        placeholder="Password"
                         autocomplete="current-password"
                         required
                     />
@@ -91,6 +136,16 @@ import '../../styles/login/login-form.css';
             </div>
 
             <div class="form-options">
+                <label class="remember-me">
+                    <input
+                        type="checkbox"
+                        id="remember-me"
+                        name="remember_me"
+                        class="remember-checkbox"
+                    />
+                    <span class="remember-label">Remember me</span>
+                </label>
+
                 <button
                     type="button"
                     class="forgot-password"
@@ -113,7 +168,6 @@ import '../../styles/login/login-form.css';
                 type="submit"
                 id="login-submit"
             >
-                <span>Sign In</span>
                 <svg
                     width="18"
                     height="18"
@@ -128,25 +182,14 @@ import '../../styles/login/login-form.css';
                     <path d="M5 12h14" />
                     <path d="m12 5 7 7-7 7" />
                 </svg>
+                <span>Sign In</span>
             </button>
         </form>
 
-        <div class="security-note">
-            <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-            >
-                <rect x="3" y="11" width="18" height="11" rx="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <span>Secure access to your dealership workspace</span>
+        <div class="form-footer-tagline">
+            <span class="form-footer-line" aria-hidden="true"></span>
+            <span class="form-footer-text">Powering Automotive Excellence</span>
+            <span class="form-footer-line" aria-hidden="true"></span>
         </div>
 
     </div>
