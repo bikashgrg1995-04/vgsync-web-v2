@@ -1,51 +1,59 @@
 
 /* =========================================================
-   VG Automobiles Login Page
-   Global page layout and shared theme variables only.
-   Component styles are maintained in their own CSS files.
+   VG AUTOMOBILES — FULL SCREEN LOGIN
    ========================================================= */
 
-/* =========================================================
-   1. THEME VARIABLES
-   ========================================================= */
+/* 1. GLOBAL RESET */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    overflow: hidden;
+}
+
+/* 2. THEME VARIABLES */
 
 :root,
 [data-theme="dark"] {
     color-scheme: dark;
 
-    /* Main backgrounds */
     --page-bg: #080f20;
-    --panel-bg: #0d192d;
+    --panel-bg: rgba(7, 15, 31, 0.88);
+
     --surface: rgba(255, 255, 255, 0.045);
     --surface-hover: rgba(255, 255, 255, 0.075);
 
-    /* Text */
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-primary: #f8fafc;
+    --text-secondary: #d4dced;
+    --text-muted: #a1aec3;
 
-    /* Borders */
-    --border: rgba(148, 163, 184, 0.14);
-    --panel-divider: rgba(148, 163, 184, 0.13);
+    --border: rgba(203, 213, 225, 0.2);
+    --panel-divider: rgba(203, 213, 225, 0.2);
 
-    /* Accent */
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --accent-soft: rgba(59, 130, 246, 0.12);
+    --accent: #f21d35;
+    --accent-hover: #d91029;
+    --accent-soft: rgba(242, 29, 53, 0.14);
 
-    /* Status */
     --success: #22c55e;
     --danger: #ef4444;
     --warning: #f59e0b;
 
-    /* Shadows */
-    --card-shadow:
-        0 30px 90px rgba(0, 0, 0, 0.38);
+    --card-shadow: 0 25px 80px rgba(0, 0, 0, 0.42);
+    --input-shadow: 0 0 0 3px rgba(242, 29, 53, 0.14);
 
-    --input-shadow:
-        0 0 0 3px rgba(59, 130, 246, 0.12);
-
-    /* Radius */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 18px;
@@ -55,180 +63,181 @@
 [data-theme="light"] {
     color-scheme: light;
 
-    /* Main backgrounds */
-    --page-bg: #edf3fc;
-    --panel-bg: #ffffff;
-    --surface: rgba(15, 23, 42, 0.035);
-    --surface-hover: rgba(15, 23, 42, 0.065);
+    --page-bg: #edf1f7;
+    --panel-bg: rgba(248, 250, 255, 0.9);
 
-    /* Text */
+    --surface: rgba(15, 23, 42, 0.045);
+    --surface-hover: rgba(15, 23, 42, 0.075);
+
     --text-primary: #172033;
     --text-secondary: #334155;
     --text-muted: #64748b;
 
-    /* Borders */
-    --border: rgba(51, 65, 85, 0.13);
-    --panel-divider: rgba(51, 65, 85, 0.12);
+    --border: rgba(51, 65, 85, 0.2);
+    --panel-divider: rgba(51, 65, 85, 0.16);
 
-    /* Accent */
-    --accent: #2563eb;
-    --accent-hover: #1d4ed8;
-    --accent-soft: rgba(37, 99, 235, 0.09);
+    --accent: #e51b32;
+    --accent-hover: #c9142a;
+    --accent-soft: rgba(229, 27, 50, 0.1);
 
-    /* Status */
     --success: #16a34a;
     --danger: #dc2626;
     --warning: #d97706;
 
-    /* Shadows */
-    --card-shadow:
-        0 25px 75px rgba(30, 64, 175, 0.12);
-
-    --input-shadow:
-        0 0 0 3px rgba(37, 99, 235, 0.10);
+    --card-shadow: 0 25px 75px rgba(15, 23, 42, 0.2);
+    --input-shadow: 0 0 0 3px rgba(229, 27, 50, 0.12);
 }
 
-/* =========================================================
-   2. LOGIN PAGE
-   ========================================================= */
+/* 3. FULL VIEWPORT PAGE */
 
 .login-page {
     position: relative;
     isolation: isolate;
 
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
 
-    width: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
-
-    padding: 60px 32px;
+    padding: 0;
 
     overflow: hidden;
 
-    background: var(--page-bg);
     color: var(--text-primary);
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(4, 12, 28, 0.12) 0%,
+            rgba(4, 12, 28, 0.08) 48%,
+            rgba(4, 10, 23, 0.5) 100%
+        ),
+        url("/images/vstrom-login-bg.png") center center / cover no-repeat;
 
     transition: none;
 }
 
-/* =========================================================
-   3. LOGIN SHELL
-   ========================================================= */
+/* 4. MAIN TWO-COLUMN LAYOUT */
 
 .login-shell {
     position: relative;
     z-index: 1;
 
     display: grid;
-    grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.95fr);
+
+    align-items: center;
 
     width: 100%;
-    max-width: 1120px;
+    max-width: 1800px;
 
-    height: min(720px, calc(100dvh - 120px));
-    min-height: 560px;
+    height: 100%;
+    min-height: 0;
+
+    margin: 0 auto;
+    padding: 24px 3vw 64px;
+
+    column-gap: 28px;
 
     overflow: hidden;
 
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-
-    /* Shared automotive background */
-    background:
-        linear-gradient(
-            90deg,
-            rgba(5, 13, 29, 0.12),
-            rgba(5, 13, 29, 0.32)
-        ),
-        url("/images/vstrom-login-bg.png") center / cover no-repeat;
-
-    box-shadow: var(--card-shadow);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
 
     transition: none;
 }
 
-/* =========================================================
-   4. TABLET
-   ========================================================= */
+/* 5. LARGE DESKTOP */
 
-@media (max-width: 900px) and (min-width: 651px) {
-    .login-page {
-        padding: 52px 20px;
-    }
-
+@media (min-width: 1200px) {
     .login-shell {
-        grid-template-columns: minmax(0, 1fr) minmax(330px, 0.9fr);
-
-        height: min(700px, calc(100dvh - 104px));
-        min-height: 540px;
+        grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.95fr);
+        column-gap: 32px;
+        padding-right: 3vw;
+        padding-left: 3vw;
     }
 }
 
-/* =========================================================
-   5. COMPACT DESKTOP
-   ========================================================= */
+/* 6. COMPACT DESKTOP / TABLET */
 
-@media (max-height: 760px) and (min-width: 651px) {
-    .login-page {
-        padding-top: 52px;
+@media (max-width: 1199px) and (min-width: 651px) {
+    .login-shell {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        column-gap: 20px;
+        padding: 68px 22px 28px;
+    }
+}
+
+/* 7. SHORT DESKTOP VIEWPORT
+   Keep the entire layout inside the available height.
+   No artificial minimum height and no page scrollbar. */
+
+@media (max-height: 800px) and (min-width: 651px) {
+    .login-shell {
+        padding-top: 54px;
         padding-bottom: 28px;
     }
+}
 
+@media (max-height: 680px) and (min-width: 651px) {
     .login-shell {
-        height: calc(100dvh - 80px);
-        min-height: 520px;
+        padding-top: 48px;
+        padding-bottom: 18px;
+        column-gap: 18px;
     }
 }
 
-/* =========================================================
-   6. MOBILE
-   ========================================================= */
+/* 8. MOBILE */
 
 @media (max-width: 650px) {
-    html,
     body {
-        min-height: 100%;
-        height: auto;
         overflow-x: hidden;
+        overflow-y: auto;
     }
 
     .login-page {
-        align-items: flex-start;
-        justify-content: center;
-
-        min-height: 100vh;
-        min-height: 100dvh;
-
-        padding: 76px 16px 24px;
-
-        overflow: visible;
-    }
-
-    .login-shell {
         display: block;
 
         width: 100%;
-        max-width: 440px;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+
+        padding: 76px 16px 28px;
+
+        overflow: visible;
+
+        background-position: center;
+        background-attachment: scroll;
+    }
+
+    .login-shell {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+
+        width: 100%;
+        max-width: 480px;
 
         height: auto;
         min-height: 0;
 
-        overflow: hidden;
+        margin: 0 auto;
+        padding: 0;
 
-        border-radius: var(--radius-lg);
+        gap: 24px;
 
-        /* Keep the shared image on mobile too */
-        background-position: center;
-        background-size: cover;
+        overflow: visible;
     }
 }
 
-/* =========================================================
-   7. SMALL MOBILE
-   ========================================================= */
+/* 9. SMALL MOBILE */
 
 @media (max-width: 380px) {
     .login-page {
@@ -237,13 +246,11 @@
     }
 
     .login-shell {
-        border-radius: 15px;
+        gap: 18px;
     }
 }
 
-/* =========================================================
-   8. ACCESSIBILITY
-   ========================================================= */
+/* 10. ACCESSIBILITY */
 
 @media (prefers-reduced-motion: reduce) {
     .login-page,

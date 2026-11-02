@@ -1,12 +1,10 @@
 
 /* =========================================================
-   VG Automobiles Login Form
-   Premium glass design with geometric racing accents
+   VG AUTOMOBILES — LOGIN FORM
+   Clear transparent glassmorphism
    ========================================================= */
 
-/* =========================================================
-   1. FORM PANEL
-   ========================================================= */
+/* 1. FORM PANEL */
 
 .form-panel {
     position: relative;
@@ -16,142 +14,137 @@
     align-items: center;
     justify-content: center;
 
+    width: 100%;
     min-width: 0;
-    padding: 30px 42px;
+    min-height: 0;
 
+    padding: clamp(26px, 3vw, 44px);
     overflow: hidden;
+
+    color: #f8fafc;
+
+    /* Clear transparent glass */
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 255, 255, 0.15) 0%,
+            rgba(255, 255, 255, 0.075) 48%,
+            rgba(255, 255, 255, 0.045) 100%
+        );
+
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 22px;
+
+    box-shadow:
+        0 24px 65px rgba(0, 0, 0, 0.20),
+        0 8px 25px rgba(0, 0, 0, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.07);
+
+    /* Reduced blur so background remains visible */
+    backdrop-filter: blur(12px) saturate(125%);
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
+
+    transition:
+        background 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+/* Top glass reflection */
+
+.form-panel::before {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+
+    content: "";
+    pointer-events: none;
 
     background:
         linear-gradient(
             145deg,
-            rgba(5, 16, 37, 0.76),
-            rgba(7, 18, 39, 0.88)
+            rgba(255, 255, 255, 0.16) 0%,
+            rgba(255, 255, 255, 0.045) 22%,
+            transparent 48%
         );
 
-    color: #f8fafc;
-
-    border-left: 1px solid rgba(148, 163, 184, 0.18);
-
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-
-    transition: none;
+    opacity: 0.8;
 }
 
-/* Geometric background pattern */
-
-.form-panel::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-
-    background:
-        linear-gradient(
-            135deg,
-            transparent 35%,
-            rgba(255, 255, 255, 0.045) 35.2%,
-            transparent 35.5%
-        ),
-        linear-gradient(
-            45deg,
-            transparent 65%,
-            rgba(255, 255, 255, 0.035) 65.2%,
-            transparent 65.5%
-        ),
-        radial-gradient(
-            circle at 80% 15%,
-            rgba(59, 130, 246, 0.18),
-            transparent 42%
-        );
-
-    pointer-events: none;
-}
-
-/* Red diagonal racing accents */
+/* Subtle red ambient glow */
 
 .form-panel::after {
-    content: "";
     position: absolute;
-
-    top: -20%;
-    right: -35%;
     z-index: 0;
 
-    width: 70%;
-    height: 145%;
+    right: -15%;
+    bottom: -30%;
 
-    border-left: 2px solid rgba(239, 25, 55, 0.65);
+    width: 120%;
+    height: 45%;
+
+    content: "";
+    pointer-events: none;
 
     background:
-        linear-gradient(
-            110deg,
-            transparent 35%,
-            rgba(220, 20, 50, 0.10) 36%,
-            rgba(220, 20, 50, 0.04) 55%,
-            transparent 56%
+        radial-gradient(
+            ellipse at 75% 100%,
+            rgba(239, 35, 67, 0.20),
+            rgba(220, 20, 50, 0.07) 45%,
+            transparent 75%
         );
 
-    transform: rotate(35deg);
-
-    pointer-events: none;
+    filter: blur(24px);
+    opacity: 0.8;
 }
 
 /* Light theme */
 
 [data-theme="light"] .form-panel {
-    background:
-        linear-gradient(
-            145deg,
-            rgba(235, 241, 250, 0.82),
-            rgba(246, 249, 253, 0.91)
-        );
-
     color: #172033;
-    border-left-color: rgba(51, 65, 85, 0.14);
-}
 
-[data-theme="light"] .form-panel::before {
     background:
         linear-gradient(
             135deg,
-            transparent 35%,
-            rgba(30, 41, 59, 0.045) 35.2%,
-            transparent 35.5%
-        ),
-        linear-gradient(
-            45deg,
-            transparent 65%,
-            rgba(30, 41, 59, 0.035) 65.2%,
-            transparent 65.5%
-        ),
-        radial-gradient(
-            circle at 80% 15%,
-            rgba(59, 130, 246, 0.12),
-            transparent 42%
+            rgba(255, 255, 255, 0.30),
+            rgba(248, 250, 255, 0.16)
         );
+
+    border-color: rgba(255, 255, 255, 0.65);
+
+    box-shadow:
+        0 24px 65px rgba(15, 23, 42, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+
+    backdrop-filter: blur(12px) saturate(125%);
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
 }
 
 [data-theme="light"] .form-panel::after {
-    border-left-color: rgba(220, 20, 50, 0.45);
+    background:
+        radial-gradient(
+            ellipse at 72% 100%,
+            rgba(239, 35, 67, 0.12),
+            rgba(220, 20, 50, 0.035) 45%,
+            transparent 75%
+        );
 }
 
-/* =========================================================
-   2. FORM CONTENT
-   ========================================================= */
+/* 2. FORM CONTENT */
 
 .form-content {
     position: relative;
-    z-index: 1;
+    z-index: 2;
 
     width: 100%;
-    max-width: 360px;
+    max-width: 390px;
+    min-width: 0;
+
     margin: auto;
 }
 
-/* =========================================================
-   3. MOBILE BRANDING
-   ========================================================= */
+/* 3. MOBILE BRANDING */
 
 .mobile-brand {
     display: none;
@@ -176,13 +169,13 @@
     height: 40px;
     flex-shrink: 0;
 
-    border: 1px solid rgba(239, 25, 55, 0.25);
+    border: 1px solid rgba(239, 51, 78, 0.35);
     border-radius: 11px;
 
-    background: #dc1432;
+    background: linear-gradient(145deg, #ff304e, #c80d31);
     color: #ffffff;
 
-    box-shadow: 0 8px 20px rgba(220, 20, 50, 0.22);
+    box-shadow: 0 8px 22px rgba(220, 20, 50, 0.30);
 }
 
 .mobile-brand-name {
@@ -205,9 +198,7 @@
     letter-spacing: 1.3px;
 }
 
-/* =========================================================
-   4. FORM HEADING
-   ========================================================= */
+/* 4. FORM HEADING */
 
 .form-header {
     margin-bottom: 0;
@@ -215,45 +206,53 @@
 
 .form-eyebrow {
     display: inline-block;
-    margin-bottom: 8px;
 
-    color: #ef334e;
+    margin-bottom: 11px;
+
+    color: #ff526b;
 
     font-size: 11px;
-    font-weight: 750;
-    letter-spacing: 1.8px;
+    font-weight: 800;
+    letter-spacing: 2px;
 }
 
 .form-heading {
     margin: 0;
 
-    color: var(--text-primary);
+    color: #ffffff;
 
-    font-size: 28px;
-    font-weight: 800;
+    font-size: clamp(28px, 2.3vw, 34px);
+    font-weight: 850;
     line-height: 1.2;
-    letter-spacing: -1.2px;
+    letter-spacing: -1.4px;
 }
 
 .form-subtitle {
-    margin: 8px 0 22px;
+    margin: 10px 0 25px;
 
-    color: var(--text-muted);
+    color: rgba(235, 242, 252, 0.90);
 
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.7;
 }
 
-/* =========================================================
-   5. LOGIN FORM
-   ========================================================= */
+[data-theme="light"] .form-heading {
+    color: #172033;
+}
+
+[data-theme="light"] .form-subtitle {
+    color: #526176;
+}
+
+/* 5. LOGIN FORM */
 
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
 
     width: 100%;
+    min-width: 0;
 }
 
 .form-group {
@@ -262,57 +261,66 @@
     gap: 8px;
 
     width: 100%;
+    min-width: 0;
 }
 
 .form-label {
-    color: var(--text-secondary);
+    color: rgba(255, 255, 255, 0.94);
 
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 750;
 }
 
-/* =========================================================
-   6. INPUT FIELDS
-   ========================================================= */
+[data-theme="light"] .form-label {
+    color: #334155;
+}
+
+/* 6. INPUT FIELDS */
 
 .input-wrapper {
     position: relative;
+
     width: 100%;
+    min-width: 0;
 }
 
 .form-input {
     display: block;
 
     width: 100%;
-    height: 44px;
+    height: 49px;
 
-    padding: 0 15px;
+    padding: 0 16px;
 
-    border: 1px solid rgba(148, 163, 184, 0.28);
-    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 11px;
 
     outline: none;
 
-    background: rgba(255, 255, 255, 0.075);
-    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.10);
 
-    -webkit-text-fill-color: #f1f5f9;
-    caret-color: #ef334e;
+    color: #ffffff;
+    -webkit-text-fill-color: #ffffff;
+    caret-color: #ff405b;
 
     font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 500;
     letter-spacing: 0.1px;
 
+    box-shadow:
+        inset 0 1px 2px rgba(0, 0, 0, 0.08),
+        0 1px 0 rgba(255, 255, 255, 0.04);
+
     transition:
-        border-color 0.12s ease,
-        box-shadow 0.12s ease,
-        background 0.12s ease;
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
 }
 
 .form-input::placeholder {
-    color: #94a3b8;
-    -webkit-text-fill-color: #94a3b8;
+    color: rgba(255, 255, 255, 0.70);
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.70);
 
     opacity: 1;
 
@@ -321,14 +329,17 @@
 }
 
 .form-input:hover {
-    border-color: rgba(239, 51, 78, 0.55);
+    border-color: rgba(255, 255, 255, 0.48);
+    background: rgba(255, 255, 255, 0.14);
 }
 
 .form-input:focus {
-    border-color: #ef334e;
-    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 64, 91, 0.95);
+    background: rgba(255, 255, 255, 0.16);
 
-    box-shadow: 0 0 0 3px rgba(239, 51, 78, 0.13);
+    box-shadow:
+        0 0 0 3px rgba(239, 51, 78, 0.13),
+        0 0 18px rgba(239, 51, 78, 0.08);
 }
 
 .form-input:disabled {
@@ -336,15 +347,15 @@
     opacity: 0.6;
 }
 
-/* Light theme input */
+/* Light theme inputs */
 
 [data-theme="light"] .form-input {
-    background: rgba(255, 255, 255, 0.82);
+    background: rgba(255, 255, 255, 0.42);
 
     color: #172033;
     -webkit-text-fill-color: #172033;
 
-    border-color: #cbd5e1;
+    border-color: rgba(51, 65, 85, 0.24);
 }
 
 [data-theme="light"] .form-input::placeholder {
@@ -353,19 +364,15 @@
 }
 
 [data-theme="light"] .form-input:focus {
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.75);
 }
-
-/* Selected text */
 
 .form-input::selection {
     background: #dc1432;
     color: #ffffff;
 }
 
-/* =========================================================
-   7. PASSWORD VISIBILITY TOGGLE
-   ========================================================= */
+/* 7. PASSWORD TOGGLE */
 
 .password-input {
     padding-right: 48px;
@@ -387,20 +394,19 @@
     border-radius: 7px;
 
     background: transparent;
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.85);
 
     transform: translateY(-50%);
-
     cursor: pointer;
 
     transition:
-        color 0.12s ease,
-        background 0.12s ease;
+        color 0.2s ease,
+        background 0.2s ease;
 }
 
 .password-toggle:hover {
-    background: var(--surface-hover);
-    color: #ef334e;
+    background: rgba(255, 255, 255, 0.09);
+    color: #ff526b;
 }
 
 .password-toggle:focus-visible {
@@ -414,9 +420,11 @@
     height: 18px;
 }
 
-/* =========================================================
-   8. FORM OPTIONS
-   ========================================================= */
+[data-theme="light"] .password-toggle {
+    color: #526176;
+}
+
+/* 8. FORM OPTIONS */
 
 .form-options {
     display: flex;
@@ -429,34 +437,37 @@
     padding: 3px 0;
 
     border: 0;
-
     background: transparent;
-    color: #ef334e;
+    color: #ff526b;
 
     font-family: inherit;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 750;
 
     cursor: pointer;
 
-    transition: color 0.12s ease;
+    transition: color 0.2s ease;
 }
 
 .forgot-password:hover {
-    color: #ff526a;
+    color: #ff8294;
     text-decoration: underline;
 }
 
-/* =========================================================
-   9. FEEDBACK MESSAGE
-   ========================================================= */
+.forgot-password:focus-visible {
+    outline: 2px solid #ef334e;
+    outline-offset: 3px;
+}
+
+/* 9. FEEDBACK MESSAGE */
 
 .form-message {
     display: none;
 
     width: 100%;
+
     margin-top: 0;
-    padding: 8px 10px;
+    padding: 9px 11px;
 
     border: 1px solid var(--border);
     border-radius: 9px;
@@ -470,7 +481,7 @@
 
 .form-message.is-visible {
     display: block;
-    animation: form-message-enter 0.15s ease both;
+    animation: form-message-enter 0.18s ease both;
 }
 
 .form-message.is-error {
@@ -485,51 +496,68 @@
     color: var(--success);
 }
 
-/* =========================================================
-   10. SIGN IN BUTTON
-   ========================================================= */
+/* 10. SIGN IN BUTTON */
 
 .login-button {
     position: relative;
+    isolation: isolate;
 
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 11px;
 
     width: 100%;
-    min-height: 45px;
+    min-height: 49px;
 
-    margin-top: 3px;
+    margin-top: 5px;
     padding: 0 18px;
 
-    border: 1px solid transparent;
-    border-radius: 10px;
+    overflow: hidden;
 
-    background: linear-gradient(110deg, #ed1c3b, #b90d2b);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 11px;
+
+    background: linear-gradient(
+        105deg,
+        #f31d40 0%,
+        #df1235 55%,
+        #b90d2b 100%
+    );
+
     color: #ffffff;
 
     font-family: inherit;
-    font-size: 12px;
-    font-weight: 750;
-    letter-spacing: 0.2px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.25px;
 
     cursor: pointer;
 
-    box-shadow: 0 7px 18px rgba(220, 20, 50, 0.22);
+    box-shadow:
+        0 9px 25px rgba(220, 20, 50, 0.32),
+        0 0 20px rgba(239, 51, 78, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16);
 
     transition:
-        box-shadow 0.15s ease,
-        transform 0.15s ease,
-        background 0.15s ease;
+        box-shadow 0.2s ease,
+        transform 0.2s ease,
+        background 0.2s ease;
 }
 
 .login-button:hover {
-    background: linear-gradient(110deg, #ff304e, #cf1234);
+    background: linear-gradient(
+        105deg,
+        #ff304e,
+        #e8183d 55%,
+        #cc1235
+    );
 
-    box-shadow: 0 9px 24px rgba(220, 20, 50, 0.32);
+    box-shadow:
+        0 12px 30px rgba(220, 20, 50, 0.42),
+        0 0 25px rgba(239, 51, 78, 0.20);
 
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
 .login-button:active {
@@ -544,20 +572,22 @@
 
 .login-button svg {
     flex-shrink: 0;
-
     width: 17px;
     height: 17px;
 
-    transition: transform 0.15s ease;
+    transition: transform 0.2s ease;
 }
 
 .login-button:hover svg {
     transform: translateX(3px);
 }
 
-/* =========================================================
-   11. SECURITY NOTE
-   ========================================================= */
+.login-button:focus-visible {
+    outline: 2px solid #ef334e;
+    outline-offset: 4px;
+}
+
+/* 11. SECURITY NOTE */
 
 .security-note {
     display: flex;
@@ -565,9 +595,9 @@
     justify-content: center;
     gap: 8px;
 
-    margin-top: 12px;
+    margin-top: 15px;
 
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.78);
 
     font-size: 10px;
     line-height: 1.5;
@@ -576,19 +606,19 @@
 
 .security-note svg {
     flex-shrink: 0;
-
     width: 14px;
     height: 14px;
-
-    color: var(--success);
+    color: #22c55e;
 }
 
-/* =========================================================
-   12. COPYRIGHT
-   ========================================================= */
+[data-theme="light"] .security-note {
+    color: #526176;
+}
+
+/* 12. COPYRIGHT */
 
 .form-copyright {
-    margin: 14px 0 0;
+    margin: 15px 0 0;
 
     color: var(--text-muted);
 
@@ -597,9 +627,7 @@
     text-align: center;
 }
 
-/* =========================================================
-   13. ANIMATIONS
-   ========================================================= */
+/* 13. ANIMATION */
 
 @keyframes form-message-enter {
     from {
@@ -613,29 +641,42 @@
     }
 }
 
-/* =========================================================
-   14. COMPACT DESKTOP
-   ========================================================= */
+/* 14. SHORT DESKTOP */
 
-@media (max-height: 760px) and (min-width: 651px) {
+@media (max-height: 800px) and (min-width: 651px) {
     .form-panel {
-        padding: 24px 36px;
+        padding: 24px clamp(22px, 2.5vw, 36px);
+    }
+
+    .form-heading {
+        font-size: 28px;
     }
 
     .form-subtitle {
-        margin-bottom: 18px;
+        margin-top: 7px;
+        margin-bottom: 17px;
+        font-size: 12px;
+    }
+
+    .form-eyebrow {
+        margin-bottom: 7px;
     }
 
     .login-form {
         gap: 11px;
     }
 
+    .form-group {
+        gap: 6px;
+    }
+
     .form-input {
-        height: 42px;
+        height: 44px;
     }
 
     .login-button {
-        min-height: 43px;
+        min-height: 45px;
+        margin-top: 3px;
     }
 
     .security-note {
@@ -643,17 +684,57 @@
     }
 
     .form-copyright {
-        margin-top: 10px;
+        margin-top: 9px;
     }
 }
 
-/* =========================================================
-   15. TABLET
-   ========================================================= */
+/* 15. VERY SHORT DESKTOP */
+
+@media (max-height: 650px) and (min-width: 651px) {
+    .form-panel {
+        padding-top: 16px;
+        padding-bottom: 16px;
+    }
+
+    .form-heading {
+        font-size: 25px;
+    }
+
+    .form-subtitle {
+        margin-bottom: 10px;
+    }
+
+    .login-form {
+        gap: 8px;
+    }
+
+    .form-input {
+        height: 39px;
+    }
+
+    .login-button {
+        min-height: 40px;
+    }
+
+    .security-note {
+        margin-top: 7px;
+    }
+
+    .form-copyright {
+        margin-top: 6px;
+    }
+}
+
+/* 16. TABLET */
 
 @media (max-width: 900px) and (min-width: 651px) {
     .form-panel {
-        padding: 28px 26px;
+        padding: 26px 22px;
+        border-radius: 17px;
+    }
+
+    .form-content {
+        max-width: 360px;
     }
 
     .form-heading {
@@ -661,9 +742,7 @@
     }
 }
 
-/* =========================================================
-   16. MOBILE
-   ========================================================= */
+/* 17. MOBILE */
 
 @media (max-width: 650px) {
     .form-panel {
@@ -672,29 +751,25 @@
         justify-content: center;
 
         width: 100%;
+        min-width: 0;
         min-height: 0;
 
-        padding: 22px 24px 20px;
+        padding: 26px 24px 24px;
         overflow: hidden;
 
-        border-left: 0;
-        border-top: 1px solid rgba(148, 163, 184, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.26);
+        border-radius: 17px;
 
+        /* Keep mobile glass transparent too */
         background:
             linear-gradient(
                 145deg,
-                rgba(5, 16, 37, 0.84),
-                rgba(7, 18, 39, 0.93)
+                rgba(255, 255, 255, 0.15),
+                rgba(255, 255, 255, 0.065)
             );
-    }
 
-    [data-theme="light"] .form-panel {
-        background:
-            linear-gradient(
-                145deg,
-                rgba(235, 241, 250, 0.88),
-                rgba(246, 249, 253, 0.95)
-            );
+        backdrop-filter: blur(12px) saturate(125%);
+        -webkit-backdrop-filter: blur(12px) saturate(125%);
     }
 
     .form-content {
@@ -705,7 +780,7 @@
 
     .mobile-brand {
         display: flex;
-        margin-bottom: 14px;
+        margin-bottom: 16px;
     }
 
     .form-eyebrow {
@@ -718,12 +793,12 @@
     }
 
     .form-subtitle {
-        margin: 7px 0 16px;
+        margin: 7px 0 17px;
         font-size: 11px;
     }
 
     .login-form {
-        gap: 10px;
+        gap: 11px;
     }
 
     .form-group {
@@ -731,11 +806,11 @@
     }
 
     .form-input {
-        height: 43px;
+        height: 45px;
     }
 
     .login-button {
-        min-height: 44px;
+        min-height: 46px;
     }
 
     .security-note {
@@ -747,15 +822,17 @@
         margin-top: 10px;
         font-size: 9px;
     }
+
+    [data-theme="light"] .form-panel {
+        background: rgba(255, 255, 255, 0.32);
+    }
 }
 
-/* =========================================================
-   17. SMALL MOBILE
-   ========================================================= */
+/* 18. SMALL MOBILE */
 
 @media (max-width: 380px) {
     .form-panel {
-        padding: 18px 17px 16px;
+        padding: 20px 17px 18px;
     }
 
     .mobile-brand {
@@ -771,13 +848,13 @@
     }
 
     .form-input {
-        height: 42px;
+        height: 43px;
         padding-left: 12px;
         font-size: 13px;
     }
 
     .login-button {
-        min-height: 43px;
+        min-height: 44px;
     }
 
     .security-note {
@@ -789,11 +866,14 @@
     }
 }
 
-/* =========================================================
-   18. SHORT MOBILE SCREENS
-   ========================================================= */
+/* 19. SHORT MOBILE */
 
 @media (max-width: 650px) and (max-height: 650px) {
+    .form-panel {
+        padding-top: 18px;
+        padding-bottom: 18px;
+    }
+
     .mobile-brand {
         margin-bottom: 10px;
     }
@@ -815,9 +895,37 @@
     }
 }
 
-/* =========================================================
-   19. ACCESSIBILITY
-   ========================================================= */
+/* 20. DESKTOP PANEL POSITION AND WIDTH */
+
+@media (min-width: 1200px) {
+    .form-panel {
+        width: 100%;
+        max-width: 410px;
+        justify-self: end;
+        padding: 30px 28px;
+        transform: translateX(-150px);
+    }
+
+    .form-content {
+        max-width: 340px;
+    }
+}
+
+/* TABLET PANEL */
+
+@media (max-width: 1199px) and (min-width: 651px) {
+    .form-panel {
+        max-width: 390px;
+        justify-self: end;
+        padding: 26px 22px;
+    }
+
+    .form-content {
+        max-width: 340px;
+    }
+}
+
+/* 21. ACCESSIBILITY */
 
 @media (prefers-reduced-motion: reduce) {
     .form-message {
@@ -830,4 +938,26 @@
     .forgot-password {
         transition: none !important;
     }
+}
+
+/* 22. SVG SIZE CONTROL */
+
+.password-toggle svg,
+.login-button svg,
+.security-note svg {
+    display: block;
+
+    width: 18px;
+    height: 18px;
+    max-width: 18px;
+    max-height: 18px;
+
+    flex-shrink: 0;
+}
+
+/* Always keep form content above decorative glass layers */
+
+.form-content {
+    position: relative;
+    z-index: 2;
 }

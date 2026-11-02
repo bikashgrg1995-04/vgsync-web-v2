@@ -3,60 +3,21 @@
 import '../../styles/login/login-form.css';
 ---
 
-<section class="form-panel">
+<section class="form-panel" aria-label="Dealer login">
     <div class="form-content">
-        <!-- Mobile branding -->
-        <a href="/" class="mobile-brand" aria-label="VG Automobiles Home">
-            <span class="mobile-brand-mark">
-                <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                >
-                    <path
-                        d="M4 7.5L9 17L13 9L16 14L20 7"
-                        stroke="currentColor"
-                        stroke-width="2.4"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
-                    <path
-                        d="M4 7.5H8"
-                        stroke="currentColor"
-                        stroke-width="2.4"
-                        stroke-linecap="round"
-                    />
-                </svg>
-            </span>
 
-            <span class="mobile-brand-name">
-                VG <strong>AUTOMOBILES</strong>
-            </span>
-        </a>
-
-        <!-- Heading -->
-        <div class="form-header">
+        <header class="form-header">
             <span class="form-eyebrow">DEALER MANAGEMENT PORTAL</span>
-
             <h2 class="form-heading">Welcome back.</h2>
-
-            <p class="form-subtitle">
-                Sign in to access your branch dashboard and manage your
-                automotive business.
+            <p class="form-subtitle" id="login-description">
+                Sign in to access your branch dashboard and manage your automotive business.
             </p>
-        </div>
+        </header>
 
-        <!-- Login form -->
-        <form class="login-form" id="login-form">
-            <!-- Branch Code -->
+        <form class="login-form" id="login-form" aria-describedby="login-description">
+
             <div class="form-group">
-                <label class="form-label" for="branch-code">
-                    Branch Code
-                </label>
-
+                <label class="form-label" for="branch-code">Branch Code</label>
                 <div class="input-wrapper">
                     <input
                         class="form-input"
@@ -65,17 +26,15 @@ import '../../styles/login/login-form.css';
                         name="branch_code"
                         placeholder="Enter your branch code"
                         autocomplete="organization"
+                        autocapitalize="characters"
+                        spellcheck="false"
                         required
                     />
                 </div>
             </div>
 
-            <!-- Username -->
             <div class="form-group">
-                <label class="form-label" for="username">
-                    Username
-                </label>
-
+                <label class="form-label" for="username">Username</label>
                 <div class="input-wrapper">
                     <input
                         class="form-input"
@@ -84,17 +43,15 @@ import '../../styles/login/login-form.css';
                         name="username"
                         placeholder="Enter your username"
                         autocomplete="username"
+                        autocapitalize="none"
+                        spellcheck="false"
                         required
                     />
                 </div>
             </div>
 
-            <!-- Password -->
             <div class="form-group">
-                <label class="form-label" for="password">
-                    Password
-                </label>
-
+                <label class="form-label" for="password">Password</label>
                 <div class="input-wrapper">
                     <input
                         class="form-input password-input"
@@ -112,6 +69,7 @@ import '../../styles/login/login-form.css';
                         id="password-toggle"
                         aria-label="Show password"
                         aria-pressed="false"
+                        aria-controls="password"
                     >
                         <svg
                             id="password-eye-icon"
@@ -132,7 +90,6 @@ import '../../styles/login/login-form.css';
                 </div>
             </div>
 
-            <!-- Forgot password -->
             <div class="form-options">
                 <button
                     type="button"
@@ -143,18 +100,20 @@ import '../../styles/login/login-form.css';
                 </button>
             </div>
 
-            <!-- Feedback message -->
             <div
                 class="form-message"
                 id="form-message"
                 role="status"
                 aria-live="polite"
+                aria-atomic="true"
             ></div>
 
-            <!-- Sign in -->
-            <button class="login-button" type="submit" id="login-submit">
+            <button
+                class="login-button"
+                type="submit"
+                id="login-submit"
+            >
                 <span>Sign In</span>
-
                 <svg
                     width="18"
                     height="18"
@@ -172,7 +131,6 @@ import '../../styles/login/login-form.css';
             </button>
         </form>
 
-        <!-- Security note -->
         <div class="security-note">
             <svg
                 width="15"
@@ -188,13 +146,10 @@ import '../../styles/login/login-form.css';
                 <rect x="3" y="11" width="18" height="11" rx="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
-
             <span>Secure access to your dealership workspace</span>
         </div>
 
-        <!-- Copyright -->
-        <p class="form-copyright">
-            © {new Date().getFullYear()} VG Automobiles. All rights reserved.
-        </p>
     </div>
+
+    
 </section>

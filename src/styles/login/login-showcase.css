@@ -1,9 +1,10 @@
 
 /* =========================================================
    VG AUTOMOBILES — LOGIN SHOWCASE
+   Full-screen automotive landing layout
    ========================================================= */
 
-/* Showcase panel */
+/* 1. SHOWCASE PANEL */
 
 .showcase-panel {
     position: relative;
@@ -13,27 +14,19 @@
     flex-direction: column;
     justify-content: space-between;
 
+    width: 100%;
+    height: 100%;
     min-width: 0;
-    min-height: 100%;
+    min-height: 0;
 
-    padding: 42px 46px;
+    padding: 18px 24px 0 3px;
+
     overflow: hidden;
 
-    border-right: 1px solid rgba(255, 255, 255, 0.12);
-
-    /*
-     * The main background image is applied to .login-shell.
-     * Keep this panel transparent so the image remains visible.
-     */
-    background:
-        linear-gradient(
-            110deg,
-            rgba(5, 13, 29, 0.78) 0%,
-            rgba(5, 13, 29, 0.58) 58%,
-            rgba(5, 13, 29, 0.38) 100%
-        );
-
     color: #f8fafc;
+    background: transparent;
+
+    border: 0;
 }
 
 .showcase-panel::before {
@@ -41,46 +34,38 @@
     z-index: -1;
     inset: 0;
 
-    background:
-        linear-gradient(
-            180deg,
-            rgba(5, 13, 29, 0.12),
-            transparent 35%,
-            rgba(5, 13, 29, 0.24)
-        );
-
     content: "";
     pointer-events: none;
+
+    background: linear-gradient(
+        90deg,
+        rgba(5, 13, 29, 0.08),
+        rgba(5, 13, 29, 0.02) 75%,
+        transparent
+    );
 }
 
 [data-theme="light"] .showcase-panel {
-    background:
-        linear-gradient(
-            110deg,
-            rgba(12, 25, 45, 0.76) 0%,
-            rgba(12, 25, 45, 0.58) 58%,
-            rgba(12, 25, 45, 0.38) 100%
-        );
-
     color: #ffffff;
+    background: transparent;
 }
 
-/* Showcase content */
+/* 2. SHOWCASE CONTENT */
 
 .showcase-content {
     position: relative;
     z-index: 1;
 
     display: flex;
+    flex: 1;
     flex-direction: column;
 
     width: 100%;
     min-width: 0;
+    min-height: 0;
 }
 
-/* =========================================================
-   1. BRANDING
-   ========================================================= */
+/* 3. BRANDING */
 
 .showcase-logo {
     display: inline-flex;
@@ -88,6 +73,7 @@
     gap: 12px;
 
     width: fit-content;
+    max-width: 100%;
 
     color: #ffffff;
     text-decoration: none;
@@ -103,8 +89,9 @@
     display: grid;
     place-items: center;
 
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
 
     border: 1px solid rgba(239, 51, 78, 0.48);
     border-radius: 12px;
@@ -112,13 +99,12 @@
     background: rgba(239, 51, 78, 0.16);
     color: #ff5269;
 
-    box-shadow:
-        0 5px 22px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 5px 22px rgba(0, 0, 0, 0.2);
 }
 
 .showcase-logo-mark svg {
-    width: 25px;
-    height: 25px;
+    width: 27px;
+    height: 27px;
 }
 
 .showcase-logo-name {
@@ -126,7 +112,7 @@
     flex-direction: column;
     gap: 2px;
 
-    font-size: 19px;
+    font-size: 21px;
     font-weight: 850;
     line-height: 1;
 
@@ -134,22 +120,22 @@
 }
 
 .showcase-logo-name strong {
-    color: rgba(255, 255, 255, 0.72);
+    color: rgba(255, 255, 255, 0.8);
 
     font-size: 9px;
     font-weight: 750;
     letter-spacing: 2.5px;
 }
 
-/* =========================================================
-   2. INTRODUCTION
-   ========================================================= */
+/* 4. INTRODUCTION */
 
 .showcase-intro {
-    max-width: 540px;
-    margin-top: 34px;
+    width: 100%;
+    max-width: 720px;
 
-    animation: showcase-enter 0.8s ease both;
+    margin-top: clamp(35px, 5vh, 65px);
+
+    animation: showcase-enter 0.7s ease both;
 }
 
 .showcase-eyebrow {
@@ -161,7 +147,7 @@
 
     color: #ff6579;
 
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 2px;
 }
@@ -169,139 +155,118 @@
 .showcase-status-dot {
     position: relative;
 
-    width: 7px;
-    height: 7px;
-
+    width: 8px;
+    height: 8px;
     flex-shrink: 0;
 
     border-radius: 50%;
-
     background: #ef334e;
 
-    box-shadow:
-        0 0 12px rgba(239, 51, 78, 0.8);
+    box-shadow: 0 0 12px rgba(239, 51, 78, 0.8);
 
     animation: status-pulse 2s ease-in-out infinite;
 }
 
 .showcase-title {
-    max-width: 520px;
+    max-width: 720px;
 
     margin: 0;
 
     color: #ffffff;
 
-    font-size: clamp(34px, 3.4vw, 49px);
+    font-size: clamp(38px, 3.65vw, 58px);
     font-weight: 850;
-    line-height: 1.13;
+    line-height: 1.08;
     letter-spacing: -2px;
 }
 
 .showcase-title span {
-    display: block;
-
-    margin-top: 5px;
-
-    color: #ff5269;
+    display: inline;
+    margin-top: 0;
+    color: #ff3048;
 }
 
 .showcase-description {
-    max-width: 450px;
+    max-width: 550px;
 
-    margin: 19px 0 0;
+    margin: 18px 0 0;
 
-    color: rgba(241, 245, 249, 0.78);
+    color: rgba(241, 245, 249, 0.86);
 
-    font-size: 13px;
+    font-size: clamp(14px, 1.15vw, 18px);
     font-weight: 450;
-    line-height: 1.85;
+    line-height: 1.65;
 }
 
-/* =========================================================
-   3. FEATURES
-   ========================================================= */
+.showcase-title-accent {
+    width: 122px;
+    height: 2px;
+
+    margin-top: 18px;
+
+    background: #ff3048;
+}
+
+/* 5. FEATURES SECTION */
 
 .feature-section {
-    margin-top: 38px;
+    width: 100%;
+
+    margin-top: auto;
+    padding-top: 28px;
 }
 
-.feature-section-heading {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-
-    margin-bottom: 15px;
-
-    color: rgba(226, 232, 240, 0.78);
-
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 1.6px;
-}
-
+.feature-section-heading,
 .feature-heading-line {
-    flex: 1;
-
-    height: 1px;
-
-    background: rgba(255, 255, 255, 0.2);
+    display: none;
 }
-
-/* Feature grid */
 
 .feature-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 
-    gap: 11px;
+    width: 100%;
+    gap: 0;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.13);
 }
-
-/* Individual feature card */
 
 .feature-card {
     position: relative;
 
     display: flex;
+    flex-direction: column;
     align-items: flex-start;
-    gap: 13px;
+    gap: 8px;
 
     min-width: 0;
-    min-height: 84px;
+    min-height: 112px;
 
-    padding: 14px;
+    padding: 17px 16px 10px 0;
 
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
+    border: 0;
+    border-radius: 0;
 
-    background:
-        linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.105),
-            rgba(255, 255, 255, 0.035)
-        );
+    background: transparent;
 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-
-    transition:
-        transform 0.2s ease,
-        border-color 0.2s ease,
-        background-color 0.2s ease;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 
     animation: showcase-enter 0.6s ease both;
+
+    transition: opacity 0.2s ease;
+}
+
+.feature-card:not(:first-child) {
+    padding-left: 18px;
+
+    border-left: 1px solid rgba(255, 255, 255, 0.24);
 }
 
 .feature-card:hover {
-    transform: translateY(-3px);
-
-    border-color: rgba(255, 82, 105, 0.55);
-
-    background:
-        linear-gradient(
-            135deg,
-            rgba(239, 51, 78, 0.16),
-            rgba(255, 255, 255, 0.06)
-        );
+    transform: none;
+    background: transparent;
+    opacity: 0.85;
 }
 
 .feature-card:nth-child(1) {
@@ -320,57 +285,54 @@
     animation-delay: 0.4s;
 }
 
-/* Feature icon */
+/* Feature icons */
 
 .feature-icon {
     display: grid;
     place-items: center;
 
+    width: 32px;
+    height: 32px;
     flex-shrink: 0;
 
-    width: 36px;
-    height: 36px;
+    border: 0;
+    border-radius: 0;
 
-    border: 1px solid rgba(255, 82, 105, 0.28);
-    border-radius: 10px;
-
-    background: rgba(239, 51, 78, 0.13);
-    color: #ff7184;
+    background: transparent;
+    color: #dce8ff;
 }
 
 .feature-icon svg {
-    width: 19px;
-    height: 19px;
+    width: 27px;
+    height: 27px;
 }
 
-/* Feature content */
+/* Feature text */
 
 .feature-card > div:last-child {
     min-width: 0;
 }
 
 .feature-title {
-    margin: 1px 0 5px;
+    margin: 1px 0 4px;
 
     color: #ffffff;
 
-    font-size: 12px;
-    font-weight: 750;
+    font-size: 13px;
+    font-weight: 800;
     line-height: 1.4;
 }
 
 .feature-description {
     margin: 0;
 
-    color: rgba(226, 232, 240, 0.72);
+    color: rgba(226, 232, 240, 0.85);
 
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.55;
 }
 
-/* =========================================================
-   4. SHOWCASE FOOTER
-   ========================================================= */
+/* 6. SHOWCASE FOOTER */
 
 .showcase-footer {
     position: relative;
@@ -382,31 +344,57 @@
 
     gap: 12px;
 
-    padding-top: 20px;
-    margin-top: 28px;
+    width: 100%;
+    flex-shrink: 0;
+
+    padding: 17px 0;
+    margin-top: 20px;
 
     border-top: 1px solid rgba(255, 255, 255, 0.16);
 
-    color: rgba(226, 232, 240, 0.7);
+    color: rgba(226, 232, 240, 0.78);
 
-    font-size: 10px;
-    font-weight: 650;
+    font-size: 11px;
+    font-weight: 600;
 }
 
-.showcase-footer span:first-child {
-    color: rgba(255, 255, 255, 0.9);
+.showcase-footer-message {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 
-    letter-spacing: 1px;
+    color: #ffffff;
+
+    font-size: 14px;
+    font-weight: 500;
 }
 
-/* =========================================================
-   5. ANIMATIONS
-   ========================================================= */
+.showcase-footer-message svg {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+
+    color: #60a5fa;
+}
+
+.showcase-footer-message strong {
+    color: #ff3048;
+}
+
+.showcase-footer-copyright {
+    color: rgba(226, 232, 240, 0.72);
+
+    font-size: 12px;
+    font-weight: 400;
+    text-align: right;
+}
+
+/* 7. ANIMATIONS */
 
 @keyframes showcase-enter {
     from {
         opacity: 0;
-        transform: translateY(13px);
+        transform: translateY(12px);
     }
 
     to {
@@ -419,96 +407,198 @@
     0%,
     100% {
         opacity: 1;
-
-        box-shadow:
-            0 0 12px rgba(239, 51, 78, 0.8);
+        box-shadow: 0 0 12px rgba(239, 51, 78, 0.8);
     }
 
     50% {
         opacity: 0.55;
-
-        box-shadow:
-            0 0 4px rgba(239, 51, 78, 0.3);
+        box-shadow: 0 0 4px rgba(239, 51, 78, 0.3);
     }
 }
 
-/* =========================================================
-   6. COMPACT DESKTOP
-   ========================================================= */
+/* 8. COMPACT DESKTOP */
 
-@media (max-height: 760px) and (min-width: 651px) {
+@media (max-height: 800px) and (min-width: 651px) {
     .showcase-panel {
-        padding: 28px 36px;
+        padding-top: 10px;
     }
 
     .showcase-logo-mark {
-        width: 40px;
-        height: 40px;
+        width: 42px;
+        height: 42px;
     }
 
     .showcase-intro {
-        margin-top: 20px;
+        margin-top: clamp(20px, 3.5vh, 35px);
     }
 
     .showcase-title {
-        font-size: clamp(30px, 3vw, 41px);
+        font-size: clamp(34px, 3.1vw, 46px);
+        line-height: 1.08;
     }
 
     .showcase-description {
+        margin-top: 12px;
+        font-size: 13px;
+        line-height: 1.55;
+    }
+
+    .showcase-title-accent {
         margin-top: 13px;
-        font-size: 12px;
-        line-height: 1.7;
     }
 
     .feature-section {
-        margin-top: 23px;
+        padding-top: 18px;
     }
 
     .feature-card {
-        min-height: 74px;
-        padding: 10px;
+        min-height: 94px;
+        padding-top: 12px;
+        gap: 6px;
     }
 
     .feature-icon {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
     }
 
-    .showcase-footer {
-        padding-top: 15px;
-        margin-top: 18px;
-    }
-}
-
-/* =========================================================
-   7. TABLET
-   ========================================================= */
-
-@media (max-width: 900px) and (min-width: 651px) {
-    .showcase-panel {
-        padding: 32px 27px;
+    .feature-icon svg {
+        width: 24px;
+        height: 24px;
     }
 
-    .showcase-title {
-        font-size: clamp(29px, 3.8vw, 39px);
-    }
-
-    .showcase-description {
+    .feature-title {
         font-size: 12px;
     }
 
-    .feature-grid {
-        gap: 9px;
+    .feature-description {
+        font-size: 10px;
+    }
+
+    .showcase-footer {
+        padding: 11px 0;
+        margin-top: 12px;
+    }
+
+    .showcase-footer-message {
+        font-size: 12px;
+    }
+
+    .showcase-footer-message svg {
+        width: 26px;
+        height: 26px;
+    }
+
+    .showcase-footer-copyright {
+        font-size: 10px;
+    }
+}
+
+/* 9. VERY SHORT DESKTOP */
+
+@media (max-height: 650px) and (min-width: 651px) {
+    .showcase-panel {
+        padding-top: 6px;
+    }
+
+    .showcase-logo-mark {
+        width: 36px;
+        height: 36px;
+    }
+
+    .showcase-logo-mark svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .showcase-intro {
+        margin-top: 16px;
+    }
+
+    .showcase-title {
+        font-size: clamp(29px, 2.8vw, 38px);
+        letter-spacing: -1.3px;
+    }
+
+    .showcase-description {
+        margin-top: 8px;
+        font-size: 12px;
+    }
+
+    .showcase-title-accent {
+        width: 90px;
+        margin-top: 9px;
+    }
+
+    .feature-section {
+        padding-top: 10px;
     }
 
     .feature-card {
-        gap: 9px;
-        padding: 10px;
+        min-height: 76px;
+        padding-top: 9px;
+        gap: 4px;
     }
 
     .feature-icon {
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
+    }
+
+    .feature-icon svg {
+        width: 21px;
+        height: 21px;
+    }
+
+    .feature-title {
+        font-size: 10px;
+    }
+
+    .feature-description {
+        font-size: 9px;
+    }
+
+    .showcase-footer {
+        padding: 8px 0;
+        margin-top: 7px;
+    }
+
+    .showcase-footer-message svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .showcase-footer-message {
+        font-size: 11px;
+    }
+
+    .showcase-footer-copyright {
+        font-size: 9px;
+    }
+}
+
+/* 10. TABLET */
+
+@media (max-width: 1100px) and (min-width: 651px) {
+    .showcase-panel {
+        padding-right: 15px;
+    }
+
+    .showcase-title {
+        font-size: clamp(30px, 3.5vw, 42px);
+        letter-spacing: -1.4px;
+    }
+
+    .showcase-description {
+        font-size: 13px;
+    }
+
+    .feature-card {
+        padding-right: 8px;
+    }
+
+    .feature-card:not(:first-child) {
+        padding-left: 10px;
     }
 
     .feature-title {
@@ -519,14 +609,16 @@
         font-size: 9px;
     }
 
-    .showcase-footer {
-        font-size: 9px;
+    .showcase-footer-message {
+        font-size: 12px;
+    }
+
+    .showcase-footer-copyright {
+        font-size: 10px;
     }
 }
 
-/* =========================================================
-   8. MOBILE
-   ========================================================= */
+/* 11. MOBILE */
 
 @media (max-width: 650px) {
     .showcase-panel {
@@ -534,9 +626,7 @@
     }
 }
 
-/* =========================================================
-   9. ACCESSIBILITY
-   ========================================================= */
+/* 12. ACCESSIBILITY */
 
 @media (prefers-reduced-motion: reduce) {
     .showcase-intro,
