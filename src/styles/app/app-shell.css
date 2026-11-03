@@ -26,8 +26,8 @@ body:has(.app-shell) {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  width: 228px;
-  min-width: 228px;
+  width: 232px;
+  min-width: 232px;
   height: 100%;
   padding: 14px 12px 12px;
   background: var(--panel-bg);
@@ -37,13 +37,21 @@ body:has(.app-shell) {
   transition: transform 0.2s ease;
 }
 
+/* Modern identity card */
 .sidebar-top-card {
   flex-shrink: 0;
-  margin: 0 2px 12px;
+  margin: 0 0 14px;
   padding: 14px 12px 12px;
   border-radius: 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--accent) 12%, var(--surface)) 0%,
+      var(--surface) 48%,
+      var(--surface) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .sidebar-brand-row {
@@ -56,12 +64,14 @@ body:has(.app-shell) {
 .sidebar-logo {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 11px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   background: var(--accent);
   color: #ffffff;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow:
+    0 6px 16px color-mix(in srgb, var(--accent) 40%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
   flex-shrink: 0;
 }
 
@@ -78,42 +88,50 @@ body:has(.app-shell) {
 }
 
 .sidebar-brand-text {
-  font-size: 1.12rem;
+  font-size: 1.15rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--text-primary);
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .sidebar-brand-sub {
   font-size: 0.68rem;
-  font-weight: 550;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .sidebar-profile-row {
   display: flex;
-  align-items: flex-start;
-  gap: 9px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 9px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--panel-bg) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .sidebar-profile-avatar {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  margin-top: 1px;
-  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   background: var(--accent-soft);
   color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
+  line-height: 1;
 }
 
 .sidebar-profile-meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
@@ -128,15 +146,15 @@ body:has(.app-shell) {
 }
 
 .sidebar-profile-role {
-  font-size: 0.72rem;
-  font-weight: 550;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--text-secondary);
   white-space: nowrap;
   line-height: 1.25;
 }
 
 .sidebar-branch-name {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -149,7 +167,6 @@ body:has(.app-shell) {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  margin-top: 4px;
 }
 
 .sidebar-list {
@@ -249,8 +266,8 @@ body:has(.app-shell) {
 
 @media (min-width: 1200px) {
   .app-sidebar {
-    width: 240px;
-    min-width: 240px;
+    width: 244px;
+    min-width: 244px;
   }
 
   .sidebar-link,
@@ -702,8 +719,8 @@ body:has(.app-shell) {
     top: 0;
     height: 100vh;
     height: 100dvh;
-    width: 240px;
-    min-width: 240px;
+    width: 248px;
+    min-width: 248px;
     transform: translateX(-100%);
   }
 
@@ -714,9 +731,7 @@ body:has(.app-shell) {
 
   .sidebar-toggle { display: grid; }
 
-  .header-search {
-    width: 160px;
-  }
+  .header-search { width: 160px; }
 
   .branch-select {
     min-width: 130px;
@@ -732,9 +747,7 @@ body:has(.app-shell) {
 
   .app-content { padding: 14px 12px; }
 
-  .header-search {
-    width: 120px;
-  }
+  .header-search { width: 120px; }
 
   .branch-select {
     min-width: 110px;
