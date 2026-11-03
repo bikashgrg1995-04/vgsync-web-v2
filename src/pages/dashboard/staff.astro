@@ -1,7 +1,6 @@
 ---
 import AppLayout from '../../layouts/AppLayout.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import { BRANCHES } from '../../lib/auth';
 import type { UserRole } from '../../lib/auth';
 
 const defaultRole: UserRole = 'owner';
@@ -23,7 +22,9 @@ const navItems = getNavItemsForRole(defaultRole);
   <div class="staff-page">
     <section class="staff-panel">
       <h2 class="staff-title">Assign staff</h2>
-      <p class="staff-sub">Owner can create temporary logins. Staff must update password on first login.</p>
+      <p class="staff-sub" id="staff-scope-hint">
+        Create temporary logins. New users must update password on first login.
+      </p>
 
       <form id="assign-staff-form" class="staff-form" novalidate>
         <label class="staff-field">
@@ -36,11 +37,7 @@ const navItems = getNavItemsForRole(defaultRole);
         </label>
         <label class="staff-field">
           <span>Branch</span>
-          <select name="branchCode" required>
-            {BRANCHES.filter((b) => b.code !== 'HO').map((b) => (
-              <option value={b.code}>{b.name} ({b.code})</option>
-            ))}
-          </select>
+          <select name="branchCode" id="staff-branch-select" required></select>
         </label>
         <label class="staff-field">
           <span>Role</span>
@@ -87,6 +84,7 @@ const navItems = getNavItemsForRole(defaultRole);
     canManageStaff,
     assignStaff,
     listStaffForManagement,
+    getAssignableBranches,
   } from '../../lib/auth';
 
   const session = getSession();
@@ -99,6 +97,24 @@ const navItems = getNavItemsForRole(defaultRole);
   const form = document.getElementById('assign-staff-form') as HTMLFormElement | null;
   const msg = document.getElementById('staff-message');
   const tbody = document.getElementById('staff-table-body');
+  const branchSelect = document.getElementById('staff-branch-select') as HTMLSelectElement | null;
+  const scopeHint = document.getElementById('staff-scope-hint');
+
+  if (session && scopeHint) {
+    if (session.role === 'branch_owner') {
+      scopeHint.textContent = `You can assign staff only for ${session.homeBranchName}.`;
+    } else {
+      scopeHint.textContent =
+        'System owner/admin can assign staff to any branch. New users must update password on first login.';
+    }
+  }
+
+  if (session && branchSelect) {
+    const branches = getAssignableBranches(session);
+    branchSelect.innerHTML = branches
+      .map((b) => `<option value="${b.code}">${b.name} (${b.code})</option>`)
+      .join('');
+  }
 
   function showMsg(text: string, ok = false): void {
     if (!msg) return;
@@ -140,7 +156,7 @@ const navItems = getNavItemsForRole(defaultRole);
       displayName: String(data.get('displayName') || ''),
       username: String(data.get('username') || ''),
       branchCode: String(data.get('branchCode') || ''),
-      role: (String(data.get('role') || 'staff') as 'staff' | 'branch_manager'),
+      role: String(data.get('role') || 'staff') as 'staff' | 'branch_manager',
       temporaryPassword: String(data.get('temporaryPassword') || ''),
     });
 
@@ -150,10 +166,16 @@ const navItems = getNavItemsForRole(defaultRole);
     }
 
     showMsg(
-      `Assigned ${result.user.displayName} · ${result.user.branchCode}/${result.user.username} (temp password set)`,
+      `Assigned ${result.user.displayName} · ${result.user.branchCode}/${result.user.username}`,
       true,
     );
     form.reset();
+    if (session && branchSelect) {
+      const branches = getAssignableBranches(session);
+      branchSelect.innerHTML = branches
+        .map((b) => `<option value="${b.code}">${b.name} (${b.code})</option>`)
+        .join('');
+    }
     renderTable();
   });
 

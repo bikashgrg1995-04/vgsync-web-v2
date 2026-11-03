@@ -2,11 +2,18 @@
  * Demo authentication + branch context for VGSync frontend.
  * Replace with real Django API calls later.
  *
- * Owner can assign staff and switch branches.
- * First-time login requires password update.
+ * Roles:
+ * - owner: system owner (HO) — all branches + staff assign anywhere
+ * - branch_owner: owns one branch — staff assign for own branch only
+ * - headoffice / branch_manager / staff: operational roles
  */
 
-export type UserRole = 'owner' | 'headoffice' | 'branch_manager' | 'staff';
+export type UserRole =
+  | 'owner'
+  | 'branch_owner'
+  | 'headoffice'
+  | 'branch_manager'
+  | 'staff';
 
 export interface Branch {
   code: string;
@@ -23,7 +30,6 @@ export interface DemoUser {
   role: UserRole;
   roleLabel: string;
   branchName: string;
-  /** Force password change on next login */
   mustChangePassword: boolean;
   active: boolean;
 }
@@ -50,6 +56,7 @@ export const BRANCHES: Branch[] = [
 ];
 
 const SEED_USERS: DemoUser[] = [
+  // System owner
   {
     id: 'u-owner',
     branchCode: 'HO',
@@ -62,6 +69,44 @@ const SEED_USERS: DemoUser[] = [
     mustChangePassword: true,
     active: true,
   },
+  // Branch owners
+  {
+    id: 'u-bhp-owner',
+    branchCode: 'BHP',
+    username: 'owner',
+    password: 'owner123',
+    displayName: 'Hari Poudel',
+    role: 'branch_owner',
+    roleLabel: 'Branch Owner',
+    branchName: 'Bharatpur Branch',
+    mustChangePassword: true,
+    active: true,
+  },
+  {
+    id: 'u-pkr-owner',
+    branchCode: 'PKR',
+    username: 'owner',
+    password: 'owner123',
+    displayName: 'Gita Sharma',
+    role: 'branch_owner',
+    roleLabel: 'Branch Owner',
+    branchName: 'Pokhara Branch',
+    mustChangePassword: true,
+    active: true,
+  },
+  {
+    id: 'u-btl-owner',
+    branchCode: 'BTL',
+    username: 'owner',
+    password: 'owner123',
+    displayName: 'Nabin Karki',
+    role: 'branch_owner',
+    roleLabel: 'Branch Owner',
+    branchName: 'Butwal Branch',
+    mustChangePassword: true,
+    active: true,
+  },
+  // HO admin
   {
     id: 'u-admin',
     branchCode: 'HO',
@@ -74,6 +119,7 @@ const SEED_USERS: DemoUser[] = [
     mustChangePassword: false,
     active: true,
   },
+  // Sample manager/staff
   {
     id: 'u-bhp-mgr',
     branchCode: 'BHP',
@@ -121,7 +167,6 @@ function saveUsers(users: DemoUser[]): void {
   }
 }
 
-/** Ensure seed users exist in storage (merge by id) */
 export function ensureUsersInitialized(): DemoUser[] {
   const existing = loadUsers();
   const ids = new Set(existing.map((u) => u.id));
@@ -224,12 +269,18 @@ export function isAuthenticated(): boolean {
   return getSession() !== null;
 }
 
+/** HO owner + HO admin can switch branches */
 export function canSwitchBranch(session: AuthSession | null): boolean {
   return session?.role === 'owner' || session?.role === 'headoffice';
 }
 
+/** System owner, HO admin, or branch owner can manage staff */
 export function canManageStaff(session: AuthSession | null): boolean {
-  return session?.role === 'owner' || session?.role === 'headoffice';
+  return (
+    session?.role === 'owner' ||
+    session?.role === 'headoffice' ||
+    session?.role === 'branch_owner'
+  );
 }
 
 export function switchActiveBranch(branchCode: string): AuthSession | null {
@@ -252,7 +303,19 @@ export function getAccessibleBranches(session: AuthSession | null): Branch[] {
   return own ? [own] : [];
 }
 
-/** First-time / forced password change */
+/** Branches available when assigning staff */
+export function getAssignableBranches(session: AuthSession | null): Branch[] {
+  if (!session) return [];
+  if (session.role === 'owner' || session.role === 'headoffice') {
+    return BRANCHES.filter((b) => b.code !== 'HO');
+  }
+  if (session.role === 'branch_owner') {
+    const own = getBranchByCode(session.homeBranchCode);
+    return own ? [own] : [];
+  }
+  return [];
+}
+
 export function changePassword(
   userId: string,
   currentPassword: string,
@@ -276,7 +339,6 @@ export function changePassword(
     mustChangePassword: false,
   };
   saveUsers(users);
-
   updateSession({ mustChangePassword: false });
   return { ok: true };
 }
@@ -289,17 +351,24 @@ export interface StaffInput {
   temporaryPassword: string;
 }
 
-/** Owner assigns a new staff/manager account */
 export function assignStaff(
   input: StaffInput,
 ): { ok: true; user: DemoUser } | { ok: false; error: string } {
   const session = getSession();
-  if (!canManageStaff(session)) {
-    return { ok: false, error: 'Only Owner/Admin can assign staff.' };
+  if (!canManageStaff(session) || !session) {
+    return { ok: false, error: 'You cannot assign staff.' };
   }
 
   const branch = getBranchByCode(input.branchCode);
   if (!branch) return { ok: false, error: 'Invalid branch.' };
+
+  // Branch owner locked to own branch
+  if (
+    session.role === 'branch_owner' &&
+    branch.code.toUpperCase() !== session.homeBranchCode.toUpperCase()
+  ) {
+    return { ok: false, error: 'You can only assign staff to your own branch.' };
+  }
 
   const username = input.username.trim().toLowerCase();
   if (!username) return { ok: false, error: 'Username is required.' };
@@ -338,18 +407,41 @@ export function assignStaff(
 
 export function deactivateStaff(userId: string): boolean {
   const session = getSession();
-  if (!canManageStaff(session)) return false;
+  if (!canManageStaff(session) || !session) return false;
 
   const users = ensureUsersInitialized();
   const idx = users.findIndex((u) => u.id === userId);
   if (idx < 0) return false;
-  if (users[idx].role === 'owner') return false;
 
-  users[idx] = { ...users[idx], active: false };
+  const target = users[idx];
+  if (target.role === 'owner' || target.role === 'branch_owner') return false;
+
+  if (
+    session.role === 'branch_owner' &&
+    target.branchCode.toUpperCase() !== session.homeBranchCode.toUpperCase()
+  ) {
+    return false;
+  }
+
+  users[idx] = { ...target, active: false };
   saveUsers(users);
   return true;
 }
 
+/** Staff list visible to current manager role */
 export function listStaffForManagement(): DemoUser[] {
-  return ensureUsersInitialized().filter((u) => u.role !== 'owner');
+  const session = getSession();
+  if (!session || !canManageStaff(session)) return [];
+
+  const users = ensureUsersInitialized().filter(
+    (u) => u.role !== 'owner' && u.role !== 'branch_owner',
+  );
+
+  if (session.role === 'branch_owner') {
+    return users.filter(
+      (u) => u.branchCode.toUpperCase() === session.homeBranchCode.toUpperCase(),
+    );
+  }
+
+  return users;
 }

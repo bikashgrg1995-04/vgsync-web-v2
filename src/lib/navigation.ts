@@ -25,6 +25,7 @@ const ALL_ITEMS: NavItem[] = [
 
 const ROLE_MENU: Record<UserRole, string[]> = {
   owner: ['overview', 'inventory', 'sales', 'purchase', 'payments', 'customers', 'staff', 'reports'],
+  branch_owner: ['overview', 'inventory', 'sales', 'purchase', 'payments', 'customers', 'staff', 'reports'],
   headoffice: ['overview', 'inventory', 'sales', 'purchase', 'payments', 'customers', 'staff', 'reports'],
   branch_manager: ['overview', 'inventory', 'sales', 'purchase', 'payments', 'customers', 'reports'],
   staff: ['overview', 'inventory', 'sales', 'customers'],
