@@ -1,12 +1,11 @@
 ---
 import AppLayout from '../../layouts/AppLayout.astro';
-import PageSkeleton from '../../components/app/PageSkeleton.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import { PAGE_META } from '../../lib/page-meta';
 import type { UserRole } from '../../lib/auth';
 
 const meta = PAGE_META.suppliers;
-const defaultRole: UserRole = 'headoffice';
+const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
 ---
 
@@ -22,5 +21,566 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <PageSkeleton title={meta.skeletonTitle} hint={meta.skeletonHint} />
+  <div class="sup-page" id="sup-page">
+    <div class="sup-toolbar">
+      <div>
+        <p class="sup-scope" id="sup-scope">Branch suppliers</p>
+        <h2 class="sup-heading">Supplier directory</h2>
+      </div>
+      <button type="button" class="btn-primary-sm" id="sup-add">+ New supplier</button>
+    </div>
+
+    <div class="sup-kpis">
+      <article class="sup-kpi">
+        <span class="sup-kpi-label">Total</span>
+        <strong id="kpi-total">—</strong>
+      </article>
+      <article class="sup-kpi">
+        <span class="sup-kpi-label">Active</span>
+        <strong id="kpi-active">—</strong>
+      </article>
+      <article class="sup-kpi">
+        <span class="sup-kpi-label">Payable</span>
+        <strong id="kpi-payable">—</strong>
+      </article>
+      <article class="sup-kpi is-danger">
+        <span class="sup-kpi-label">Blocked</span>
+        <strong id="kpi-blocked">—</strong>
+      </article>
+    </div>
+
+    <div class="sup-layout">
+      <section class="sup-list-panel">
+        <div class="sup-filters">
+          <div class="sup-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="sup-search" placeholder="Search name, phone, code…" autocomplete="off" />
+          </div>
+          <select id="sup-type-filter">
+            <option value="">All types</option>
+            <option value="local">Local</option>
+            <option value="importer">Importer</option>
+            <option value="manufacturer">Manufacturer</option>
+            <option value="distributor">Distributor</option>
+          </select>
+          <select id="sup-status-filter">
+            <option value="">All status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </div>
+
+        <div class="sup-table-wrap">
+          <table class="sup-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Phone</th>
+                <th class="num">Payable</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="sup-tbody">
+              <tr><td colspan="6">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sup-footnote" id="sup-count"></p>
+      </section>
+
+      <aside class="sup-detail" id="sup-detail">
+        <div class="sup-detail-empty" id="sup-detail-empty">
+          <p>Select a supplier to view details</p>
+          <p class="muted">Used in Purchase orders and payables</p>
+        </div>
+
+        <div class="sup-detail-body" id="sup-detail-body" hidden>
+          <header class="sup-detail-head">
+            <div>
+              <p class="sup-detail-code" id="d-code">—</p>
+              <h3 id="d-name">—</h3>
+              <span class="sup-badge" id="d-status">—</span>
+            </div>
+            <div class="sup-detail-actions">
+              <button type="button" class="btn-ghost-sm" id="sup-edit">Edit</button>
+              <button type="button" class="btn-ghost-sm is-danger" id="sup-delete">Delete</button>
+            </div>
+          </header>
+
+          <dl class="sup-dl">
+            <div><dt>Type</dt><dd id="d-type">—</dd></div>
+            <div><dt>Contact</dt><dd id="d-contact">—</dd></div>
+            <div><dt>Phone</dt><dd id="d-phone">—</dd></div>
+            <div><dt>Email</dt><dd id="d-email">—</dd></div>
+            <div class="span2"><dt>Address</dt><dd id="d-address">—</dd></div>
+            <div><dt>City</dt><dd id="d-city">—</dd></div>
+            <div><dt>PAN</dt><dd id="d-pan">—</dd></div>
+            <div><dt>Payment terms</dt><dd id="d-terms">—</dd></div>
+            <div><dt>Credit limit</dt><dd id="d-credit">—</dd></div>
+            <div><dt>Payable balance</dt><dd id="d-balance">—</dd></div>
+            <div class="span2"><dt>Notes</dt><dd id="d-notes">—</dd></div>
+          </dl>
+
+          <p class="sup-detail-meta" id="d-meta"></p>
+
+          <div class="sup-detail-links">
+            <span class="chip">Purchase orders</span>
+            <span class="chip">Bills</span>
+            <span class="chip">Payments</span>
+          </div>
+          <p class="sup-hint">Purchase &amp; payables will reference this supplier by ID/code.</p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <dialog class="sup-dialog" id="sup-dialog">
+    <form class="sup-dialog-inner" id="sup-form">
+      <h2 class="sup-dialog-title" id="sup-form-title">New supplier</h2>
+      <input type="hidden" id="f-id" />
+
+      <div class="sup-form-grid">
+        <label class="sup-field span2">
+          <span>Name *</span>
+          <input type="text" id="f-name" required placeholder="Company name" />
+        </label>
+        <label class="sup-field">
+          <span>Type</span>
+          <select id="f-type">
+            <option value="local">Local</option>
+            <option value="distributor">Distributor</option>
+            <option value="importer">Importer</option>
+            <option value="manufacturer">Manufacturer</option>
+          </select>
+        </label>
+        <label class="sup-field">
+          <span>Status</span>
+          <select id="f-status">
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </label>
+        <label class="sup-field">
+          <span>Contact person</span>
+          <input type="text" id="f-contact" />
+        </label>
+        <label class="sup-field">
+          <span>Phone *</span>
+          <input type="tel" id="f-phone" required />
+        </label>
+        <label class="sup-field">
+          <span>Email</span>
+          <input type="email" id="f-email" />
+        </label>
+        <label class="sup-field">
+          <span>Payment terms</span>
+          <input type="text" id="f-terms" placeholder="Net 30" />
+        </label>
+        <label class="sup-field span2">
+          <span>Address</span>
+          <input type="text" id="f-address" />
+        </label>
+        <label class="sup-field">
+          <span>City</span>
+          <input type="text" id="f-city" />
+        </label>
+        <label class="sup-field">
+          <span>PAN</span>
+          <input type="text" id="f-pan" />
+        </label>
+        <label class="sup-field">
+          <span>Credit limit (NPR)</span>
+          <input type="number" id="f-credit" min="0" step="1000" value="0" />
+        </label>
+        <label class="sup-field span2">
+          <span>Notes</span>
+          <input type="text" id="f-notes" />
+        </label>
+      </div>
+
+      <p class="sup-form-error" id="f-error" hidden></p>
+
+      <div class="sup-dialog-actions">
+        <button type="button" class="btn-ghost-sm" id="f-cancel">Cancel</button>
+        <button type="submit" class="btn-primary-sm">Save</button>
+      </div>
+    </form>
+  </dialog>
 </AppLayout>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import {
+    listSuppliersByBranch,
+    getSupplierSummary,
+    getSupplierById,
+    createSupplier,
+    updateSupplier,
+    deleteSupplier,
+    formatNpr,
+    TYPE_LABEL,
+    STATUS_LABEL,
+    type Supplier,
+    type SupplierType,
+    type SupplierStatus,
+  } from '../../lib/suppliers';
+
+  if (!getSession()) window.location.replace('/');
+
+  let suppliers: Supplier[] = [];
+  let selectedId: string | null = null;
+
+  function branchCode(): string {
+    return getSession()?.activeBranchCode ?? 'HO';
+  }
+
+  function esc(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function filtered(): Supplier[] {
+    const q = (document.getElementById('sup-search') as HTMLInputElement)?.value.trim().toLowerCase() ?? '';
+    const type = (document.getElementById('sup-type-filter') as HTMLSelectElement)?.value ?? '';
+    const st = (document.getElementById('sup-status-filter') as HTMLSelectElement)?.value ?? '';
+    return suppliers.filter((s) => {
+      if (type && s.type !== type) return false;
+      if (st && s.status !== st) return false;
+      if (!q) return true;
+      return (
+        s.name.toLowerCase().includes(q) ||
+        s.phone.includes(q) ||
+        s.code.toLowerCase().includes(q) ||
+        s.contactPerson.toLowerCase().includes(q)
+      );
+    });
+  }
+
+  function renderKpis(): void {
+    const s = getSupplierSummary(branchCode());
+    const set = (id: string, v: string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v;
+    };
+    set('kpi-total', String(s.total));
+    set('kpi-active', String(s.active));
+    set('kpi-payable', formatNpr(s.payable));
+    set('kpi-blocked', String(s.blocked));
+  }
+
+  function renderTable(): void {
+    const tbody = document.getElementById('sup-tbody');
+    const count = document.getElementById('sup-count');
+    if (!tbody) return;
+    const rows = filtered();
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="sup-empty">No suppliers found.</td></tr>`;
+      if (count) count.textContent = '0 suppliers';
+      return;
+    }
+    tbody.innerHTML = rows
+      .map((s) => {
+        const active = s.id === selectedId ? ' is-selected' : '';
+        return `<tr class="sup-row${active}" data-id="${esc(s.id)}">
+          <td class="mono">${esc(s.code)}</td>
+          <td><strong>${esc(s.name)}</strong></td>
+          <td>${esc(TYPE_LABEL[s.type])}</td>
+          <td>${esc(s.phone)}</td>
+          <td class="num">${formatNpr(s.balance)}</td>
+          <td><span class="sup-badge sup-badge-${s.status}">${esc(STATUS_LABEL[s.status])}</span></td>
+        </tr>`;
+      })
+      .join('');
+    if (count) count.textContent = `${rows.length} supplier${rows.length === 1 ? '' : 's'} · active branch only`;
+
+    tbody.querySelectorAll<HTMLTableRowElement>('.sup-row').forEach((row) => {
+      row.addEventListener('click', () => {
+        selectedId = row.dataset.id || null;
+        renderTable();
+        renderDetail();
+      });
+    });
+  }
+
+  function renderDetail(): void {
+    const empty = document.getElementById('sup-detail-empty');
+    const body = document.getElementById('sup-detail-body');
+    if (!selectedId) {
+      empty?.removeAttribute('hidden');
+      body?.setAttribute('hidden', '');
+      return;
+    }
+    const s = getSupplierById(selectedId);
+    if (!s) {
+      selectedId = null;
+      empty?.removeAttribute('hidden');
+      body?.setAttribute('hidden', '');
+      return;
+    }
+    empty?.setAttribute('hidden', '');
+    body?.removeAttribute('hidden');
+
+    const set = (id: string, v: string) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = v || '—';
+    };
+    set('d-code', s.code);
+    set('d-name', s.name);
+    set('d-type', TYPE_LABEL[s.type]);
+    set('d-contact', s.contactPerson);
+    set('d-phone', s.phone);
+    set('d-email', s.email);
+    set('d-address', s.address);
+    set('d-city', s.city);
+    set('d-pan', s.pan);
+    set('d-terms', s.paymentTerms);
+    set('d-credit', formatNpr(s.creditLimit));
+    set('d-balance', formatNpr(s.balance));
+    set('d-notes', s.notes);
+    set('d-meta', `Created ${s.createdAt} · Updated ${s.updatedAt}`);
+
+    const st = document.getElementById('d-status');
+    if (st) {
+      st.textContent = STATUS_LABEL[s.status];
+      st.className = `sup-badge sup-badge-${s.status}`;
+    }
+  }
+
+  function reload(): void {
+    const sess = getSession();
+    const scope = document.getElementById('sup-scope');
+    if (scope && sess) scope.textContent = `${sess.activeBranchName} (${sess.activeBranchCode})`;
+    suppliers = listSuppliersByBranch(branchCode());
+    if (selectedId && !suppliers.some((s) => s.id === selectedId)) selectedId = null;
+    renderKpis();
+    renderTable();
+    renderDetail();
+  }
+
+  const dialog = document.getElementById('sup-dialog') as HTMLDialogElement | null;
+  const form = document.getElementById('sup-form') as HTMLFormElement | null;
+
+  function openForm(edit?: Supplier): void {
+    const title = document.getElementById('sup-form-title');
+    if (title) title.textContent = edit ? 'Edit supplier' : 'New supplier';
+    (document.getElementById('f-id') as HTMLInputElement).value = edit?.id ?? '';
+    (document.getElementById('f-name') as HTMLInputElement).value = edit?.name ?? '';
+    (document.getElementById('f-type') as HTMLSelectElement).value = edit?.type ?? 'local';
+    (document.getElementById('f-status') as HTMLSelectElement).value = edit?.status ?? 'active';
+    (document.getElementById('f-contact') as HTMLInputElement).value = edit?.contactPerson ?? '';
+    (document.getElementById('f-phone') as HTMLInputElement).value = edit?.phone ?? '';
+    (document.getElementById('f-email') as HTMLInputElement).value = edit?.email ?? '';
+    (document.getElementById('f-terms') as HTMLInputElement).value = edit?.paymentTerms ?? 'Net 30';
+    (document.getElementById('f-address') as HTMLInputElement).value = edit?.address ?? '';
+    (document.getElementById('f-city') as HTMLInputElement).value = edit?.city ?? '';
+    (document.getElementById('f-pan') as HTMLInputElement).value = edit?.pan ?? '';
+    (document.getElementById('f-credit') as HTMLInputElement).value = String(edit?.creditLimit ?? 0);
+    (document.getElementById('f-notes') as HTMLInputElement).value = edit?.notes ?? '';
+    const err = document.getElementById('f-error');
+    if (err) err.hidden = true;
+    dialog?.showModal();
+  }
+
+  document.getElementById('sup-add')?.addEventListener('click', () => openForm());
+  document.getElementById('sup-edit')?.addEventListener('click', () => {
+    if (!selectedId) return;
+    const s = getSupplierById(selectedId);
+    if (s) openForm(s);
+  });
+  document.getElementById('sup-delete')?.addEventListener('click', () => {
+    if (!selectedId) return;
+    const s = getSupplierById(selectedId);
+    if (!s) return;
+    if (!confirm(`Delete ${s.name}?`)) return;
+    const res = deleteSupplier(selectedId);
+    if (!res.ok) {
+      alert(res.error);
+      return;
+    }
+    selectedId = null;
+    reload();
+  });
+  document.getElementById('f-cancel')?.addEventListener('click', () => dialog?.close());
+
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = (document.getElementById('f-id') as HTMLInputElement).value;
+    const payload = {
+      name: (document.getElementById('f-name') as HTMLInputElement).value,
+      type: (document.getElementById('f-type') as HTMLSelectElement).value as SupplierType,
+      status: (document.getElementById('f-status') as HTMLSelectElement).value as SupplierStatus,
+      contactPerson: (document.getElementById('f-contact') as HTMLInputElement).value,
+      phone: (document.getElementById('f-phone') as HTMLInputElement).value,
+      email: (document.getElementById('f-email') as HTMLInputElement).value,
+      paymentTerms: (document.getElementById('f-terms') as HTMLInputElement).value,
+      address: (document.getElementById('f-address') as HTMLInputElement).value,
+      city: (document.getElementById('f-city') as HTMLInputElement).value,
+      pan: (document.getElementById('f-pan') as HTMLInputElement).value,
+      creditLimit: Number((document.getElementById('f-credit') as HTMLInputElement).value || 0),
+      notes: (document.getElementById('f-notes') as HTMLInputElement).value,
+    };
+    const result = id
+      ? updateSupplier(id, payload)
+      : createSupplier(branchCode(), payload);
+    const err = document.getElementById('f-error');
+    if (!result.ok) {
+      if (err) {
+        err.hidden = false;
+        err.textContent = result.error;
+      }
+      return;
+    }
+    selectedId = result.supplier.id;
+    dialog?.close();
+    reload();
+  });
+
+  document.getElementById('sup-search')?.addEventListener('input', () => renderTable());
+  document.getElementById('sup-type-filter')?.addEventListener('change', () => renderTable());
+  document.getElementById('sup-status-filter')?.addEventListener('change', () => renderTable());
+  document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(reload, 0));
+
+  reload();
+</script>
+
+<style>
+  .sup-page { display: flex; flex-direction: column; gap: 14px; }
+  .sup-toolbar {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .sup-scope { margin: 0 0 2px; font-size: 0.75rem; color: var(--text-muted); }
+  .sup-heading { margin: 0; font-size: 1.05rem; font-weight: 650; letter-spacing: -0.02em; }
+
+  .btn-primary-sm, .btn-ghost-sm {
+    height: 34px; padding: 0 12px; border-radius: 8px;
+    font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer;
+  }
+  .btn-primary-sm { border: none; background: var(--accent); color: #fff; }
+  .btn-ghost-sm { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); }
+  .btn-ghost-sm:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .btn-ghost-sm.is-danger { color: #ef334e; border-color: color-mix(in srgb, #ef334e 35%, var(--border)); }
+
+  .sup-kpis {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
+  }
+  @media (max-width: 700px) { .sup-kpis { grid-template-columns: repeat(2, 1fr); } }
+
+  .sup-kpi {
+    padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg);
+  }
+  .sup-kpi-label {
+    display: block; font-size: 0.68rem; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px;
+  }
+  .sup-kpi strong { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+  .sup-kpi.is-danger strong { color: #ef334e; }
+
+  .sup-layout {
+    display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.9fr);
+    gap: 12px; align-items: start;
+  }
+  @media (max-width: 900px) { .sup-layout { grid-template-columns: 1fr; } }
+
+  .sup-list-panel, .sup-detail {
+    border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 12px;
+  }
+
+  .sup-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .sup-search {
+    display: flex; align-items: center; gap: 8px; flex: 1; min-width: 160px;
+    height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-muted);
+  }
+  .sup-search input {
+    flex: 1; min-width: 0; border: none; outline: none; background: transparent;
+    color: var(--text-primary); font-family: inherit; font-size: 0.82rem;
+  }
+  .sup-filters select {
+    height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem;
+  }
+
+  .sup-table-wrap { overflow-x: auto; }
+  .sup-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .sup-table th, .sup-table td {
+    padding: 9px 10px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap;
+  }
+  .sup-table th {
+    font-size: 0.68rem; font-weight: 650; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .sup-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sup-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.74rem; }
+  .sup-row { cursor: pointer; }
+  .sup-row:hover td { background: var(--surface-hover); }
+  .sup-row.is-selected td { background: var(--accent-soft); }
+  .sup-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
+  .sup-footnote { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
+
+  .sup-badge {
+    display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px;
+    font-size: 0.68rem; font-weight: 650;
+  }
+  .sup-badge-active { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .sup-badge-inactive { background: rgba(148, 163, 184, 0.15); color: #64748b; }
+  .sup-badge-blocked { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+
+  .sup-detail-empty {
+    min-height: 220px; display: grid; place-content: center; text-align: center; gap: 4px;
+    color: var(--text-secondary); font-size: 0.88rem;
+  }
+  .sup-detail-empty .muted { font-size: 0.75rem; color: var(--text-muted); }
+
+  .sup-detail-head {
+    display: flex; justify-content: space-between; gap: 10px; margin-bottom: 14px;
+  }
+  .sup-detail-code { margin: 0; font-size: 0.72rem; color: var(--text-muted); font-family: ui-monospace, monospace; }
+  .sup-detail-head h3 { margin: 2px 0 6px; font-size: 1rem; font-weight: 650; }
+  .sup-detail-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .sup-dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 0; }
+  .sup-dl .span2 { grid-column: 1 / -1; }
+  .sup-dl dt {
+    font-size: 0.65rem; font-weight: 650; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px;
+  }
+  .sup-dl dd { margin: 0; font-size: 0.84rem; color: var(--text-primary); word-break: break-word; }
+
+  .sup-detail-meta { margin: 12px 0 0; font-size: 0.7rem; color: var(--text-muted); }
+  .sup-detail-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .chip {
+    padding: 4px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 600;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary);
+  }
+  .sup-hint { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); line-height: 1.4; }
+
+  .sup-dialog {
+    border: none; border-radius: 14px; padding: 0; background: var(--panel-bg);
+    color: var(--text-primary); box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+    max-width: 520px; width: calc(100% - 32px);
+  }
+  .sup-dialog::backdrop { background: rgba(8,15,29,0.55); backdrop-filter: blur(4px); }
+  .sup-dialog-inner { padding: 20px; }
+  .sup-dialog-title { margin: 0 0 14px; font-size: 1rem; font-weight: 650; }
+
+  .sup-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  .sup-field {
+    display: flex; flex-direction: column; gap: 4px;
+    font-size: 0.72rem; font-weight: 600; color: var(--text-secondary);
+  }
+  .sup-field.span2 { grid-column: 1 / -1; }
+  .sup-field input, .sup-field select {
+    height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
+  }
+  .sup-form-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
+  .sup-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+  @media (max-width: 520px) {
+    .sup-form-grid { grid-template-columns: 1fr; }
+    .sup-field.span2 { grid-column: auto; }
+  }
+</style>
