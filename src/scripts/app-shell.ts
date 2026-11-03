@@ -4,7 +4,9 @@ import {
   canSwitchBranch,
   switchActiveBranch,
   getAccessibleBranches,
+  type UserRole,
 } from '../lib/auth';
+import { getNavItemsForRole } from '../lib/navigation';
 
 const root = document.documentElement;
 const shell = document.getElementById('app-shell');
@@ -62,50 +64,72 @@ logoutBtn?.addEventListener('click', (e) => {
   window.location.href = '/';
 });
 
-// ——— Branch switch (HO only) ———
-function refreshBranchUI(): void {
+/** Apply session to header + branch UI + skeleton info */
+function applySessionUI(): void {
   const session = getSession();
-  if (!session) return;
+  if (!session) {
+    window.location.replace('/');
+    return;
+  }
 
-  const branchLabel = document.getElementById('branch-label');
-  if (branchLabel) branchLabel.textContent = session.activeBranchName;
-
+  const nameEl = document.querySelector('.profile-name');
   const subEl = document.querySelector('.profile-sub');
+  if (nameEl) nameEl.textContent = session.displayName;
   if (subEl) {
     subEl.textContent = `${session.roleLabel} · ${session.activeBranchName}`;
   }
+
+  const branchLabel = document.getElementById('branch-label');
+  if (branchLabel) branchLabel.textContent = session.activeBranchName;
 
   const branchInfo = document.getElementById('skeleton-branch-info');
   if (branchInfo) {
     branchInfo.textContent = `Active: ${session.activeBranchCode} — ${session.activeBranchName}`;
   }
-}
 
-if (branchSelect) {
-  const session = getSession();
-  if (session && canSwitchBranch(session)) {
-    const branches = getAccessibleBranches(session);
-    branchSelect.innerHTML = branches
-      .map(
-        (b) =>
-          `<option value="${b.code}" ${b.code === session.activeBranchCode ? 'selected' : ''}>${b.name} (${b.code})</option>`,
-      )
-      .join('');
+  // Role-based nav: hide links the role cannot see
+  const allowed = new Set(
+    getNavItemsForRole(session.role as UserRole).map((i) => i.id),
+  );
+  document.querySelectorAll<HTMLAnchorElement>('[data-nav-id]').forEach((link) => {
+    const id = link.dataset.navId;
+    if (!id || id === 'settings' || id === 'logout') return;
+    const li = link.closest('li');
+    if (!allowed.has(id)) {
+      if (li) li.style.display = 'none';
+    } else if (li) {
+      li.style.display = '';
+    }
+  });
 
-    branchSelect.addEventListener('change', () => {
-      const code = branchSelect.value;
-      const updated = switchActiveBranch(code);
-      if (updated) {
-        refreshBranchUI();
-        // Later: re-fetch page data for the selected branch from Django
-        // For now just update the UI context
-      }
-    });
-  } else if (branchSelect) {
-    branchSelect.style.display = 'none';
+  // Branch select
+  if (branchSelect) {
+    if (!canSwitchBranch(session)) {
+      branchSelect.style.display = 'none';
+    } else {
+      branchSelect.style.display = '';
+      const branches = getAccessibleBranches(session);
+      const current = session.activeBranchCode;
+      branchSelect.innerHTML = branches
+        .map(
+          (b) =>
+            `<option value="${b.code}" ${b.code === current ? 'selected' : ''}>${b.name} (${b.code})</option>`,
+        )
+        .join('');
+    }
   }
 }
 
-if (!getSession()) {
-  window.location.replace('/');
+function refreshBranchUI(): void {
+  applySessionUI();
 }
+
+if (branchSelect) {
+  branchSelect.addEventListener('change', () => {
+    const code = branchSelect.value;
+    const updated = switchActiveBranch(code);
+    if (updated) refreshBranchUI();
+  });
+}
+
+applySessionUI();

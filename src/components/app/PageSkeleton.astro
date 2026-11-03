@@ -1,0 +1,19 @@
+---
+interface Props {
+  title?: string;
+  hint?: string;
+}
+
+const {
+  title = 'Main content area',
+  hint = 'This page is a skeleton. Content will be connected to Django later.',
+} = Astro.props;
+---
+
+<div class="content-skeleton" id="content-skeleton">
+  <div class="skeleton-placeholder">
+    <p class="skeleton-title">{title}</p>
+    <p class="skeleton-hint" id="skeleton-hint" set:html={hint} />
+    <p class="skeleton-branch" id="skeleton-branch-info"></p>
+  </div>
+</div>

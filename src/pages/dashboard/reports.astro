@@ -1,0 +1,26 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import PageSkeleton from '../../components/app/PageSkeleton.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+
+const meta = PAGE_META.reports;
+const defaultRole: UserRole = 'headoffice';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <PageSkeleton title={meta.skeletonTitle} hint={meta.skeletonHint} />
+</AppLayout>
