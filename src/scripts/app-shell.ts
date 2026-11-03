@@ -7,6 +7,7 @@ import {
   type UserRole,
 } from '../lib/auth';
 import { getNavItemsForRole } from '../lib/navigation';
+import { paintAvatar } from '../lib/avatar';
 
 const root = document.documentElement;
 const shell = document.getElementById('app-shell');
@@ -40,7 +41,6 @@ const setTheme = (theme: Theme): void => {
     // ignore
   }
 
-  // Keep legacy chip UI in sync if present (settings page)
   document.querySelectorAll<HTMLElement>('[data-theme-value]').forEach((el) => {
     el.classList.toggle('is-active', el.dataset.themeValue === theme);
   });
@@ -65,7 +65,6 @@ themeToggle?.addEventListener('click', () => {
   setTheme(getCurrentTheme() === 'dark' ? 'light' : 'dark');
 });
 
-// Settings page theme buttons
 document.querySelectorAll<HTMLElement>('[data-set-theme]').forEach((el) => {
   el.addEventListener('click', () => {
     const t = el.getAttribute('data-set-theme') as Theme | null;
@@ -144,7 +143,8 @@ function applySessionUI(): void {
   if (nameEl) nameEl.textContent = session.displayName;
   if (roleEl) roleEl.textContent = session.roleLabel;
   if (branchNameEl) branchNameEl.textContent = session.activeBranchName;
-  if (initialsEl) initialsEl.textContent = getInitials(session.displayName);
+
+  paintAvatar(initialsEl, session.userId, session.displayName);
 
   const branchInfo = document.getElementById('skeleton-branch-info');
   if (branchInfo) {
