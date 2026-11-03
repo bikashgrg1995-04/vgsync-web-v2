@@ -57,20 +57,33 @@ export const PAGE_META: Record<string, PageMeta> = {
     skeletonHint:
       'Customer directory and ledgers will appear here.<br />Scoped to the active branch.',
   },
+  staff: {
+    id: 'staff',
+    title: 'Staff',
+    breadcrumb: 'Staff /',
+    skeletonTitle: 'Staff',
+    skeletonHint: 'Assign and manage branch staff accounts.',
+  },
   reports: {
     id: 'reports',
     title: 'Reports',
     breadcrumb: 'Reports /',
     skeletonTitle: 'Reports',
     skeletonHint:
-      'Business reports and exports will appear here.<br />HO can run across branches; branch users see own branch only.',
+      'Business reports and exports will appear here.<br />Owner can run across branches.',
   },
   settings: {
     id: 'settings',
     title: 'Settings',
     breadcrumb: 'Settings /',
     skeletonTitle: 'Settings',
-    skeletonHint:
-      'Profile, preferences and system settings will appear here.',
+    skeletonHint: 'Profile, preferences and system settings will appear here.',
+  },
+  'change-password': {
+    id: 'change-password',
+    title: 'Update Password',
+    breadcrumb: 'Security /',
+    skeletonTitle: 'Update Password',
+    skeletonHint: 'Set a new password before continuing.',
   },
 };

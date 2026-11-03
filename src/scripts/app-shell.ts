@@ -110,6 +110,13 @@ function applySessionUI(): void {
     return;
   }
 
+  // Force password update before using the app
+  const path = window.location.pathname;
+  if (session.mustChangePassword && path !== '/dashboard/change-password') {
+    window.location.replace('/dashboard/change-password');
+    return;
+  }
+
   const nameEl = document.getElementById('sidebar-profile-name');
   const roleEl = document.getElementById('sidebar-profile-role');
   const branchNameEl = document.querySelector('.sidebar-branch-name');

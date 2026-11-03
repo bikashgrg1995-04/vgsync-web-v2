@@ -9,7 +9,7 @@ export interface NavItem {
   id: string;
   label: string;
   href: string;
-  icon: string; // simple key used by the sidebar to pick an SVG
+  icon: string;
 }
 
 const ALL_ITEMS: NavItem[] = [
@@ -19,12 +19,13 @@ const ALL_ITEMS: NavItem[] = [
   { id: 'purchase', label: 'Purchase', href: '/dashboard/purchase', icon: 'clipboard' },
   { id: 'payments', label: 'Payments', href: '/dashboard/payments', icon: 'wallet' },
   { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users' },
+  { id: 'staff', label: 'Staff', href: '/dashboard/staff', icon: 'users' },
   { id: 'reports', label: 'Reports', href: '/dashboard/reports', icon: 'chart' },
 ];
 
-/** Role → visible menu ids (easy to replace with backend response later) */
 const ROLE_MENU: Record<UserRole, string[]> = {
-  headoffice: ['overview', 'inventory', 'sales', 'purchase', 'payments', 'customers', 'reports'],
+  owner: ['overview', 'inventory', 'sales', 'purchase', 'payments', 'customers', 'staff', 'reports'],
+  headoffice: ['overview', 'inventory', 'sales', 'purchase', 'payments', 'customers', 'staff', 'reports'],
   branch_manager: ['overview', 'inventory', 'sales', 'purchase', 'payments', 'customers', 'reports'],
   staff: ['overview', 'inventory', 'sales', 'customers'],
 };
