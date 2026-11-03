@@ -35,20 +35,27 @@ const {
 
 <Layout title={title}>
   <div class="app-shell" id="app-shell">
-    <AppSidebar items={navItems} bottomItems={bottomItems} activeId={activeId} />
+    <AppSidebar
+      items={navItems}
+      bottomItems={bottomItems}
+      activeId={activeId}
+      displayName={displayName}
+      roleLabel={roleLabel}
+      branchName={branchName}
+    />
 
     <div class="app-main">
       <AppHeader
         pageTitle={pageTitle}
         breadcrumb={breadcrumb}
-        displayName={displayName}
-        roleLabel={roleLabel}
         branchName={branchName}
         showBranchSwitcher={showBranchSwitcher}
       />
 
       <main class="app-content" id="app-content">
-        <slot />
+        <div class="app-content-inner">
+          <slot />
+        </div>
       </main>
     </div>
   </div>

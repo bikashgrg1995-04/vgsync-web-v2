@@ -12,13 +12,8 @@ const root = document.documentElement;
 const shell = document.getElementById('app-shell');
 const sidebarToggle = document.getElementById('sidebar-toggle');
 const logoutBtn = document.getElementById('sidebar-logout');
-const profileLogout = document.getElementById('profile-logout');
 const themeChips = document.querySelectorAll<HTMLButtonElement>('[data-theme-value]');
 const branchSelect = document.getElementById('branch-select') as HTMLSelectElement | null;
-
-const profileBtn = document.getElementById('header-profile');
-const profileMenu = document.getElementById('profile-menu');
-const profileWrap = document.getElementById('profile-wrap');
 
 const logoutDialog = document.getElementById('logout-dialog') as HTMLDialogElement | null;
 const logoutCancel = document.getElementById('logout-cancel');
@@ -74,14 +69,10 @@ function doLogout(): void {
 }
 
 function openLogoutDialog(): void {
-  closeProfileMenu();
   if (logoutDialog && typeof logoutDialog.showModal === 'function') {
     logoutDialog.showModal();
-  } else {
-    // Fallback if dialog not supported
-    if (window.confirm('Are you sure you want to log out of VGSync?')) {
-      doLogout();
-    }
+  } else if (window.confirm('Are you sure you want to log out of VGSync?')) {
+    doLogout();
   }
 }
 
@@ -94,11 +85,6 @@ logoutBtn?.addEventListener('click', (e) => {
   openLogoutDialog();
 });
 
-profileLogout?.addEventListener('click', (e) => {
-  e.preventDefault();
-  openLogoutDialog();
-});
-
 logoutCancel?.addEventListener('click', () => closeLogoutDialog());
 logoutConfirm?.addEventListener('click', () => doLogout());
 
@@ -106,38 +92,8 @@ logoutDialog?.addEventListener('click', (e) => {
   if (e.target === logoutDialog) closeLogoutDialog();
 });
 
-/* —— Profile dropdown —— */
-function openProfileMenu(): void {
-  if (!profileMenu || !profileBtn) return;
-  profileMenu.hidden = false;
-  profileBtn.setAttribute('aria-expanded', 'true');
-  profileWrap?.classList.add('is-open');
-}
-
-function closeProfileMenu(): void {
-  if (!profileMenu || !profileBtn) return;
-  profileMenu.hidden = true;
-  profileBtn.setAttribute('aria-expanded', 'false');
-  profileWrap?.classList.remove('is-open');
-}
-
-profileBtn?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  if (profileMenu?.hidden) openProfileMenu();
-  else closeProfileMenu();
-});
-
-document.addEventListener('click', (e) => {
-  if (!profileWrap?.contains(e.target as Node)) {
-    closeProfileMenu();
-  }
-});
-
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    closeProfileMenu();
-    closeLogoutDialog();
-  }
+  if (e.key === 'Escape') closeLogoutDialog();
 });
 
 function applySessionUI(): void {
@@ -147,19 +103,11 @@ function applySessionUI(): void {
     return;
   }
 
-  const nameEl = document.querySelector('.profile-name');
-  const subEl = document.querySelector('.profile-sub');
+  // Sidebar profile — Branch only (no Head Office Admin)
+  const nameEl = document.getElementById('sidebar-profile-name');
+  const branchNameEl = document.querySelector('.sidebar-branch-name');
   if (nameEl) nameEl.textContent = session.displayName;
-  if (subEl) {
-    subEl.textContent = `${session.roleLabel} · ${session.activeBranchName}`;
-  }
-
-  const menuName = document.getElementById('profile-menu-name');
-  const menuRole = document.getElementById('profile-menu-role');
-  const menuBranch = document.getElementById('profile-menu-branch');
-  if (menuName) menuName.textContent = session.displayName;
-  if (menuRole) menuRole.textContent = session.roleLabel;
-  if (menuBranch) menuBranch.textContent = session.activeBranchName;
+  if (branchNameEl) branchNameEl.textContent = session.activeBranchName;
 
   const branchLabel = document.getElementById('branch-label');
   if (branchLabel) branchLabel.textContent = session.activeBranchName;
