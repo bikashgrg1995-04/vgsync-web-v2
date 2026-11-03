@@ -36,31 +36,34 @@ const logoutItem = bottomItems.find((i) => i.id === 'logout');
 ---
 
 <aside class="app-sidebar" id="app-sidebar" aria-label="Main navigation">
-  <div class="sidebar-brand">
-    <span class="sidebar-logo" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-        <path d="M3.3 7 12 12l8.7-5"/>
-        <path d="M12 22V12"/>
-      </svg>
-    </span>
-    <span class="sidebar-brand-text">VGSync</span>
-  </div>
-
-  {/* Profile under logo — no dropdown */}
-  <div class="sidebar-profile" id="sidebar-profile">
-    <span class="sidebar-profile-avatar" aria-hidden="true">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-        <circle cx="12" cy="7" r="4"/>
-      </svg>
-    </span>
-    <div class="sidebar-profile-meta">
-      <span class="sidebar-profile-name" id="sidebar-profile-name">{displayName}</span>
-      <span class="sidebar-profile-branch" id="sidebar-profile-branch">
-        <span class="sidebar-branch-tag">Branch</span>
-        <span class="sidebar-branch-name">{branchName}</span>
+  {/* Single card: logo + name + profile */}
+  <div class="sidebar-top-card">
+    <div class="sidebar-brand-row">
+      <span class="sidebar-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          <path d="M3.3 7 12 12l8.7-5"/>
+          <path d="M12 22V12"/>
+        </svg>
       </span>
+      <span class="sidebar-brand-text">VGSync</span>
+    </div>
+
+    <div class="sidebar-profile-row" id="sidebar-profile">
+      <span class="sidebar-profile-avatar" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </span>
+      <div class="sidebar-profile-meta">
+        <span class="sidebar-profile-name" id="sidebar-profile-name">{displayName}</span>
+        <span class="sidebar-profile-role" id="sidebar-profile-role">{roleLabel}</span>
+        <span class="sidebar-profile-branch">
+          <span class="sidebar-branch-tag">Branch</span>
+          <span class="sidebar-branch-name">{branchName}</span>
+        </span>
+      </div>
     </div>
   </div>
 

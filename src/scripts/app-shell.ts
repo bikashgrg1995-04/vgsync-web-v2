@@ -103,10 +103,11 @@ function applySessionUI(): void {
     return;
   }
 
-  // Sidebar profile — Branch only (no Head Office Admin)
   const nameEl = document.getElementById('sidebar-profile-name');
+  const roleEl = document.getElementById('sidebar-profile-role');
   const branchNameEl = document.querySelector('.sidebar-branch-name');
   if (nameEl) nameEl.textContent = session.displayName;
+  if (roleEl) roleEl.textContent = session.roleLabel;
   if (branchNameEl) branchNameEl.textContent = session.activeBranchName;
 
   const branchLabel = document.getElementById('branch-label');
