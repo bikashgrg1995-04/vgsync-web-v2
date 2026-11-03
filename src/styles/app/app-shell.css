@@ -221,6 +221,7 @@ body:has(.app-shell) {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .sidebar-toggle {
@@ -253,6 +254,55 @@ body:has(.app-shell) {
   line-height: 1.2;
 }
 
+/* Search bar (center) */
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.header-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.header-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.header-search-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.header-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.header-search-input::placeholder {
+  color: var(--text-muted);
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -265,6 +315,14 @@ body:has(.app-shell) {
   align-items: center;
   gap: 6px;
   margin-right: 2px;
+}
+
+.branch-prefix {
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
 }
 
 .branch-label {
@@ -327,10 +385,8 @@ body:has(.app-shell) {
   border: 1.5px solid var(--panel-bg);
 }
 
-/* Profile trigger + dropdown */
-.profile-wrap {
-  position: relative;
-}
+/* Profile */
+.profile-wrap { position: relative; }
 
 .header-profile {
   display: flex;
@@ -403,9 +459,7 @@ body:has(.app-shell) {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
 }
 
-.profile-menu[hidden] {
-  display: none;
-}
+.profile-menu[hidden] { display: none; }
 
 .profile-menu-header {
   display: flex;
@@ -506,6 +560,79 @@ body:has(.app-shell) {
 
 .profile-theme-btn:hover {
   border-color: var(--text-muted);
+}
+
+/* Logout confirmation dialog */
+.logout-dialog {
+  border: none;
+  border-radius: 14px;
+  padding: 0;
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  max-width: 360px;
+  width: calc(100% - 32px);
+}
+
+.logout-dialog::backdrop {
+  background: rgba(8, 15, 29, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.logout-dialog-inner {
+  padding: 22px 22px 18px;
+}
+
+.logout-dialog-title {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.logout-dialog-text {
+  margin: 0 0 20px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.logout-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.logout-dialog-cancel {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.logout-dialog-cancel:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.logout-dialog-confirm {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 9px;
+  background: #ef334e;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.logout-dialog-confirm:hover {
+  background: #d92340;
 }
 
 /* ---------- Content ---------- */
@@ -696,7 +823,12 @@ body:has(.app-shell) {
 
   .sidebar-toggle { display: grid; }
   .profile-meta { display: none; }
-  .branch-label { display: none; }
+  .branch-label,
+  .branch-prefix { display: none; }
+
+  .header-center {
+    max-width: 180px;
+  }
 
   .sidebar-link,
   .sidebar-logout-btn {
@@ -711,6 +843,10 @@ body:has(.app-shell) {
   }
 
   .app-content { padding: 14px 12px; }
+
+  .header-center {
+    display: none;
+  }
 
   .branch-select {
     max-width: 130px;
