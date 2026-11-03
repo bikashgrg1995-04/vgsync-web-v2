@@ -1,9 +1,8 @@
 /* =========================================================
-   VGSync — App Shell
+   VGSync — App Shell (compact)
    Sidebar + header fixed; only .app-content scrolls
    ========================================================= */
 
-/* Prevent document/body scroll on app pages */
 html:has(.app-shell),
 body:has(.app-shell) {
   height: 100%;
@@ -21,17 +20,17 @@ body:has(.app-shell) {
   color: var(--text-primary);
 }
 
-/* ---------- Sidebar (fixed, never scrolls with page) ---------- */
+/* ---------- Sidebar (compact, Logout always visible) ---------- */
 
 .app-sidebar {
   position: relative;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  width: 240px;
-  min-width: 240px;
+  width: 210px;
+  min-width: 210px;
   height: 100%;
-  padding: 20px 14px;
+  padding: 12px 10px;
   background: var(--panel-bg);
   border-right: 1px solid var(--border);
   z-index: 40;
@@ -42,38 +41,38 @@ body:has(.app-shell) {
 .sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 10px 24px;
+  gap: 8px;
+  padding: 2px 8px 14px;
   flex-shrink: 0;
 }
 
 .sidebar-logo {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   background: var(--accent-soft);
   color: var(--accent);
 }
 
 .sidebar-logo svg {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
 }
 
 .sidebar-brand-text {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 650;
   letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 
-/* Nav list can scroll inside sidebar if many items */
 .sidebar-nav {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar-list {
@@ -82,20 +81,21 @@ body:has(.app-shell) {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 9px 12px;
-  border-radius: 10px;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 8px;
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 500;
-  transition: background 0.15s ease, color 0.15s ease;
+  line-height: 1.2;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .sidebar-link:hover {
@@ -111,19 +111,33 @@ body:has(.app-shell) {
 .sidebar-icon {
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 
+.sidebar-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Footer pinned — Settings + Logout always fully visible */
 .sidebar-footer {
+  flex: 0 0 auto;
   flex-shrink: 0;
-  margin-top: auto;
-  padding-top: 14px;
+  margin-top: 8px;
+  padding-top: 10px;
+  padding-bottom: 2px;
   border-top: 1px solid var(--panel-divider);
 }
 
-/* ---------- Main column (header fixed + content scrolls) ---------- */
+/* ---------- Main column ---------- */
 
 .app-main {
   flex: 1;
@@ -135,15 +149,16 @@ body:has(.app-shell) {
   overflow: hidden;
 }
 
-/* ---------- Header (fixed at top of main, does not scroll) ---------- */
+/* ---------- Header (compact) ---------- */
 
 .app-header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 24px;
+  gap: 12px;
+  padding: 10px 16px;
+  min-height: 52px;
   background: var(--panel-bg);
   border-bottom: 1px solid var(--border);
   z-index: 30;
@@ -152,17 +167,17 @@ body:has(.app-shell) {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
 .sidebar-toggle {
   display: none;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -174,55 +189,57 @@ body:has(.app-shell) {
 
 .header-title {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 0.98rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+  line-height: 1.2;
 }
 
 .header-breadcrumb {
-  margin: 2px 0 0;
-  font-size: 0.78rem;
+  margin: 1px 0 0;
+  font-size: 0.72rem;
   color: var(--text-muted);
+  line-height: 1.2;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .header-branch {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-right: 4px;
+  gap: 6px;
+  margin-right: 2px;
 }
 
 .branch-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .branch-select {
-  max-width: 200px;
-  height: 34px;
-  padding: 0 28px 0 10px;
+  max-width: 180px;
+  height: 30px;
+  padding: 0 26px 0 8px;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--surface);
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 7px center;
 }
 
 .branch-select:focus {
@@ -235,10 +252,10 @@ body:has(.app-shell) {
   position: relative;
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
@@ -251,10 +268,10 @@ body:has(.app-shell) {
 
 .header-badge {
   position: absolute;
-  top: 7px;
-  right: 8px;
-  width: 7px;
-  height: 7px;
+  top: 6px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--accent);
   border: 1.5px solid var(--panel-bg);
@@ -263,19 +280,19 @@ body:has(.app-shell) {
 .header-theme {
   display: flex;
   gap: 2px;
-  padding: 3px;
+  padding: 2px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--surface);
 }
 
 .theme-chip {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 28px;
+  width: 28px;
+  height: 26px;
   border: none;
-  border-radius: 7px;
+  border-radius: 6px;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
@@ -284,16 +301,16 @@ body:has(.app-shell) {
 .theme-chip.is-active {
   background: var(--panel-bg);
   color: var(--text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .header-profile {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 8px 4px 4px;
+  gap: 8px;
+  padding: 3px 6px 3px 3px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text-primary);
   cursor: pointer;
@@ -307,12 +324,17 @@ body:has(.app-shell) {
 .profile-avatar {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: var(--accent-soft);
   color: var(--accent);
   flex-shrink: 0;
+}
+
+.profile-avatar svg {
+  width: 15px;
+  height: 15px;
 }
 
 .profile-meta {
@@ -322,14 +344,14 @@ body:has(.app-shell) {
 }
 
 .profile-name {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
 .profile-sub {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--text-muted);
   white-space: nowrap;
 }
@@ -337,14 +359,16 @@ body:has(.app-shell) {
 .profile-chevron {
   color: var(--text-muted);
   flex-shrink: 0;
+  width: 12px;
+  height: 12px;
 }
 
-/* ---------- Content (ONLY scrollable region) ---------- */
+/* ---------- Content (only scrollable region) ---------- */
 
 .app-content {
   flex: 1;
-  min-height: 0; /* critical: allows flex child to scroll */
-  padding: 28px 24px;
+  min-height: 0;
+  padding: 20px 18px;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -353,35 +377,35 @@ body:has(.app-shell) {
 .content-skeleton {
   display: grid;
   place-items: center;
-  min-height: min(480px, 60vh);
+  min-height: min(420px, 55vh);
 }
 
 .skeleton-placeholder {
   text-align: center;
-  padding: 48px 40px;
+  padding: 36px 32px;
   border: 1.5px dashed var(--border);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--surface);
-  max-width: 440px;
+  max-width: 400px;
 }
 
 .skeleton-title {
-  margin: 0 0 8px;
-  font-size: 1rem;
+  margin: 0 0 6px;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
 .skeleton-hint {
-  margin: 0 0 12px;
-  font-size: 0.85rem;
-  line-height: 1.5;
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  line-height: 1.45;
   color: var(--text-muted);
 }
 
 .skeleton-branch {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--accent);
 }
@@ -395,12 +419,14 @@ body:has(.app-shell) {
     top: 0;
     height: 100vh;
     height: 100dvh;
+    width: 220px;
+    min-width: 220px;
     transform: translateX(-100%);
   }
 
   .app-shell.sidebar-open .app-sidebar {
     transform: translateX(0);
-    box-shadow: 8px 0 30px rgba(0, 0, 0, 0.18);
+    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.18);
   }
 
   .sidebar-toggle {
@@ -418,11 +444,12 @@ body:has(.app-shell) {
 
 @media (max-width: 560px) {
   .app-header {
-    padding: 12px 14px;
+    padding: 8px 12px;
+    min-height: 48px;
   }
 
   .app-content {
-    padding: 20px 14px;
+    padding: 14px 12px;
   }
 
   .header-theme {
@@ -430,7 +457,7 @@ body:has(.app-shell) {
   }
 
   .branch-select {
-    max-width: 140px;
-    font-size: 0.75rem;
+    max-width: 130px;
+    font-size: 0.72rem;
   }
 }
