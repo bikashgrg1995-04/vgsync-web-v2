@@ -17,13 +17,15 @@ const branchSelect = document.getElementById('branch-select') as HTMLSelectEleme
 
 type Theme = 'dark' | 'light';
 
+const THEME_KEY = 'vgsync-theme';
+
 const getCurrentTheme = (): Theme =>
   root.dataset.theme === 'light' ? 'light' : 'dark';
 
 const setTheme = (theme: Theme): void => {
   root.dataset.theme = theme;
   try {
-    localStorage.setItem('vgsync-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
   } catch {
     // ignore
   }
@@ -32,6 +34,7 @@ const setTheme = (theme: Theme): void => {
   });
 };
 
+// Always apply saved theme (same key as login page)
 setTheme(getCurrentTheme());
 
 themeChips.forEach((chip) => {
@@ -61,10 +64,10 @@ document.addEventListener('click', (e) => {
 logoutBtn?.addEventListener('click', (e) => {
   e.preventDefault();
   clearSession();
+  // Keep theme when returning to login
   window.location.href = '/';
 });
 
-/** Apply session to header + branch UI + skeleton info */
 function applySessionUI(): void {
   const session = getSession();
   if (!session) {
@@ -87,22 +90,21 @@ function applySessionUI(): void {
     branchInfo.textContent = `Active: ${session.activeBranchCode} — ${session.activeBranchName}`;
   }
 
-  // Role-based nav: hide links the role cannot see
   const allowed = new Set(
     getNavItemsForRole(session.role as UserRole).map((i) => i.id),
   );
-  document.querySelectorAll<HTMLAnchorElement>('[data-nav-id]').forEach((link) => {
-    const id = link.dataset.navId;
+  document.querySelectorAll<HTMLElement>('[data-nav-id]').forEach((el) => {
+    const id = el.dataset.navId;
     if (!id || id === 'settings' || id === 'logout') return;
-    const li = link.closest('li');
+    const li = el.closest('li');
+    const target = li ?? el;
     if (!allowed.has(id)) {
-      if (li) li.style.display = 'none';
-    } else if (li) {
-      li.style.display = '';
+      (target as HTMLElement).style.display = 'none';
+    } else {
+      (target as HTMLElement).style.display = '';
     }
   });
 
-  // Branch select
   if (branchSelect) {
     if (!canSwitchBranch(session)) {
       branchSelect.style.display = 'none';
@@ -120,15 +122,11 @@ function applySessionUI(): void {
   }
 }
 
-function refreshBranchUI(): void {
-  applySessionUI();
-}
-
 if (branchSelect) {
   branchSelect.addEventListener('change', () => {
     const code = branchSelect.value;
     const updated = switchActiveBranch(code);
-    if (updated) refreshBranchUI();
+    if (updated) applySessionUI();
   });
 }
 
