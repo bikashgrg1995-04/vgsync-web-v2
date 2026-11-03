@@ -12,7 +12,7 @@ const root = document.documentElement;
 const shell = document.getElementById('app-shell');
 const sidebarToggle = document.getElementById('sidebar-toggle');
 const logoutBtn = document.getElementById('sidebar-logout');
-const themeChips = document.querySelectorAll<HTMLButtonElement>('[data-theme-value]');
+const themeToggle = document.getElementById('theme-toggle');
 const branchSelect = document.getElementById('branch-select') as HTMLSelectElement | null;
 
 const logoutDialog = document.getElementById('logout-dialog') as HTMLDialogElement | null;
@@ -39,17 +39,37 @@ const setTheme = (theme: Theme): void => {
   } catch {
     // ignore
   }
+
+  // Keep legacy chip UI in sync if present (settings page)
   document.querySelectorAll<HTMLElement>('[data-theme-value]').forEach((el) => {
     el.classList.toggle('is-active', el.dataset.themeValue === theme);
   });
+  document.querySelectorAll<HTMLElement>('[data-set-theme]').forEach((el) => {
+    el.classList.toggle('is-active', el.getAttribute('data-set-theme') === theme);
+  });
+
+  if (themeToggle) {
+    themeToggle.setAttribute(
+      'aria-label',
+      theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode',
+    );
+    themeToggle.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+    themeToggle.classList.toggle('is-dark', theme === 'dark');
+    themeToggle.classList.toggle('is-light', theme === 'light');
+  }
 };
 
 setTheme(getCurrentTheme());
 
-themeChips.forEach((chip) => {
-  chip.addEventListener('click', () => {
-    const value = chip.dataset.themeValue as Theme;
-    if (value) setTheme(value);
+themeToggle?.addEventListener('click', () => {
+  setTheme(getCurrentTheme() === 'dark' ? 'light' : 'dark');
+});
+
+// Settings page theme buttons
+document.querySelectorAll<HTMLElement>('[data-set-theme]').forEach((el) => {
+  el.addEventListener('click', () => {
+    const t = el.getAttribute('data-set-theme') as Theme | null;
+    if (t === 'light' || t === 'dark') setTheme(t);
   });
 });
 
@@ -110,7 +130,6 @@ function applySessionUI(): void {
     return;
   }
 
-  // Force password update before using the app
   const path = window.location.pathname;
   if (session.mustChangePassword && path !== '/dashboard/change-password') {
     window.location.replace('/dashboard/change-password');
