@@ -110,9 +110,6 @@ function applySessionUI(): void {
   if (roleEl) roleEl.textContent = session.roleLabel;
   if (branchNameEl) branchNameEl.textContent = session.activeBranchName;
 
-  const branchLabel = document.getElementById('branch-label');
-  if (branchLabel) branchLabel.textContent = session.activeBranchName;
-
   const branchInfo = document.getElementById('skeleton-branch-info');
   if (branchInfo) {
     branchInfo.textContent = `Branch: ${session.activeBranchCode} — ${session.activeBranchName}`;
