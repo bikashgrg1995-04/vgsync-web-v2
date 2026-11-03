@@ -1,1 +1,397 @@
-PLACEHOLDER
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+
+const meta = PAGE_META.settings;
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="settings-page" id="settings-page">
+    <nav class="settings-nav" aria-label="Settings sections">
+      <button type="button" class="settings-nav-item is-active" data-settings-tab="profile">Profile</button>
+      <button type="button" class="settings-nav-item" data-settings-tab="organization">Organization</button>
+      <button type="button" class="settings-nav-item" data-settings-tab="branch">Branch</button>
+      <button type="button" class="settings-nav-item" data-settings-tab="inventory">Inventory</button>
+      <button type="button" class="settings-nav-item" data-settings-tab="regional">Regional</button>
+      <button type="button" class="settings-nav-item" data-settings-tab="notifications">Notifications</button>
+      <button type="button" class="settings-nav-item" data-settings-tab="security">Security</button>
+      <button type="button" class="settings-nav-item" data-settings-tab="appearance">Appearance</button>
+    </nav>
+
+    <div class="settings-panels">
+      <section class="settings-panel is-active" data-settings-panel="profile">
+        <header class="settings-panel-head">
+          <h2>Profile</h2>
+          <p>Your account identity and photo across branches you can access.</p>
+        </header>
+
+        <div class="settings-card">
+          <div class="settings-profile-row">
+            <div class="settings-avatar-wrap">
+              <div class="settings-avatar" id="settings-avatar">BG</div>
+              <label class="settings-avatar-upload" for="avatar-file" title="Upload photo">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 5v14"/><path d="M5 12h14"/>
+                </svg>
+              </label>
+              <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp" hidden />
+            </div>
+            <div class="settings-profile-text">
+              <strong id="settings-display-name">—</strong>
+              <span id="settings-role-line">—</span>
+              <div class="settings-avatar-actions">
+                <button type="button" class="btn-ghost" id="avatar-change">Change photo</button>
+                <button type="button" class="btn-ghost is-danger" id="avatar-remove">Remove</button>
+              </div>
+              <p class="settings-avatar-hint" id="avatar-hint">JPG, PNG or WebP · max 512 KB</p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <label class="settings-field"><span>Display name</span><input type="text" id="set-display-name" autocomplete="name" /></label>
+            <label class="settings-field"><span>Username</span><input type="text" id="set-username" readonly /></label>
+            <label class="settings-field"><span>Role</span><input type="text" id="set-role" readonly /></label>
+            <label class="settings-field"><span>Home branch</span><input type="text" id="set-home-branch" readonly /></label>
+          </div>
+
+          <div class="settings-actions">
+            <button type="button" class="btn-primary" id="save-profile">Save profile</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="settings-panel" data-settings-panel="organization">
+        <header class="settings-panel-head"><h2>Organization</h2><p>Tenant company details for invoices and reports.</p></header>
+        <div class="settings-card">
+          <div class="settings-grid">
+            <label class="settings-field settings-field-span2"><span>Legal name</span><input type="text" id="org-name" placeholder="VG Automobiles Pvt. Ltd." /></label>
+            <label class="settings-field"><span>Trade name</span><input type="text" id="org-trade" placeholder="VGSync" /></label>
+            <label class="settings-field"><span>PAN / VAT</span><input type="text" id="org-tax" /></label>
+            <label class="settings-field settings-field-span2"><span>Registered address</span><input type="text" id="org-address" placeholder="Kathmandu, Nepal" /></label>
+            <label class="settings-field"><span>Phone</span><input type="tel" id="org-phone" /></label>
+            <label class="settings-field"><span>Email</span><input type="email" id="org-email" /></label>
+          </div>
+          <div class="settings-actions"><button type="button" class="btn-primary" id="save-org">Save organization</button></div>
+        </div>
+      </section>
+
+      <section class="settings-panel" data-settings-panel="branch">
+        <header class="settings-panel-head"><h2>Branch context</h2><p>Working branch for inventory and sales.</p></header>
+        <div class="settings-card">
+          <div class="settings-kv">
+            <div><span class="kv-label">Active branch</span><strong id="branch-active-name">—</strong></div>
+            <div><span class="kv-label">Code</span><strong id="branch-active-code">—</strong></div>
+            <div><span class="kv-label">Home branch</span><strong id="branch-home-name">—</strong></div>
+            <div><span class="kv-label">Access</span><strong id="branch-access">—</strong></div>
+          </div>
+          <div class="settings-grid" style="margin-top:14px">
+            <label class="settings-field"><span>Default warehouse code</span><input type="text" id="branch-warehouse" placeholder="WH-01" /></label>
+            <label class="settings-field"><span>Branch phone</span><input type="tel" id="branch-phone" /></label>
+          </div>
+          <div class="settings-actions"><button type="button" class="btn-primary" id="save-branch">Save branch prefs</button></div>
+        </div>
+      </section>
+
+      <section class="settings-panel" data-settings-panel="inventory">
+        <header class="settings-panel-head"><h2>Inventory defaults</h2><p>Defaults for stock documents.</p></header>
+        <div class="settings-card">
+          <div class="settings-grid">
+            <label class="settings-field"><span>Default unit</span><select id="inv-unit"><option value="pcs">Pieces</option><option value="set">Set</option><option value="box">Box</option><option value="kg">kg</option></select></label>
+            <label class="settings-field"><span>Low stock alert qty</span><input type="number" id="inv-low-stock" min="0" value="5" /></label>
+            <label class="settings-field"><span>SKU prefix</span><input type="text" id="inv-sku-prefix" placeholder="VG-" /></label>
+            <label class="settings-field"><span>Costing method</span><select id="inv-costing"><option value="avg">Weighted average</option><option value="fifo">FIFO</option><option value="last">Last purchase</option></select></label>
+          </div>
+          <div class="settings-toggles">
+            <label class="settings-toggle"><input type="checkbox" id="inv-allow-negative" /><span>Allow negative stock</span></label>
+            <label class="settings-toggle"><input type="checkbox" id="inv-batch" checked /><span>Track batch / lot</span></label>
+            <label class="settings-toggle"><input type="checkbox" id="inv-serial" /><span>Track serial numbers</span></label>
+          </div>
+          <div class="settings-actions"><button type="button" class="btn-primary" id="save-inventory">Save inventory</button></div>
+        </div>
+      </section>
+
+      <section class="settings-panel" data-settings-panel="regional">
+        <header class="settings-panel-head"><h2>Regional</h2><p>Currency and calendar formats.</p></header>
+        <div class="settings-card">
+          <div class="settings-grid">
+            <label class="settings-field"><span>Currency</span><select id="reg-currency"><option value="NPR">NPR</option><option value="INR">INR</option><option value="USD">USD</option></select></label>
+            <label class="settings-field"><span>Timezone</span><select id="reg-tz"><option value="Asia/Kathmandu">Asia/Kathmandu</option><option value="Asia/Kolkata">Asia/Kolkata</option><option value="UTC">UTC</option></select></label>
+            <label class="settings-field"><span>Date format</span><select id="reg-date"><option value="YYYY-MM-DD">YYYY-MM-DD</option><option value="DD/MM/YYYY">DD/MM/YYYY</option></select></label>
+            <label class="settings-field"><span>Fiscal year start</span><select id="reg-fiscal"><option value="shrawan">Shrawan</option><option value="april">April</option><option value="january">January</option></select></label>
+          </div>
+          <div class="settings-actions"><button type="button" class="btn-primary" id="save-regional">Save regional</button></div>
+        </div>
+      </section>
+
+      <section class="settings-panel" data-settings-panel="notifications">
+        <header class="settings-panel-head"><h2>Notifications</h2><p>Operational alerts.</p></header>
+        <div class="settings-card">
+          <div class="settings-toggles">
+            <label class="settings-toggle"><input type="checkbox" id="ntf-low-stock" checked /><span>Low stock alerts</span></label>
+            <label class="settings-toggle"><input type="checkbox" id="ntf-purchase" checked /><span>Purchase updates</span></label>
+            <label class="settings-toggle"><input type="checkbox" id="ntf-sales" checked /><span>Sales activity</span></label>
+            <label class="settings-toggle"><input type="checkbox" id="ntf-staff" /><span>Staff events</span></label>
+            <label class="settings-toggle"><input type="checkbox" id="ntf-email" /><span>Email digest</span></label>
+          </div>
+          <div class="settings-actions"><button type="button" class="btn-primary" id="save-notifications">Save notifications</button></div>
+        </div>
+      </section>
+
+      <section class="settings-panel" data-settings-panel="security">
+        <header class="settings-panel-head"><h2>Security</h2><p>Password and session.</p></header>
+        <div class="settings-card">
+          <div class="settings-kv">
+            <div><span class="kv-label">Session started</span><strong id="sec-session">—</strong></div>
+            <div><span class="kv-label">Password status</span><strong id="sec-password-status">—</strong></div>
+          </div>
+          <div class="settings-actions" style="margin-top:14px"><a class="btn-primary" href="/dashboard/change-password">Change password</a></div>
+        </div>
+      </section>
+
+      <section class="settings-panel" data-settings-panel="appearance">
+        <header class="settings-panel-head"><h2>Appearance</h2><p>Theme on this device.</p></header>
+        <div class="settings-card">
+          <div class="settings-theme-row">
+            <button type="button" class="theme-option" data-set-theme="light"><span class="theme-option-swatch is-light"></span> Light</button>
+            <button type="button" class="theme-option" data-set-theme="dark"><span class="theme-option-swatch is-dark"></span> Dark</button>
+          </div>
+        </div>
+      </section>
+
+      <p class="settings-toast" id="settings-toast" hidden>Saved</p>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  import { getSession, canSwitchBranch, updateSession } from '../../lib/auth';
+  import { paintAvatar, setAvatarFromFile, clearAvatar } from '../../lib/avatar';
+
+  const PREFS_KEY = 'vgsync-settings';
+  const THEME_KEY = 'vgsync-theme';
+  type Prefs = Record<string, unknown>;
+
+  function loadPrefs(): Prefs {
+    try { const raw = localStorage.getItem(PREFS_KEY); return raw ? JSON.parse(raw) as Prefs : {}; } catch { return {}; }
+  }
+  function savePrefs(patch: Prefs): void {
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify({ ...loadPrefs(), ...patch })); } catch {}
+  }
+  function toast(msg = 'Saved'): void {
+    const el = document.getElementById('settings-toast');
+    if (!el) return;
+    el.textContent = msg; el.hidden = false;
+    window.clearTimeout((el as any)._t);
+    (el as any)._t = window.setTimeout(() => { el.hidden = true; }, 1800);
+  }
+  function val(id: string) { return document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null; }
+  function check(id: string) { return document.getElementById(id) as HTMLInputElement | null; }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-settings-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.settingsTab;
+      document.querySelectorAll('[data-settings-tab]').forEach((b) => b.classList.remove('is-active'));
+      document.querySelectorAll('[data-settings-panel]').forEach((p) => p.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      document.querySelector(`[data-settings-panel="${id}"]`)?.classList.add('is-active');
+    });
+  });
+
+  const session = getSession();
+  if (!session) window.location.replace('/');
+  else {
+    const prefs = loadPrefs();
+    const avatar = document.getElementById('settings-avatar');
+    const nameLine = document.getElementById('settings-display-name');
+    const roleLine = document.getElementById('settings-role-line');
+    const avatarHint = document.getElementById('avatar-hint');
+
+    paintAvatar(avatar, session.userId, session.displayName);
+    if (nameLine) nameLine.textContent = session.displayName;
+    if (roleLine) roleLine.textContent = `${session.roleLabel} · ${session.homeBranchName}`;
+    if (val('set-display-name')) val('set-display-name')!.value = session.displayName;
+    if (val('set-username')) val('set-username')!.value = session.username;
+    if (val('set-role')) val('set-role')!.value = session.roleLabel;
+    if (val('set-home-branch')) val('set-home-branch')!.value = session.homeBranchName;
+
+    async function onAvatarFile(file: File | undefined | null) {
+      if (!file) return;
+      const result = await setAvatarFromFile(session.userId, file);
+      if (!result.ok) {
+        if (avatarHint) { avatarHint.textContent = result.error; avatarHint.classList.add('is-error'); }
+        toast(result.error);
+        return;
+      }
+      paintAvatar(avatar, session.userId, session.displayName);
+      paintAvatar(document.getElementById('sidebar-profile-initials'), session.userId, session.displayName);
+      if (avatarHint) { avatarHint.textContent = 'JPG, PNG or WebP · max 512 KB'; avatarHint.classList.remove('is-error'); }
+      toast('Profile photo updated');
+    }
+
+    const fileInput = document.getElementById('avatar-file') as HTMLInputElement | null;
+    fileInput?.addEventListener('change', () => { void onAvatarFile(fileInput.files?.[0]); fileInput.value = ''; });
+    document.getElementById('avatar-change')?.addEventListener('click', () => fileInput?.click());
+    document.getElementById('avatar-remove')?.addEventListener('click', () => {
+      clearAvatar(session.userId);
+      paintAvatar(avatar, session.userId, session.displayName);
+      paintAvatar(document.getElementById('sidebar-profile-initials'), session.userId, session.displayName);
+      toast('Profile photo removed');
+    });
+
+    if (val('org-name')) val('org-name')!.value = String(prefs.orgName ?? 'VG Automobiles Pvt. Ltd.');
+    if (val('org-trade')) val('org-trade')!.value = String(prefs.orgTrade ?? 'VGSync');
+    if (val('org-tax')) val('org-tax')!.value = String(prefs.orgTax ?? '');
+    if (val('org-address')) val('org-address')!.value = String(prefs.orgAddress ?? 'Kathmandu, Nepal');
+    if (val('org-phone')) val('org-phone')!.value = String(prefs.orgPhone ?? '');
+    if (val('org-email')) val('org-email')!.value = String(prefs.orgEmail ?? '');
+
+    const aName = document.getElementById('branch-active-name');
+    const aCode = document.getElementById('branch-active-code');
+    const hName = document.getElementById('branch-home-name');
+    const access = document.getElementById('branch-access');
+    if (aName) aName.textContent = session.activeBranchName;
+    if (aCode) aCode.textContent = session.activeBranchCode;
+    if (hName) hName.textContent = session.homeBranchName;
+    if (access) access.textContent = canSwitchBranch(session) ? 'All branches (switchable)' : 'Home branch only';
+    if (val('branch-warehouse')) val('branch-warehouse')!.value = String(prefs.warehouse ?? '');
+    if (val('branch-phone')) val('branch-phone')!.value = String(prefs.branchPhone ?? '');
+
+    if (val('inv-unit')) val('inv-unit')!.value = String(prefs.invUnit ?? 'pcs');
+    if (val('inv-low-stock')) val('inv-low-stock')!.value = String(prefs.invLowStock ?? 5);
+    if (val('inv-sku-prefix')) val('inv-sku-prefix')!.value = String(prefs.invSkuPrefix ?? 'VG-');
+    if (val('inv-costing')) val('inv-costing')!.value = String(prefs.invCosting ?? 'avg');
+    if (check('inv-allow-negative')) check('inv-allow-negative')!.checked = Boolean(prefs.invNeg);
+    if (check('inv-batch')) check('inv-batch')!.checked = prefs.invBatch !== false;
+    if (check('inv-serial')) check('inv-serial')!.checked = Boolean(prefs.invSerial);
+
+    if (val('reg-currency')) val('reg-currency')!.value = String(prefs.currency ?? 'NPR');
+    if (val('reg-tz')) val('reg-tz')!.value = String(prefs.tz ?? 'Asia/Kathmandu');
+    if (val('reg-date')) val('reg-date')!.value = String(prefs.dateFmt ?? 'YYYY-MM-DD');
+    if (val('reg-fiscal')) val('reg-fiscal')!.value = String(prefs.fiscal ?? 'shrawan');
+
+    if (check('ntf-low-stock')) check('ntf-low-stock')!.checked = prefs.ntfLow !== false;
+    if (check('ntf-purchase')) check('ntf-purchase')!.checked = prefs.ntfPurchase !== false;
+    if (check('ntf-sales')) check('ntf-sales')!.checked = prefs.ntfSales !== false;
+    if (check('ntf-staff')) check('ntf-staff')!.checked = Boolean(prefs.ntfStaff);
+    if (check('ntf-email')) check('ntf-email')!.checked = Boolean(prefs.ntfEmail);
+
+    const secSession = document.getElementById('sec-session');
+    const secPass = document.getElementById('sec-password-status');
+    if (secSession) { try { secSession.textContent = new Date(session.loggedInAt).toLocaleString(); } catch { secSession.textContent = session.loggedInAt; } }
+    if (secPass) secPass.textContent = session.mustChangePassword ? 'Must update password' : 'Up to date';
+
+    const root = document.documentElement;
+    const theme = root.dataset.theme === 'light' ? 'light' : 'dark';
+    document.querySelectorAll('[data-set-theme]').forEach((el) => {
+      el.classList.toggle('is-active', el.getAttribute('data-set-theme') === theme);
+      el.addEventListener('click', () => {
+        const t = el.getAttribute('data-set-theme') as 'light' | 'dark';
+        root.dataset.theme = t;
+        try { localStorage.setItem(THEME_KEY, t); } catch {}
+        document.querySelectorAll('[data-set-theme]').forEach((x) => x.classList.toggle('is-active', x.getAttribute('data-set-theme') === t));
+        const toggle = document.getElementById('theme-toggle');
+        toggle?.classList.toggle('is-dark', t === 'dark');
+        toggle?.classList.toggle('is-light', t === 'light');
+        toast('Theme updated');
+      });
+    });
+
+    document.getElementById('save-profile')?.addEventListener('click', () => {
+      const name = val('set-display-name')?.value.trim() || session.displayName;
+      updateSession({ displayName: name });
+      if (nameLine) nameLine.textContent = name;
+      paintAvatar(avatar, session.userId, name);
+      const sideName = document.getElementById('sidebar-profile-name');
+      if (sideName) sideName.textContent = name;
+      paintAvatar(document.getElementById('sidebar-profile-initials'), session.userId, name);
+      toast('Profile saved');
+    });
+
+    document.getElementById('save-org')?.addEventListener('click', () => {
+      savePrefs({ orgName: val('org-name')?.value ?? '', orgTrade: val('org-trade')?.value ?? '', orgTax: val('org-tax')?.value ?? '', orgAddress: val('org-address')?.value ?? '', orgPhone: val('org-phone')?.value ?? '', orgEmail: val('org-email')?.value ?? '' });
+      toast('Organization saved');
+    });
+    document.getElementById('save-branch')?.addEventListener('click', () => {
+      savePrefs({ warehouse: val('branch-warehouse')?.value ?? '', branchPhone: val('branch-phone')?.value ?? '' });
+      toast('Branch prefs saved');
+    });
+    document.getElementById('save-inventory')?.addEventListener('click', () => {
+      savePrefs({ invUnit: val('inv-unit')?.value ?? 'pcs', invLowStock: Number(val('inv-low-stock')?.value || 5), invSkuPrefix: val('inv-sku-prefix')?.value ?? 'VG-', invCosting: val('inv-costing')?.value ?? 'avg', invNeg: Boolean(check('inv-allow-negative')?.checked), invBatch: Boolean(check('inv-batch')?.checked), invSerial: Boolean(check('inv-serial')?.checked) });
+      toast('Inventory defaults saved');
+    });
+    document.getElementById('save-regional')?.addEventListener('click', () => {
+      savePrefs({ currency: val('reg-currency')?.value ?? 'NPR', tz: val('reg-tz')?.value ?? 'Asia/Kathmandu', dateFmt: val('reg-date')?.value ?? 'YYYY-MM-DD', fiscal: val('reg-fiscal')?.value ?? 'shrawan' });
+      toast('Regional settings saved');
+    });
+    document.getElementById('save-notifications')?.addEventListener('click', () => {
+      savePrefs({ ntfLow: Boolean(check('ntf-low-stock')?.checked), ntfPurchase: Boolean(check('ntf-purchase')?.checked), ntfSales: Boolean(check('ntf-sales')?.checked), ntfStaff: Boolean(check('ntf-staff')?.checked), ntfEmail: Boolean(check('ntf-email')?.checked) });
+      toast('Notifications saved');
+    });
+  }
+</script>
+
+<style>
+  .settings-page { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 16px; align-items: start; max-width: 960px; margin: 0 auto; }
+  @media (max-width: 800px) { .settings-page { grid-template-columns: 1fr; } }
+  .settings-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); position: sticky; top: 0; }
+  @media (max-width: 800px) { .settings-nav { flex-direction: row; flex-wrap: wrap; position: static; } }
+  .settings-nav-item { text-align: left; border: none; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 0.82rem; font-weight: 550; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+  .settings-nav-item:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .settings-nav-item.is-active { background: var(--accent-soft); color: var(--accent); }
+  .settings-panel { display: none; }
+  .settings-panel.is-active { display: block; }
+  .settings-panel-head { margin-bottom: 12px; }
+  .settings-panel-head h2 { margin: 0 0 4px; font-size: 1.05rem; font-weight: 650; }
+  .settings-panel-head p { margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+  .settings-card { padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); }
+  .settings-profile-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .settings-avatar-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+  .settings-avatar { width: 64px; height: 64px; border-radius: 14px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-size: 0.95rem; font-weight: 700; background-size: cover; background-position: center; overflow: hidden; }
+  .settings-avatar.has-photo { color: transparent; }
+  .settings-avatar-upload { position: absolute; right: -4px; bottom: -4px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; border: 2px solid var(--panel-bg); cursor: pointer; }
+  .settings-avatar-actions { display: flex; gap: 8px; margin-top: 6px; }
+  .settings-avatar-hint { margin: 4px 0 0; font-size: 0.7rem; color: var(--text-muted); }
+  .settings-avatar-hint.is-error { color: #ef334e; }
+  .btn-ghost { border: none; background: transparent; padding: 0; font-family: inherit; font-size: 0.75rem; font-weight: 600; color: var(--accent); cursor: pointer; }
+  .btn-ghost.is-danger { color: #ef334e; }
+  .settings-profile-text { display: flex; flex-direction: column; gap: 2px; }
+  .settings-profile-text strong { font-size: 0.95rem; }
+  .settings-profile-text > span { font-size: 0.78rem; color: var(--text-muted); }
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  @media (max-width: 560px) { .settings-grid { grid-template-columns: 1fr; } }
+  .settings-field-span2 { grid-column: 1 / -1; }
+  .settings-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); }
+  .settings-field input, .settings-field select { height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; }
+  .settings-field input:focus, .settings-field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .settings-field input[readonly] { opacity: 0.75; cursor: default; }
+  .settings-toggles { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .settings-toggle { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; }
+  .settings-toggle input { accent-color: var(--accent); }
+  .settings-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .kv-label { display: block; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 2px; }
+  .settings-kv strong { font-size: 0.88rem; font-weight: 600; }
+  .settings-actions { margin-top: 14px; display: flex; gap: 8px; }
+  .btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 14px; border: none; border-radius: 9px; background: var(--accent); color: #fff; font-family: inherit; font-size: 0.84rem; font-weight: 650; text-decoration: none; cursor: pointer; }
+  .settings-theme-row { display: flex; gap: 10px; }
+  .theme-option { flex: 1; display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+  .theme-option.is-active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .theme-option-swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border); }
+  .theme-option-swatch.is-light { background: #f8fafc; }
+  .theme-option-swatch.is-dark { background: #0f172a; }
+  .settings-toast { position: fixed; right: 20px; bottom: 20px; z-index: 50; padding: 10px 14px; border-radius: 10px; background: var(--panel-bg); border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.18); font-size: 0.85rem; font-weight: 600; }
+</style>
