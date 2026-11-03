@@ -1,8 +1,8 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
+import PageSkeleton from '../components/app/PageSkeleton.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
 import { PAGE_META } from '../lib/page-meta';
-import { BRANCH_DEMO_STATS, formatNPR } from '../lib/demo-data';
 import type { UserRole } from '../lib/auth';
 
 const meta = PAGE_META.overview;
@@ -22,90 +22,5 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <div class="demo-panel" id="demo-panel">
-    <h2 class="demo-panel-title">Branch connections</h2>
-    <p class="demo-panel-sub" id="demo-panel-sub">
-      Demo view of Head Office ↔ branch links. Switch branch from the header (HO only) to change active context.
-    </p>
-
-    <div class="demo-branch-grid" id="demo-branch-grid">
-      {BRANCH_DEMO_STATS.map((b) => (
-        <article
-          class="demo-branch-card"
-          data-branch-code={b.code}
-        >
-          <div class="demo-branch-head">
-            <div>
-              <div class="demo-branch-name">{b.name}</div>
-              <div class="demo-branch-code">{b.code} · {b.city}</div>
-            </div>
-            <span class:list={["demo-status", `is-${b.status}`]}>
-              <span class="demo-status-dot" aria-hidden="true"></span>
-              {b.status}
-            </span>
-          </div>
-          <div class="demo-branch-meta">Last sync: {b.lastSync}</div>
-          <div class="demo-stats">
-            <div class="demo-stat">
-              <span class="demo-stat-label">Sales today</span>
-              <span class="demo-stat-value">{formatNPR(b.salesToday)}</span>
-            </div>
-            <div class="demo-stat">
-              <span class="demo-stat-label">Stock value</span>
-              <span class="demo-stat-value">{formatNPR(b.stockValue)}</span>
-            </div>
-            <div class="demo-stat">
-              <span class="demo-stat-label">Pending</span>
-              <span class="demo-stat-value">{b.pendingOrders}</span>
-            </div>
-            <div class="demo-stat">
-              <span class="demo-stat-label">Low stock</span>
-              <span class="demo-stat-value">{b.lowStockItems}</span>
-            </div>
-          </div>
-        </article>
-      ))}
-    </div>
-
-    <div class="demo-active-banner" id="demo-active-banner">
-      Active branch context will appear here after login.
-    </div>
-  </div>
+  <PageSkeleton title={meta.skeletonTitle} hint={meta.skeletonHint} />
 </AppLayout>
-
-<script>
-  import { getSession } from '../lib/auth';
-
-  function highlightActiveBranch(): void {
-    const session = getSession();
-    if (!session) return;
-
-    document.querySelectorAll('.demo-branch-card').forEach((card) => {
-      const code = (card as HTMLElement).dataset.branchCode;
-      card.classList.toggle('is-active', code === session.activeBranchCode);
-    });
-
-    const banner = document.getElementById('demo-active-banner');
-    if (banner) {
-      if (session.role === 'headoffice') {
-        banner.innerHTML = `You are <strong>Head Office</strong>. Active view: <strong>${session.activeBranchCode} — ${session.activeBranchName}</strong>. Use the header branch selector to switch.`;
-      } else {
-        banner.innerHTML = `You can only manage <strong>${session.homeBranchName}</strong>. Other branches are visible for demo only.`;
-        // Dim non-home cards for branch users
-        document.querySelectorAll('.demo-branch-card').forEach((card) => {
-          const code = (card as HTMLElement).dataset.branchCode;
-          if (code !== session.homeBranchCode) {
-            (card as HTMLElement).style.opacity = '0.45';
-          }
-        });
-      }
-    }
-  }
-
-  highlightActiveBranch();
-
-  // Re-highlight when HO switches branch
-  document.getElementById('branch-select')?.addEventListener('change', () => {
-    setTimeout(highlightActiveBranch, 50);
-  });
-</script>
