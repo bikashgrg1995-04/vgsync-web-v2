@@ -1,0 +1,270 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import type { UserRole } from '../../lib/auth';
+
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title="VGSync | Staff"
+  pageTitle="Staff"
+  breadcrumb="Staff /"
+  activeId="staff"
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Owner"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="staff-page">
+    <section class="staff-panel">
+      <h2 class="staff-title">Assign staff</h2>
+      <p class="staff-sub" id="staff-scope-hint">
+        Create temporary logins. New users must update password on first login.
+      </p>
+
+      <form id="assign-staff-form" class="staff-form" novalidate>
+        <label class="staff-field">
+          <span>Full name</span>
+          <input name="displayName" required placeholder="e.g. Ram Thapa" />
+        </label>
+        <label class="staff-field">
+          <span>Username</span>
+          <input name="username" required placeholder="e.g. ram" />
+        </label>
+        <label class="staff-field">
+          <span>Branch</span>
+          <select name="branchCode" id="staff-branch-select" required></select>
+        </label>
+        <label class="staff-field">
+          <span>Role</span>
+          <select name="role" required>
+            <option value="staff">Staff</option>
+            <option value="branch_manager">Manager</option>
+          </select>
+        </label>
+        <label class="staff-field">
+          <span>Temporary password</span>
+          <input name="temporaryPassword" type="text" required minlength="6" placeholder="min 6 chars" />
+        </label>
+
+        <p class="staff-message" id="staff-message" hidden></p>
+        <button type="submit" class="staff-submit">Assign account</button>
+      </form>
+    </section>
+
+    <section class="staff-panel">
+      <h2 class="staff-title">Team accounts</h2>
+      <div class="staff-table-wrap">
+        <table class="staff-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>User</th>
+              <th>Branch</th>
+              <th>Role</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="staff-table-body">
+            <tr><td colspan="5">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</AppLayout>
+
+<script>
+  import {
+    getSession,
+    canManageStaff,
+    assignStaff,
+    listStaffForManagement,
+    getAssignableBranches,
+  } from '../../lib/auth';
+
+  const session = getSession();
+  if (!session) {
+    window.location.replace('/');
+  } else if (!canManageStaff(session)) {
+    window.location.replace('/dashboard');
+  }
+
+  const form = document.getElementById('assign-staff-form') as HTMLFormElement | null;
+  const msg = document.getElementById('staff-message');
+  const tbody = document.getElementById('staff-table-body');
+  const branchSelect = document.getElementById('staff-branch-select') as HTMLSelectElement | null;
+  const scopeHint = document.getElementById('staff-scope-hint');
+
+  if (session && scopeHint) {
+    if (session.role === 'branch_owner') {
+      scopeHint.textContent = `You can assign staff only for ${session.homeBranchName}.`;
+    } else {
+      scopeHint.textContent =
+        'System owner/admin can assign staff to any branch. New users must update password on first login.';
+    }
+  }
+
+  if (session && branchSelect) {
+    const branches = getAssignableBranches(session);
+    branchSelect.innerHTML = branches
+      .map((b) => `<option value="${b.code}">${b.name} (${b.code})</option>`)
+      .join('');
+  }
+
+  function showMsg(text: string, ok = false): void {
+    if (!msg) return;
+    msg.hidden = false;
+    msg.textContent = text;
+    msg.classList.toggle('is-ok', ok);
+    msg.classList.toggle('is-err', !ok);
+  }
+
+  function renderTable(): void {
+    if (!tbody) return;
+    const rows = listStaffForManagement();
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5">No staff assigned yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows
+      .map((u) => {
+        const status = !u.active
+          ? 'Inactive'
+          : u.mustChangePassword
+            ? 'Must update password'
+            : 'Active';
+        return `<tr>
+          <td>${u.displayName}</td>
+          <td>${u.username}</td>
+          <td>${u.branchCode}</td>
+          <td>${u.roleLabel}</td>
+          <td>${status}</td>
+        </tr>`;
+      })
+      .join('');
+  }
+
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const result = assignStaff({
+      displayName: String(data.get('displayName') || ''),
+      username: String(data.get('username') || ''),
+      branchCode: String(data.get('branchCode') || ''),
+      role: String(data.get('role') || 'staff') as 'staff' | 'branch_manager',
+      temporaryPassword: String(data.get('temporaryPassword') || ''),
+    });
+
+    if (!result.ok) {
+      showMsg(result.error);
+      return;
+    }
+
+    showMsg(
+      `Assigned ${result.user.displayName} · ${result.user.branchCode}/${result.user.username}`,
+      true,
+    );
+    form.reset();
+    if (session && branchSelect) {
+      const branches = getAssignableBranches(session);
+      branchSelect.innerHTML = branches
+        .map((b) => `<option value="${b.code}">${b.name} (${b.code})</option>`)
+        .join('');
+    }
+    renderTable();
+  });
+
+  renderTable();
+</script>
+
+<style>
+  .staff-page {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  }
+  @media (max-width: 900px) {
+    .staff-page { grid-template-columns: 1fr; }
+  }
+  .staff-panel {
+    padding: 18px 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--panel-bg);
+  }
+  .staff-title {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    font-weight: 650;
+  }
+  .staff-sub {
+    margin: 0 0 14px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .staff-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .staff-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .staff-field input,
+  .staff-field select {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+  }
+  .staff-submit {
+    height: 38px;
+    border: none;
+    border-radius: 9px;
+    background: var(--accent);
+    color: #fff;
+    font-family: inherit;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .staff-message {
+    margin: 0;
+    font-size: 0.8rem;
+  }
+  .staff-message.is-err { color: #ef334e; }
+  .staff-message.is-ok { color: var(--success, #22c55e); }
+  .staff-table-wrap { overflow-x: auto; }
+  .staff-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+  .staff-table th,
+  .staff-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  .staff-table th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+</style>
