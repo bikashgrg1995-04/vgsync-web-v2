@@ -1,30 +1,41 @@
 /* =========================================================
-   VGSync — App Shell (post-login skeleton)
+   VGSync — App Shell
+   Sidebar + header fixed; only .app-content scrolls
    ========================================================= */
+
+/* Prevent document/body scroll on app pages */
+html:has(.app-shell),
+body:has(.app-shell) {
+  height: 100%;
+  overflow: hidden;
+}
 
 .app-shell {
   display: flex;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
   background: var(--page-bg);
   color: var(--text-primary);
 }
 
-/* ---------- Sidebar ---------- */
+/* ---------- Sidebar (fixed, never scrolls with page) ---------- */
 
 .app-sidebar {
-  position: sticky;
-  top: 0;
+  position: relative;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   width: 240px;
   min-width: 240px;
-  height: 100vh;
-  height: 100dvh;
+  height: 100%;
   padding: 20px 14px;
   background: var(--panel-bg);
   border-right: 1px solid var(--border);
   z-index: 40;
+  overflow: hidden;
   transition: transform 0.2s ease;
 }
 
@@ -33,6 +44,7 @@
   align-items: center;
   gap: 10px;
   padding: 4px 10px 24px;
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
@@ -57,8 +69,10 @@
   color: var(--text-primary);
 }
 
+/* Nav list can scroll inside sidebar if many items */
 .sidebar-nav {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -103,23 +117,28 @@
 }
 
 .sidebar-footer {
+  flex-shrink: 0;
   margin-top: auto;
   padding-top: 14px;
   border-top: 1px solid var(--panel-divider);
 }
 
-/* ---------- Main column ---------- */
+/* ---------- Main column (header fixed + content scrolls) ---------- */
 
 .app-main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-/* ---------- Header ---------- */
+/* ---------- Header (fixed at top of main, does not scroll) ---------- */
 
 .app-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -127,8 +146,6 @@
   padding: 14px 24px;
   background: var(--panel-bg);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
   z-index: 30;
 }
 
@@ -176,7 +193,6 @@
   flex-shrink: 0;
 }
 
-/* Branch context / switcher */
 .header-branch {
   display: flex;
   align-items: center;
@@ -323,12 +339,15 @@
   flex-shrink: 0;
 }
 
-/* ---------- Content ---------- */
+/* ---------- Content (ONLY scrollable region) ---------- */
 
 .app-content {
   flex: 1;
+  min-height: 0; /* critical: allows flex child to scroll */
   padding: 28px 24px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .content-skeleton {
@@ -374,6 +393,8 @@
     position: fixed;
     left: 0;
     top: 0;
+    height: 100vh;
+    height: 100dvh;
     transform: translateX(-100%);
   }
 
