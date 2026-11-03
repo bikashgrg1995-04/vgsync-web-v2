@@ -36,7 +36,6 @@ const logoutItem = bottomItems.find((i) => i.id === 'logout');
 ---
 
 <aside class="app-sidebar" id="app-sidebar" aria-label="Main navigation">
-  {/* Single card: logo + name + profile */}
   <div class="sidebar-top-card">
     <div class="sidebar-brand-row">
       <span class="sidebar-logo" aria-hidden="true">
@@ -46,7 +45,10 @@ const logoutItem = bottomItems.find((i) => i.id === 'logout');
           <path d="M12 22V12"/>
         </svg>
       </span>
-      <span class="sidebar-brand-text">VGSync</span>
+      <div class="sidebar-brand-meta">
+        <span class="sidebar-brand-text">VGSync</span>
+        <span class="sidebar-brand-sub">Inventory System</span>
+      </div>
     </div>
 
     <div class="sidebar-profile-row" id="sidebar-profile">
@@ -59,10 +61,7 @@ const logoutItem = bottomItems.find((i) => i.id === 'logout');
       <div class="sidebar-profile-meta">
         <span class="sidebar-profile-name" id="sidebar-profile-name">{displayName}</span>
         <span class="sidebar-profile-role" id="sidebar-profile-role">{roleLabel}</span>
-        <span class="sidebar-profile-branch">
-          <span class="sidebar-branch-tag">Branch</span>
-          <span class="sidebar-branch-name">{branchName}</span>
-        </span>
+        <span class="sidebar-branch-name">{branchName}</span>
       </div>
     </div>
   </div>
