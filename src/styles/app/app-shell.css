@@ -1,6 +1,5 @@
 /* =========================================================
    VGSync — App Shell
-   Sidebar + header fixed; only .app-content scrolls
    ========================================================= */
 
 html:has(.app-shell),
@@ -42,7 +41,7 @@ body:has(.app-shell) {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 2px 8px 16px;
+  padding: 2px 8px 12px;
   flex-shrink: 0;
 }
 
@@ -66,6 +65,70 @@ body:has(.app-shell) {
   font-weight: 650;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+}
+
+/* Profile under logo */
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 4px 14px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.sidebar-profile-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sidebar-profile-name {
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-profile-branch {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.sidebar-branch-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.sidebar-branch-name {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-nav {
@@ -140,7 +203,6 @@ body:has(.app-shell) {
 .sidebar-logout-btn {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
   gap: 10px;
   width: 100%;
   padding: 9px 12px;
@@ -153,13 +215,12 @@ body:has(.app-shell) {
   font-weight: 600;
   line-height: 1.25;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .sidebar-logout-btn:hover {
   background: #ef334e;
   color: #ffffff;
-  border-color: #ef334e;
 }
 
 [data-theme="light"] .sidebar-logout-btn {
@@ -182,10 +243,6 @@ body:has(.app-shell) {
   .sidebar-logout-btn {
     font-size: 0.95rem;
     padding: 10px 12px;
-  }
-
-  .sidebar-brand-text {
-    font-size: 1.05rem;
   }
 }
 
@@ -254,7 +311,6 @@ body:has(.app-shell) {
   line-height: 1.2;
 }
 
-/* Search bar (center) */
 .header-center {
   flex: 1;
   display: flex;
@@ -274,7 +330,6 @@ body:has(.app-shell) {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .header-search:focus-within {
@@ -385,184 +440,35 @@ body:has(.app-shell) {
   border: 1.5px solid var(--panel-bg);
 }
 
-/* Profile */
-.profile-wrap { position: relative; }
-
-.header-profile {
+/* Theme next to notifications */
+.header-theme {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 3px 7px 3px 3px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  text-align: left;
-}
-
-.header-profile:hover,
-.profile-wrap.is-open .header-profile {
-  background: var(--surface-hover);
-}
-
-.profile-avatar {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent);
-  flex-shrink: 0;
-}
-
-.profile-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.profile-name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-
-.profile-sub {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.profile-chevron {
-  color: var(--text-muted);
-  flex-shrink: 0;
-  transition: transform 0.15s ease;
-}
-
-.profile-wrap.is-open .profile-chevron {
-  transform: rotate(180deg);
-}
-
-.profile-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 50;
-  width: 240px;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel-bg);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
-}
-
-.profile-menu[hidden] { display: none; }
-
-.profile-menu-header {
-  display: flex;
-  flex-direction: column;
   gap: 2px;
-  padding: 8px 10px 10px;
-}
-
-.profile-menu-name {
-  font-size: 0.88rem;
-  font-weight: 650;
-  color: var(--text-primary);
-}
-
-.profile-menu-role {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-.profile-menu-branch {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.profile-menu-divider {
-  height: 1px;
-  margin: 4px 0;
-  background: var(--panel-divider);
-}
-
-.profile-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 10px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  text-align: left;
-}
-
-.profile-menu-item:hover {
-  background: var(--surface-hover);
-  color: var(--text-primary);
-}
-
-.profile-menu-logout {
-  color: #ef334e;
-  font-weight: 600;
-}
-
-.profile-menu-logout:hover {
-  background: rgba(239, 51, 78, 0.12);
-  color: #ef334e;
-}
-
-.profile-menu-section-label {
-  padding: 6px 10px 4px;
-  font-size: 0.68rem;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-
-.profile-theme-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 0 6px 6px;
-}
-
-.profile-theme-btn {
-  padding: 7px 8px;
+  padding: 2px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 550;
+}
+
+.theme-chip {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
   cursor: pointer;
 }
 
-.profile-theme-btn.is-active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-weight: 650;
+.theme-chip.is-active {
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-.profile-theme-btn:hover {
-  border-color: var(--text-muted);
-}
-
-/* Logout confirmation dialog */
+/* Logout dialog */
 .logout-dialog {
   border: none;
   border-radius: 14px;
@@ -635,7 +541,7 @@ body:has(.app-shell) {
   background: #d92340;
 }
 
-/* ---------- Content ---------- */
+/* ---------- Content (centered) ---------- */
 
 .app-content {
   flex: 1;
@@ -644,6 +550,12 @@ body:has(.app-shell) {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.app-content-inner {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
 .demo-panel {
@@ -822,18 +734,10 @@ body:has(.app-shell) {
   }
 
   .sidebar-toggle { display: grid; }
-  .profile-meta { display: none; }
   .branch-label,
   .branch-prefix { display: none; }
 
-  .header-center {
-    max-width: 180px;
-  }
-
-  .sidebar-link,
-  .sidebar-logout-btn {
-    font-size: 0.9rem;
-  }
+  .header-center { max-width: 180px; }
 }
 
 @media (max-width: 560px) {
@@ -843,10 +747,7 @@ body:has(.app-shell) {
   }
 
   .app-content { padding: 14px 12px; }
-
-  .header-center {
-    display: none;
-  }
+  .header-center { display: none; }
 
   .branch-select {
     max-width: 130px;
