@@ -22,6 +22,13 @@ const logoutConfirm = document.getElementById('logout-confirm');
 type Theme = 'dark' | 'light';
 const THEME_KEY = 'vgsync-theme';
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'U';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 const getCurrentTheme = (): Theme =>
   root.dataset.theme === 'light' ? 'light' : 'dark';
 
@@ -106,9 +113,12 @@ function applySessionUI(): void {
   const nameEl = document.getElementById('sidebar-profile-name');
   const roleEl = document.getElementById('sidebar-profile-role');
   const branchNameEl = document.querySelector('.sidebar-branch-name');
+  const initialsEl = document.getElementById('sidebar-profile-initials');
+
   if (nameEl) nameEl.textContent = session.displayName;
   if (roleEl) roleEl.textContent = session.roleLabel;
   if (branchNameEl) branchNameEl.textContent = session.activeBranchName;
+  if (initialsEl) initialsEl.textContent = getInitials(session.displayName);
 
   const branchInfo = document.getElementById('skeleton-branch-info');
   if (branchInfo) {
