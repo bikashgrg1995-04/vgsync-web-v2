@@ -1,12 +1,11 @@
 ---
 import AppLayout from '../../layouts/AppLayout.astro';
-import PageSkeleton from '../../components/app/PageSkeleton.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import { PAGE_META } from '../../lib/page-meta';
 import type { UserRole } from '../../lib/auth';
 
 const meta = PAGE_META.inventory;
-const defaultRole: UserRole = 'headoffice';
+const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
 ---
 
@@ -22,5 +21,668 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <PageSkeleton title={meta.skeletonTitle} hint={meta.skeletonHint} />
+  <div class="inv-page" id="inv-page">
+    <div class="inv-toolbar">
+      <div class="inv-toolbar-left">
+        <p class="inv-scope" id="inv-scope">Branch stock</p>
+        <div class="inv-tabs" role="tablist">
+          <button type="button" class="inv-tab is-active" data-inv-tab="stock">Stock list</button>
+          <button type="button" class="inv-tab" data-inv-tab="moves">Movements</button>
+        </div>
+      </div>
+      <div class="inv-toolbar-right">
+        <button type="button" class="btn-ghost-sm" id="inv-refresh">Refresh</button>
+        <button type="button" class="btn-primary-sm" id="inv-add-demo" title="Demo only">+ Add item (demo)</button>
+      </div>
+    </div>
+
+    <div class="inv-kpis" id="inv-kpis">
+      <article class="inv-kpi">
+        <span class="inv-kpi-label">SKUs</span>
+        <strong class="inv-kpi-value" id="kpi-skus">—</strong>
+      </article>
+      <article class="inv-kpi">
+        <span class="inv-kpi-label">Units on hand</span>
+        <strong class="inv-kpi-value" id="kpi-units">—</strong>
+      </article>
+      <article class="inv-kpi">
+        <span class="inv-kpi-label">Stock value</span>
+        <strong class="inv-kpi-value" id="kpi-value">—</strong>
+      </article>
+      <article class="inv-kpi is-warn">
+        <span class="inv-kpi-label">Low stock</span>
+        <strong class="inv-kpi-value" id="kpi-low">—</strong>
+      </article>
+      <article class="inv-kpi is-danger">
+        <span class="inv-kpi-label">Out of stock</span>
+        <strong class="inv-kpi-value" id="kpi-out">—</strong>
+      </article>
+    </div>
+
+    <!-- Stock panel -->
+    <section class="inv-panel is-active" data-inv-panel="stock">
+      <div class="inv-filters">
+        <div class="inv-search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="inv-search" placeholder="Search SKU or name…" autocomplete="off" />
+        </div>
+        <select id="inv-category" aria-label="Category">
+          <option value="">All categories</option>
+        </select>
+        <select id="inv-status" aria-label="Status">
+          <option value="">All status</option>
+          <option value="in_stock">In stock</option>
+          <option value="low">Low stock</option>
+          <option value="out">Out of stock</option>
+        </select>
+      </div>
+
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product</th>
+              <th>Category</th>
+              <th>Warehouse</th>
+              <th class="num">On hand</th>
+              <th class="num">Reserved</th>
+              <th class="num">Available</th>
+              <th class="num">Reorder</th>
+              <th class="num">Unit cost</th>
+              <th class="num">Value</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="inv-tbody">
+            <tr><td colspan="12">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="inv-footnote" id="inv-count"></p>
+    </section>
+
+    <!-- Movements panel -->
+    <section class="inv-panel" data-inv-panel="moves">
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>SKU</th>
+              <th>Product</th>
+              <th>Type</th>
+              <th class="num">Qty</th>
+              <th>Note</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody id="moves-tbody">
+            <tr><td colspan="7">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- Adjust dialog -->
+  <dialog class="inv-dialog" id="inv-adjust-dialog">
+    <form method="dialog" class="inv-dialog-inner" id="inv-adjust-form">
+      <h2 class="inv-dialog-title">Adjust stock</h2>
+      <p class="inv-dialog-sub" id="adj-product">—</p>
+      <input type="hidden" id="adj-id" />
+      <label class="inv-field">
+        <span>Quantity change (+ in / − out)</span>
+        <input type="number" id="adj-qty" required step="1" value="1" />
+      </label>
+      <label class="inv-field">
+        <span>Note</span>
+        <input type="text" id="adj-note" placeholder="e.g. Cycle count correction" />
+      </label>
+      <p class="inv-dialog-error" id="adj-error" hidden></p>
+      <div class="inv-dialog-actions">
+        <button type="button" class="btn-ghost-sm" id="adj-cancel">Cancel</button>
+        <button type="submit" class="btn-primary-sm">Apply</button>
+      </div>
+    </form>
+  </dialog>
 </AppLayout>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import {
+    listStockByBranch,
+    listMovementsByBranch,
+    getInventorySummary,
+    adjustStock,
+    formatNpr,
+    STATUS_LABEL,
+    type StockItem,
+  } from '../../lib/inventory';
+
+  const session = getSession();
+  if (!session) window.location.replace('/');
+
+  let items: StockItem[] = [];
+
+  function branchCode(): string {
+    return getSession()?.activeBranchCode ?? 'HO';
+  }
+
+  function esc(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function statusBadge(status: string): string {
+    const label = STATUS_LABEL[status as keyof typeof STATUS_LABEL] ?? status;
+    return `<span class="inv-badge inv-badge-${status}">${esc(label)}</span>`;
+  }
+
+  function renderKpis(): void {
+    const s = getInventorySummary(branchCode());
+    const skus = document.getElementById('kpi-skus');
+    const units = document.getElementById('kpi-units');
+    const value = document.getElementById('kpi-value');
+    const low = document.getElementById('kpi-low');
+    const out = document.getElementById('kpi-out');
+    if (skus) skus.textContent = String(s.skuCount);
+    if (units) units.textContent = s.onHandUnits.toLocaleString();
+    if (value) value.textContent = formatNpr(s.stockValue);
+    if (low) low.textContent = String(s.lowCount);
+    if (out) out.textContent = String(s.outCount);
+  }
+
+  function fillCategories(): void {
+    const sel = document.getElementById('inv-category') as HTMLSelectElement | null;
+    if (!sel) return;
+    const cats = Array.from(new Set(items.map((i) => i.category))).sort();
+    const current = sel.value;
+    sel.innerHTML =
+      `<option value="">All categories</option>` +
+      cats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    sel.value = current;
+  }
+
+  function filteredItems(): StockItem[] {
+    const q = (document.getElementById('inv-search') as HTMLInputElement | null)?.value.trim().toLowerCase() ?? '';
+    const cat = (document.getElementById('inv-category') as HTMLSelectElement | null)?.value ?? '';
+    const st = (document.getElementById('inv-status') as HTMLSelectElement | null)?.value ?? '';
+    return items.filter((i) => {
+      if (cat && i.category !== cat) return false;
+      if (st && i.status !== st) return false;
+      if (!q) return true;
+      return (
+        i.sku.toLowerCase().includes(q) ||
+        i.name.toLowerCase().includes(q) ||
+        i.warehouse.toLowerCase().includes(q)
+      );
+    });
+  }
+
+  function renderTable(): void {
+    const tbody = document.getElementById('inv-tbody');
+    const count = document.getElementById('inv-count');
+    if (!tbody) return;
+    const rows = filteredItems();
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="12" class="inv-empty">No stock items for this filter / branch.</td></tr>`;
+      if (count) count.textContent = '0 items';
+      return;
+    }
+    tbody.innerHTML = rows
+      .map((i) => {
+        const available = i.onHand - i.reserved;
+        const value = i.onHand * i.unitCost;
+        return `<tr data-id="${esc(i.id)}">
+          <td class="mono">${esc(i.sku)}</td>
+          <td><div class="inv-prod"><strong>${esc(i.name)}</strong><span>${esc(i.unit)}</span></div></td>
+          <td>${esc(i.category)}</td>
+          <td class="mono">${esc(i.warehouse)}</td>
+          <td class="num">${i.onHand}</td>
+          <td class="num muted">${i.reserved}</td>
+          <td class="num">${available}</td>
+          <td class="num muted">${i.reorderLevel}</td>
+          <td class="num">${formatNpr(i.unitCost)}</td>
+          <td class="num">${formatNpr(value)}</td>
+          <td>${statusBadge(i.status)}</td>
+          <td class="actions"><button type="button" class="btn-link" data-adjust="${esc(i.id)}">Adjust</button></td>
+        </tr>`;
+      })
+      .join('');
+    if (count) count.textContent = `${rows.length} item${rows.length === 1 ? '' : 's'} · scoped to active branch`;
+
+    tbody.querySelectorAll<HTMLButtonElement>('[data-adjust]').forEach((btn) => {
+      btn.addEventListener('click', () => openAdjust(btn.dataset.adjust || ''));
+    });
+  }
+
+  function renderMoves(): void {
+    const tbody = document.getElementById('moves-tbody');
+    if (!tbody) return;
+    const moves = listMovementsByBranch(branchCode());
+    if (moves.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="inv-empty">No movements yet for this branch.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = moves
+      .map((m) => {
+        let when = m.at;
+        try { when = new Date(m.at).toLocaleString(); } catch {}
+        const sign = m.qty > 0 ? `+${m.qty}` : String(m.qty);
+        return `<tr>
+          <td class="muted">${esc(when)}</td>
+          <td class="mono">${esc(m.sku)}</td>
+          <td>${esc(m.productName)}</td>
+          <td><span class="inv-move inv-move-${m.type}">${esc(m.type)}</span></td>
+          <td class="num">${sign}</td>
+          <td>${esc(m.note)}</td>
+          <td class="muted">${esc(m.by)}</td>
+        </tr>`;
+      })
+      .join('');
+  }
+
+  function reload(): void {
+    const s = getSession();
+    const scope = document.getElementById('inv-scope');
+    if (scope && s) {
+      scope.textContent = `${s.activeBranchName} (${s.activeBranchCode}) · branch-scoped stock`;
+    }
+    items = listStockByBranch(branchCode());
+    fillCategories();
+    renderKpis();
+    renderTable();
+    renderMoves();
+  }
+
+  // Tabs
+  document.querySelectorAll<HTMLButtonElement>('[data-inv-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.invTab;
+      document.querySelectorAll('[data-inv-tab]').forEach((b) => b.classList.remove('is-active'));
+      document.querySelectorAll('[data-inv-panel]').forEach((p) => p.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      document.querySelector(`[data-inv-panel="${id}"]`)?.classList.add('is-active');
+    });
+  });
+
+  document.getElementById('inv-search')?.addEventListener('input', () => renderTable());
+  document.getElementById('inv-category')?.addEventListener('change', () => renderTable());
+  document.getElementById('inv-status')?.addEventListener('change', () => renderTable());
+  document.getElementById('inv-refresh')?.addEventListener('click', () => reload());
+
+  // Re-render when HO switches branch in header
+  document.getElementById('branch-select')?.addEventListener('change', () => {
+    setTimeout(() => reload(), 0);
+  });
+
+  // Adjust dialog
+  const dialog = document.getElementById('inv-adjust-dialog') as HTMLDialogElement | null;
+  const form = document.getElementById('inv-adjust-form') as HTMLFormElement | null;
+
+  function openAdjust(id: string): void {
+    const item = items.find((i) => i.id === id);
+    if (!item || !dialog) return;
+    (document.getElementById('adj-id') as HTMLInputElement).value = item.id;
+    const prod = document.getElementById('adj-product');
+    if (prod) prod.textContent = `${item.sku} · ${item.name} · on hand ${item.onHand}`;
+    (document.getElementById('adj-qty') as HTMLInputElement).value = '1';
+    (document.getElementById('adj-note') as HTMLInputElement).value = '';
+    const err = document.getElementById('adj-error');
+    if (err) err.hidden = true;
+    dialog.showModal();
+  }
+
+  document.getElementById('adj-cancel')?.addEventListener('click', () => dialog?.close());
+
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = (document.getElementById('adj-id') as HTMLInputElement).value;
+    const qty = Number((document.getElementById('adj-qty') as HTMLInputElement).value);
+    const note = (document.getElementById('adj-note') as HTMLInputElement).value;
+    const s = getSession();
+    if (!s) return;
+    const result = adjustStock(id, qty, note, s.displayName);
+    const err = document.getElementById('adj-error');
+    if (!result.ok) {
+      if (err) {
+        err.hidden = false;
+        err.textContent = result.error;
+      }
+      return;
+    }
+    dialog?.close();
+    reload();
+  });
+
+  document.getElementById('inv-add-demo')?.addEventListener('click', () => {
+    alert('Add product form will connect to Django product master later. Demo stock is pre-seeded per branch.');
+  });
+
+  reload();
+</script>
+
+<style>
+  .inv-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .inv-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .inv-scope {
+    margin: 0 0 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .inv-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .inv-tab {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .inv-tab.is-active {
+    background: var(--panel-bg);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  .inv-toolbar-right {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-primary-sm,
+  .btn-ghost-sm {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .btn-primary-sm {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-ghost-sm {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+  }
+
+  .btn-ghost-sm:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  .inv-kpis {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  @media (max-width: 900px) {
+    .inv-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .inv-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .inv-kpi {
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel-bg);
+  }
+
+  .inv-kpi-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+
+  .inv-kpi-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .inv-kpi.is-warn .inv-kpi-value { color: #d97706; }
+  .inv-kpi.is-danger .inv-kpi-value { color: #ef334e; }
+
+  .inv-panel { display: none; }
+  .inv-panel.is-active { display: block; }
+
+  .inv-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .inv-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 180px;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-muted);
+  }
+
+  .inv-search input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.82rem;
+  }
+
+  .inv-filters select {
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.8rem;
+  }
+
+  .inv-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel-bg);
+  }
+
+  .inv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .inv-table th,
+  .inv-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .inv-table th {
+    font-size: 0.68rem;
+    font-weight: 650;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+  }
+
+  .inv-table tbody tr:last-child td { border-bottom: none; }
+  .inv-table tbody tr:hover td { background: var(--surface-hover); }
+
+  .inv-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .inv-table .muted { color: var(--text-muted); }
+  .inv-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; }
+  .inv-table .actions { text-align: right; }
+
+  .inv-prod {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    white-space: normal;
+    min-width: 140px;
+  }
+
+  .inv-prod strong { font-weight: 600; color: var(--text-primary); }
+  .inv-prod span { font-size: 0.7rem; color: var(--text-muted); }
+
+  .inv-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 650;
+  }
+
+  .inv-badge-in_stock { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .inv-badge-low { background: rgba(217, 119, 6, 0.12); color: #d97706; }
+  .inv-badge-out { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+
+  .inv-move {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 650;
+    text-transform: uppercase;
+  }
+
+  .inv-move-in { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .inv-move-out { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+  .inv-move-adjust { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+  .inv-move-transfer { background: rgba(168, 85, 247, 0.12); color: #a855f7; }
+
+  .btn-link {
+    border: none;
+    background: transparent;
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 650;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .inv-empty {
+    text-align: center !important;
+    color: var(--text-muted);
+    padding: 28px 12px !important;
+  }
+
+  .inv-footnote {
+    margin: 8px 0 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .inv-dialog {
+    border: none;
+    border-radius: 14px;
+    padding: 0;
+    background: var(--panel-bg);
+    color: var(--text-primary);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+    max-width: 400px;
+    width: calc(100% - 32px);
+  }
+
+  .inv-dialog::backdrop {
+    background: rgba(8, 15, 29, 0.55);
+    backdrop-filter: blur(4px);
+  }
+
+  .inv-dialog-inner { padding: 20px; }
+  .inv-dialog-title { margin: 0 0 4px; font-size: 1rem; font-weight: 650; }
+  .inv-dialog-sub { margin: 0 0 14px; font-size: 0.8rem; color: var(--text-muted); }
+
+  .inv-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .inv-field input {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+  }
+
+  .inv-dialog-error {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    color: #ef334e;
+  }
+
+  .inv-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+  }
+</style>
