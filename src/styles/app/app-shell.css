@@ -486,32 +486,66 @@ body:has(.app-shell) {
   border: 1.5px solid var(--panel-bg);
 }
 
-.header-theme {
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+/* Dark mode toggle switch */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.theme-chip {
+.theme-toggle-track {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.theme-toggle.is-dark .theme-toggle-track {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.theme-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 26px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
+  background: var(--panel-bg);
+  color: var(--text-secondary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
 
-.theme-chip.is-active {
-  background: var(--panel-bg);
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+.theme-toggle.is-dark .theme-toggle-thumb {
+  transform: translateX(20px);
+  background: var(--accent);
+  color: #ffffff;
 }
+
+.theme-icon {
+  position: absolute;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.theme-icon-sun { opacity: 1; }
+.theme-icon-moon { opacity: 0; }
+
+.theme-toggle.is-dark .theme-icon-sun { opacity: 0; }
+.theme-toggle.is-dark .theme-icon-moon { opacity: 1; }
+.theme-toggle.is-light .theme-icon-sun { opacity: 1; }
+.theme-toggle.is-light .theme-icon-moon { opacity: 0; }
 
 .logout-dialog {
   border: none;
