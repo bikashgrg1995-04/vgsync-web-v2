@@ -16,6 +16,7 @@ interface Props {
   displayName?: string;
   roleLabel?: string;
   branchName?: string;
+  showBranchSwitcher?: boolean;
 }
 
 const {
@@ -28,6 +29,7 @@ const {
   displayName = 'User',
   roleLabel = 'Role',
   branchName = 'Branch',
+  showBranchSwitcher = false,
 } = Astro.props;
 ---
 
@@ -42,6 +44,7 @@ const {
         displayName={displayName}
         roleLabel={roleLabel}
         branchName={branchName}
+        showBranchSwitcher={showBranchSwitcher}
       />
 
       <main class="app-content" id="app-content">

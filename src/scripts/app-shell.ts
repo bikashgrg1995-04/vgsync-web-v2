@@ -1,10 +1,17 @@
-import { clearSession, getSession } from '../lib/auth';
+import {
+  clearSession,
+  getSession,
+  canSwitchBranch,
+  switchActiveBranch,
+  getAccessibleBranches,
+} from '../lib/auth';
 
 const root = document.documentElement;
 const shell = document.getElementById('app-shell');
 const sidebarToggle = document.getElementById('sidebar-toggle');
 const logoutBtn = document.getElementById('sidebar-logout');
 const themeChips = document.querySelectorAll<HTMLButtonElement>('[data-theme-value]');
+const branchSelect = document.getElementById('branch-select') as HTMLSelectElement | null;
 
 type Theme = 'dark' | 'light';
 
@@ -23,7 +30,6 @@ const setTheme = (theme: Theme): void => {
   });
 };
 
-// Init theme chips
 setTheme(getCurrentTheme());
 
 themeChips.forEach((chip) => {
@@ -33,12 +39,10 @@ themeChips.forEach((chip) => {
   });
 });
 
-// Sidebar toggle (mobile / collapsed)
 sidebarToggle?.addEventListener('click', () => {
   shell?.classList.toggle('sidebar-open');
 });
 
-// Close sidebar when clicking outside on mobile
 document.addEventListener('click', (e) => {
   if (!shell?.classList.contains('sidebar-open')) return;
   const target = e.target as Node;
@@ -52,14 +56,56 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Logout
 logoutBtn?.addEventListener('click', (e) => {
   e.preventDefault();
   clearSession();
   window.location.href = '/';
 });
 
-// Guard: if somehow no session, kick back to login
+// ——— Branch switch (HO only) ———
+function refreshBranchUI(): void {
+  const session = getSession();
+  if (!session) return;
+
+  const branchLabel = document.getElementById('branch-label');
+  if (branchLabel) branchLabel.textContent = session.activeBranchName;
+
+  const subEl = document.querySelector('.profile-sub');
+  if (subEl) {
+    subEl.textContent = `${session.roleLabel} · ${session.activeBranchName}`;
+  }
+
+  const branchInfo = document.getElementById('skeleton-branch-info');
+  if (branchInfo) {
+    branchInfo.textContent = `Active: ${session.activeBranchCode} — ${session.activeBranchName}`;
+  }
+}
+
+if (branchSelect) {
+  const session = getSession();
+  if (session && canSwitchBranch(session)) {
+    const branches = getAccessibleBranches(session);
+    branchSelect.innerHTML = branches
+      .map(
+        (b) =>
+          `<option value="${b.code}" ${b.code === session.activeBranchCode ? 'selected' : ''}>${b.name} (${b.code})</option>`,
+      )
+      .join('');
+
+    branchSelect.addEventListener('change', () => {
+      const code = branchSelect.value;
+      const updated = switchActiveBranch(code);
+      if (updated) {
+        refreshBranchUI();
+        // Later: re-fetch page data for the selected branch from Django
+        // For now just update the UI context
+      }
+    });
+  } else if (branchSelect) {
+    branchSelect.style.display = 'none';
+  }
+}
+
 if (!getSession()) {
   window.location.replace('/');
 }
