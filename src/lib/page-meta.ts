@@ -41,6 +41,14 @@ export const PAGE_META: Record<string, PageMeta> = {
     skeletonHint:
       'Purchase orders and supplier bills will appear here.<br />Scoped to the active branch.',
   },
+  suppliers: {
+    id: 'suppliers',
+    title: 'Suppliers',
+    breadcrumb: 'Suppliers /',
+    skeletonTitle: 'Suppliers',
+    skeletonHint:
+      'Supplier directory, contacts and payables will appear here.<br />Scoped to the active branch.',
+  },
   payments: {
     id: 'payments',
     title: 'Payments',
