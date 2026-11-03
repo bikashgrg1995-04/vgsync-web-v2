@@ -37,7 +37,6 @@ body:has(.app-shell) {
   transition: transform 0.2s ease;
 }
 
-/* Modern identity card */
 .sidebar-top-card {
   flex-shrink: 0;
   margin: 0 0 14px;
@@ -163,7 +162,7 @@ body:has(.app-shell) {
 }
 
 .sidebar-nav {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -221,14 +220,59 @@ body:has(.app-shell) {
   text-overflow: ellipsis;
 }
 
-.sidebar-footer {
+.sidebar-bottom {
   flex: 0 0 auto;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--panel-divider);
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+.sidebar-footer {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--panel-divider);
+}
+
+.sidebar-meta {
+  margin-top: 12px;
+  padding: 11px 10px 8px;
+  border-radius: 11px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.sidebar-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.sidebar-feature-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.sidebar-version {
+  margin: 0 0 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sidebar-copy {
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  color: var(--text-muted);
 }
 
 .sidebar-logout-btn {
