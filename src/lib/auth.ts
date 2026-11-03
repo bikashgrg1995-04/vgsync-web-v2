@@ -16,7 +16,7 @@ export interface Branch {
 }
 
 export interface DemoUser {
-  branchCode: string; // home / assigned branch
+  branchCode: string;
   username: string;
   password: string;
   displayName: string;
@@ -26,20 +26,17 @@ export interface DemoUser {
 }
 
 export interface AuthSession {
-  /** User's home / login branch */
   homeBranchCode: string;
   username: string;
   displayName: string;
   role: UserRole;
   roleLabel: string;
   homeBranchName: string;
-  /** Currently selected branch (HO can change this) */
   activeBranchCode: string;
   activeBranchName: string;
   loggedInAt: string;
 }
 
-/** All branches in the system (demo) */
 export const BRANCHES: Branch[] = [
   { code: 'HO', name: 'Head Office', city: 'Kathmandu' },
   { code: 'BHP', name: 'Bharatpur Branch', city: 'Bharatpur' },
@@ -48,24 +45,22 @@ export const BRANCHES: Branch[] = [
 ];
 
 export const DEMO_USERS: DemoUser[] = [
-  // Head Office
   {
     branchCode: 'HO',
     username: 'admin',
     password: 'admin123',
     displayName: 'Bikash Gurung',
     role: 'headoffice',
-    roleLabel: 'Head Office Admin',
+    roleLabel: 'Admin',
     branchName: 'Head Office',
   },
-  // Bharatpur
   {
     branchCode: 'BHP',
     username: 'manager',
     password: 'manager123',
     displayName: 'Sujan Shrestha',
     role: 'branch_manager',
-    roleLabel: 'Branch Manager',
+    roleLabel: 'Manager',
     branchName: 'Bharatpur Branch',
   },
   {
@@ -74,17 +69,16 @@ export const DEMO_USERS: DemoUser[] = [
     password: 'staff123',
     displayName: 'Anita Thapa',
     role: 'staff',
-    roleLabel: 'Sales Staff',
+    roleLabel: 'Staff',
     branchName: 'Bharatpur Branch',
   },
-  // Pokhara
   {
     branchCode: 'PKR',
     username: 'manager',
     password: 'manager123',
     displayName: 'Ramesh Adhikari',
     role: 'branch_manager',
-    roleLabel: 'Branch Manager',
+    roleLabel: 'Manager',
     branchName: 'Pokhara Branch',
   },
   {
@@ -93,17 +87,16 @@ export const DEMO_USERS: DemoUser[] = [
     password: 'staff123',
     displayName: 'Sunita Karki',
     role: 'staff',
-    roleLabel: 'Sales Staff',
+    roleLabel: 'Staff',
     branchName: 'Pokhara Branch',
   },
-  // Butwal
   {
     branchCode: 'BTL',
     username: 'manager',
     password: 'manager123',
     displayName: 'Prakash Magar',
     role: 'branch_manager',
-    roleLabel: 'Branch Manager',
+    roleLabel: 'Manager',
     branchName: 'Butwal Branch',
   },
 ];
@@ -140,7 +133,6 @@ export function saveSession(user: DemoUser): AuthSession {
     role: user.role,
     roleLabel: user.roleLabel,
     homeBranchName: user.branchName,
-    // On login, active branch = home branch
     activeBranchCode: user.branchCode,
     activeBranchName: user.branchName,
     loggedInAt: new Date().toISOString(),
@@ -149,7 +141,7 @@ export function saveSession(user: DemoUser): AuthSession {
   try {
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   } catch {
-    // localStorage may be unavailable
+    // ignore
   }
 
   return session;
@@ -177,15 +169,10 @@ export function isAuthenticated(): boolean {
   return getSession() !== null;
 }
 
-/** Only Head Office can switch branches */
 export function canSwitchBranch(session: AuthSession | null): boolean {
   return session?.role === 'headoffice';
 }
 
-/**
- * Switch active branch context (HO only).
- * Returns updated session or null if not allowed / invalid branch.
- */
 export function switchActiveBranch(branchCode: string): AuthSession | null {
   const session = getSession();
   if (!session || !canSwitchBranch(session)) return null;
@@ -208,11 +195,9 @@ export function switchActiveBranch(branchCode: string): AuthSession | null {
   return updated;
 }
 
-/** Branches the current user is allowed to see/select */
 export function getAccessibleBranches(session: AuthSession | null): Branch[] {
   if (!session) return [];
   if (session.role === 'headoffice') return BRANCHES;
-  // Branch users: only their own branch
   const own = getBranchByCode(session.homeBranchCode);
   return own ? [own] : [];
 }

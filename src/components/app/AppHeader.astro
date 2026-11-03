@@ -33,8 +33,26 @@ const {
     </div>
   </div>
 
+  <div class="header-center">
+    <div class="header-search" role="search">
+      <svg class="header-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input
+        type="search"
+        class="header-search-input"
+        id="header-search"
+        placeholder="Search…"
+        autocomplete="off"
+        aria-label="Search"
+      />
+    </div>
+  </div>
+
   <div class="header-right">
     <div class="header-branch" id="header-branch">
+      <span class="branch-prefix">Branch</span>
       <span class="branch-label" id="branch-label">{branchName}</span>
       {showBranchSwitcher && (
         <select
@@ -47,13 +65,6 @@ const {
       )}
     </div>
 
-    <button type="button" class="header-icon-btn" aria-label="Search">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="11" cy="11" r="8"/>
-        <path d="m21 21-4.3-4.3"/>
-      </svg>
-    </button>
-
     <button type="button" class="header-icon-btn" aria-label="Notifications">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
@@ -62,7 +73,6 @@ const {
       <span class="header-badge" aria-hidden="true"></span>
     </button>
 
-    {/* Profile + dropdown */}
     <div class="profile-wrap" id="profile-wrap">
       <button
         type="button"
@@ -124,3 +134,15 @@ const {
     </div>
   </div>
 </header>
+
+{/* Logout confirmation dialog */}
+<dialog class="logout-dialog" id="logout-dialog" aria-labelledby="logout-dialog-title">
+  <div class="logout-dialog-inner">
+    <h2 class="logout-dialog-title" id="logout-dialog-title">Log out?</h2>
+    <p class="logout-dialog-text">Are you sure you want to log out of VGSync?</p>
+    <div class="logout-dialog-actions">
+      <button type="button" class="logout-dialog-cancel" id="logout-cancel">Cancel</button>
+      <button type="button" class="logout-dialog-confirm" id="logout-confirm">Logout</button>
+    </div>
+  </div>
+</dialog>

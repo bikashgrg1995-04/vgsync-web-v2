@@ -20,6 +20,10 @@ const profileBtn = document.getElementById('header-profile');
 const profileMenu = document.getElementById('profile-menu');
 const profileWrap = document.getElementById('profile-wrap');
 
+const logoutDialog = document.getElementById('logout-dialog') as HTMLDialogElement | null;
+const logoutCancel = document.getElementById('logout-cancel');
+const logoutConfirm = document.getElementById('logout-confirm');
+
 type Theme = 'dark' | 'light';
 const THEME_KEY = 'vgsync-theme';
 
@@ -69,14 +73,37 @@ function doLogout(): void {
   window.location.href = '/';
 }
 
+function openLogoutDialog(): void {
+  closeProfileMenu();
+  if (logoutDialog && typeof logoutDialog.showModal === 'function') {
+    logoutDialog.showModal();
+  } else {
+    // Fallback if dialog not supported
+    if (window.confirm('Are you sure you want to log out of VGSync?')) {
+      doLogout();
+    }
+  }
+}
+
+function closeLogoutDialog(): void {
+  logoutDialog?.close();
+}
+
 logoutBtn?.addEventListener('click', (e) => {
   e.preventDefault();
-  doLogout();
+  openLogoutDialog();
 });
 
 profileLogout?.addEventListener('click', (e) => {
   e.preventDefault();
-  doLogout();
+  openLogoutDialog();
+});
+
+logoutCancel?.addEventListener('click', () => closeLogoutDialog());
+logoutConfirm?.addEventListener('click', () => doLogout());
+
+logoutDialog?.addEventListener('click', (e) => {
+  if (e.target === logoutDialog) closeLogoutDialog();
 });
 
 /* —— Profile dropdown —— */
@@ -107,7 +134,10 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeProfileMenu();
+  if (e.key === 'Escape') {
+    closeProfileMenu();
+    closeLogoutDialog();
+  }
 });
 
 function applySessionUI(): void {
@@ -136,7 +166,7 @@ function applySessionUI(): void {
 
   const branchInfo = document.getElementById('skeleton-branch-info');
   if (branchInfo) {
-    branchInfo.textContent = `Active: ${session.activeBranchCode} — ${session.activeBranchName}`;
+    branchInfo.textContent = `Branch: ${session.activeBranchCode} — ${session.activeBranchName}`;
   }
 
   const allowed = new Set(
