@@ -12,11 +12,15 @@ const root = document.documentElement;
 const shell = document.getElementById('app-shell');
 const sidebarToggle = document.getElementById('sidebar-toggle');
 const logoutBtn = document.getElementById('sidebar-logout');
+const profileLogout = document.getElementById('profile-logout');
 const themeChips = document.querySelectorAll<HTMLButtonElement>('[data-theme-value]');
 const branchSelect = document.getElementById('branch-select') as HTMLSelectElement | null;
 
-type Theme = 'dark' | 'light';
+const profileBtn = document.getElementById('header-profile');
+const profileMenu = document.getElementById('profile-menu');
+const profileWrap = document.getElementById('profile-wrap');
 
+type Theme = 'dark' | 'light';
 const THEME_KEY = 'vgsync-theme';
 
 const getCurrentTheme = (): Theme =>
@@ -29,12 +33,11 @@ const setTheme = (theme: Theme): void => {
   } catch {
     // ignore
   }
-  themeChips.forEach((chip) => {
-    chip.classList.toggle('is-active', chip.dataset.themeValue === theme);
+  document.querySelectorAll<HTMLElement>('[data-theme-value]').forEach((el) => {
+    el.classList.toggle('is-active', el.dataset.themeValue === theme);
   });
 };
 
-// Always apply saved theme (same key as login page)
 setTheme(getCurrentTheme());
 
 themeChips.forEach((chip) => {
@@ -61,11 +64,50 @@ document.addEventListener('click', (e) => {
   }
 });
 
+function doLogout(): void {
+  clearSession();
+  window.location.href = '/';
+}
+
 logoutBtn?.addEventListener('click', (e) => {
   e.preventDefault();
-  clearSession();
-  // Keep theme when returning to login
-  window.location.href = '/';
+  doLogout();
+});
+
+profileLogout?.addEventListener('click', (e) => {
+  e.preventDefault();
+  doLogout();
+});
+
+/* —— Profile dropdown —— */
+function openProfileMenu(): void {
+  if (!profileMenu || !profileBtn) return;
+  profileMenu.hidden = false;
+  profileBtn.setAttribute('aria-expanded', 'true');
+  profileWrap?.classList.add('is-open');
+}
+
+function closeProfileMenu(): void {
+  if (!profileMenu || !profileBtn) return;
+  profileMenu.hidden = true;
+  profileBtn.setAttribute('aria-expanded', 'false');
+  profileWrap?.classList.remove('is-open');
+}
+
+profileBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (profileMenu?.hidden) openProfileMenu();
+  else closeProfileMenu();
+});
+
+document.addEventListener('click', (e) => {
+  if (!profileWrap?.contains(e.target as Node)) {
+    closeProfileMenu();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeProfileMenu();
 });
 
 function applySessionUI(): void {
@@ -82,6 +124,13 @@ function applySessionUI(): void {
     subEl.textContent = `${session.roleLabel} · ${session.activeBranchName}`;
   }
 
+  const menuName = document.getElementById('profile-menu-name');
+  const menuRole = document.getElementById('profile-menu-role');
+  const menuBranch = document.getElementById('profile-menu-branch');
+  if (menuName) menuName.textContent = session.displayName;
+  if (menuRole) menuRole.textContent = session.roleLabel;
+  if (menuBranch) menuBranch.textContent = session.activeBranchName;
+
   const branchLabel = document.getElementById('branch-label');
   if (branchLabel) branchLabel.textContent = session.activeBranchName;
 
@@ -97,12 +146,8 @@ function applySessionUI(): void {
     const id = el.dataset.navId;
     if (!id || id === 'settings' || id === 'logout') return;
     const li = el.closest('li');
-    const target = li ?? el;
-    if (!allowed.has(id)) {
-      (target as HTMLElement).style.display = 'none';
-    } else {
-      (target as HTMLElement).style.display = '';
-    }
+    const target = (li ?? el) as HTMLElement;
+    target.style.display = allowed.has(id) ? '' : 'none';
   });
 
   if (branchSelect) {
