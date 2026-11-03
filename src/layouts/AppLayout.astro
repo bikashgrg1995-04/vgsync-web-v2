@@ -1,0 +1,56 @@
+---
+import Layout from './Layout.astro';
+import AppSidebar from '../components/app/AppSidebar.astro';
+import AppHeader from '../components/app/AppHeader.astro';
+import type { NavItem } from '../lib/navigation';
+
+import '../styles/app/app-shell.css';
+
+interface Props {
+  title?: string;
+  pageTitle?: string;
+  breadcrumb?: string;
+  activeId?: string;
+  navItems: NavItem[];
+  bottomItems: NavItem[];
+  displayName?: string;
+  roleLabel?: string;
+  branchName?: string;
+}
+
+const {
+  title = 'VGSync | Dashboard',
+  pageTitle = 'Dashboard',
+  breadcrumb = 'Overview /',
+  activeId = 'overview',
+  navItems,
+  bottomItems,
+  displayName = 'User',
+  roleLabel = 'Role',
+  branchName = 'Branch',
+} = Astro.props;
+---
+
+<Layout title={title}>
+  <div class="app-shell" id="app-shell">
+    <AppSidebar items={navItems} bottomItems={bottomItems} activeId={activeId} />
+
+    <div class="app-main">
+      <AppHeader
+        pageTitle={pageTitle}
+        breadcrumb={breadcrumb}
+        displayName={displayName}
+        roleLabel={roleLabel}
+        branchName={branchName}
+      />
+
+      <main class="app-content" id="app-content">
+        <slot />
+      </main>
+    </div>
+  </div>
+
+  <script>
+    import '../scripts/app-shell.ts';
+  </script>
+</Layout>

@@ -1,0 +1,52 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import type { UserRole } from '../lib/auth';
+
+// Default demo values used for SSR / first paint.
+// Real session is applied client-side from localStorage.
+const defaultRole: UserRole = 'headoffice';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title="VGSync | Dashboard"
+  pageTitle="Dashboard"
+  breadcrumb="Overview /"
+  activeId="overview"
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="Bikash Gurung"
+  roleLabel="Head Office Admin"
+  branchName="Head Office"
+>
+  <div class="content-skeleton" id="content-skeleton">
+    <div class="skeleton-placeholder">
+      <p class="skeleton-title">Main content area</p>
+      <p class="skeleton-hint">
+        This shell is ready for backend-driven pages.<br />
+        Menu items and permissions will come from Django based on role & branch.
+      </p>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  import { getSession, clearSession } from '../lib/auth';
+  import { getNavItemsForRole } from '../lib/navigation';
+
+  // Protect route — redirect to login if no session
+  const session = getSession();
+  if (!session) {
+    window.location.replace('/');
+  } else {
+    // Update header with real session data
+    const nameEl = document.querySelector('.profile-name');
+    const subEl = document.querySelector('.profile-sub');
+    if (nameEl) nameEl.textContent = session.displayName;
+    if (subEl) subEl.textContent = `${session.roleLabel} · ${session.branchName}`;
+
+    // Optionally re-render nav based on role (already mostly correct for headoffice)
+    // Full dynamic nav rebuild can be added when more pages exist.
+  }
+</script>
