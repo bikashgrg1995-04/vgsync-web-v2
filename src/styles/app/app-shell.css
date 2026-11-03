@@ -37,7 +37,6 @@ body:has(.app-shell) {
   transition: transform 0.2s ease;
 }
 
-/* Unified brand + profile card */
 .sidebar-top-card {
   flex-shrink: 0;
   margin: 0 2px 12px;
@@ -326,24 +325,23 @@ body:has(.app-shell) {
   line-height: 1.2;
 }
 
-.header-center {
-  flex: 1;
+.header-right {
   display: flex;
-  justify-content: center;
-  min-width: 0;
-  max-width: 420px;
-  margin: 0 auto;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .header-search {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
-  height: 36px;
-  padding: 0 12px;
+  width: 220px;
+  height: 34px;
+  padding: 0 11px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--surface);
 }
 
@@ -366,58 +364,30 @@ body:has(.app-shell) {
   background: transparent;
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .header-search-input::placeholder {
   color: var(--text-muted);
 }
 
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.header-branch {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-right: 2px;
-}
-
-.branch-prefix {
-  font-size: 0.72rem;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-
-.branch-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
 .branch-select {
-  max-width: 190px;
-  height: 32px;
-  padding: 0 26px 0 9px;
+  height: 34px;
+  min-width: 160px;
+  max-width: 200px;
+  padding: 0 28px 0 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 9px;
   background: var(--surface);
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 7px center;
+  background-position: right 8px center;
 }
 
 .branch-select:focus {
@@ -743,10 +713,15 @@ body:has(.app-shell) {
   }
 
   .sidebar-toggle { display: grid; }
-  .branch-label,
-  .branch-prefix { display: none; }
 
-  .header-center { max-width: 180px; }
+  .header-search {
+    width: 160px;
+  }
+
+  .branch-select {
+    min-width: 130px;
+    max-width: 150px;
+  }
 }
 
 @media (max-width: 560px) {
@@ -756,9 +731,13 @@ body:has(.app-shell) {
   }
 
   .app-content { padding: 14px 12px; }
-  .header-center { display: none; }
+
+  .header-search {
+    width: 120px;
+  }
 
   .branch-select {
+    min-width: 110px;
     max-width: 130px;
     font-size: 0.72rem;
   }
