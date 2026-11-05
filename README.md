@@ -1,46 +1,33 @@
-# Astro Starter Kit: Basics
+# VGSync Web (v2)
+
+Astro frontend for the VGSync backend (`vgsync-backend-v2`).
+
+## Run locally
 
 ```sh
-npm create astro@latest -- --template basics
+cp .env.example .env      # PUBLIC_API_URL, default http://localhost:8000/api/v1
+npm ci
+npm run dev               # http://localhost:4321
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+The backend must allow this origin: `CORS_ALLOWED_ORIGINS=http://localhost:4321`, and `FRONTEND_URL=http://localhost:4321` so password-reset emails link here. With `EMAIL_HOST` empty the backend prints the email (and link) to its console.
 
-## 🚀 Project Structure
+## Authentication
 
-Inside of your Astro project, you'll see the following folders and files:
+| Page | What it does |
+| --- | --- |
+| `/` | Sign in with business code, username, password. "Remember me" keeps the session after the browser closes and pre-fills the business code and username. |
+| `/forgot-password` | Asks the backend to email a reset link. |
+| `/reset-password?uid=..&token=..` | Opens from the email link and sets a new password. |
+| `/dashboard/change-password` | Forced on first login (`must_change_password`), also reachable from Settings. Signs the user out everywhere afterwards. |
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
-```
+How it works (`src/lib/`):
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+- `api.ts` sends the Bearer token, refreshes it once on a 401 (refresh tokens rotate, so one refresh is shared by parallel requests), and sends the user to sign-in if the refresh fails.
+- `session-store.ts` keeps the session in `localStorage` when "Remember me" is ticked, otherwise in `sessionStorage`. Tokens are readable by scripts on this origin, so do not add third-party scripts.
+- `auth.ts` has `login`, `logout` (revokes the refresh token on the server), `forgotPassword`, `resetPassword`, `changePassword`, `refreshProfile`, and branch switching (`loadBranches`, `switchBranch`).
+- Signing out in one tab signs out the others.
 
-## 🧞 Commands
+## Not connected to the API yet
 
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+The Staff page (`src/lib/staff-demo.ts`), customers, inventory, suppliers and the Settings profile/preferences still use demo data stored in the browser.

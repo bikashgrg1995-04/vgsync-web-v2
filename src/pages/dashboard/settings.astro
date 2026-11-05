@@ -179,7 +179,7 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession, canSwitchBranch, updateSession } from '../../lib/auth';
+  import { getSession, canSwitchBranch } from '../../lib/auth';
   import { paintAvatar, setAvatarFromFile, clearAvatar } from '../../lib/avatar';
 
   const PREFS_KEY = 'vgsync-settings';
@@ -229,16 +229,18 @@ const navItems = getNavItemsForRole(defaultRole);
     if (val('set-role')) val('set-role')!.value = session.roleLabel;
     if (val('set-home-branch')) val('set-home-branch')!.value = session.homeBranchName;
 
+    const me = session;
+
     async function onAvatarFile(file: File | undefined | null) {
       if (!file) return;
-      const result = await setAvatarFromFile(session.userId, file);
+      const result = await setAvatarFromFile(me.userId, file);
       if (!result.ok) {
         if (avatarHint) { avatarHint.textContent = result.error; avatarHint.classList.add('is-error'); }
         toast(result.error);
         return;
       }
-      paintAvatar(avatar, session.userId, session.displayName);
-      paintAvatar(document.getElementById('sidebar-profile-initials'), session.userId, session.displayName);
+      paintAvatar(avatar, me.userId, me.displayName);
+      paintAvatar(document.getElementById('sidebar-profile-initials'), me.userId, me.displayName);
       if (avatarHint) { avatarHint.textContent = 'JPG, PNG or WebP · max 512 KB'; avatarHint.classList.remove('is-error'); }
       toast('Profile photo updated');
     }
@@ -313,7 +315,6 @@ const navItems = getNavItemsForRole(defaultRole);
 
     document.getElementById('save-profile')?.addEventListener('click', () => {
       const name = val('set-display-name')?.value.trim() || session.displayName;
-      updateSession({ displayName: name });
       if (nameLine) nameLine.textContent = name;
       paintAvatar(avatar, session.userId, name);
       const sideName = document.getElementById('sidebar-profile-name');

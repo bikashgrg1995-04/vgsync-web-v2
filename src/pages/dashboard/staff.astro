@@ -79,13 +79,12 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
+  import { getSession, canManageStaff } from '../../lib/auth';
   import {
-    getSession,
-    canManageStaff,
     assignStaff,
     listStaffForManagement,
     getAssignableBranches,
-  } from '../../lib/auth';
+  } from '../../lib/staff-demo';
 
   const session = getSession();
   if (!session) {
@@ -102,7 +101,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
   if (session && scopeHint) {
     if (session.role === 'branch_owner') {
-      scopeHint.textContent = `You can assign staff only for ${session.homeBranchName}.`;
+      scopeHint.textContent = `You can assign staff only for ${session.activeBranchName}.`;
     } else {
       scopeHint.textContent =
         'System owner/admin can assign staff to any branch. New users must update password on first login.';

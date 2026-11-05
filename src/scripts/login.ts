@@ -1,4 +1,4 @@
-import { findDemoUser, saveSession } from '../lib/auth';
+import { ApiError, getSession, login, readRemembered } from '../lib/auth';
 
 const root = document.documentElement;
 
@@ -10,7 +10,11 @@ const moonIcon = document.querySelector<SVGElement>('#theme-moon-icon');
 const passwordInput = document.querySelector<HTMLInputElement>('#password');
 const passwordToggle = document.querySelector<HTMLButtonElement>('#password-toggle');
 const loginForm = document.querySelector<HTMLFormElement>('#login-form');
-const forgotPasswordButton = document.querySelector<HTMLButtonElement>('#forgot-password');
+const forgotPasswordLink = document.querySelector<HTMLAnchorElement>('#forgot-password');
+const submitButton = document.querySelector<HTMLButtonElement>('#login-submit');
+const rememberCheckbox = document.querySelector<HTMLInputElement>('#remember-me');
+const branchInput = document.querySelector<HTMLInputElement>('#branch-code');
+const usernameInput = document.querySelector<HTMLInputElement>('#username');
 const formMessage = document.querySelector<HTMLElement>('#form-message');
 
 type Theme = 'dark' | 'light';
@@ -72,48 +76,87 @@ const clearFormMessage = (): void => {
   formMessage.classList.remove('is-visible', 'is-error', 'is-success');
 };
 
-loginForm?.addEventListener('submit', (event: SubmitEvent) => {
+// Already signed in -> skip the login screen.
+const existing = getSession();
+if (existing) {
+  window.location.replace(existing.mustChangePassword ? '/dashboard/change-password' : '/dashboard');
+}
+
+// "Remember me" pre-fills the business code and username.
+const remembered = readRemembered();
+if (remembered) {
+  if (branchInput) branchInput.value = remembered.businessCode;
+  if (usernameInput) usernameInput.value = remembered.username;
+  if (rememberCheckbox) rememberCheckbox.checked = true;
+  document.querySelector<HTMLInputElement>('#password')?.focus();
+}
+
+// Notices sent here by other pages (?notice=...).
+const NOTICES: Record<string, [string, MessageType]> = {
+  expired: ['Your session has expired. Please sign in again.', 'info'],
+  'password-changed': ['Password changed. Please sign in with your new password.', 'success'],
+  'password-reset': ['Password reset. Please sign in with your new password.', 'success'],
+  'logged-out': ['You have been signed out.', 'info'],
+};
+const notice = new URLSearchParams(window.location.search).get('notice');
+if (notice && NOTICES[notice]) {
+  showFormMessage(NOTICES[notice][0], NOTICES[notice][1]);
+  window.history.replaceState(null, '', window.location.pathname);
+}
+
+let submitting = false;
+
+loginForm?.addEventListener('submit', async (event: SubmitEvent) => {
   event.preventDefault();
+  if (submitting) return;
   clearFormMessage();
 
-  const form = event.currentTarget as HTMLFormElement;
-  const formData = new FormData(form);
+  const formData = new FormData(event.currentTarget as HTMLFormElement);
 
-  const branchCode = String(formData.get('branch_code') || '').trim();
+  const businessCode = String(formData.get('branch_code') || '').trim();
   const username = String(formData.get('username') || '').trim();
   const password = String(formData.get('password') || '');
+  const remember = formData.get('remember_me') === 'on';
 
-  if (!branchCode || !username || !password) {
+  if (!businessCode || !username || !password) {
     showFormMessage('Please fill in all fields.', 'error');
     return;
   }
 
-  const user = findDemoUser(branchCode, username, password);
+  submitting = true;
+  submitButton?.setAttribute('disabled', '');
+  const label = submitButton?.querySelector('span');
+  if (label) label.textContent = 'Signing in…';
 
-  if (!user) {
-    showFormMessage('Invalid branch code, username or password.', 'error');
-    return;
-  }
+  try {
+    const session = await login({ businessCode, username, password, remember });
 
-  const session = saveSession(user);
-
-  if (session.mustChangePassword) {
-    showFormMessage('First login — please update your password.', 'info');
-    setTimeout(() => {
+    if (session.mustChangePassword) {
+      showFormMessage('First login — please update your password.', 'info');
       window.location.href = '/dashboard/change-password';
-    }, 400);
-    return;
-  }
+      return;
+    }
 
-  showFormMessage(`Welcome, ${user.displayName}. Redirecting…`, 'success');
-  setTimeout(() => {
+    showFormMessage(`Welcome, ${session.displayName}. Redirecting…`, 'success');
     window.location.href = '/dashboard';
-  }, 450);
+  } catch (error) {
+    showFormMessage(
+      error instanceof ApiError ? error.message : 'Something went wrong. Please try again.',
+      'error',
+    );
+    submitting = false;
+    submitButton?.removeAttribute('disabled');
+    if (label) label.textContent = 'Sign In';
+  }
 });
 
-forgotPasswordButton?.addEventListener('click', () => {
-  clearFormMessage();
-  showFormMessage('Please contact the owner to reset your password.', 'info');
+// Carry what was typed over to the forgot-password page.
+forgotPasswordLink?.addEventListener('click', () => {
+  const params = new URLSearchParams();
+  if (branchInput?.value.trim()) params.set('business_code', branchInput.value.trim());
+  if (usernameInput?.value.trim()) params.set('username', usernameInput.value.trim());
+  const query = params.toString();
+  forgotPasswordLink.href = query ? `/forgot-password?${query}` : '/forgot-password';
 });
 
 loginForm?.querySelectorAll<HTMLInputElement>('input').forEach((input) => {
