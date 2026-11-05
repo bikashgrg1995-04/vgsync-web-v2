@@ -1,11 +1,14 @@
 import {
-  clearSession,
   getSession,
+  refreshProfile,
+  logout,
   canSwitchBranch,
-  switchActiveBranch,
-  getAccessibleBranches,
+  loadBranches,
+  switchBranch,
   type UserRole,
 } from '../lib/auth';
+import { AUTH_STORAGE_KEY } from '../lib/session-store';
+import { redirectToLogin } from '../lib/api';
 import { getNavItemsForRole } from '../lib/navigation';
 import { paintAvatar } from '../lib/avatar';
 
@@ -22,13 +25,6 @@ const logoutConfirm = document.getElementById('logout-confirm');
 
 type Theme = 'dark' | 'light';
 const THEME_KEY = 'vgsync-theme';
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return 'U';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 const getCurrentTheme = (): Theme =>
   root.dataset.theme === 'light' ? 'light' : 'dark';
@@ -89,16 +85,22 @@ document.addEventListener('click', (e) => {
   }
 });
 
-function doLogout(): void {
-  clearSession();
-  window.location.href = '/';
+let loggingOut = false;
+
+async function doLogout(): Promise<void> {
+  if (loggingOut) return;
+  loggingOut = true;
+  if (logoutConfirm instanceof HTMLButtonElement) logoutConfirm.disabled = true;
+  // Revokes the refresh token on the server and clears this browser's session.
+  await logout();
+  window.location.replace('/?notice=logged-out');
 }
 
 function openLogoutDialog(): void {
   if (logoutDialog && typeof logoutDialog.showModal === 'function') {
     logoutDialog.showModal();
   } else if (window.confirm('Are you sure you want to log out of VGSync?')) {
-    doLogout();
+    void doLogout();
   }
 }
 
@@ -112,7 +114,7 @@ logoutBtn?.addEventListener('click', (e) => {
 });
 
 logoutCancel?.addEventListener('click', () => closeLogoutDialog());
-logoutConfirm?.addEventListener('click', () => doLogout());
+logoutConfirm?.addEventListener('click', () => void doLogout());
 
 logoutDialog?.addEventListener('click', (e) => {
   if (e.target === logoutDialog) closeLogoutDialog();
@@ -167,24 +169,61 @@ function applySessionUI(): void {
       branchSelect.style.display = 'none';
     } else {
       branchSelect.style.display = '';
-      const branches = getAccessibleBranches(session);
-      const current = session.activeBranchCode;
-      branchSelect.innerHTML = branches
-        .map(
-          (b) =>
-            `<option value="${b.code}" ${b.code === current ? 'selected' : ''}>${b.name} (${b.code})</option>`,
-        )
-        .join('');
+      void fillBranches(session.activeBusinessId);
     }
   }
 }
 
+async function fillBranches(activeId: number): Promise<void> {
+  if (!branchSelect) return;
+  try {
+    const branches = await loadBranches();
+    branchSelect.innerHTML = branches
+      .map(
+        (b) =>
+          `<option value="${b.id}" ${b.id === activeId ? 'selected' : ''}>${escapeHtml(b.name)} (${escapeHtml(b.code)})</option>`,
+      )
+      .join('');
+  } catch {
+    // Keep whatever is shown; the user can reload to try again.
+  }
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
 if (branchSelect) {
-  branchSelect.addEventListener('change', () => {
-    const code = branchSelect.value;
-    const updated = switchActiveBranch(code);
-    if (updated) applySessionUI();
+  branchSelect.addEventListener('change', async () => {
+    const id = Number(branchSelect.value);
+    branchSelect.disabled = true;
+    try {
+      await switchBranch(id);
+      // Pages load their data for the active branch, so reload them.
+      window.location.reload();
+    } catch {
+      branchSelect.disabled = false;
+      const current = getSession();
+      if (current) void fillBranches(current.activeBusinessId);
+    }
   });
 }
 
 applySessionUI();
+
+// Check with the server that the account and branch are still valid (it may
+// have been deactivated, or its password changed on another device).
+if (getSession()) {
+  refreshProfile()
+    .then((fresh) => {
+      if (fresh) applySessionUI();
+    })
+    .catch(() => {
+      // 401s already redirect to login; other errors (offline) are ignored.
+    });
+}
+
+// Signed out in another tab -> sign out here too.
+window.addEventListener('storage', (event) => {
+  if (event.key === AUTH_STORAGE_KEY && !getSession()) redirectToLogin('logged-out');
+});

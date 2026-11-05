@@ -1,13 +1,23 @@
 /**
- * Demo authentication + branch context for VGSync frontend.
- * Replace with real Django API calls later.
- *
- * Roles:
- * - owner: system owner (HO) — all branches + staff assign anywhere
- * - branch_owner: owns one branch — staff assign for own branch only
- * - headoffice / branch_manager / staff: operational roles
+ * Authentication for the VGSync frontend, talking to the Django API
+ * (/api/v1/auth/*). The session is kept by ./session-store.
  */
 
+import { api, ApiError } from './api';
+import {
+  clearAuth,
+  readAuth,
+  readRemembered,
+  writeAuth,
+  writeRemembered,
+  type ApiBusiness,
+  type ApiUser,
+  type StoredAuth,
+} from './session-store';
+
+export { readRemembered };
+
+/** Roles used by the menu. Derived from the API role and where the user works. */
 export type UserRole =
   | 'owner'
   | 'branch_owner'
@@ -16,432 +26,275 @@ export type UserRole =
   | 'staff';
 
 export interface Branch {
+  id: number;
   code: string;
   name: string;
-  city: string;
-}
-
-export interface DemoUser {
-  id: string;
-  branchCode: string;
-  username: string;
-  password: string;
-  displayName: string;
-  role: UserRole;
-  roleLabel: string;
-  branchName: string;
-  mustChangePassword: boolean;
-  active: boolean;
+  type: string;
 }
 
 export interface AuthSession {
   userId: string;
-  homeBranchCode: string;
   username: string;
   displayName: string;
+  email: string;
   role: UserRole;
   roleLabel: string;
+  /** Business the user signed in with. */
+  homeBranchCode: string;
   homeBranchName: string;
+  /** Business the user is working in right now. */
   activeBranchCode: string;
   activeBranchName: string;
+  activeBusinessId: number;
+  businessType: string;
+  accessMode: 'full' | 'read_only';
+  companyName: string | null;
   mustChangePassword: boolean;
+  remember: boolean;
   loggedInAt: string;
 }
 
-export const BRANCHES: Branch[] = [
-  { code: 'HO', name: 'Head Office', city: 'Kathmandu' },
-  { code: 'BHP', name: 'Bharatpur Branch', city: 'Bharatpur' },
-  { code: 'PKR', name: 'Pokhara Branch', city: 'Pokhara' },
-  { code: 'BTL', name: 'Butwal Branch', city: 'Butwal' },
-];
-
-const SEED_USERS: DemoUser[] = [
-  // System owner
-  {
-    id: 'u-owner',
-    branchCode: 'HO',
-    username: 'owner',
-    password: 'owner123',
-    displayName: 'Bikash Gurung',
-    role: 'owner',
-    roleLabel: 'Owner',
-    branchName: 'Head Office',
-    mustChangePassword: true,
-    active: true,
-  },
-  // Branch owners
-  {
-    id: 'u-bhp-owner',
-    branchCode: 'BHP',
-    username: 'owner',
-    password: 'owner123',
-    displayName: 'Hari Poudel',
-    role: 'branch_owner',
-    roleLabel: 'Branch Owner',
-    branchName: 'Bharatpur Branch',
-    mustChangePassword: true,
-    active: true,
-  },
-  {
-    id: 'u-pkr-owner',
-    branchCode: 'PKR',
-    username: 'owner',
-    password: 'owner123',
-    displayName: 'Gita Sharma',
-    role: 'branch_owner',
-    roleLabel: 'Branch Owner',
-    branchName: 'Pokhara Branch',
-    mustChangePassword: true,
-    active: true,
-  },
-  {
-    id: 'u-btl-owner',
-    branchCode: 'BTL',
-    username: 'owner',
-    password: 'owner123',
-    displayName: 'Nabin Karki',
-    role: 'branch_owner',
-    roleLabel: 'Branch Owner',
-    branchName: 'Butwal Branch',
-    mustChangePassword: true,
-    active: true,
-  },
-  // HO admin
-  {
-    id: 'u-admin',
-    branchCode: 'HO',
-    username: 'admin',
-    password: 'admin123',
-    displayName: 'System Admin',
-    role: 'headoffice',
-    roleLabel: 'Admin',
-    branchName: 'Head Office',
-    mustChangePassword: false,
-    active: true,
-  },
-  // Sample manager/staff
-  {
-    id: 'u-bhp-mgr',
-    branchCode: 'BHP',
-    username: 'manager',
-    password: 'manager123',
-    displayName: 'Sujan Shrestha',
-    role: 'branch_manager',
-    roleLabel: 'Manager',
-    branchName: 'Bharatpur Branch',
-    mustChangePassword: false,
-    active: true,
-  },
-  {
-    id: 'u-bhp-staff',
-    branchCode: 'BHP',
-    username: 'staff',
-    password: 'staff123',
-    displayName: 'Anita Thapa',
-    role: 'staff',
-    roleLabel: 'Staff',
-    branchName: 'Bharatpur Branch',
-    mustChangePassword: true,
-    active: true,
-  },
-];
-
-const SESSION_KEY = 'vgsync-session';
-const USERS_KEY = 'vgsync-demo-users';
-
-function loadUsers(): DemoUser[] {
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    if (raw) return JSON.parse(raw) as DemoUser[];
-  } catch {
-    // fall through
-  }
-  return structuredClone(SEED_USERS);
+interface AuthResponse {
+  access: string;
+  refresh: string;
+  user: ApiUser;
+  active_business: ApiBusiness;
 }
 
-function saveUsers(users: DemoUser[]): void {
-  try {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  } catch {
-    // ignore
+const ROLE_LABELS: Record<ApiUser['role'], string> = {
+  owner: 'Owner',
+  admin: 'Admin',
+  accountant: 'Accountant',
+  staff: 'Staff',
+};
+
+function toRole(user: ApiUser): UserRole {
+  switch (user.role) {
+    case 'owner':
+      return user.scope === 'company' ? 'owner' : 'branch_owner';
+    case 'admin':
+      return 'headoffice';
+    case 'accountant':
+      return 'branch_manager';
+    default:
+      return 'staff';
   }
 }
 
-export function ensureUsersInitialized(): DemoUser[] {
-  const existing = loadUsers();
-  const ids = new Set(existing.map((u) => u.id));
-  let changed = false;
-  for (const seed of SEED_USERS) {
-    if (!ids.has(seed.id)) {
-      existing.push(structuredClone(seed));
-      changed = true;
-    }
-  }
-  if (changed || !localStorage.getItem(USERS_KEY)) {
-    saveUsers(existing);
-  }
-  return existing;
-}
+function toSession(auth: StoredAuth): AuthSession {
+  const { user, active_business: active, home_business: home } = auth;
+  const name = `${user.first_name} ${user.last_name}`.trim();
 
-export function getAllUsers(): DemoUser[] {
-  return ensureUsersInitialized();
-}
-
-export function getBranchByCode(code: string): Branch | undefined {
-  return BRANCHES.find((b) => b.code.toUpperCase() === code.trim().toUpperCase());
-}
-
-export function findDemoUser(
-  branchCode: string,
-  username: string,
-  password: string,
-): DemoUser | null {
-  const users = ensureUsersInitialized();
-  const normalizedBranch = branchCode.trim().toUpperCase();
-  const normalizedUser = username.trim().toLowerCase();
-
-  return (
-    users.find(
-      (u) =>
-        u.active &&
-        u.branchCode.toUpperCase() === normalizedBranch &&
-        u.username.toLowerCase() === normalizedUser &&
-        u.password === password,
-    ) ?? null
-  );
-}
-
-export function saveSession(user: DemoUser): AuthSession {
-  const session: AuthSession = {
-    userId: user.id,
-    homeBranchCode: user.branchCode,
+  return {
+    userId: String(user.id),
     username: user.username,
-    displayName: user.displayName,
-    role: user.role,
-    roleLabel: user.roleLabel,
-    homeBranchName: user.branchName,
-    activeBranchCode: user.branchCode,
-    activeBranchName: user.branchName,
-    mustChangePassword: user.mustChangePassword,
-    loggedInAt: new Date().toISOString(),
+    displayName: name || user.username,
+    email: user.email,
+    role: toRole(user),
+    roleLabel: user.position_name || ROLE_LABELS[user.role] || user.role,
+    homeBranchCode: home.business_code,
+    homeBranchName: home.name,
+    activeBranchCode: active.business_code,
+    activeBranchName: active.name,
+    activeBusinessId: active.id,
+    businessType: active.business_type,
+    accessMode: active.access_mode,
+    companyName: active.company_name,
+    mustChangePassword: user.must_change_password,
+    remember: auth.remember,
+    loggedInAt: auth.logged_in_at,
   };
-
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  } catch {
-    // ignore
-  }
-
-  return session;
 }
+
+// ---------- session ----------
 
 export function getSession(): AuthSession | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as AuthSession;
-  } catch {
-    return null;
-  }
-}
-
-export function updateSession(partial: Partial<AuthSession>): AuthSession | null {
-  const session = getSession();
-  if (!session) return null;
-  const updated = { ...session, ...partial };
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
-  } catch {
-    // ignore
-  }
-  return updated;
-}
-
-export function clearSession(): void {
-  try {
-    localStorage.removeItem(SESSION_KEY);
-  } catch {
-    // ignore
-  }
+  const auth = readAuth();
+  return auth ? toSession(auth) : null;
 }
 
 export function isAuthenticated(): boolean {
-  return getSession() !== null;
+  return readAuth() !== null;
 }
 
-/** HO owner + HO admin can switch branches */
-export function canSwitchBranch(session: AuthSession | null): boolean {
-  return session?.role === 'owner' || session?.role === 'headoffice';
+/** Re-read the user and active business from the server (catches revoked or changed accounts). */
+export async function refreshProfile(): Promise<AuthSession | null> {
+  const before = readAuth();
+  if (!before) return null;
+
+  const data = await api<{ user: ApiUser; active_business: ApiBusiness }>('/auth/me/');
+  const current = readAuth();
+  if (!current) return null;
+
+  writeAuth({ ...current, user: data.user, active_business: data.active_business });
+  return getSession();
 }
 
-/** System owner, HO admin, or branch owner can manage staff */
-export function canManageStaff(session: AuthSession | null): boolean {
-  return (
-    session?.role === 'owner' ||
-    session?.role === 'headoffice' ||
-    session?.role === 'branch_owner'
-  );
+// ---------- login / logout ----------
+
+export interface LoginInput {
+  businessCode: string;
+  username: string;
+  password: string;
+  remember: boolean;
 }
 
-export function switchActiveBranch(branchCode: string): AuthSession | null {
-  const session = getSession();
-  if (!session || !canSwitchBranch(session)) return null;
-
-  const branch = getBranchByCode(branchCode);
-  if (!branch) return null;
-
-  return updateSession({
-    activeBranchCode: branch.code,
-    activeBranchName: branch.name,
+export async function login(input: LoginInput): Promise<AuthSession> {
+  const data = await api<AuthResponse>('/auth/login/', {
+    method: 'POST',
+    auth: false,
+    body: {
+      business_code: input.businessCode.trim(),
+      username: input.username.trim(),
+      password: input.password,
+    },
   });
+
+  writeAuth({
+    access: data.access,
+    refresh: data.refresh,
+    user: data.user,
+    active_business: data.active_business,
+    home_business: data.active_business,
+    remember: input.remember,
+    logged_in_at: new Date().toISOString(),
+  });
+
+  // "Remember me" also pre-fills the business code and username next time.
+  writeRemembered(
+    input.remember
+      ? { businessCode: data.active_business.business_code, username: data.user.username }
+      : null,
+  );
+
+  return getSession() as AuthSession;
 }
 
-export function getAccessibleBranches(session: AuthSession | null): Branch[] {
-  if (!session) return [];
-  if (session.role === 'owner' || session.role === 'headoffice') return BRANCHES;
-  const own = getBranchByCode(session.homeBranchCode);
-  return own ? [own] : [];
-}
+/**
+ * Revokes the refresh token on the server, then clears the browser session.
+ * The browser session is cleared even when the server cannot be reached.
+ */
+export async function logout(): Promise<void> {
+  const auth = readAuth();
+  clearAuth();
 
-/** Branches available when assigning staff */
-export function getAssignableBranches(session: AuthSession | null): Branch[] {
-  if (!session) return [];
-  if (session.role === 'owner' || session.role === 'headoffice') {
-    return BRANCHES.filter((b) => b.code !== 'HO');
+  if (!auth) return;
+
+  try {
+    await api('/auth/logout/', { method: 'POST', auth: false, body: { refresh: auth.refresh } });
+  } catch {
+    // The token expires on its own; there is nothing more to do here.
   }
-  if (session.role === 'branch_owner') {
-    const own = getBranchByCode(session.homeBranchCode);
-    return own ? [own] : [];
-  }
-  return [];
 }
 
-export function changePassword(
-  userId: string,
+// ---------- passwords ----------
+
+export async function forgotPassword(businessCode: string, username: string): Promise<string> {
+  const data = await api<{ detail: string }>('/auth/forgot-password/', {
+    method: 'POST',
+    auth: false,
+    body: { business_code: businessCode.trim(), username: username.trim() },
+  });
+  return data.detail;
+}
+
+export async function resetPassword(input: {
+  uid: string;
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<string> {
+  const data = await api<{ detail: string }>('/auth/reset-password/', {
+    method: 'POST',
+    auth: false,
+    body: {
+      uid: input.uid,
+      token: input.token,
+      new_password: input.newPassword,
+      confirm_password: input.confirmPassword,
+    },
+  });
+  return data.detail;
+}
+
+/**
+ * Changes the password. The server signs the user out everywhere, so the
+ * browser session is cleared too and the user logs in again.
+ */
+export async function changePassword(
   currentPassword: string,
   newPassword: string,
-): { ok: true } | { ok: false; error: string } {
-  if (newPassword.length < 6) {
-    return { ok: false, error: 'New password must be at least 6 characters.' };
-  }
-
-  const users = ensureUsersInitialized();
-  const idx = users.findIndex((u) => u.id === userId);
-  if (idx < 0) return { ok: false, error: 'User not found.' };
-
-  if (users[idx].password !== currentPassword) {
-    return { ok: false, error: 'Current password is incorrect.' };
-  }
-
-  users[idx] = {
-    ...users[idx],
-    password: newPassword,
-    mustChangePassword: false,
-  };
-  saveUsers(users);
-  updateSession({ mustChangePassword: false });
-  return { ok: true };
+  confirmPassword: string,
+): Promise<void> {
+  await api('/auth/change-password/', {
+    method: 'POST',
+    body: {
+      current_password: currentPassword,
+      new_password: newPassword,
+      confirm_password: confirmPassword,
+    },
+  });
+  clearAuth();
 }
 
-export interface StaffInput {
-  displayName: string;
-  username: string;
-  branchCode: string;
-  role: 'branch_manager' | 'staff';
-  temporaryPassword: string;
+// ---------- roles and branches ----------
+
+/** Company owner, admin or accountant can move between Head Office and branches. */
+export function canSwitchBranch(session: AuthSession | null): boolean {
+  const auth = readAuth();
+  if (!session || !auth) return false;
+  return auth.user.scope === 'company' && auth.user.role !== 'staff';
 }
 
-export function assignStaff(
-  input: StaffInput,
-): { ok: true; user: DemoUser } | { ok: false; error: string } {
-  const session = getSession();
-  if (!canManageStaff(session) || !session) {
-    return { ok: false, error: 'You cannot assign staff.' };
-  }
-
-  const branch = getBranchByCode(input.branchCode);
-  if (!branch) return { ok: false, error: 'Invalid branch.' };
-
-  // Branch owner locked to own branch
-  if (
-    session.role === 'branch_owner' &&
-    branch.code.toUpperCase() !== session.homeBranchCode.toUpperCase()
-  ) {
-    return { ok: false, error: 'You can only assign staff to your own branch.' };
-  }
-
-  const username = input.username.trim().toLowerCase();
-  if (!username) return { ok: false, error: 'Username is required.' };
-  if (!input.displayName.trim()) return { ok: false, error: 'Name is required.' };
-  if (input.temporaryPassword.length < 6) {
-    return { ok: false, error: 'Temporary password must be at least 6 characters.' };
-  }
-
-  const users = ensureUsersInitialized();
-  const exists = users.some(
-    (u) =>
-      u.branchCode.toUpperCase() === branch.code &&
-      u.username.toLowerCase() === username,
-  );
-  if (exists) {
-    return { ok: false, error: 'Username already exists in this branch.' };
-  }
-
-  const user: DemoUser = {
-    id: `u-${Date.now()}`,
-    branchCode: branch.code,
-    username,
-    password: input.temporaryPassword,
-    displayName: input.displayName.trim(),
-    role: input.role,
-    roleLabel: input.role === 'branch_manager' ? 'Manager' : 'Staff',
-    branchName: branch.name,
-    mustChangePassword: true,
-    active: true,
-  };
-
-  users.push(user);
-  saveUsers(users);
-  return { ok: true, user };
+/** Owner or admin can manage staff. */
+export function canManageStaff(session: AuthSession | null): boolean {
+  return session?.role === 'owner' || session?.role === 'headoffice' || session?.role === 'branch_owner';
 }
 
-export function deactivateStaff(userId: string): boolean {
-  const session = getSession();
-  if (!canManageStaff(session) || !session) return false;
+/** Head Office (the business signed in with) plus every active branch. */
+export async function loadBranches(): Promise<Branch[]> {
+  const auth = readAuth();
+  if (!auth || !canSwitchBranch(getSession())) return [];
 
-  const users = ensureUsersInitialized();
-  const idx = users.findIndex((u) => u.id === userId);
-  if (idx < 0) return false;
-
-  const target = users[idx];
-  if (target.role === 'owner' || target.role === 'branch_owner') return false;
-
-  if (
-    session.role === 'branch_owner' &&
-    target.branchCode.toUpperCase() !== session.homeBranchCode.toUpperCase()
-  ) {
-    return false;
-  }
-
-  users[idx] = { ...target, active: false };
-  saveUsers(users);
-  return true;
-}
-
-/** Staff list visible to current manager role */
-export function listStaffForManagement(): DemoUser[] {
-  const session = getSession();
-  if (!session || !canManageStaff(session)) return [];
-
-  const users = ensureUsersInitialized().filter(
-    (u) => u.role !== 'owner' && u.role !== 'branch_owner',
+  const home = auth.home_business;
+  const list = await api<Array<{ id: number; name: string; business_code: string; business_type: string }>>(
+    '/businesses/branches/',
   );
 
-  if (session.role === 'branch_owner') {
-    return users.filter(
-      (u) => u.branchCode.toUpperCase() === session.homeBranchCode.toUpperCase(),
-    );
+  const branches: Branch[] = list.map((b) => ({
+    id: b.id,
+    code: b.business_code,
+    name: b.name,
+    type: b.business_type,
+  }));
+
+  if (home.business_type === 'head_office' && !branches.some((b) => b.id === home.id)) {
+    branches.unshift({ id: home.id, code: home.business_code, name: home.name, type: home.business_type });
   }
 
-  return users;
+  return branches;
 }
+
+/** Switch the business the user works in. Issues new tokens for that business. */
+export async function switchBranch(businessId: number): Promise<AuthSession> {
+  const auth = readAuth();
+  if (!auth) throw new ApiError('Please sign in.', 401);
+
+  const data = await api<AuthResponse>('/auth/business-context/', {
+    method: 'POST',
+    body: { refresh: auth.refresh, business_id: businessId },
+  });
+
+  const current = readAuth() ?? auth;
+  writeAuth({
+    ...current,
+    access: data.access,
+    refresh: data.refresh,
+    user: data.user,
+    active_business: data.active_business,
+  });
+
+  return getSession() as AuthSession;
+}
+
+export { ApiError };
