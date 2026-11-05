@@ -28,6 +28,10 @@ How it works (`src/lib/`):
 - `auth.ts` has `login`, `logout` (revokes the refresh token on the server), `forgotPassword`, `resetPassword`, `changePassword`, `refreshProfile`, and branch switching (`loadBranches`, `switchBranch`).
 - Signing out in one tab signs out the others.
 
+## Suppliers
+
+`/dashboard/suppliers` uses `/api/v1/suppliers/` for the active business. Fields follow the API (name, contact, phone, email, address, PAN, notes, active/inactive); the money figures (owed, advance, credit to receive) are calculated by the server. Suppliers cannot be deleted, only deactivated. A company owner viewing a branch is read-only, so the add/edit buttons are hidden.
+
 ## Not connected to the API yet
 
-The Staff page (`src/lib/staff-demo.ts`), customers, inventory, suppliers and the Settings profile/preferences still use demo data stored in the browser.
+The Staff page (`src/lib/staff-demo.ts`), customers, inventory and the Settings profile/preferences still use demo data stored in the browser.

@@ -30,6 +30,8 @@ const navItems = getNavItemsForRole(defaultRole);
       <button type="button" class="btn-primary-sm" id="sup-add">+ New supplier</button>
     </div>
 
+    <p class="sup-form-error" id="sup-load-error" role="alert" hidden></p>
+
     <div class="sup-kpis">
       <article class="sup-kpi">
         <span class="sup-kpi-label">Total</span>
@@ -43,9 +45,9 @@ const navItems = getNavItemsForRole(defaultRole);
         <span class="sup-kpi-label">Payable</span>
         <strong id="kpi-payable">—</strong>
       </article>
-      <article class="sup-kpi is-danger">
-        <span class="sup-kpi-label">Blocked</span>
-        <strong id="kpi-blocked">—</strong>
+      <article class="sup-kpi">
+        <span class="sup-kpi-label">Inactive</span>
+        <strong id="kpi-inactive">—</strong>
       </article>
     </div>
 
@@ -56,18 +58,10 @@ const navItems = getNavItemsForRole(defaultRole);
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <input type="search" id="sup-search" placeholder="Search name, phone, code…" autocomplete="off" />
           </div>
-          <select id="sup-type-filter">
-            <option value="">All types</option>
-            <option value="local">Local</option>
-            <option value="importer">Importer</option>
-            <option value="manufacturer">Manufacturer</option>
-            <option value="distributor">Distributor</option>
-          </select>
           <select id="sup-status-filter">
             <option value="">All status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-            <option value="blocked">Blocked</option>
           </select>
         </div>
 
@@ -75,16 +69,15 @@ const navItems = getNavItemsForRole(defaultRole);
           <table class="sup-table">
             <thead>
               <tr>
-                <th>Code</th>
                 <th>Name</th>
-                <th>Type</th>
+                <th>Contact</th>
                 <th>Phone</th>
                 <th class="num">Payable</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody id="sup-tbody">
-              <tr><td colspan="6">Loading…</td></tr>
+              <tr><td colspan="5">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -106,21 +99,24 @@ const navItems = getNavItemsForRole(defaultRole);
             </div>
             <div class="sup-detail-actions">
               <button type="button" class="btn-ghost-sm" id="sup-edit">Edit</button>
-              <button type="button" class="btn-ghost-sm is-danger" id="sup-delete">Delete</button>
+              <button type="button" class="btn-ghost-sm is-danger" id="sup-toggle">Deactivate</button>
             </div>
           </header>
 
           <dl class="sup-dl">
-            <div><dt>Type</dt><dd id="d-type">—</dd></div>
             <div><dt>Contact</dt><dd id="d-contact">—</dd></div>
             <div><dt>Phone</dt><dd id="d-phone">—</dd></div>
             <div><dt>Email</dt><dd id="d-email">—</dd></div>
-            <div class="span2"><dt>Address</dt><dd id="d-address">—</dd></div>
-            <div><dt>City</dt><dd id="d-city">—</dd></div>
             <div><dt>PAN</dt><dd id="d-pan">—</dd></div>
-            <div><dt>Payment terms</dt><dd id="d-terms">—</dd></div>
-            <div><dt>Credit limit</dt><dd id="d-credit">—</dd></div>
-            <div><dt>Payable balance</dt><dd id="d-balance">—</dd></div>
+            <div class="span2"><dt>Address</dt><dd id="d-address">—</dd></div>
+            <div><dt>You owe (total)</dt><dd id="d-credit-to-pay">—</dd></div>
+            <div><dt>Received, unpaid</dt><dd id="d-outstanding">—</dd></div>
+            <div><dt>On order, unpaid</dt><dd id="d-on-order">—</dd></div>
+            <div><dt>Advance paid</dt><dd id="d-advance">—</dd></div>
+            <div><dt>Supplier owes you</dt><dd id="d-credit-to-receive">—</dd></div>
+            <div><dt>Total purchased</dt><dd id="d-total">—</dd></div>
+            <div><dt>Replacement stock due</dt><dd id="d-stock-due">—</dd></div>
+            <div><dt>Still to arrive</dt><dd id="d-stock-pending">—</dd></div>
             <div class="span2"><dt>Notes</dt><dd id="d-notes">—</dd></div>
           </dl>
 
@@ -131,7 +127,7 @@ const navItems = getNavItemsForRole(defaultRole);
             <span class="chip">Bills</span>
             <span class="chip">Payments</span>
           </div>
-          <p class="sup-hint">Purchase &amp; payables will reference this supplier by ID/code.</p>
+          <p class="sup-hint">Suppliers are never deleted: deactivate one to hide it from new purchases.</p>
         </div>
       </aside>
     </div>
@@ -148,20 +144,10 @@ const navItems = getNavItemsForRole(defaultRole);
           <input type="text" id="f-name" required placeholder="Company name" />
         </label>
         <label class="sup-field">
-          <span>Type</span>
-          <select id="f-type">
-            <option value="local">Local</option>
-            <option value="distributor">Distributor</option>
-            <option value="importer">Importer</option>
-            <option value="manufacturer">Manufacturer</option>
-          </select>
-        </label>
-        <label class="sup-field">
           <span>Status</span>
           <select id="f-status">
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-            <option value="blocked">Blocked</option>
           </select>
         </label>
         <label class="sup-field">
@@ -169,32 +155,20 @@ const navItems = getNavItemsForRole(defaultRole);
           <input type="text" id="f-contact" />
         </label>
         <label class="sup-field">
-          <span>Phone *</span>
-          <input type="tel" id="f-phone" required />
+          <span>Phone</span>
+          <input type="tel" id="f-phone" />
         </label>
         <label class="sup-field">
           <span>Email</span>
           <input type="email" id="f-email" />
-        </label>
-        <label class="sup-field">
-          <span>Payment terms</span>
-          <input type="text" id="f-terms" placeholder="Net 30" />
         </label>
         <label class="sup-field span2">
           <span>Address</span>
           <input type="text" id="f-address" />
         </label>
         <label class="sup-field">
-          <span>City</span>
-          <input type="text" id="f-city" />
-        </label>
-        <label class="sup-field">
-          <span>PAN</span>
+          <span>PAN / VAT number</span>
           <input type="text" id="f-pan" />
-        </label>
-        <label class="sup-field">
-          <span>Credit limit (NPR)</span>
-          <input type="number" id="f-credit" min="0" step="1000" value="0" />
         </label>
         <label class="sup-field span2">
           <span>Notes</span>
@@ -206,91 +180,114 @@ const navItems = getNavItemsForRole(defaultRole);
 
       <div class="sup-dialog-actions">
         <button type="button" class="btn-ghost-sm" id="f-cancel">Cancel</button>
-        <button type="submit" class="btn-primary-sm">Save</button>
+        <button type="submit" class="btn-primary-sm" id="f-save">Save</button>
       </div>
     </form>
   </dialog>
 </AppLayout>
 
 <script>
-  import { getSession } from '../../lib/auth';
+  import { getSession, refreshProfile } from '../../lib/auth';
+  import { ApiError } from '../../lib/api';
   import {
-    listSuppliersByBranch,
-    getSupplierSummary,
-    getSupplierById,
+    listSuppliers,
     createSupplier,
     updateSupplier,
-    deleteSupplier,
+    setSupplierActive,
+    getSupplierSummary,
     formatNpr,
-    TYPE_LABEL,
-    STATUS_LABEL,
     type Supplier,
-    type SupplierType,
-    type SupplierStatus,
+    type SupplierInput,
   } from '../../lib/suppliers';
 
   if (!getSession()) window.location.replace('/');
 
   let suppliers: Supplier[] = [];
-  let selectedId: string | null = null;
+  let selectedId: number | null = null;
+  let canWrite = true;
 
-  function branchCode(): string {
-    return getSession()?.activeBranchCode ?? 'HO';
-  }
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
 
   function esc(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  const FIELD_LABELS: Record<string, string> = {
+    name: 'Name',
+    contact_person: 'Contact person',
+    phone: 'Phone',
+    email: 'Email',
+    address: 'Address',
+    pan_number: 'PAN',
+    notes: 'Notes',
+    is_active: 'Status',
+  };
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    const entries = Object.entries(error.fields);
+    if (entries.length > 0 && error.status === 400) {
+      return entries.map(([key, msg]) => `${FIELD_LABELS[key] ?? key}: ${msg}`).join(' ');
+    }
+    return error.message;
+  }
+
+  function showLoadError(message: string | null): void {
+    const el = $('sup-load-error');
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
   function filtered(): Supplier[] {
-    const q = (document.getElementById('sup-search') as HTMLInputElement)?.value.trim().toLowerCase() ?? '';
-    const type = (document.getElementById('sup-type-filter') as HTMLSelectElement)?.value ?? '';
-    const st = (document.getElementById('sup-status-filter') as HTMLSelectElement)?.value ?? '';
+    const q = ($<HTMLInputElement>('sup-search')?.value ?? '').trim().toLowerCase();
+    const st = $<HTMLSelectElement>('sup-status-filter')?.value ?? '';
     return suppliers.filter((s) => {
-      if (type && s.type !== type) return false;
-      if (st && s.status !== st) return false;
+      if (st === 'active' && !s.isActive) return false;
+      if (st === 'inactive' && s.isActive) return false;
       if (!q) return true;
       return (
         s.name.toLowerCase().includes(q) ||
         s.phone.includes(q) ||
-        s.code.toLowerCase().includes(q) ||
+        s.pan.toLowerCase().includes(q) ||
         s.contactPerson.toLowerCase().includes(q)
       );
     });
   }
 
+  function setText(id: string, value: string): void {
+    const el = $(id);
+    if (el) el.textContent = value || '—';
+  }
+
   function renderKpis(): void {
-    const s = getSupplierSummary(branchCode());
-    const set = (id: string, v: string) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = v;
-    };
-    set('kpi-total', String(s.total));
-    set('kpi-active', String(s.active));
-    set('kpi-payable', formatNpr(s.payable));
-    set('kpi-blocked', String(s.blocked));
+    const s = getSupplierSummary(suppliers);
+    setText('kpi-total', String(s.total));
+    setText('kpi-active', String(s.active));
+    setText('kpi-payable', formatNpr(s.payable));
+    setText('kpi-inactive', String(s.inactive));
   }
 
   function renderTable(): void {
-    const tbody = document.getElementById('sup-tbody');
-    const count = document.getElementById('sup-count');
+    const tbody = $('sup-tbody');
+    const count = $('sup-count');
     if (!tbody) return;
     const rows = filtered();
     if (rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="sup-empty">No suppliers found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="sup-empty">No suppliers found.</td></tr>`;
       if (count) count.textContent = '0 suppliers';
       return;
     }
     tbody.innerHTML = rows
       .map((s) => {
         const active = s.id === selectedId ? ' is-selected' : '';
-        return `<tr class="sup-row${active}" data-id="${esc(s.id)}">
-          <td class="mono">${esc(s.code)}</td>
+        const badge = s.isActive ? 'active' : 'inactive';
+        return `<tr class="sup-row${active}" data-id="${s.id}">
           <td><strong>${esc(s.name)}</strong></td>
-          <td>${esc(TYPE_LABEL[s.type])}</td>
-          <td>${esc(s.phone)}</td>
-          <td class="num">${formatNpr(s.balance)}</td>
-          <td><span class="sup-badge sup-badge-${s.status}">${esc(STATUS_LABEL[s.status])}</span></td>
+          <td>${esc(s.contactPerson) || '—'}</td>
+          <td>${esc(s.phone) || '—'}</td>
+          <td class="num">${formatNpr(s.creditToPay)}</td>
+          <td><span class="sup-badge sup-badge-${badge}">${s.isActive ? 'Active' : 'Inactive'}</span></td>
         </tr>`;
       })
       .join('');
@@ -298,22 +295,21 @@ const navItems = getNavItemsForRole(defaultRole);
 
     tbody.querySelectorAll<HTMLTableRowElement>('.sup-row').forEach((row) => {
       row.addEventListener('click', () => {
-        selectedId = row.dataset.id || null;
+        selectedId = Number(row.dataset.id) || null;
         renderTable();
         renderDetail();
       });
     });
   }
 
+  function selected(): Supplier | null {
+    return suppliers.find((s) => s.id === selectedId) ?? null;
+  }
+
   function renderDetail(): void {
-    const empty = document.getElementById('sup-detail-empty');
-    const body = document.getElementById('sup-detail-body');
-    if (!selectedId) {
-      empty?.removeAttribute('hidden');
-      body?.setAttribute('hidden', '');
-      return;
-    }
-    const s = getSupplierById(selectedId);
+    const empty = $('sup-detail-empty');
+    const body = $('sup-detail-body');
+    const s = selected();
     if (!s) {
       selectedId = null;
       empty?.removeAttribute('hidden');
@@ -323,127 +319,162 @@ const navItems = getNavItemsForRole(defaultRole);
     empty?.setAttribute('hidden', '');
     body?.removeAttribute('hidden');
 
-    const set = (id: string, v: string) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = v || '—';
-    };
-    set('d-code', s.code);
-    set('d-name', s.name);
-    set('d-type', TYPE_LABEL[s.type]);
-    set('d-contact', s.contactPerson);
-    set('d-phone', s.phone);
-    set('d-email', s.email);
-    set('d-address', s.address);
-    set('d-city', s.city);
-    set('d-pan', s.pan);
-    set('d-terms', s.paymentTerms);
-    set('d-credit', formatNpr(s.creditLimit));
-    set('d-balance', formatNpr(s.balance));
-    set('d-notes', s.notes);
-    set('d-meta', `Created ${s.createdAt} · Updated ${s.updatedAt}`);
+    setText('d-code', `Supplier #${s.id}`);
+    setText('d-name', s.name);
+    setText('d-contact', s.contactPerson);
+    setText('d-phone', s.phone);
+    setText('d-email', s.email);
+    setText('d-address', s.address);
+    setText('d-pan', s.pan);
+    setText('d-credit-to-pay', formatNpr(s.creditToPay));
+    setText('d-outstanding', formatNpr(s.outstanding));
+    setText('d-on-order', formatNpr(s.toPayOnOrder));
+    setText('d-advance', formatNpr(s.advancePaid));
+    setText('d-credit-to-receive', formatNpr(s.creditToReceive));
+    setText('d-total', formatNpr(s.totalPurchased));
+    setText('d-stock-due', String(s.stockToReceive));
+    setText('d-stock-pending', String(s.stockPendingDelivery));
+    setText('d-notes', s.notes);
+    setText(
+      'd-meta',
+      `Created ${new Date(s.createdAt).toLocaleDateString()} · Updated ${new Date(s.updatedAt).toLocaleDateString()}`,
+    );
 
-    const st = document.getElementById('d-status');
+    const st = $('d-status');
     if (st) {
-      st.textContent = STATUS_LABEL[s.status];
-      st.className = `sup-badge sup-badge-${s.status}`;
+      st.textContent = s.isActive ? 'Active' : 'Inactive';
+      st.className = `sup-badge sup-badge-${s.isActive ? 'active' : 'inactive'}`;
+    }
+
+    const toggle = $('sup-toggle');
+    if (toggle) toggle.textContent = s.isActive ? 'Deactivate' : 'Reactivate';
+  }
+
+  function applyWriteAccess(): void {
+    const session = getSession();
+    // A company owner has read-only access inside a branch.
+    canWrite = session?.accessMode !== 'read_only';
+    for (const id of ['sup-add', 'sup-edit', 'sup-toggle']) {
+      const el = $(id);
+      if (el) el.hidden = !canWrite;
     }
   }
 
-  function reload(): void {
+  async function reload(): Promise<void> {
     const sess = getSession();
-    const scope = document.getElementById('sup-scope');
+    const scope = $('sup-scope');
     if (scope && sess) scope.textContent = `${sess.activeBranchName} (${sess.activeBranchCode})`;
-    suppliers = listSuppliersByBranch(branchCode());
-    if (selectedId && !suppliers.some((s) => s.id === selectedId)) selectedId = null;
+    applyWriteAccess();
+
+    try {
+      suppliers = await listSuppliers();
+      showLoadError(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+    } catch (error) {
+      suppliers = [];
+      showLoadError(describe(error));
+    }
+
+    if (selectedId && !selected()) selectedId = null;
     renderKpis();
     renderTable();
     renderDetail();
   }
 
-  const dialog = document.getElementById('sup-dialog') as HTMLDialogElement | null;
-  const form = document.getElementById('sup-form') as HTMLFormElement | null;
+  const dialog = $<HTMLDialogElement>('sup-dialog');
+  const form = $<HTMLFormElement>('sup-form');
+
+  const input = (id: string) => $<HTMLInputElement>(id)!;
 
   function openForm(edit?: Supplier): void {
-    const title = document.getElementById('sup-form-title');
-    if (title) title.textContent = edit ? 'Edit supplier' : 'New supplier';
-    (document.getElementById('f-id') as HTMLInputElement).value = edit?.id ?? '';
-    (document.getElementById('f-name') as HTMLInputElement).value = edit?.name ?? '';
-    (document.getElementById('f-type') as HTMLSelectElement).value = edit?.type ?? 'local';
-    (document.getElementById('f-status') as HTMLSelectElement).value = edit?.status ?? 'active';
-    (document.getElementById('f-contact') as HTMLInputElement).value = edit?.contactPerson ?? '';
-    (document.getElementById('f-phone') as HTMLInputElement).value = edit?.phone ?? '';
-    (document.getElementById('f-email') as HTMLInputElement).value = edit?.email ?? '';
-    (document.getElementById('f-terms') as HTMLInputElement).value = edit?.paymentTerms ?? 'Net 30';
-    (document.getElementById('f-address') as HTMLInputElement).value = edit?.address ?? '';
-    (document.getElementById('f-city') as HTMLInputElement).value = edit?.city ?? '';
-    (document.getElementById('f-pan') as HTMLInputElement).value = edit?.pan ?? '';
-    (document.getElementById('f-credit') as HTMLInputElement).value = String(edit?.creditLimit ?? 0);
-    (document.getElementById('f-notes') as HTMLInputElement).value = edit?.notes ?? '';
-    const err = document.getElementById('f-error');
+    setText('sup-form-title', edit ? 'Edit supplier' : 'New supplier');
+    input('f-id').value = edit ? String(edit.id) : '';
+    input('f-name').value = edit?.name ?? '';
+    $<HTMLSelectElement>('f-status')!.value = edit && !edit.isActive ? 'inactive' : 'active';
+    input('f-contact').value = edit?.contactPerson ?? '';
+    input('f-phone').value = edit?.phone ?? '';
+    input('f-email').value = edit?.email ?? '';
+    input('f-address').value = edit?.address ?? '';
+    input('f-pan').value = edit?.pan ?? '';
+    input('f-notes').value = edit?.notes ?? '';
+    const err = $('f-error');
     if (err) err.hidden = true;
     dialog?.showModal();
   }
 
-  document.getElementById('sup-add')?.addEventListener('click', () => openForm());
-  document.getElementById('sup-edit')?.addEventListener('click', () => {
-    if (!selectedId) return;
-    const s = getSupplierById(selectedId);
+  $('sup-add')?.addEventListener('click', () => openForm());
+  $('sup-edit')?.addEventListener('click', () => {
+    const s = selected();
     if (s) openForm(s);
   });
-  document.getElementById('sup-delete')?.addEventListener('click', () => {
-    if (!selectedId) return;
-    const s = getSupplierById(selectedId);
-    if (!s) return;
-    if (!confirm(`Delete ${s.name}?`)) return;
-    const res = deleteSupplier(selectedId);
-    if (!res.ok) {
-      alert(res.error);
-      return;
-    }
-    selectedId = null;
-    reload();
-  });
-  document.getElementById('f-cancel')?.addEventListener('click', () => dialog?.close());
 
-  form?.addEventListener('submit', (e) => {
+  $('sup-toggle')?.addEventListener('click', async () => {
+    const s = selected();
+    if (!s) return;
+    const next = !s.isActive;
+    if (!next && !confirm(`Deactivate ${s.name}? It will no longer be offered on new purchases.`)) return;
+
+    const button = $<HTMLButtonElement>('sup-toggle')!;
+    button.disabled = true;
+    try {
+      await setSupplierActive(s.id, next);
+      await reload();
+    } catch (error) {
+      alert(describe(error));
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $('f-cancel')?.addEventListener('click', () => dialog?.close());
+
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = (document.getElementById('f-id') as HTMLInputElement).value;
-    const payload = {
-      name: (document.getElementById('f-name') as HTMLInputElement).value,
-      type: (document.getElementById('f-type') as HTMLSelectElement).value as SupplierType,
-      status: (document.getElementById('f-status') as HTMLSelectElement).value as SupplierStatus,
-      contactPerson: (document.getElementById('f-contact') as HTMLInputElement).value,
-      phone: (document.getElementById('f-phone') as HTMLInputElement).value,
-      email: (document.getElementById('f-email') as HTMLInputElement).value,
-      paymentTerms: (document.getElementById('f-terms') as HTMLInputElement).value,
-      address: (document.getElementById('f-address') as HTMLInputElement).value,
-      city: (document.getElementById('f-city') as HTMLInputElement).value,
-      pan: (document.getElementById('f-pan') as HTMLInputElement).value,
-      creditLimit: Number((document.getElementById('f-credit') as HTMLInputElement).value || 0),
-      notes: (document.getElementById('f-notes') as HTMLInputElement).value,
+    const err = $('f-error');
+    const save = $<HTMLButtonElement>('f-save');
+    if (err) err.hidden = true;
+
+    const id = Number(input('f-id').value) || null;
+    const payload: SupplierInput = {
+      name: input('f-name').value,
+      isActive: $<HTMLSelectElement>('f-status')!.value === 'active',
+      contactPerson: input('f-contact').value,
+      phone: input('f-phone').value,
+      email: input('f-email').value,
+      address: input('f-address').value,
+      pan: input('f-pan').value,
+      notes: input('f-notes').value,
     };
-    const result = id
-      ? updateSupplier(id, payload)
-      : createSupplier(branchCode(), payload);
-    const err = document.getElementById('f-error');
-    if (!result.ok) {
+
+    if (!payload.name.trim()) {
       if (err) {
         err.hidden = false;
-        err.textContent = result.error;
+        err.textContent = 'Name is required.';
       }
       return;
     }
-    selectedId = result.supplier.id;
-    dialog?.close();
-    reload();
+
+    if (save) save.disabled = true;
+    try {
+      const saved = id ? await updateSupplier(id, payload) : await createSupplier(payload);
+      selectedId = saved.id;
+      dialog?.close();
+      await reload();
+    } catch (error) {
+      if (err) {
+        err.hidden = false;
+        err.textContent = describe(error);
+      }
+    } finally {
+      if (save) save.disabled = false;
+    }
   });
 
-  document.getElementById('sup-search')?.addEventListener('input', () => renderTable());
-  document.getElementById('sup-type-filter')?.addEventListener('change', () => renderTable());
-  document.getElementById('sup-status-filter')?.addEventListener('change', () => renderTable());
-  document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(reload, 0));
+  $('sup-search')?.addEventListener('input', () => renderTable());
+  $('sup-status-filter')?.addEventListener('change', () => renderTable());
 
-  reload();
+  void reload();
+  // Fresh role/branch access from the server, then re-apply it.
+  refreshProfile().then(applyWriteAccess).catch(() => {});
 </script>
 
 <style>
