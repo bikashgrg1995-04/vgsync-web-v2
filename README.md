@@ -69,6 +69,20 @@ The Inventory page uses `/api/v1/inventory/`. The product catalog belongs to Hea
 
 Stock transfers between branches are not on this page yet.
 
+## Purchases
+
+The Purchase page uses `/api/v1/purchases/`. Totals are always worked out by the server (discount first, VAT on the discounted amount, freight untaxed); the form only shows a preview.
+
+- Purchases: list with search and filters (status, payment, supplier, dates), a detail panel with lines, totals, payments and deliveries.
+- Draft: create, edit, cancel (with a reason). A draft has no effect on stock.
+- Receive goods: all at once or in parts. This is what adds stock (visible on the Inventory page).
+- Payments: record (also before the goods arrive) and void.
+- Returns: from a received or part-received purchase, from good or damaged stock; void.
+- Supplier credit: use credit from returns as a refund, replacement goods (mark as arrived later) or set against a purchase; void.
+- A company owner viewing a branch is read-only.
+
+Not on this page yet: Excel/PDF export of purchases (the API has none).
+
 ## Not connected to the API yet
 
 The Settings profile/preferences still use demo data stored in the browser.

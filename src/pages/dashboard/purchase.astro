@@ -1,12 +1,11 @@
 ---
 import AppLayout from '../../layouts/AppLayout.astro';
-import PageSkeleton from '../../components/app/PageSkeleton.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import { PAGE_META } from '../../lib/page-meta';
 import type { UserRole } from '../../lib/auth';
 
 const meta = PAGE_META.purchase;
-const defaultRole: UserRole = 'headoffice';
+const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
 ---
 
@@ -22,5 +21,1128 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <PageSkeleton title={meta.skeletonTitle} hint={meta.skeletonHint} />
+  <div class="pu-page">
+    <div class="pu-toolbar">
+      <div>
+        <p class="pu-scope" id="pu-scope">Purchases</p>
+        <div class="pu-tabs" role="tablist">
+          <button type="button" class="pu-tab is-active" data-tab="list">Purchases</button>
+          <button type="button" class="pu-tab" data-tab="returns">Returns</button>
+          <button type="button" class="pu-tab" data-tab="credits">Supplier credit</button>
+        </div>
+      </div>
+      <div class="pu-toolbar-right">
+        <button type="button" class="btn-ghost-sm" id="pu-refresh">Refresh</button>
+        <button type="button" class="btn-primary-sm" id="pu-new" hidden>+ New purchase</button>
+      </div>
+    </div>
+
+    <p class="pu-notice" id="pu-notice" hidden></p>
+
+    <div class="pu-kpis">
+      <article class="pu-kpi"><span>Purchases</span><strong id="kpi-count">—</strong></article>
+      <article class="pu-kpi"><span>To receive</span><strong id="kpi-receive">—</strong></article>
+      <article class="pu-kpi"><span>Total value</span><strong id="kpi-value">—</strong></article>
+      <article class="pu-kpi is-danger"><span>Still to pay</span><strong id="kpi-unpaid">—</strong></article>
+    </div>
+
+    <!-- Purchases -->
+    <section class="pu-panel is-active" data-panel="list">
+      <div class="pu-layout">
+        <div class="pu-card">
+          <div class="pu-filters">
+            <input type="search" id="f-search" placeholder="Search bill no or supplier…" autocomplete="off" />
+            <select id="f-status" aria-label="Status">
+              <option value="">All status</option>
+              <option value="draft">Draft</option>
+              <option value="partial">Part received</option>
+              <option value="received">Received</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <select id="f-pay" aria-label="Payment">
+              <option value="">All payments</option>
+              <option value="unpaid">Unpaid</option>
+              <option value="partial">Part paid</option>
+              <option value="paid">Paid</option>
+            </select>
+            <select id="f-supplier" aria-label="Supplier"><option value="">All suppliers</option></select>
+            <input type="date" id="f-from" aria-label="From" />
+            <input type="date" id="f-to" aria-label="To" />
+          </div>
+          <div class="pu-table-wrap">
+            <table class="pu-table">
+              <thead>
+                <tr>
+                  <th>No</th><th>Date</th><th>Supplier</th><th>Bill</th><th>Status</th>
+                  <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Payment</th>
+                </tr>
+              </thead>
+              <tbody id="pu-tbody"><tr><td colspan="9" class="pu-empty">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <p class="pu-foot" id="pu-count"></p>
+        </div>
+
+        <aside class="pu-card" id="pu-detail">
+          <p class="pu-empty-detail">Select a purchase to see its lines, payments and deliveries.</p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Returns -->
+    <section class="pu-panel" data-panel="returns">
+      <div class="pu-card">
+        <div class="pu-table-wrap">
+          <table class="pu-table">
+            <thead>
+              <tr>
+                <th>No</th><th>Date</th><th>Purchase</th><th>Supplier</th><th>Goods</th><th>Reason</th>
+                <th class="num">Credit</th><th>Status</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="ret-tbody"><tr><td colspan="9" class="pu-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="pu-foot">Returns are made from a received purchase (open it and press Return goods). A return creates credit to receive; it does not move money.</p>
+      </div>
+    </section>
+
+    <!-- Credit -->
+    <section class="pu-panel" data-panel="credits">
+      <div class="pu-card">
+        <div class="pu-credit-head">
+          <p class="pu-foot" style="margin:0">Use credit from returned goods: take a refund, ask for replacement goods, or set it against a purchase.</p>
+          <button type="button" class="btn-primary-sm" id="cr-new" hidden>+ Use credit</button>
+        </div>
+        <div class="pu-table-wrap">
+          <table class="pu-table">
+            <thead>
+              <tr>
+                <th>Date</th><th>Supplier</th><th>Kind</th><th>Detail</th><th class="num">Amount</th><th>Status</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="cr-tbody"><tr><td colspan="7" class="pu-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Purchase form -->
+  <dialog class="pu-dialog pu-wide" id="dlg-form">
+    <form method="dialog" class="pu-dialog-inner" id="form-purchase">
+      <h2 class="pu-dialog-title" id="pf-title">New purchase</h2>
+      <input type="hidden" id="pf-id" />
+      <div class="pu-grid">
+        <label class="pu-field"><span>Supplier *</span><select id="pf-supplier" required></select></label>
+        <label class="pu-field"><span>Supplier bill no</span><input type="text" id="pf-bill" maxlength="60" /></label>
+        <label class="pu-field"><span>Date</span><input type="date" id="pf-date" /></label>
+        <label class="pu-field"><span>Notes</span><input type="text" id="pf-notes" /></label>
+      </div>
+      <div class="pu-lines-head"><strong>Items</strong><button type="button" class="btn-ghost-sm" id="pf-add-line">+ Add item</button></div>
+      <div id="pf-lines" class="pu-lines"></div>
+      <div class="pu-grid pu-grid-3">
+        <label class="pu-field"><span>Discount</span><input type="number" id="pf-discount" min="0" step="0.01" value="0" /></label>
+        <label class="pu-field"><span>VAT % (on discounted amount)</span><input type="number" id="pf-vat" min="0" max="100" step="0.01" value="0" /></label>
+        <label class="pu-field"><span>Freight (not taxed)</span><input type="number" id="pf-freight" min="0" step="0.01" value="0" /></label>
+      </div>
+      <dl class="pu-totals" id="pf-totals"></dl>
+      <p class="pu-error" id="pf-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-form">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="pf-save">Save draft</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Receive -->
+  <dialog class="pu-dialog pu-wide" id="dlg-receive">
+    <form method="dialog" class="pu-dialog-inner" id="form-receive">
+      <h2 class="pu-dialog-title">Receive goods</h2>
+      <p class="pu-sub" id="rc-sub"></p>
+      <div id="rc-lines" class="pu-lines"></div>
+      <div class="pu-grid">
+        <label class="pu-field"><span>Received on</span><input type="date" id="rc-date" /></label>
+        <label class="pu-field"><span>Notes</span><input type="text" id="rc-notes" placeholder="e.g. First truck" /></label>
+      </div>
+      <p class="pu-error" id="rc-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-receive">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="rc-save">Add to stock</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Payment -->
+  <dialog class="pu-dialog" id="dlg-pay">
+    <form method="dialog" class="pu-dialog-inner" id="form-pay">
+      <h2 class="pu-dialog-title">Record payment</h2>
+      <p class="pu-sub" id="py-sub"></p>
+      <div class="pu-grid">
+        <label class="pu-field"><span>Amount *</span><input type="number" id="py-amount" required min="0.01" step="0.01" /></label>
+        <label class="pu-field"><span>Method *</span>
+          <select id="py-method">
+            <option value="cash">Cash</option><option value="bank">Bank</option>
+            <option value="online">Online</option><option value="cheque">Cheque</option>
+          </select>
+        </label>
+        <label class="pu-field"><span>Paid on</span><input type="date" id="py-date" /></label>
+        <label class="pu-field"><span>Reference</span><input type="text" id="py-ref" maxlength="100" /></label>
+      </div>
+      <p class="pu-error" id="py-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="py-save">Save payment</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Return -->
+  <dialog class="pu-dialog pu-wide" id="dlg-return">
+    <form method="dialog" class="pu-dialog-inner" id="form-return">
+      <h2 class="pu-dialog-title">Return goods to supplier</h2>
+      <p class="pu-sub" id="rt-sub"></p>
+      <div id="rt-lines" class="pu-lines"></div>
+      <label class="pu-field"><span>Reason *</span><input type="text" id="rt-reason" required /></label>
+      <p class="pu-error" id="rt-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-return">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="rt-save">Return goods</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Reason (cancel / void) -->
+  <dialog class="pu-dialog" id="dlg-reason">
+    <form method="dialog" class="pu-dialog-inner" id="form-reason">
+      <h2 class="pu-dialog-title" id="rs-title">Reason</h2>
+      <p class="pu-sub" id="rs-sub"></p>
+      <label class="pu-field"><span>Reason *</span><input type="text" id="rs-text" required /></label>
+      <p class="pu-error" id="rs-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-reason">Back</button>
+        <button type="submit" class="btn-primary-sm is-danger" id="rs-save">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Use credit -->
+  <dialog class="pu-dialog pu-wide" id="dlg-credit">
+    <form method="dialog" class="pu-dialog-inner" id="form-credit">
+      <h2 class="pu-dialog-title">Use supplier credit</h2>
+      <div class="pu-grid">
+        <label class="pu-field"><span>Supplier *</span><select id="cr-supplier" required></select></label>
+        <label class="pu-field"><span>What happens *</span>
+          <select id="cr-kind">
+            <option value="refund">Refund (supplier pays back)</option>
+            <option value="replacement">Replacement goods</option>
+            <option value="adjustment">Set against a purchase</option>
+          </select>
+        </label>
+        <label class="pu-field"><span>Credit amount *</span><input type="number" id="cr-amount" required min="0.01" step="0.01" /></label>
+        <label class="pu-field" id="cr-method-wrap"><span>Method</span>
+          <select id="cr-method">
+            <option value="cash">Cash</option><option value="bank">Bank</option>
+            <option value="online">Online</option><option value="cheque">Cheque</option>
+          </select>
+        </label>
+        <label class="pu-field" id="cr-purchase-wrap" hidden><span>Purchase</span><select id="cr-purchase"></select></label>
+      </div>
+      <div id="cr-items-wrap" hidden>
+        <div class="pu-lines-head"><strong>Replacement goods</strong><button type="button" class="btn-ghost-sm" id="cr-add-line">+ Add item</button></div>
+        <div id="cr-lines" class="pu-lines"></div>
+      </div>
+      <label class="pu-field"><span>Note</span><input type="text" id="cr-notes" /></label>
+      <p class="pu-error" id="cr-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-credit">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="cr-save">Save</button>
+      </div>
+    </form>
+  </dialog>
 </AppLayout>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import { ApiError } from '../../lib/api';
+  import { listSuppliers, type Supplier } from '../../lib/suppliers';
+  import { listStock, type StockItem } from '../../lib/inventory';
+  import {
+    listPurchases,
+    getPurchase,
+    createPurchase,
+    updatePurchase,
+    cancelPurchase,
+    receivePurchase,
+    addPayment,
+    voidPayment,
+    listReturns,
+    createReturn,
+    voidReturn,
+    listCredits,
+    useCredit,
+    receiveReplacement,
+    voidCredit,
+    previewTotals,
+    summarize,
+    formatNpr,
+    formatQty,
+    STATUS_LABEL,
+    PAYMENT_LABEL,
+    METHOD_LABEL,
+    CREDIT_LABEL,
+    type Purchase,
+    type PurchaseReturn,
+    type CreditSettlement,
+    type CreditKind,
+    type PayMethod,
+  } from '../../lib/purchases';
+
+  if (!getSession()) window.location.replace('/');
+
+  let purchases: Purchase[] = [];
+  let returns: PurchaseReturn[] = [];
+  let credits: CreditSettlement[] = [];
+  let suppliers: Supplier[] = [];
+  let products: StockItem[] = [];
+  let selected: Purchase | null = null;
+  let canWrite = true;
+  let loaded = { returns: false, credits: false };
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+  const val = (id: string) => $<HTMLInputElement>(id)?.value ?? '';
+  const today = () => new Date().toLocaleDateString('en-CA');
+
+  function esc(s: string): string {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  const FIELD_LABELS: Record<string, string> = {
+    supplier: 'Supplier',
+    bill_no: 'Bill no',
+    purchase_date: 'Date',
+    discount_amount: 'Discount',
+    vat_rate: 'VAT',
+    freight_amount: 'Freight',
+    amount: 'Amount',
+    method: 'Method',
+    reason: 'Reason',
+    paid_on: 'Paid on',
+    received_on: 'Received on',
+  };
+
+  function flatten(value: unknown): string {
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) return value.map(flatten).filter(Boolean).join(' ');
+    if (value && typeof value === 'object') return Object.values(value).map(flatten).filter(Boolean).join(' ');
+    return '';
+  }
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    const entries = Object.entries(error.fields);
+    if (entries.length > 0 && error.status === 400) {
+      return entries
+        .map(([k, v]) => (FIELD_LABELS[k] ? `${FIELD_LABELS[k]}: ${flatten(v)}` : flatten(v)))
+        .join(' ');
+    }
+    return error.message;
+  }
+
+  function showError(id: string, message: string | null): void {
+    const el = $(id);
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
+  function notice(message: string | null, error = false): void {
+    const el = $('pu-notice');
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+    el.classList.toggle('is-error', error);
+  }
+
+  const dlg = (id: string) => $<HTMLDialogElement>(id)!;
+  document.querySelectorAll<HTMLButtonElement>('[data-close]').forEach((b) =>
+    b.addEventListener('click', () => dlg(b.dataset.close!).close()),
+  );
+
+  /** Runs a save: disables the button, shows errors in the dialog, closes on success. */
+  async function submit(btnId: string, errId: string, dialogId: string, work: () => Promise<void>): Promise<void> {
+    const btn = $<HTMLButtonElement>(btnId)!;
+    btn.disabled = true;
+    showError(errId, null);
+    try {
+      await work();
+      dlg(dialogId).close();
+    } catch (error) {
+      showError(errId, describe(error));
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  const badge = (cls: string, text: string) => `<span class="pu-badge pu-badge-${cls}">${esc(text)}</span>`;
+
+  // ---- List ----------------------------------------------------------
+
+  function filters() {
+    return {
+      search: val('f-search').trim(),
+      status: val('f-status') as Purchase['status'] | '',
+      paymentStatus: val('f-pay') as Purchase['paymentStatus'] | '',
+      supplierId: Number(val('f-supplier')) || undefined,
+      dateFrom: val('f-from'),
+      dateTo: val('f-to'),
+    };
+  }
+
+  function renderKpis(): void {
+    const s = summarize(purchases);
+    $('kpi-count')!.textContent = String(s.count);
+    $('kpi-receive')!.textContent = String(s.toReceive);
+    $('kpi-value')!.textContent = formatNpr(s.totalValue);
+    $('kpi-unpaid')!.textContent = formatNpr(s.unpaid);
+  }
+
+  function renderList(): void {
+    const tbody = $('pu-tbody')!;
+    if (purchases.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="pu-empty">No purchases found.</td></tr>`;
+    } else {
+      tbody.innerHTML = purchases
+        .map(
+          (p) => `<tr class="pu-row ${selected?.id === p.id ? 'is-selected' : ''}" data-id="${p.id}">
+            <td class="mono">${esc(p.purchaseNo)}</td>
+            <td>${esc(p.purchaseDate)}</td>
+            <td>${esc(p.supplierName)}</td>
+            <td class="mono">${esc(p.billNo || '—')}</td>
+            <td>${badge(p.status, STATUS_LABEL[p.status])}</td>
+            <td class="num">${formatNpr(p.netTotal)}</td>
+            <td class="num">${formatNpr(p.paid)}</td>
+            <td class="num">${p.status === 'cancelled' ? '—' : formatNpr(p.remaining)}</td>
+            <td>${p.status === 'cancelled' ? '—' : badge('pay-' + p.paymentStatus, PAYMENT_LABEL[p.paymentStatus])}</td>
+          </tr>`,
+        )
+        .join('');
+    }
+    $('pu-count')!.textContent = `${purchases.length} purchase${purchases.length === 1 ? '' : 's'}`;
+    tbody.querySelectorAll<HTMLTableRowElement>('.pu-row').forEach((row) =>
+      row.addEventListener('click', () => void openDetail(Number(row.dataset.id))),
+    );
+  }
+
+  async function loadList(): Promise<void> {
+    try {
+      purchases = await listPurchases(filters());
+      notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+    } catch (error) {
+      purchases = [];
+      notice(describe(error), true);
+    }
+    renderKpis();
+    renderList();
+  }
+
+  // ---- Detail --------------------------------------------------------
+
+  async function openDetail(id: number): Promise<void> {
+    try {
+      selected = await getPurchase(id);
+    } catch (error) {
+      notice(describe(error), true);
+      return;
+    }
+    renderList();
+    renderDetail();
+  }
+
+  function renderDetail(): void {
+    const el = $('pu-detail')!;
+    const p = selected;
+    if (!p) {
+      el.innerHTML = `<p class="pu-empty-detail">Select a purchase to see its lines, payments and deliveries.</p>`;
+      return;
+    }
+    const open = p.status === 'draft' || p.status === 'partial';
+    const received = p.status === 'received' || p.status === 'partial';
+    const acts: string[] = [];
+    if (canWrite) {
+      if (p.status === 'draft') acts.push(`<button class="btn-ghost-sm" data-act="edit">Edit</button>`);
+      if (open) acts.push(`<button class="btn-primary-sm" data-act="receive">Receive goods</button>`);
+      if (p.status !== 'cancelled' && p.remaining > 0) acts.push(`<button class="btn-ghost-sm" data-act="pay">Record payment</button>`);
+      if (received && p.lines.some((l) => l.returnableQuantity > 0)) acts.push(`<button class="btn-ghost-sm" data-act="return">Return goods</button>`);
+      if (p.status === 'draft') acts.push(`<button class="btn-ghost-sm is-danger" data-act="cancel">Cancel</button>`);
+    }
+
+    el.innerHTML = `
+      <div class="pu-detail-head">
+        <div>
+          <p class="mono muted">${esc(p.purchaseNo)}</p>
+          <h3>${esc(p.supplierName)}</h3>
+          <p>${badge(p.status, STATUS_LABEL[p.status])} ${p.status === 'cancelled' ? '' : badge('pay-' + p.paymentStatus, PAYMENT_LABEL[p.paymentStatus])}</p>
+        </div>
+      </div>
+      <div class="pu-detail-actions">${acts.join('')}</div>
+      <p class="muted small">Date ${esc(p.purchaseDate)}${p.billNo ? ` · Bill ${esc(p.billNo)}` : ''}${p.notes ? ` · ${esc(p.notes)}` : ''}</p>
+      ${p.status === 'cancelled' && p.cancelReason ? `<p class="small">Cancelled: ${esc(p.cancelReason)}</p>` : ''}
+
+      <table class="pu-table pu-mini">
+        <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th><th class="num">Received</th></tr></thead>
+        <tbody>
+          ${p.lines.map((l) => `<tr>
+            <td>${esc(l.productName)}<br /><span class="muted mono">${esc(l.stockNo)}</span></td>
+            <td class="num">${formatQty(l.quantity)} ${esc(l.unit)}</td>
+            <td class="num">${formatNpr(l.unitPrice)}</td>
+            <td class="num">${formatNpr(l.lineTotal)}</td>
+            <td class="num">${formatQty(l.receivedQuantity)}${l.returnedQuantity > 0 ? `<br /><span class="muted">returned ${formatQty(l.returnedQuantity)}</span>` : ''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+
+      <dl class="pu-totals">
+        <div><dt>Subtotal</dt><dd>${formatNpr(p.subtotal)}</dd></div>
+        <div><dt>Discount</dt><dd>− ${formatNpr(p.discount)}</dd></div>
+        <div><dt>VAT ${formatQty(p.vatRate)}%</dt><dd>${formatNpr(p.vatAmount)}</dd></div>
+        <div><dt>Freight</dt><dd>${formatNpr(p.freight)}</dd></div>
+        <div class="strong"><dt>Net total</dt><dd>${formatNpr(p.netTotal)}</dd></div>
+        <div><dt>Paid</dt><dd>${formatNpr(p.paid)}</dd></div>
+        ${p.creditApplied > 0 ? `<div><dt>Credit applied</dt><dd>${formatNpr(p.creditApplied)}</dd></div>` : ''}
+        <div class="strong"><dt>Due</dt><dd>${formatNpr(p.remaining)}</dd></div>
+      </dl>
+
+      <h4>Payments</h4>
+      ${p.payments.length === 0 ? `<p class="muted small">No payments yet.</p>` : `
+      <ul class="pu-list">
+        ${p.payments.map((x) => `<li class="${x.status === 'void' ? 'is-void' : ''}">
+          <span>${esc(x.paidOn)} · ${esc(METHOD_LABEL[x.method])}${x.reference ? ` · ${esc(x.reference)}` : ''}</span>
+          <strong>${formatNpr(x.amount)}</strong>
+          ${x.status === 'void'
+            ? `<em class="muted">voided: ${esc(x.voidReason)}</em>`
+            : canWrite ? `<button class="btn-link" data-void-pay="${x.id}">Void</button>` : ''}
+        </li>`).join('')}
+      </ul>`}
+
+      <h4>Deliveries</h4>
+      ${p.receipts.length === 0 ? `<p class="muted small">Nothing received yet.</p>` : `
+      <ul class="pu-list">
+        ${p.receipts.map((r) => `<li><span>${esc(r.receivedOn)}${r.notes ? ` · ${esc(r.notes)}` : ''}</span>
+          <em class="muted">${r.items.map((i) => `${esc(i.productName)} ×${formatQty(i.quantity)}`).join(', ')}</em></li>`).join('')}
+      </ul>`}
+    `;
+
+    el.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const act = b.dataset.act;
+        if (act === 'edit') openForm(p);
+        else if (act === 'receive') openReceive(p);
+        else if (act === 'pay') openPay(p);
+        else if (act === 'return') openReturn(p);
+        else if (act === 'cancel') openReason(`Cancel ${p.purchaseNo}`, 'A cancelled draft has no effect on stock.', async (reason) => {
+          await cancelPurchase(p.id, reason);
+        }, p.id);
+      }),
+    );
+    el.querySelectorAll<HTMLButtonElement>('[data-void-pay]').forEach((b) =>
+      b.addEventListener('click', () =>
+        openReason('Void payment', 'The amount goes back onto the purchase.', async (reason) => {
+          await voidPayment(Number(b.dataset.voidPay), reason);
+        }, p.id),
+      ),
+    );
+  }
+
+  async function refreshAfterChange(id?: number): Promise<void> {
+    await loadList();
+    if (id) {
+      try { selected = await getPurchase(id); } catch { selected = null; }
+      renderList();
+      renderDetail();
+    }
+    loaded = { returns: false, credits: false };
+    if (activeTab === 'returns') void loadReturns();
+    if (activeTab === 'credits') void loadCredits();
+    // Stock changed (receive, return): refresh product choices too.
+    void listStock().then((s) => (products = s)).catch(() => {});
+  }
+
+  // ---- Reason dialog -------------------------------------------------
+
+  let reasonHandler: ((reason: string) => Promise<void>) | null = null;
+  let reasonAfter: number | undefined;
+
+  function openReason(title: string, sub: string, handler: (reason: string) => Promise<void>, afterId?: number): void {
+    $('rs-title')!.textContent = title;
+    $('rs-sub')!.textContent = sub;
+    $<HTMLInputElement>('rs-text')!.value = '';
+    showError('rs-error', null);
+    reasonHandler = handler;
+    reasonAfter = afterId;
+    dlg('dlg-reason').showModal();
+  }
+
+  $('form-reason')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const reason = val('rs-text').trim();
+    if (!reason || !reasonHandler) return;
+    void submit('rs-save', 'rs-error', 'dlg-reason', async () => {
+      await reasonHandler!(reason);
+      await refreshAfterChange(reasonAfter);
+    });
+  });
+
+  // ---- Line editor (shared by purchase form and replacement goods) ---
+
+  function productOptions(selectedId?: number): string {
+    return (
+      `<option value="">Choose product…</option>` +
+      products
+        .map((p) => `<option value="${p.productId}" ${p.productId === selectedId ? 'selected' : ''}>${esc(p.stockNo)} · ${esc(p.name)}</option>`)
+        .join('')
+    );
+  }
+
+  function addLineRow(
+    container: HTMLElement,
+    opts: { price: boolean; productId?: number; quantity?: number; unitPrice?: number; onChange?: () => void },
+  ): void {
+    const row = document.createElement('div');
+    row.className = 'pu-line';
+    row.innerHTML = `
+      <select class="ln-product" aria-label="Product">${productOptions(opts.productId)}</select>
+      <input class="ln-qty" type="number" min="0.001" step="0.001" value="${opts.quantity ?? 1}" aria-label="Quantity" />
+      ${opts.price ? `<input class="ln-price" type="number" min="0" step="0.01" value="${opts.unitPrice ?? 0}" aria-label="Unit price" />` : ''}
+      <button type="button" class="btn-link is-danger ln-remove" aria-label="Remove">✕</button>`;
+    container.appendChild(row);
+    const sel = row.querySelector<HTMLSelectElement>('.ln-product')!;
+    sel.addEventListener('change', () => {
+      const prod = products.find((p) => p.productId === Number(sel.value));
+      const price = row.querySelector<HTMLInputElement>('.ln-price');
+      if (prod && price) price.value = String(prod.purchasePrice);
+      opts.onChange?.();
+    });
+    row.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => opts.onChange?.()));
+    row.querySelector('.ln-remove')!.addEventListener('click', () => {
+      row.remove();
+      opts.onChange?.();
+    });
+  }
+
+  function readLines(container: HTMLElement) {
+    return Array.from(container.querySelectorAll<HTMLElement>('.pu-line'))
+      .map((row) => ({
+        productId: Number(row.querySelector<HTMLSelectElement>('.ln-product')!.value),
+        quantity: Number(row.querySelector<HTMLInputElement>('.ln-qty')!.value),
+        unitPrice: Number(row.querySelector<HTMLInputElement>('.ln-price')?.value ?? 0),
+      }))
+      .filter((l) => l.productId);
+  }
+
+  // ---- Purchase form -------------------------------------------------
+
+  function updateTotals(): void {
+    const t = previewTotals(readLines($('pf-lines')!), Number(val('pf-discount')) || 0, Number(val('pf-vat')) || 0, Number(val('pf-freight')) || 0);
+    $('pf-totals')!.innerHTML = `
+      <div><dt>Subtotal</dt><dd>${formatNpr(t.subtotal)}</dd></div>
+      <div><dt>VAT</dt><dd>${formatNpr(t.vat)}</dd></div>
+      <div class="strong"><dt>Net total (preview)</dt><dd>${formatNpr(t.net)}</dd></div>`;
+  }
+
+  function openForm(p?: Purchase): void {
+    $('pf-title')!.textContent = p ? `Edit ${p.purchaseNo}` : 'New purchase';
+    $<HTMLInputElement>('pf-id')!.value = p ? String(p.id) : '';
+    const sup = $<HTMLSelectElement>('pf-supplier')!;
+    sup.innerHTML =
+      `<option value="">Choose supplier…</option>` +
+      suppliers.filter((s) => s.isActive || s.id === p?.supplierId)
+        .map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    sup.value = p ? String(p.supplierId) : '';
+    $<HTMLInputElement>('pf-bill')!.value = p?.billNo ?? '';
+    $<HTMLInputElement>('pf-date')!.value = p?.purchaseDate ?? today();
+    $<HTMLInputElement>('pf-notes')!.value = p?.notes ?? '';
+    $<HTMLInputElement>('pf-discount')!.value = String(p?.discount ?? 0);
+    $<HTMLInputElement>('pf-vat')!.value = String(p?.vatRate ?? 0);
+    $<HTMLInputElement>('pf-freight')!.value = String(p?.freight ?? 0);
+    const box = $('pf-lines')!;
+    box.innerHTML = '';
+    if (p) p.lines.forEach((l) => addLineRow(box, { price: true, productId: l.productId, quantity: l.quantity, unitPrice: l.unitPrice, onChange: updateTotals }));
+    else addLineRow(box, { price: true, onChange: updateTotals });
+    updateTotals();
+    showError('pf-error', null);
+    dlg('dlg-form').showModal();
+  }
+
+  $('pf-add-line')?.addEventListener('click', () => addLineRow($('pf-lines')!, { price: true, onChange: updateTotals }));
+  for (const id of ['pf-discount', 'pf-vat', 'pf-freight']) $(id)?.addEventListener('input', updateTotals);
+  $('pu-new')?.addEventListener('click', () => openForm());
+
+  $('form-purchase')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const lines = readLines($('pf-lines')!);
+    if (lines.length === 0) {
+      showError('pf-error', 'Add at least one item.');
+      return;
+    }
+    if (lines.some((l) => !(l.quantity > 0))) {
+      showError('pf-error', 'Every item needs a quantity above zero.');
+      return;
+    }
+    const id = Number(val('pf-id')) || 0;
+    const input = {
+      supplierId: Number(val('pf-supplier')),
+      billNo: val('pf-bill'),
+      purchaseDate: val('pf-date'),
+      discount: Number(val('pf-discount')) || 0,
+      vatRate: Number(val('pf-vat')) || 0,
+      freight: Number(val('pf-freight')) || 0,
+      notes: val('pf-notes'),
+      lines,
+    };
+    void submit('pf-save', 'pf-error', 'dlg-form', async () => {
+      const saved = id ? await updatePurchase(id, input) : await createPurchase(input);
+      await refreshAfterChange(saved.id);
+    });
+  });
+
+  // ---- Receive -------------------------------------------------------
+
+  function openReceive(p: Purchase): void {
+    $('rc-sub')!.textContent = `${p.purchaseNo} · ${p.supplierName}. Change a quantity for a part delivery; stock goes up once for what you enter.`;
+    $('rc-lines')!.innerHTML = p.lines
+      .filter((l) => l.remainingQuantity > 0)
+      .map((l) => `<div class="pu-line pu-line-rc" data-line="${l.id}" data-max="${l.remainingQuantity}">
+          <span>${esc(l.productName)} <span class="muted">(still to come ${formatQty(l.remainingQuantity)} ${esc(l.unit)})</span></span>
+          <input type="number" class="rc-qty" min="0" max="${l.remainingQuantity}" step="0.001" value="${l.remainingQuantity}" />
+        </div>`).join('');
+    $<HTMLInputElement>('rc-date')!.value = today();
+    $<HTMLInputElement>('rc-notes')!.value = '';
+    showError('rc-error', null);
+    $('form-receive')!.dataset.id = String(p.id);
+    dlg('dlg-receive').showModal();
+  }
+
+  $('form-receive')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = Number($('form-receive')!.dataset.id);
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('#rc-lines .pu-line-rc'));
+    const lines = rows
+      .map((r) => ({
+        lineId: Number(r.dataset.line),
+        quantity: Number(r.querySelector<HTMLInputElement>('.rc-qty')!.value) || 0,
+        max: Number(r.dataset.max),
+      }))
+      .filter((l) => l.quantity > 0);
+    if (lines.length === 0) {
+      showError('rc-error', 'Enter a quantity for at least one item.');
+      return;
+    }
+    const everything = lines.length === rows.length && lines.every((l) => l.quantity === l.max);
+    void submit('rc-save', 'rc-error', 'dlg-receive', async () => {
+      await receivePurchase(id, {
+        lines: everything ? undefined : lines.map((l) => ({ lineId: l.lineId, quantity: l.quantity })),
+        receivedOn: val('rc-date'),
+        notes: val('rc-notes').trim(),
+      });
+      await refreshAfterChange(id);
+    });
+  });
+
+  // ---- Payment -------------------------------------------------------
+
+  function openPay(p: Purchase): void {
+    $('py-sub')!.textContent = `${p.purchaseNo} · ${p.supplierName} · due ${formatNpr(p.remaining)}`;
+    $<HTMLInputElement>('py-amount')!.value = String(p.remaining);
+    $<HTMLInputElement>('py-amount')!.max = String(p.remaining);
+    $<HTMLSelectElement>('py-method')!.value = 'cash';
+    $<HTMLInputElement>('py-date')!.value = today();
+    $<HTMLInputElement>('py-ref')!.value = '';
+    showError('py-error', null);
+    $('form-pay')!.dataset.id = String(p.id);
+    dlg('dlg-pay').showModal();
+  }
+
+  $('form-pay')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = Number($('form-pay')!.dataset.id);
+    void submit('py-save', 'py-error', 'dlg-pay', async () => {
+      await addPayment({
+        purchaseId: id,
+        amount: Number(val('py-amount')),
+        method: val('py-method') as PayMethod,
+        paidOn: val('py-date'),
+        reference: val('py-ref'),
+      });
+      await refreshAfterChange(id);
+    });
+  });
+
+  // ---- Return --------------------------------------------------------
+
+  function openReturn(p: Purchase): void {
+    $('rt-sub')!.textContent = `${p.purchaseNo} · ${p.supplierName}. Only goods that arrived can be sent back.`;
+    $('rt-lines')!.innerHTML = p.lines
+      .filter((l) => l.returnableQuantity > 0)
+      .map((l) => `<div class="pu-line pu-line-rt" data-line="${l.id}">
+          <span>${esc(l.productName)} <span class="muted">(can return ${formatQty(l.returnableQuantity)} ${esc(l.unit)})</span></span>
+          <input type="number" class="rt-qty" min="0" max="${l.returnableQuantity}" step="0.001" value="0" />
+          <select class="rt-cond"><option value="good">From good stock</option><option value="damaged">From damaged stock</option></select>
+        </div>`).join('');
+    $<HTMLInputElement>('rt-reason')!.value = '';
+    showError('rt-error', null);
+    $('form-return')!.dataset.id = String(p.id);
+    dlg('dlg-return').showModal();
+  }
+
+  $('form-return')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = Number($('form-return')!.dataset.id);
+    const lines = Array.from(document.querySelectorAll<HTMLElement>('#rt-lines .pu-line-rt'))
+      .map((r) => ({
+        lineId: Number(r.dataset.line),
+        quantity: Number(r.querySelector<HTMLInputElement>('.rt-qty')!.value) || 0,
+        condition: r.querySelector<HTMLSelectElement>('.rt-cond')!.value as 'good' | 'damaged',
+      }))
+      .filter((l) => l.quantity > 0);
+    if (lines.length === 0) {
+      showError('rt-error', 'Enter a quantity to return.');
+      return;
+    }
+    void submit('rt-save', 'rt-error', 'dlg-return', async () => {
+      await createReturn({ purchaseId: id, reason: val('rt-reason'), lines });
+      await refreshAfterChange(id);
+    });
+  });
+
+  // ---- Returns tab ---------------------------------------------------
+
+  async function loadReturns(): Promise<void> {
+    const tbody = $('ret-tbody')!;
+    try {
+      returns = await listReturns();
+      loaded.returns = true;
+    } catch (error) {
+      tbody.innerHTML = `<tr><td colspan="9" class="pu-empty">${esc(describe(error))}</td></tr>`;
+      return;
+    }
+    if (returns.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="pu-empty">No returns yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = returns
+      .map((r) => `<tr>
+        <td class="mono">${esc(r.returnNo)}</td>
+        <td>${esc(r.returnDate)}</td>
+        <td class="mono">${esc(r.purchaseNo)}</td>
+        <td>${esc(r.supplierName)}</td>
+        <td>${r.items.map((i) => `${esc(i.productName)} ×${formatQty(i.quantity)}${i.condition === 'damaged' ? ' (damaged)' : ''}`).join(', ')}</td>
+        <td>${esc(r.reason)}</td>
+        <td class="num">${formatNpr(r.creditAmount)}</td>
+        <td>${r.status === 'void' ? badge('cancelled', 'Voided') : badge('received', 'Active')}</td>
+        <td>${r.status === 'active' && canWrite ? `<button class="btn-link is-danger" data-void-ret="${r.id}">Void</button>` : ''}</td>
+      </tr>`)
+      .join('');
+    tbody.querySelectorAll<HTMLButtonElement>('[data-void-ret]').forEach((b) =>
+      b.addEventListener('click', () =>
+        openReason('Void return', 'The goods go back into stock and the credit is removed.', async (reason) => {
+          await voidReturn(Number(b.dataset.voidRet), reason);
+        }, selected?.id),
+      ),
+    );
+  }
+
+  // ---- Credit tab ----------------------------------------------------
+
+  async function loadCredits(): Promise<void> {
+    const tbody = $('cr-tbody')!;
+    try {
+      credits = await listCredits();
+      loaded.credits = true;
+    } catch (error) {
+      tbody.innerHTML = `<tr><td colspan="7" class="pu-empty">${esc(describe(error))}</td></tr>`;
+      return;
+    }
+    if (credits.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="pu-empty">No credit used yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = credits
+      .map((c) => {
+        const detail =
+          c.kind === 'refund'
+            ? esc(METHOD_LABEL[c.method as PayMethod] ?? c.method)
+            : c.kind === 'adjustment'
+              ? `Against ${esc(c.purchaseNo)}`
+              : `${c.items.map((i) => `${esc(i.productName)} ×${formatQty(i.quantity)}`).join(', ')} · ${esc(c.deliveryStatus || '')}`;
+        const actions: string[] = [];
+        if (canWrite && c.status === 'active') {
+          if (c.kind === 'replacement' && c.deliveryStatus === 'pending') {
+            actions.push(`<button class="btn-link" data-recv-cr="${c.id}">Goods arrived</button>`);
+          }
+          if (!(c.kind === 'replacement' && c.deliveryStatus === 'received')) {
+            actions.push(`<button class="btn-link is-danger" data-void-cr="${c.id}">Void</button>`);
+          }
+        }
+        return `<tr>
+          <td>${esc(c.settledOn)}</td>
+          <td>${esc(c.supplierName)}</td>
+          <td>${esc(CREDIT_LABEL[c.kind])}</td>
+          <td>${detail}</td>
+          <td class="num">${formatNpr(c.amount)}</td>
+          <td>${c.status === 'void' ? badge('cancelled', 'Voided') : badge('received', 'Active')}</td>
+          <td class="actions">${actions.join(' ')}</td>
+        </tr>`;
+      })
+      .join('');
+    tbody.querySelectorAll<HTMLButtonElement>('[data-recv-cr]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        try {
+          await receiveReplacement(Number(b.dataset.recvCr));
+          await refreshAfterChange(selected?.id);
+        } catch (error) {
+          notice(describe(error), true);
+        }
+      }),
+    );
+    tbody.querySelectorAll<HTMLButtonElement>('[data-void-cr]').forEach((b) =>
+      b.addEventListener('click', () =>
+        openReason('Void credit use', 'The credit goes back to the supplier balance.', async (reason) => {
+          await voidCredit(Number(b.dataset.voidCr), reason);
+        }, selected?.id),
+      ),
+    );
+  }
+
+  function syncCreditKind(): void {
+    const kind = val('cr-kind') as CreditKind;
+    $('cr-method-wrap')!.hidden = kind !== 'refund';
+    $('cr-purchase-wrap')!.hidden = kind !== 'adjustment';
+    $('cr-items-wrap')!.hidden = kind !== 'replacement';
+    if (kind === 'replacement' && $('cr-lines')!.children.length === 0) addLineRow($('cr-lines')!, { price: false });
+    if (kind === 'adjustment') {
+      const supplierId = Number(val('cr-supplier'));
+      const open = purchases.filter((p) => p.supplierId === supplierId && p.status !== 'cancelled' && p.remaining > 0);
+      $('cr-purchase')!.innerHTML = open.length
+        ? open.map((p) => `<option value="${p.id}">${esc(p.purchaseNo)} · due ${esc(formatNpr(p.remaining))}</option>`).join('')
+        : `<option value="">No unpaid purchase for this supplier</option>`;
+    }
+  }
+
+  function openCredit(): void {
+    $('cr-supplier')!.innerHTML =
+      `<option value="">Choose supplier…</option>` + suppliers.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+    $<HTMLSelectElement>('cr-kind')!.value = 'refund';
+    $<HTMLInputElement>('cr-amount')!.value = '';
+    $<HTMLInputElement>('cr-notes')!.value = '';
+    $('cr-lines')!.innerHTML = '';
+    syncCreditKind();
+    showError('cr-error', null);
+    dlg('dlg-credit').showModal();
+  }
+
+  $('cr-new')?.addEventListener('click', openCredit);
+  $('cr-kind')?.addEventListener('change', syncCreditKind);
+  $('cr-supplier')?.addEventListener('change', syncCreditKind);
+  $('cr-add-line')?.addEventListener('click', () => addLineRow($('cr-lines')!, { price: false }));
+
+  $('form-credit')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const kind = val('cr-kind') as CreditKind;
+    const items = readLines($('cr-lines')!).map((l) => ({ productId: l.productId, quantity: l.quantity }));
+    if (kind === 'replacement' && items.length === 0) {
+      showError('cr-error', 'Add the replacement goods.');
+      return;
+    }
+    if (kind === 'adjustment' && !Number(val('cr-purchase'))) {
+      showError('cr-error', 'Choose a purchase.');
+      return;
+    }
+    void submit('cr-save', 'cr-error', 'dlg-credit', async () => {
+      await useCredit({
+        supplierId: Number(val('cr-supplier')),
+        kind,
+        amount: Number(val('cr-amount')),
+        method: val('cr-method') as PayMethod,
+        purchaseId: Number(val('cr-purchase')) || undefined,
+        items,
+        notes: val('cr-notes'),
+      });
+      await refreshAfterChange(selected?.id);
+    });
+  });
+
+  // ---- Tabs, filters, load -------------------------------------------
+
+  let activeTab = 'list';
+  document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      activeTab = btn.dataset.tab!;
+      document.querySelectorAll('[data-tab]').forEach((b) => b.classList.remove('is-active'));
+      document.querySelectorAll('[data-panel]').forEach((p) => p.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      document.querySelector(`[data-panel="${activeTab}"]`)?.classList.add('is-active');
+      if (activeTab === 'returns' && !loaded.returns) void loadReturns();
+      if (activeTab === 'credits' && !loaded.credits) void loadCredits();
+    }),
+  );
+
+  let timer: number | undefined;
+  $('f-search')?.addEventListener('input', () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => void loadList(), 300);
+  });
+  for (const id of ['f-status', 'f-pay', 'f-supplier', 'f-from', 'f-to']) {
+    $(id)?.addEventListener('change', () => void loadList());
+  }
+  $('pu-refresh')?.addEventListener('click', () => void init());
+  document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => void init(), 300));
+
+  async function init(): Promise<void> {
+    const s = getSession();
+    if (s) $('pu-scope')!.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
+    canWrite = s?.accessMode !== 'read_only';
+    $('pu-new')!.hidden = !canWrite;
+    $('cr-new')!.hidden = !canWrite;
+    selected = null;
+    renderDetail();
+    loaded = { returns: false, credits: false };
+
+    try {
+      [suppliers, products] = await Promise.all([listSuppliers(), listStock()]);
+    } catch (error) {
+      notice(describe(error), true);
+    }
+    const filt = $<HTMLSelectElement>('f-supplier')!;
+    const current = filt.value;
+    filt.innerHTML =
+      `<option value="">All suppliers</option>` + suppliers.map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('');
+    filt.value = current;
+
+    await loadList();
+    if (activeTab === 'returns') void loadReturns();
+    if (activeTab === 'credits') void loadCredits();
+  }
+
+  void init();
+</script>
+
+<style>
+  .pu-page { display: flex; flex-direction: column; gap: 14px; }
+  .pu-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .pu-toolbar-right { display: flex; gap: 8px; }
+  .pu-scope { margin: 0 0 6px; font-size: 0.78rem; color: var(--text-muted); }
+  .pu-tabs { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .pu-tab {
+    border: none; background: transparent; padding: 6px 12px; border-radius: 7px; font-family: inherit;
+    font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+  }
+  .pu-tab.is-active { background: var(--panel-bg); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .btn-primary-sm, .btn-ghost-sm {
+    height: 34px; padding: 0 12px; border-radius: 8px; font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer;
+  }
+  .btn-primary-sm { border: none; background: var(--accent); color: #fff; }
+  .btn-primary-sm.is-danger { background: #ef334e; }
+  .btn-primary-sm:disabled { opacity: 0.6; cursor: default; }
+  .btn-ghost-sm { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); }
+  .btn-ghost-sm:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .btn-ghost-sm.is-danger { color: #ef334e; border-color: color-mix(in srgb, #ef334e 35%, var(--border)); }
+  .btn-link { border: none; background: transparent; color: var(--accent); font-family: inherit; font-size: 0.78rem; font-weight: 650; cursor: pointer; padding: 0; }
+  .btn-link.is-danger { color: #ef334e; }
+
+  .pu-notice {
+    margin: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); color: var(--text-secondary); font-size: 0.8rem;
+  }
+  .pu-notice.is-error { color: #ef334e; border-color: rgba(239, 51, 78, 0.4); }
+
+  .pu-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 700px) { .pu-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .pu-kpi { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); }
+  .pu-kpi span { display: block; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .pu-kpi strong { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+  .pu-kpi.is-danger strong { color: #ef334e; }
+
+  .pu-panel { display: none; }
+  .pu-panel.is-active { display: block; }
+  .pu-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 12px; align-items: start; }
+  @media (max-width: 1000px) { .pu-layout { grid-template-columns: 1fr; } }
+  .pu-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 12px; }
+  .pu-credit-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+
+  .pu-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .pu-filters input, .pu-filters select {
+    height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem;
+  }
+  .pu-filters input[type='search'] { flex: 1; min-width: 160px; }
+
+  .pu-table-wrap { overflow-x: auto; }
+  .pu-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .pu-table th, .pu-table td { padding: 8px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .pu-table th { font-size: 0.66rem; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+  .pu-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pu-table .mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.74rem; }
+  .pu-table .actions { white-space: nowrap; }
+  .pu-row { cursor: pointer; }
+  .pu-row:hover td { background: var(--surface-hover); }
+  .pu-row.is-selected td { background: var(--accent-soft); }
+  .pu-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
+  .pu-foot { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
+  .pu-mini { margin-top: 10px; }
+  .muted { color: var(--text-muted); }
+  .small { font-size: 0.75rem; }
+
+  .pu-badge { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 650; white-space: nowrap; }
+  .pu-badge-draft { background: rgba(148, 163, 184, 0.18); color: #64748b; }
+  .pu-badge-partial, .pu-badge-pay-partial { background: rgba(217, 119, 6, 0.12); color: #d97706; }
+  .pu-badge-received, .pu-badge-pay-paid { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .pu-badge-cancelled, .pu-badge-pay-unpaid { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+
+  .pu-empty-detail { margin: 0; padding: 24px 8px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
+  .pu-detail-head h3 { margin: 2px 0 6px; font-size: 1rem; font-weight: 650; }
+  .pu-detail-head p { margin: 0; }
+  .pu-detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  #pu-detail h4 { margin: 14px 0 6px; font-size: 0.78rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
+  .pu-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; }
+  .pu-list li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .pu-list li.is-void span, .pu-list li.is-void strong { text-decoration: line-through; color: var(--text-muted); }
+
+  .pu-totals { margin: 12px 0 0; display: grid; gap: 4px; font-size: 0.8rem; }
+  .pu-totals div { display: flex; justify-content: space-between; gap: 10px; }
+  .pu-totals dt { color: var(--text-secondary); }
+  .pu-totals dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .pu-totals .strong dt, .pu-totals .strong dd { font-weight: 700; color: var(--text-primary); }
+
+  .pu-dialog {
+    border: none; border-radius: 14px; padding: 0; background: var(--panel-bg); color: var(--text-primary);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.28); max-width: 440px; width: calc(100% - 32px);
+  }
+  .pu-dialog.pu-wide { max-width: 680px; }
+  .pu-dialog::backdrop { background: rgba(8,15,29,0.55); backdrop-filter: blur(4px); }
+  .pu-dialog-inner { padding: 20px; max-height: 88vh; overflow-y: auto; }
+  .pu-dialog-title { margin: 0 0 6px; font-size: 1rem; font-weight: 650; }
+  .pu-sub { margin: 0 0 12px; font-size: 0.8rem; color: var(--text-muted); }
+  .pu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 10px 0; }
+  .pu-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 560px) { .pu-grid, .pu-grid-3 { grid-template-columns: 1fr; } }
+  .pu-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
+  .pu-grid .pu-field { margin-bottom: 0; }
+  .pu-field input, .pu-field select {
+    height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
+  }
+  .pu-lines-head { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 6px; font-size: 0.85rem; }
+  .pu-lines { display: flex; flex-direction: column; gap: 6px; }
+  .pu-line { display: grid; grid-template-columns: minmax(0, 2fr) 90px 110px auto; gap: 6px; align-items: center; font-size: 0.8rem; }
+  .pu-line select, .pu-line input {
+    height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; min-width: 0;
+  }
+  .pu-line-rc, .pu-line-rt { grid-template-columns: minmax(0, 2fr) 100px 150px; }
+  .pu-line-rc { grid-template-columns: minmax(0, 2fr) 110px; }
+  @media (max-width: 560px) { .pu-line, .pu-line-rt { grid-template-columns: 1fr 1fr; } }
+  .pu-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
+  .pu-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+</style>
