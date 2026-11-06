@@ -70,8 +70,15 @@ const ROLE_MENU: Record<UserRole, string[]> = {
   staff: ['overview', 'inventory', 'sales', 'customers'],
 };
 
-export function getNavItemsForRole(role: UserRole): NavItem[] {
-  const allowed = ROLE_MENU[role] ?? ['overview'];
+/**
+ * `canManageTeam` decides the Staff item (the owner, or staff whose position
+ * grants the staff module). Pages call this at build time without it, which
+ * keeps the Staff link in the HTML; the app shell then calls it with the real
+ * value and hides what the signed-in person cannot use.
+ */
+export function getNavItemsForRole(role: UserRole, canManageTeam?: boolean): NavItem[] {
+  const base = (ROLE_MENU[role] ?? ['overview']).filter((id) => id !== 'staff');
+  const allowed = canManageTeam === false ? base : [...base, 'staff'];
   return ALL_ITEMS.filter((item) => allowed.includes(item.id));
 }
 

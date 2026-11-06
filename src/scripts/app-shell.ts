@@ -3,6 +3,7 @@ import {
   refreshProfile,
   logout,
   canSwitchBranch,
+  canManageStaff,
   loadBranches,
   switchBranch,
   type UserRole,
@@ -154,7 +155,7 @@ function applySessionUI(): void {
   }
 
   const allowed = new Set(
-    getNavItemsForRole(session.role as UserRole).map((i) => i.id),
+    getNavItemsForRole(session.role as UserRole, canManageStaff(session)).map((i) => i.id),
   );
   document.querySelectorAll<HTMLElement>('[data-nav-id]').forEach((el) => {
     const id = el.dataset.navId;

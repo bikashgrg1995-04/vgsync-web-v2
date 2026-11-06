@@ -176,7 +176,7 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession, canManageStaff, refreshProfile } from '../../lib/auth';
+  import { getSession, canManageStaff, canEditPositions, refreshProfile } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
   import {
     MODULES,
@@ -202,13 +202,14 @@ const navItems = getNavItemsForRole(defaultRole);
   if (!session) {
     window.location.replace('/');
   } else if (!canManageStaff(session)) {
-    // Only the owner manages staff.
+    // Only the owner, or staff with the Administration position, manage staff.
     window.location.replace('/dashboard');
   }
 
   let members: StaffMember[] = [];
   let positions: Position[] = [];
   let canWrite = true;
+  let canEditPos = true;
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
   const val = (id: string) => ($<HTMLInputElement>(id)?.value ?? '').trim();
@@ -345,7 +346,7 @@ const navItems = getNavItemsForRole(defaultRole);
     }
     tbody.innerHTML = positions
       .map((p) => {
-        const actions = canWrite
+        const actions = canEditPos
           ? `<div class="st-actions">
               <button type="button" class="btn-ghost-sm" data-pact="edit" data-id="${p.id}">Edit</button>
               <button type="button" class="btn-ghost-sm" data-pact="${p.isActive ? 'deactivate' : 'activate'}" data-id="${p.id}">${p.isActive ? 'Deactivate' : 'Activate'}</button>
@@ -367,11 +368,26 @@ const navItems = getNavItemsForRole(defaultRole);
 
   function applyWriteAccess(): void {
     // A company owner is read-only inside a branch.
-    canWrite = getSession()?.accessMode !== 'read_only';
-    for (const id of ['member-add', 'position-add']) {
-      const el = $(id);
-      if (el) el.hidden = !canWrite;
+    const current = getSession();
+    canWrite = current?.accessMode !== 'read_only';
+    // Positions are changed by the owner only; others can read them.
+    canEditPos = canWrite && canEditPositions(current);
+    const add = $('member-add');
+    if (add) add.hidden = !canWrite;
+    const addPosition = $('position-add');
+    if (addPosition) addPosition.hidden = !canEditPos;
+    // Someone who is not the owner manages staff accounts only.
+    const roleSelect = $<HTMLSelectElement>('m-role');
+    if (roleSelect) {
+      const owner = canEditPositions(current);
+      for (const option of Array.from(roleSelect.options)) {
+        option.hidden = !owner && option.value !== 'staff';
+        option.disabled = !owner && option.value !== 'staff';
+      }
+      if (!owner) roleSelect.value = 'staff';
     }
+    const roleFilter = $<HTMLSelectElement>('st-role-filter');
+    if (roleFilter && !canEditPositions(current)) roleFilter.hidden = true;
   }
 
   async function reload(): Promise<void> {
@@ -382,7 +398,13 @@ const navItems = getNavItemsForRole(defaultRole);
 
     try {
       [members, positions] = await Promise.all([listStaff(), listPositions()]);
-      banner(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+      banner(
+        !canWrite
+          ? 'Read-only: you are viewing this branch from Head Office.'
+          : !canEditPos
+            ? 'You can manage staff accounts. Positions are changed by the owner.'
+            : null,
+      );
     } catch (error) {
       members = [];
       positions = [];
@@ -417,6 +439,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
   function openMember(edit?: StaffMember): void {
     $('member-title')!.textContent = edit ? 'Edit team member' : 'Add team member';
+    applyWriteAccess();
     $<HTMLInputElement>('m-id')!.value = edit ? String(edit.id) : '';
     $<HTMLInputElement>('m-first')!.value = edit?.firstName ?? '';
     $<HTMLInputElement>('m-last')!.value = edit?.lastName ?? '';
