@@ -30,6 +30,8 @@ const navItems = getNavItemsForRole(defaultRole);
       <button type="button" class="btn-primary-sm" id="cus-add">+ New customer</button>
     </div>
 
+    <p class="cus-form-error" id="cus-load-error" role="alert" hidden></p>
+
     <div class="cus-kpis">
       <article class="cus-kpi">
         <span class="cus-kpi-label">Total</span>
@@ -44,8 +46,8 @@ const navItems = getNavItemsForRole(defaultRole);
         <strong id="kpi-recv">—</strong>
       </article>
       <article class="cus-kpi is-danger">
-        <span class="cus-kpi-label">Blocked</span>
-        <strong id="kpi-blocked">—</strong>
+        <span class="cus-kpi-label">With dues</span>
+        <strong id="kpi-dues">—</strong>
       </article>
     </div>
 
@@ -54,7 +56,7 @@ const navItems = getNavItemsForRole(defaultRole);
         <div class="cus-filters">
           <div class="cus-search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="search" id="cus-search" placeholder="Search name, phone, code…" autocomplete="off" />
+            <input type="search" id="cus-search" placeholder="Search name, phone, PAN…" autocomplete="off" />
           </div>
           <select id="cus-type-filter">
             <option value="">All types</option>
@@ -66,24 +68,26 @@ const navItems = getNavItemsForRole(defaultRole);
             <option value="">All status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-            <option value="blocked">Blocked</option>
           </select>
+          <label class="cus-dues-toggle">
+            <input type="checkbox" id="cus-dues-filter" />
+            <span>Has dues</span>
+          </label>
         </div>
 
         <div class="cus-table-wrap">
           <table class="cus-table">
             <thead>
               <tr>
-                <th>Code</th>
                 <th>Name</th>
                 <th>Type</th>
                 <th>Phone</th>
-                <th class="num">Balance</th>
+                <th class="num">Owes you</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody id="cus-tbody">
-              <tr><td colspan="6">Loading…</td></tr>
+              <tr><td colspan="5">Loading…</td></tr>
             </tbody>
           </table>
         </div>
@@ -105,30 +109,68 @@ const navItems = getNavItemsForRole(defaultRole);
             </div>
             <div class="cus-detail-actions">
               <button type="button" class="btn-ghost-sm" id="cus-edit">Edit</button>
-              <button type="button" class="btn-ghost-sm is-danger" id="cus-delete">Delete</button>
+              <button type="button" class="btn-ghost-sm is-danger" id="cus-toggle">Deactivate</button>
             </div>
           </header>
+
+          <p class="cus-limit-warn" id="d-limit-warn" role="status" hidden>
+            Owes more than the credit limit. Sales are still allowed.
+          </p>
 
           <dl class="cus-dl">
             <div><dt>Type</dt><dd id="d-type">—</dd></div>
             <div><dt>Phone</dt><dd id="d-phone">—</dd></div>
             <div><dt>Email</dt><dd id="d-email">—</dd></div>
-            <div><dt>City</dt><dd id="d-city">—</dd></div>
-            <div class="span2"><dt>Address</dt><dd id="d-address">—</dd></div>
             <div><dt>PAN</dt><dd id="d-pan">—</dd></div>
+            <div class="span2"><dt>Address</dt><dd id="d-address">—</dd></div>
+            <div><dt>Owes you</dt><dd id="d-owes">—</dd></div>
             <div><dt>Credit limit</dt><dd id="d-credit">—</dd></div>
-            <div><dt>Balance</dt><dd id="d-balance">—</dd></div>
+            <div><dt>You owe them</dt><dd id="d-credit-to-pay">—</dd></div>
+            <div><dt>Advance received</dt><dd id="d-advance">—</dd></div>
+            <div><dt>Total sales</dt><dd id="d-total">—</dd></div>
+            <div><dt>Replacement due</dt><dd id="d-stock">—</dd></div>
             <div class="span2"><dt>Notes</dt><dd id="d-notes">—</dd></div>
           </dl>
 
           <p class="cus-detail-meta" id="d-meta"></p>
 
-          <div class="cus-detail-links">
-            <span class="chip">Sales invoices</span>
-            <span class="chip">Receipts</span>
-            <span class="chip">Ledger</span>
-          </div>
-          <p class="cus-hint">Sales &amp; payments will reference this customer record by ID/code.</p>
+          <section class="cus-stmt" aria-label="Statement">
+            <div class="cus-stmt-head">
+              <h4>Statement</h4>
+              <div class="cus-stmt-actions">
+                <button type="button" class="btn-ghost-sm" id="stmt-xlsx">Excel</button>
+                <button type="button" class="btn-ghost-sm" id="stmt-pdf">PDF</button>
+              </div>
+            </div>
+            <div class="cus-stmt-filters">
+              <label><span>From</span><input type="date" id="stmt-from" /></label>
+              <label><span>To</span><input type="date" id="stmt-to" /></label>
+              <label>
+                <span>Type</span>
+                <select id="stmt-type">
+                  <option value="">All</option>
+                  <option value="sale">Sales</option>
+                  <option value="payment">Payments</option>
+                  <option value="return">Returns</option>
+                  <option value="refund">Refunds</option>
+                  <option value="replacement">Replacements</option>
+                  <option value="adjustment">Credit adjustments</option>
+                </select>
+              </label>
+            </div>
+            <p class="cus-stmt-error" id="stmt-error" role="alert" hidden></p>
+            <p class="cus-stmt-totals" id="stmt-totals"></p>
+            <div class="cus-stmt-wrap">
+              <table class="cus-stmt-table">
+                <thead>
+                  <tr><th>Date</th><th>Type</th><th>Reference</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr>
+                </thead>
+                <tbody id="stmt-tbody"></tbody>
+              </table>
+            </div>
+            <button type="button" class="btn-ghost-sm" id="stmt-more" hidden>Load more</button>
+            <p class="cus-hint" id="stmt-hint">Positive balance: the customer owes you. Negative: you owe the customer.</p>
+          </section>
         </div>
       </aside>
     </div>
@@ -157,12 +199,11 @@ const navItems = getNavItemsForRole(defaultRole);
           <select id="f-status">
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-            <option value="blocked">Blocked</option>
           </select>
         </label>
         <label class="cus-field">
-          <span>Phone *</span>
-          <input type="tel" id="f-phone" required placeholder="98XXXXXXXX" />
+          <span>Phone</span>
+          <input type="tel" id="f-phone" placeholder="98XXXXXXXX (optional)" />
         </label>
         <label class="cus-field">
           <span>Email</span>
@@ -173,16 +214,13 @@ const navItems = getNavItemsForRole(defaultRole);
           <input type="text" id="f-address" />
         </label>
         <label class="cus-field">
-          <span>City</span>
-          <input type="text" id="f-city" />
-        </label>
-        <label class="cus-field">
-          <span>PAN</span>
-          <input type="text" id="f-pan" />
+          <span>PAN / VAT number</span>
+          <input type="text" id="f-pan" placeholder="optional" />
         </label>
         <label class="cus-field">
           <span>Credit limit (NPR)</span>
           <input type="number" id="f-credit" min="0" step="1000" value="0" />
+          <small class="cus-field-hint">0 means no limit. Going over only shows a warning.</small>
         </label>
         <label class="cus-field span2">
           <span>Notes</span>
@@ -201,84 +239,132 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession } from '../../lib/auth';
+  import { getSession, refreshProfile } from '../../lib/auth';
+  import { ApiError } from '../../lib/api';
   import {
-    listCustomersByBranch,
-    getCustomerSummary,
-    getCustomerById,
+    listCustomers,
     createCustomer,
     updateCustomer,
-    deleteCustomer,
+    setCustomerActive,
+    getCustomerSummary,
+    getStatement,
+    downloadStatement,
     formatNpr,
     TYPE_LABEL,
-    STATUS_LABEL,
+    STATEMENT_TYPES,
     type Customer,
+    type CustomerInput,
     type CustomerType,
-    type CustomerStatus,
+    type StatementFilters,
+    type StatementRow,
+    type StatementType,
   } from '../../lib/customers';
 
   if (!getSession()) window.location.replace('/');
 
   let customers: Customer[] = [];
-  let selectedId: string | null = null;
+  let selectedId: number | null = null;
+  let canWrite = true;
 
-  function branchCode(): string {
-    return getSession()?.activeBranchCode ?? 'HO';
-  }
+  let stmtPage = 1;
+  let stmtRows: StatementRow[] = [];
+  let stmtToken = 0;
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+  const input = (id: string) => $<HTMLInputElement>(id)!;
 
   function esc(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  const FIELD_LABELS: Record<string, string> = {
+    name: 'Name',
+    customer_type: 'Type',
+    phone: 'Phone',
+    email: 'Email',
+    address: 'Address',
+    pan_number: 'PAN',
+    notes: 'Notes',
+    credit_limit: 'Credit limit',
+    is_active: 'Status',
+    date_from: 'From',
+    date_to: 'To',
+  };
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    const entries = Object.entries(error.fields);
+    if (entries.length > 0 && error.status === 400) {
+      return entries.map(([key, msg]) => `${FIELD_LABELS[key] ?? key}: ${msg}`).join(' ');
+    }
+    return error.message;
+  }
+
+  function setText(id: string, value: string): void {
+    const el = $(id);
+    if (el) el.textContent = value || '—';
+  }
+
+  function showBox(id: string, message: string | null): void {
+    const el = $(id);
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
+  function selected(): Customer | null {
+    return customers.find((c) => c.id === selectedId) ?? null;
+  }
+
   function filtered(): Customer[] {
-    const q = (document.getElementById('cus-search') as HTMLInputElement)?.value.trim().toLowerCase() ?? '';
-    const type = (document.getElementById('cus-type-filter') as HTMLSelectElement)?.value ?? '';
-    const st = (document.getElementById('cus-status-filter') as HTMLSelectElement)?.value ?? '';
+    const q = (input('cus-search').value ?? '').trim().toLowerCase();
+    const type = $<HTMLSelectElement>('cus-type-filter')?.value ?? '';
+    const st = $<HTMLSelectElement>('cus-status-filter')?.value ?? '';
+    const dues = input('cus-dues-filter').checked;
+
     return customers.filter((c) => {
       if (type && c.type !== type) return false;
-      if (st && c.status !== st) return false;
+      if (st === 'active' && !c.isActive) return false;
+      if (st === 'inactive' && c.isActive) return false;
+      if (dues && c.creditToReceive <= 0) return false;
       if (!q) return true;
       return (
         c.name.toLowerCase().includes(q) ||
         c.phone.includes(q) ||
-        c.code.toLowerCase().includes(q) ||
+        c.pan.toLowerCase().includes(q) ||
         c.email.toLowerCase().includes(q)
       );
     });
   }
 
   function renderKpis(): void {
-    const s = getCustomerSummary(branchCode());
-    const set = (id: string, v: string) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = v;
-    };
-    set('kpi-total', String(s.total));
-    set('kpi-active', String(s.active));
-    set('kpi-recv', formatNpr(s.receivable));
-    set('kpi-blocked', String(s.blocked));
+    const s = getCustomerSummary(customers);
+    setText('kpi-total', String(s.total));
+    setText('kpi-active', String(s.active));
+    setText('kpi-recv', formatNpr(s.receivable));
+    setText('kpi-dues', String(s.withDues));
   }
 
   function renderTable(): void {
-    const tbody = document.getElementById('cus-tbody');
-    const count = document.getElementById('cus-count');
+    const tbody = $('cus-tbody');
+    const count = $('cus-count');
     if (!tbody) return;
     const rows = filtered();
     if (rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="cus-empty">No customers found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="cus-empty">No customers found.</td></tr>`;
       if (count) count.textContent = '0 customers';
       return;
     }
     tbody.innerHTML = rows
       .map((c) => {
         const active = c.id === selectedId ? ' is-selected' : '';
-        return `<tr class="cus-row${active}" data-id="${esc(c.id)}">
-          <td class="mono">${esc(c.code)}</td>
+        const over = c.overCreditLimit ? ' <span class="cus-over" title="Over credit limit">over limit</span>' : '';
+        return `<tr class="cus-row${active}" data-id="${c.id}">
           <td><strong>${esc(c.name)}</strong></td>
-          <td>${esc(TYPE_LABEL[c.type])}</td>
-          <td>${esc(c.phone)}</td>
-          <td class="num">${formatNpr(c.balance)}</td>
-          <td><span class="cus-badge cus-badge-${c.status}">${esc(STATUS_LABEL[c.status])}</span></td>
+          <td>${esc(TYPE_LABEL[c.type] ?? c.type)}</td>
+          <td>${esc(c.phone) || '—'}</td>
+          <td class="num">${formatNpr(c.creditToReceive)}${over}</td>
+          <td><span class="cus-badge cus-badge-${c.isActive ? 'active' : 'inactive'}">${c.isActive ? 'Active' : 'Inactive'}</span></td>
         </tr>`;
       })
       .join('');
@@ -286,22 +372,18 @@ const navItems = getNavItemsForRole(defaultRole);
 
     tbody.querySelectorAll<HTMLTableRowElement>('.cus-row').forEach((row) => {
       row.addEventListener('click', () => {
-        selectedId = row.dataset.id || null;
+        selectedId = Number(row.dataset.id) || null;
         renderTable();
         renderDetail();
+        void loadStatement(true);
       });
     });
   }
 
   function renderDetail(): void {
-    const empty = document.getElementById('cus-detail-empty');
-    const body = document.getElementById('cus-detail-body');
-    if (!selectedId) {
-      empty?.removeAttribute('hidden');
-      body?.setAttribute('hidden', '');
-      return;
-    }
-    const c = getCustomerById(selectedId);
+    const empty = $('cus-detail-empty');
+    const body = $('cus-detail-body');
+    const c = selected();
     if (!c) {
       selectedId = null;
       empty?.removeAttribute('hidden');
@@ -311,122 +393,249 @@ const navItems = getNavItemsForRole(defaultRole);
     empty?.setAttribute('hidden', '');
     body?.removeAttribute('hidden');
 
-    const set = (id: string, v: string) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = v || '—';
-    };
-    set('d-code', c.code);
-    set('d-name', c.name);
-    set('d-type', TYPE_LABEL[c.type]);
-    set('d-phone', c.phone);
-    set('d-email', c.email);
-    set('d-city', c.city);
-    set('d-address', c.address);
-    set('d-pan', c.pan);
-    set('d-credit', formatNpr(c.creditLimit));
-    set('d-balance', formatNpr(c.balance));
-    set('d-notes', c.notes);
-    set('d-meta', `Created ${c.createdAt} · Updated ${c.updatedAt}`);
+    setText('d-code', `Customer #${c.id}`);
+    setText('d-name', c.name);
+    setText('d-type', TYPE_LABEL[c.type] ?? c.type);
+    setText('d-phone', c.phone);
+    setText('d-email', c.email);
+    setText('d-pan', c.pan);
+    setText('d-address', c.address);
+    setText('d-owes', formatNpr(c.creditToReceive));
+    setText('d-credit', c.creditLimit > 0 ? formatNpr(c.creditLimit) : 'No limit');
+    setText('d-credit-to-pay', formatNpr(c.creditToPay));
+    setText('d-advance', formatNpr(c.advanceReceived));
+    setText('d-total', formatNpr(c.totalSales));
+    setText('d-stock', String(c.stockToGive));
+    setText('d-notes', c.notes);
+    setText(
+      'd-meta',
+      `Created ${new Date(c.createdAt).toLocaleDateString()} · Updated ${new Date(c.updatedAt).toLocaleDateString()}`,
+    );
 
-    const st = document.getElementById('d-status');
+    const warn = $('d-limit-warn');
+    if (warn) warn.hidden = !c.overCreditLimit;
+
+    const st = $('d-status');
     if (st) {
-      st.textContent = STATUS_LABEL[c.status];
-      st.className = `cus-badge cus-badge-${c.status}`;
+      st.textContent = c.isActive ? 'Active' : 'Inactive';
+      st.className = `cus-badge cus-badge-${c.isActive ? 'active' : 'inactive'}`;
+    }
+    const toggle = $('cus-toggle');
+    if (toggle) toggle.textContent = c.isActive ? 'Deactivate' : 'Reactivate';
+  }
+
+  // ---------- statement ----------
+
+  function stmtFilters(): StatementFilters {
+    return {
+      dateFrom: input('stmt-from').value,
+      dateTo: input('stmt-to').value,
+      type: ($<HTMLSelectElement>('stmt-type')?.value ?? '') as StatementType | '',
+    };
+  }
+
+  function renderStatementRows(): void {
+    const tbody = $('stmt-tbody');
+    if (!tbody) return;
+    if (stmtRows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="cus-empty">No transactions.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = stmtRows
+      .map((r) => {
+        const label = STATEMENT_TYPES[r.type as StatementType] ?? r.type;
+        return `<tr>
+          <td>${esc(r.date)}</td>
+          <td>${esc(label)}</td>
+          <td title="${esc(r.description)}">${esc(r.reference) || '—'}</td>
+          <td class="num">${r.debit ? formatNpr(r.debit) : ''}</td>
+          <td class="num">${r.credit ? formatNpr(r.credit) : ''}</td>
+          <td class="num">${formatNpr(r.balance)}</td>
+        </tr>`;
+      })
+      .join('');
+  }
+
+  async function loadStatement(reset: boolean): Promise<void> {
+    const c = selected();
+    const more = $<HTMLButtonElement>('stmt-more');
+    if (!c) return;
+
+    if (reset) {
+      stmtPage = 1;
+      stmtRows = [];
+      renderStatementRows();
+      setText('stmt-totals', '');
+      if (more) more.hidden = true;
+    }
+    showBox('stmt-error', null);
+
+    const token = ++stmtToken;
+    try {
+      const data = await getStatement(c.id, stmtFilters(), stmtPage);
+      if (token !== stmtToken) return; // a newer request replaced this one
+
+      stmtRows = stmtRows.concat(data.rows);
+      renderStatementRows();
+      const totals = $('stmt-totals');
+      if (totals) {
+        totals.textContent =
+          `Opening ${formatNpr(data.openingBalance)} · Debit ${formatNpr(data.totalDebit)} · ` +
+          `Credit ${formatNpr(data.totalCredit)} · Closing ${formatNpr(data.closingBalance)}`;
+      }
+      if (more) more.hidden = !data.hasMore;
+    } catch (error) {
+      if (token !== stmtToken) return;
+      showBox('stmt-error', describe(error));
     }
   }
 
-  function reload(): void {
-    const s = getSession();
-    const scope = document.getElementById('cus-scope');
-    if (scope && s) scope.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
-    customers = listCustomersByBranch(branchCode());
-    if (selectedId && !customers.some((c) => c.id === selectedId)) selectedId = null;
+  $('stmt-more')?.addEventListener('click', () => {
+    stmtPage += 1;
+    void loadStatement(false);
+  });
+  for (const id of ['stmt-from', 'stmt-to', 'stmt-type']) {
+    $(id)?.addEventListener('change', () => void loadStatement(true));
+  }
+
+  async function download(file: 'xlsx' | 'pdf'): Promise<void> {
+    const c = selected();
+    if (!c) return;
+    const button = $<HTMLButtonElement>(file === 'xlsx' ? 'stmt-xlsx' : 'stmt-pdf')!;
+    button.disabled = true;
+    showBox('stmt-error', null);
+    try {
+      await downloadStatement(c.id, file, stmtFilters());
+    } catch (error) {
+      showBox('stmt-error', describe(error));
+    } finally {
+      button.disabled = false;
+    }
+  }
+  $('stmt-xlsx')?.addEventListener('click', () => void download('xlsx'));
+  $('stmt-pdf')?.addEventListener('click', () => void download('pdf'));
+
+  // ---------- load + write access ----------
+
+  function applyWriteAccess(): void {
+    // A company owner has read-only access inside a branch.
+    canWrite = getSession()?.accessMode !== 'read_only';
+    for (const id of ['cus-add', 'cus-edit', 'cus-toggle']) {
+      const el = $(id);
+      if (el) el.hidden = !canWrite;
+    }
+  }
+
+  async function reload(): Promise<void> {
+    const sess = getSession();
+    const scope = $('cus-scope');
+    if (scope && sess) scope.textContent = `${sess.activeBranchName} (${sess.activeBranchCode})`;
+    applyWriteAccess();
+
+    try {
+      customers = await listCustomers();
+      showBox('cus-load-error', canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+    } catch (error) {
+      customers = [];
+      showBox('cus-load-error', describe(error));
+    }
+
+    if (selectedId && !selected()) selectedId = null;
     renderKpis();
     renderTable();
     renderDetail();
   }
 
-  // Form
-  const dialog = document.getElementById('cus-dialog') as HTMLDialogElement | null;
-  const form = document.getElementById('cus-form') as HTMLFormElement | null;
+  // ---------- form ----------
+
+  const dialog = $<HTMLDialogElement>('cus-dialog');
+  const form = $<HTMLFormElement>('cus-form');
 
   function openForm(edit?: Customer): void {
-    const title = document.getElementById('cus-form-title');
-    if (title) title.textContent = edit ? 'Edit customer' : 'New customer';
-    (document.getElementById('f-id') as HTMLInputElement).value = edit?.id ?? '';
-    (document.getElementById('f-name') as HTMLInputElement).value = edit?.name ?? '';
-    (document.getElementById('f-type') as HTMLSelectElement).value = edit?.type ?? 'individual';
-    (document.getElementById('f-status') as HTMLSelectElement).value = edit?.status ?? 'active';
-    (document.getElementById('f-phone') as HTMLInputElement).value = edit?.phone ?? '';
-    (document.getElementById('f-email') as HTMLInputElement).value = edit?.email ?? '';
-    (document.getElementById('f-address') as HTMLInputElement).value = edit?.address ?? '';
-    (document.getElementById('f-city') as HTMLInputElement).value = edit?.city ?? '';
-    (document.getElementById('f-pan') as HTMLInputElement).value = edit?.pan ?? '';
-    (document.getElementById('f-credit') as HTMLInputElement).value = String(edit?.creditLimit ?? 0);
-    (document.getElementById('f-notes') as HTMLInputElement).value = edit?.notes ?? '';
-    const err = document.getElementById('f-error');
-    if (err) err.hidden = true;
+    setText('cus-form-title', edit ? 'Edit customer' : 'New customer');
+    input('f-id').value = edit ? String(edit.id) : '';
+    input('f-name').value = edit?.name ?? '';
+    $<HTMLSelectElement>('f-type')!.value = edit?.type ?? 'individual';
+    $<HTMLSelectElement>('f-status')!.value = edit && !edit.isActive ? 'inactive' : 'active';
+    input('f-phone').value = edit?.phone ?? '';
+    input('f-email').value = edit?.email ?? '';
+    input('f-address').value = edit?.address ?? '';
+    input('f-pan').value = edit?.pan ?? '';
+    input('f-credit').value = String(edit?.creditLimit ?? 0);
+    input('f-notes').value = edit?.notes ?? '';
+    showBox('f-error', null);
     dialog?.showModal();
   }
 
-  document.getElementById('cus-add')?.addEventListener('click', () => openForm());
-  document.getElementById('cus-edit')?.addEventListener('click', () => {
-    if (!selectedId) return;
-    const c = getCustomerById(selectedId);
+  $('cus-add')?.addEventListener('click', () => openForm());
+  $('cus-edit')?.addEventListener('click', () => {
+    const c = selected();
     if (c) openForm(c);
   });
-  document.getElementById('cus-delete')?.addEventListener('click', () => {
-    if (!selectedId) return;
-    const c = getCustomerById(selectedId);
+  $('f-cancel')?.addEventListener('click', () => dialog?.close());
+
+  $('cus-toggle')?.addEventListener('click', async () => {
+    const c = selected();
     if (!c) return;
-    if (!confirm(`Delete ${c.name}? This cannot be undone.`)) return;
-    const res = deleteCustomer(selectedId);
-    if (!res.ok) {
-      alert(res.error);
-      return;
-    }
-    selectedId = null;
-    reload();
-  });
-  document.getElementById('f-cancel')?.addEventListener('click', () => dialog?.close());
+    const next = !c.isActive;
+    if (!next && !confirm(`Deactivate ${c.name}? They will no longer be offered on new sales.`)) return;
 
-  form?.addEventListener('submit', (e) => {
+    const button = $<HTMLButtonElement>('cus-toggle')!;
+    button.disabled = true;
+    try {
+      await setCustomerActive(c.id, next);
+      await reload();
+    } catch (error) {
+      alert(describe(error));
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = (document.getElementById('f-id') as HTMLInputElement).value;
-    const payload = {
-      name: (document.getElementById('f-name') as HTMLInputElement).value,
-      type: (document.getElementById('f-type') as HTMLSelectElement).value as CustomerType,
-      status: (document.getElementById('f-status') as HTMLSelectElement).value as CustomerStatus,
-      phone: (document.getElementById('f-phone') as HTMLInputElement).value,
-      email: (document.getElementById('f-email') as HTMLInputElement).value,
-      address: (document.getElementById('f-address') as HTMLInputElement).value,
-      city: (document.getElementById('f-city') as HTMLInputElement).value,
-      pan: (document.getElementById('f-pan') as HTMLInputElement).value,
-      creditLimit: Number((document.getElementById('f-credit') as HTMLInputElement).value || 0),
-      notes: (document.getElementById('f-notes') as HTMLInputElement).value,
+    const save = $<HTMLButtonElement>('f-save');
+    showBox('f-error', null);
+
+    const id = Number(input('f-id').value) || null;
+    const payload: CustomerInput = {
+      name: input('f-name').value,
+      type: $<HTMLSelectElement>('f-type')!.value as CustomerType,
+      isActive: $<HTMLSelectElement>('f-status')!.value === 'active',
+      phone: input('f-phone').value,
+      email: input('f-email').value,
+      address: input('f-address').value,
+      pan: input('f-pan').value,
+      creditLimit: Number(input('f-credit').value || 0),
+      notes: input('f-notes').value,
     };
-    const result = id
-      ? updateCustomer(id, payload)
-      : createCustomer(branchCode(), payload);
-    const err = document.getElementById('f-error');
-    if (!result.ok) {
-      if (err) {
-        err.hidden = false;
-        err.textContent = result.error;
-      }
+
+    if (!payload.name.trim()) {
+      showBox('f-error', 'Name is required.');
       return;
     }
-    selectedId = result.customer.id;
-    dialog?.close();
-    reload();
+
+    if (save) save.disabled = true;
+    try {
+      const saved = id ? await updateCustomer(id, payload) : await createCustomer(payload);
+      selectedId = saved.id;
+      dialog?.close();
+      await reload();
+      void loadStatement(true);
+    } catch (error) {
+      showBox('f-error', describe(error));
+    } finally {
+      if (save) save.disabled = false;
+    }
   });
 
-  document.getElementById('cus-search')?.addEventListener('input', () => renderTable());
-  document.getElementById('cus-type-filter')?.addEventListener('change', () => renderTable());
-  document.getElementById('cus-status-filter')?.addEventListener('change', () => renderTable());
-  document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(reload, 0));
+  $('cus-search')?.addEventListener('input', () => renderTable());
+  $('cus-type-filter')?.addEventListener('change', () => renderTable());
+  $('cus-status-filter')?.addEventListener('change', () => renderTable());
+  $('cus-dues-filter')?.addEventListener('change', () => renderTable());
 
-  reload();
+  void reload();
+  refreshProfile().then(applyWriteAccess).catch(() => {});
 </script>
 
 <style>
@@ -588,4 +797,26 @@ const navItems = getNavItemsForRole(defaultRole);
     .cus-form-grid { grid-template-columns: 1fr; }
     .cus-field.span2 { grid-column: auto; }
   }
+
+  .cus-dues-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
+  .cus-over { margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-size: 0.66rem; font-weight: 650; background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+  .cus-limit-warn { margin: 0 0 10px; padding: 8px 10px; border-radius: 8px; font-size: 0.78rem; background: rgba(239, 51, 78, 0.1); color: #c4243c; }
+  .cus-field-hint { display: block; margin-top: 4px; font-size: 0.7rem; color: var(--text-muted); }
+  .cus-stmt { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .cus-stmt-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .cus-stmt-head h4 { margin: 0; font-size: 0.9rem; }
+  .cus-stmt-actions { display: flex; gap: 6px; }
+  .cus-stmt-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cus-stmt-filters label { display: flex; flex-direction: column; gap: 2px; font-size: 0.68rem; color: var(--text-muted); }
+  .cus-stmt-filters input, .cus-stmt-filters select {
+    height: 30px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.76rem;
+  }
+  .cus-stmt-error { margin: 0; font-size: 0.76rem; color: #ef334e; }
+  .cus-stmt-totals { margin: 0; font-size: 0.74rem; color: var(--text-secondary); }
+  .cus-stmt-wrap { overflow-x: auto; }
+  .cus-stmt-table { width: 100%; border-collapse: collapse; font-size: 0.74rem; }
+  .cus-stmt-table th, .cus-stmt-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .cus-stmt-table th { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+  .cus-stmt-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 </style>

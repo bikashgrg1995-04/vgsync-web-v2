@@ -32,6 +32,15 @@ How it works (`src/lib/`):
 
 `/dashboard/suppliers` uses `/api/v1/suppliers/` for the active business. Fields follow the API (name, contact, phone, email, address, PAN, notes, active/inactive); the money figures (owed, advance, credit to receive) are calculated by the server. Suppliers cannot be deleted, only deactivated. A company owner viewing a branch is read-only, so the add/edit buttons are hidden.
 
+## Customers
+
+`/dashboard/customers` uses `/api/v1/customers/` for the active business. Name is the only required field; phone, email and PAN are optional (a phone number can only belong to one customer in a business). Customers have a type (individual, business, fleet) and a credit limit. The limit only warns: the list and detail show "over limit" when the customer owes more than it, and sales are never blocked.
+
+- The money figures come from the server: owes you, you owe them (after returns), advance received, total sales, replacement goods due.
+- Filters: search (name, phone, PAN), type, active/inactive, has dues.
+- Statement: every sale, payment, return, refund, replacement and credit adjustment with a running balance, filtered by date and type, with Excel and PDF download.
+- Customers are deactivated, not deleted. A company owner viewing a branch is read-only.
+
 ## Not connected to the API yet
 
-The Staff page (`src/lib/staff-demo.ts`), customers, inventory and the Settings profile/preferences still use demo data stored in the browser.
+The Staff page (`src/lib/staff-demo.ts`), inventory and the Settings profile/preferences still use demo data stored in the browser.

@@ -126,47 +126,73 @@ export interface RequestOptions {
   auth?: boolean;
 }
 
+/** Sends the request with the Bearer token, refreshing it once on a 401. */
+async function authedSend(path: string, method: string, body: unknown): Promise<Response> {
+  const first = readAuth();
+  if (!first) {
+    redirectToLogin();
+    throw new ApiError('Please sign in.', 401);
+  }
+
+  let res = await send(path, jsonInit(method, body, first.access));
+
+  if (res.status === 401) {
+    const ok = await refreshOnce();
+    const next = ok ? readAuth() : null;
+    if (!next) {
+      redirectToLogin();
+      throw new ApiError('Your session has expired. Please sign in again.', 401);
+    }
+    res = await send(path, jsonInit(method, body, next.access));
+  }
+
+  return res;
+}
+
+function failIfNeeded(res: Response, data: unknown): void {
+  if (res.ok) return;
+
+  const error = toApiError(res.status, data);
+
+  if (
+    error.code === 'password_change_required' &&
+    window.location.pathname !== '/dashboard/change-password'
+  ) {
+    window.location.replace('/dashboard/change-password');
+  }
+
+  throw error;
+}
+
 export async function api<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = options.body === undefined ? 'GET' : 'POST', body, auth = true } = options;
 
-  let res: Response;
-
-  if (!auth) {
-    res = await send(path, jsonInit(method, body));
-  } else {
-    const first = readAuth();
-    if (!first) {
-      redirectToLogin();
-      throw new ApiError('Please sign in.', 401);
-    }
-
-    res = await send(path, jsonInit(method, body, first.access));
-
-    if (res.status === 401) {
-      const ok = await refreshOnce();
-      const next = ok ? readAuth() : null;
-      if (!next) {
-        redirectToLogin();
-        throw new ApiError('Your session has expired. Please sign in again.', 401);
-      }
-      res = await send(path, jsonInit(method, body, next.access));
-    }
-  }
-
+  const res = auth ? await authedSend(path, method, body) : await send(path, jsonInit(method, body));
   const data = await readBody(res);
 
+  failIfNeeded(res, data);
+  return data as T;
+}
+
+/** Downloads a file (Excel/PDF export) and hands it to the browser as a save. */
+export async function apiDownload(path: string, fallbackName: string): Promise<void> {
+  const res = await authedSend(path, 'GET', undefined);
+
   if (!res.ok) {
-    const error = toApiError(res.status, data);
-
-    if (
-      error.code === 'password_change_required' &&
-      window.location.pathname !== '/dashboard/change-password'
-    ) {
-      window.location.replace('/dashboard/change-password');
-    }
-
-    throw error;
+    failIfNeeded(res, await readBody(res));
+    return;
   }
 
-  return data as T;
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+  const filename = match ? decodeURIComponent(match[1]) : fallbackName;
+
+  const url = URL.createObjectURL(await res.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

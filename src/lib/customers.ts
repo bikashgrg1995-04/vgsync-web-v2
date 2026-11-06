@@ -1,342 +1,265 @@
 /**
- * Demo customers (branch-scoped).
- * Shared by Customers page, Sales, and future modules.
- * Replace with Django API later.
+ * Customers, from the API (/api/v1/customers/). They belong to the active
+ * business, so switching branch shows that branch's customers.
+ *
+ * The API deactivates instead of deleting. The money figures are worked out
+ * on the server from sales, payments, returns and credit use.
  */
 
+import { api, apiDownload } from './api';
+
 export type CustomerType = 'individual' | 'business' | 'fleet';
-export type CustomerStatus = 'active' | 'inactive' | 'blocked';
 
 export interface Customer {
-  id: string;
-  branchCode: string;
-  code: string;
+  id: number;
   name: string;
   type: CustomerType;
   phone: string;
   email: string;
   address: string;
-  city: string;
   pan: string;
-  creditLimit: number;
-  balance: number; // positive = receivable
-  status: CustomerStatus;
   notes: string;
+  isActive: boolean;
+  /** 0 means no limit is set. */
+  creditLimit: number;
+  /** True when what the customer owes is above the limit (a warning only). */
+  overCreditLimit: boolean;
+  /** What the customer still owes you. */
+  creditToReceive: number;
+  /** What you owe them (credit from returns not yet refunded or used). */
+  creditToPay: number;
+  /** Money taken on drafts that are not confirmed yet. */
+  advanceReceived: number;
+  totalSales: number;
+  /** Replacement goods still to hand over. */
+  stockToGive: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CustomerInput {
   name: string;
-  type: CustomerType;
-  phone: string;
+  type?: CustomerType;
+  phone?: string;
   email?: string;
   address?: string;
-  city?: string;
   pan?: string;
-  creditLimit?: number;
-  status?: CustomerStatus;
   notes?: string;
+  creditLimit?: number;
+  isActive?: boolean;
 }
 
-const STORAGE_KEY = 'vgsync-customers';
-
-const SEED: Customer[] = [
-  {
-    id: 'c-bhp-1',
-    branchCode: 'BHP',
-    code: 'CUS-BHP-001',
-    name: 'Ram Bahadur Thapa',
-    type: 'individual',
-    phone: '9841001001',
-    email: 'ram.thapa@email.com',
-    address: 'Bharatpur-10, Chitwan',
-    city: 'Bharatpur',
-    pan: '',
-    creditLimit: 50000,
-    balance: 12500,
-    status: 'active',
-    notes: 'Regular service customer',
-    createdAt: '2026-01-15',
-    updatedAt: '2026-10-20',
-  },
-  {
-    id: 'c-bhp-2',
-    branchCode: 'BHP',
-    code: 'CUS-BHP-002',
-    name: 'Chitwan Auto Works',
-    type: 'business',
-    phone: '056-520100',
-    email: 'accounts@chitwanauto.com',
-    address: 'Narayangadh Highway',
-    city: 'Bharatpur',
-    pan: '301234567',
-    creditLimit: 250000,
-    balance: 87500,
-    status: 'active',
-    notes: 'Wholesale parts buyer',
-    createdAt: '2026-02-01',
-    updatedAt: '2026-11-01',
-  },
-  {
-    id: 'c-bhp-3',
-    branchCode: 'BHP',
-    code: 'CUS-BHP-003',
-    name: 'Sita Devi Sharma',
-    type: 'individual',
-    phone: '9801112233',
-    email: '',
-    address: 'Bharatpur-4',
-    city: 'Bharatpur',
-    pan: '',
-    creditLimit: 20000,
-    balance: 0,
-    status: 'active',
-    notes: '',
-    createdAt: '2026-03-10',
-    updatedAt: '2026-03-10',
-  },
-  {
-    id: 'c-pkr-1',
-    branchCode: 'PKR',
-    code: 'CUS-PKR-001',
-    name: 'Pokhara Fleet Services',
-    type: 'fleet',
-    phone: '061-460200',
-    email: 'fleet@pkrfleet.com',
-    address: 'Lakeside Road',
-    city: 'Pokhara',
-    pan: '309876543',
-    creditLimit: 500000,
-    balance: 142000,
-    status: 'active',
-    notes: 'Monthly settlement',
-    createdAt: '2026-01-20',
-    updatedAt: '2026-11-02',
-  },
-  {
-    id: 'c-pkr-2',
-    branchCode: 'PKR',
-    code: 'CUS-PKR-002',
-    name: 'Hari Krishna Gurung',
-    type: 'individual',
-    phone: '9856020304',
-    email: 'hari.g@email.com',
-    address: 'Mahendrapool',
-    city: 'Pokhara',
-    pan: '',
-    creditLimit: 30000,
-    balance: 4500,
-    status: 'active',
-    notes: '',
-    createdAt: '2026-04-05',
-    updatedAt: '2026-09-12',
-  },
-  {
-    id: 'c-btl-1',
-    branchCode: 'BTL',
-    code: 'CUS-BTL-001',
-    name: 'Butwal Transport Co.',
-    type: 'fleet',
-    phone: '071-540100',
-    email: 'ops@btltransport.com',
-    address: 'Traffic Chowk',
-    city: 'Butwal',
-    pan: '305551112',
-    creditLimit: 300000,
-    balance: 56000,
-    status: 'active',
-    notes: 'Credit terms 30 days',
-    createdAt: '2026-02-18',
-    updatedAt: '2026-10-28',
-  },
-  {
-    id: 'c-btl-2',
-    branchCode: 'BTL',
-    code: 'CUS-BTL-002',
-    name: 'Maya Kumari Poudel',
-    type: 'individual',
-    phone: '9847050607',
-    email: '',
-    address: 'Golpark',
-    city: 'Butwal',
-    pan: '',
-    creditLimit: 15000,
-    balance: 0,
-    status: 'inactive',
-    notes: 'Moved to another city',
-    createdAt: '2026-05-01',
-    updatedAt: '2026-08-15',
-  },
-  {
-    id: 'c-ho-1',
-    branchCode: 'HO',
-    code: 'CUS-HO-001',
-    name: 'National Logistics Pvt. Ltd.',
-    type: 'business',
-    phone: '01-4441000',
-    email: 'procurement@natlog.com',
-    address: 'Thapathali, Kathmandu',
-    city: 'Kathmandu',
-    pan: '600112233',
-    creditLimit: 1000000,
-    balance: 320000,
-    status: 'active',
-    notes: 'Corporate account',
-    createdAt: '2026-01-05',
-    updatedAt: '2026-11-01',
-  },
-];
-
-function loadAll(): Customer[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Customer[];
-  } catch {}
-  return structuredClone(SEED);
+interface ApiCustomer {
+  id: number;
+  name: string;
+  customer_type: CustomerType;
+  phone: string;
+  email: string;
+  address: string;
+  pan_number: string;
+  notes: string;
+  is_active: boolean;
+  credit_limit: string;
+  over_credit_limit: boolean;
+  credit_to_receive: string;
+  credit_to_pay: string;
+  advance_received: string;
+  total_sales: string;
+  stock_to_give: string;
+  created_at: string;
+  updated_at: string;
 }
 
-function saveAll(list: Customer[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {}
+interface Page<T> {
+  count: number;
+  next: string | null;
+  results: T[];
 }
 
-export function ensureCustomersInitialized(): Customer[] {
-  if (!localStorage.getItem(STORAGE_KEY)) {
-    saveAll(structuredClone(SEED));
+const num = (value: string | number | null | undefined): number => Number(value ?? 0) || 0;
+
+function fromApi(c: ApiCustomer): Customer {
+  return {
+    id: c.id,
+    name: c.name,
+    type: c.customer_type,
+    phone: c.phone,
+    email: c.email,
+    address: c.address,
+    pan: c.pan_number,
+    notes: c.notes,
+    isActive: c.is_active,
+    creditLimit: num(c.credit_limit),
+    overCreditLimit: c.over_credit_limit,
+    creditToReceive: num(c.credit_to_receive),
+    creditToPay: num(c.credit_to_pay),
+    advanceReceived: num(c.advance_received),
+    totalSales: num(c.total_sales),
+    stockToGive: num(c.stock_to_give),
+    createdAt: c.created_at,
+    updatedAt: c.updated_at,
+  };
+}
+
+function toApi(input: CustomerInput): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    name: input.name.trim(),
+    customer_type: input.type ?? 'individual',
+    phone: (input.phone ?? '').trim(),
+    email: (input.email ?? '').trim(),
+    address: (input.address ?? '').trim(),
+    pan_number: (input.pan ?? '').trim(),
+    notes: (input.notes ?? '').trim(),
+    credit_limit: String(Math.max(0, Number(input.creditLimit ?? 0) || 0)),
+  };
+  if (input.isActive !== undefined) body.is_active = input.isActive;
+  return body;
+}
+
+/** Every customer of the active business (all pages). */
+export async function listCustomers(): Promise<Customer[]> {
+  const all: Customer[] = [];
+  let page = 1;
+
+  for (;;) {
+    const data = await api<Page<ApiCustomer>>(`/customers/?page=${page}&page_size=100`);
+    all.push(...data.results.map(fromApi));
+    if (!data.next) break;
+    page += 1;
   }
-  return loadAll();
+
+  return all;
 }
 
-/** Branch-scoped list — use in Customers page */
-export function listCustomersByBranch(branchCode: string): Customer[] {
-  ensureCustomersInitialized();
-  return loadAll()
-    .filter((c) => c.branchCode.toUpperCase() === branchCode.toUpperCase())
-    .sort((a, b) => a.name.localeCompare(b.name));
+/** Active customers only, for pickers such as the sale form. */
+export async function listActiveCustomers(): Promise<Customer[]> {
+  return (await listCustomers()).filter((c) => c.isActive);
 }
 
-/** Active customers only — for Sales / invoice pickers */
-export function listActiveCustomers(branchCode: string): Customer[] {
-  return listCustomersByBranch(branchCode).filter((c) => c.status === 'active');
+export async function createCustomer(input: CustomerInput): Promise<Customer> {
+  return fromApi(await api<ApiCustomer>('/customers/', { method: 'POST', body: toApi(input) }));
 }
 
-export function getCustomerById(id: string): Customer | null {
-  ensureCustomersInitialized();
-  return loadAll().find((c) => c.id === id) ?? null;
+export async function updateCustomer(id: number, input: CustomerInput): Promise<Customer> {
+  return fromApi(await api<ApiCustomer>(`/customers/${id}/`, { method: 'PATCH', body: toApi(input) }));
 }
 
-export function getCustomerByCode(branchCode: string, code: string): Customer | null {
-  ensureCustomersInitialized();
-  const c = code.trim().toUpperCase();
-  return (
-    loadAll().find(
-      (x) =>
-        x.branchCode.toUpperCase() === branchCode.toUpperCase() &&
-        x.code.toUpperCase() === c,
-    ) ?? null
+/** Deactivate (the API never deletes a customer) or reactivate. */
+export async function setCustomerActive(id: number, isActive: boolean): Promise<Customer> {
+  return fromApi(
+    await api<ApiCustomer>(`/customers/${id}/`, { method: 'PATCH', body: { is_active: isActive } }),
   );
 }
 
-function nextCode(branchCode: string, existing: Customer[]): string {
-  const prefix = `CUS-${branchCode.toUpperCase()}-`;
-  let max = 0;
-  for (const c of existing) {
-    if (!c.code.startsWith(prefix)) continue;
-    const n = Number(c.code.slice(prefix.length));
-    if (!Number.isNaN(n) && n > max) max = n;
-  }
-  return `${prefix}${String(max + 1).padStart(3, '0')}`;
-}
-
-export function createCustomer(
-  branchCode: string,
-  input: CustomerInput,
-): { ok: true; customer: Customer } | { ok: false; error: string } {
-  const name = input.name.trim();
-  const phone = input.phone.trim();
-  if (!name) return { ok: false, error: 'Name is required.' };
-  if (!phone) return { ok: false, error: 'Phone is required.' };
-
-  const all = ensureCustomersInitialized();
-  const code = nextCode(branchCode, all);
-  const now = new Date().toISOString().slice(0, 10);
-
-  const customer: Customer = {
-    id: `c-${Date.now()}`,
-    branchCode: branchCode.toUpperCase(),
-    code,
-    name,
-    type: input.type,
-    phone,
-    email: (input.email ?? '').trim(),
-    address: (input.address ?? '').trim(),
-    city: (input.city ?? '').trim(),
-    pan: (input.pan ?? '').trim(),
-    creditLimit: Number(input.creditLimit ?? 0) || 0,
-    balance: 0,
-    status: input.status ?? 'active',
-    notes: (input.notes ?? '').trim(),
-    createdAt: now,
-    updatedAt: now,
+export function getCustomerSummary(list: Customer[]) {
+  return {
+    total: list.length,
+    active: list.filter((c) => c.isActive).length,
+    withDues: list.filter((c) => c.creditToReceive > 0).length,
+    receivable: list.reduce((sum, c) => sum + Math.max(0, c.creditToReceive), 0),
   };
-
-  all.push(customer);
-  saveAll(all);
-  return { ok: true, customer };
 }
 
-export function updateCustomer(
-  id: string,
-  input: CustomerInput,
-): { ok: true; customer: Customer } | { ok: false; error: string } {
-  const all = ensureCustomersInitialized();
-  const idx = all.findIndex((c) => c.id === id);
-  if (idx < 0) return { ok: false, error: 'Customer not found.' };
+// ---------- statement ----------
 
-  const name = input.name.trim();
-  const phone = input.phone.trim();
-  if (!name) return { ok: false, error: 'Name is required.' };
-  if (!phone) return { ok: false, error: 'Phone is required.' };
+export type StatementType = 'sale' | 'payment' | 'return' | 'refund' | 'replacement' | 'adjustment';
 
-  all[idx] = {
-    ...all[idx],
-    name,
-    type: input.type,
-    phone,
-    email: (input.email ?? '').trim(),
-    address: (input.address ?? '').trim(),
-    city: (input.city ?? '').trim(),
-    pan: (input.pan ?? '').trim(),
-    creditLimit: Number(input.creditLimit ?? all[idx].creditLimit) || 0,
-    status: input.status ?? all[idx].status,
-    notes: (input.notes ?? '').trim(),
-    updatedAt: new Date().toISOString().slice(0, 10),
+export const STATEMENT_TYPES: Record<StatementType, string> = {
+  sale: 'Sale',
+  payment: 'Payment',
+  return: 'Return',
+  refund: 'Refund',
+  replacement: 'Replacement',
+  adjustment: 'Credit adjustment',
+};
+
+export interface StatementRow {
+  date: string;
+  type: string;
+  reference: string;
+  description: string;
+  debit: number;
+  credit: number;
+  balance: number;
+}
+
+export interface Statement {
+  openingBalance: number;
+  totalDebit: number;
+  totalCredit: number;
+  closingBalance: number;
+  balanceMeans: string;
+  rows: StatementRow[];
+  hasMore: boolean;
+}
+
+export interface StatementFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  type?: StatementType | '';
+}
+
+function statementQuery(filters: StatementFilters, extra: Record<string, string> = {}): string {
+  const params = new URLSearchParams(extra);
+  if (filters.dateFrom) params.set('date_from', filters.dateFrom);
+  if (filters.dateTo) params.set('date_to', filters.dateTo);
+  if (filters.type) params.set('type', filters.type);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+export async function getStatement(
+  id: number,
+  filters: StatementFilters = {},
+  page = 1,
+): Promise<Statement> {
+  const data = await api<{
+    opening_balance: string;
+    total_debit: string;
+    total_credit: string;
+    closing_balance: string;
+    balance_means: string;
+    next: string | null;
+    results: Array<{
+      date: string;
+      type: string;
+      reference: string;
+      description: string;
+      debit: string;
+      credit: string;
+      balance: string;
+    }>;
+  }>(`/customers/${id}/statement/${statementQuery(filters, { page: String(page) })}`);
+
+  return {
+    openingBalance: num(data.opening_balance),
+    totalDebit: num(data.total_debit),
+    totalCredit: num(data.total_credit),
+    closingBalance: num(data.closing_balance),
+    balanceMeans: data.balance_means,
+    hasMore: !!data.next,
+    rows: data.results.map((r) => ({
+      date: r.date,
+      type: r.type,
+      reference: r.reference,
+      description: r.description,
+      debit: num(r.debit),
+      credit: num(r.credit),
+      balance: num(r.balance),
+    })),
   };
-
-  saveAll(all);
-  return { ok: true, customer: all[idx] };
 }
 
-export function deleteCustomer(id: string): { ok: true } | { ok: false; error: string } {
-  const all = ensureCustomersInitialized();
-  const idx = all.findIndex((c) => c.id === id);
-  if (idx < 0) return { ok: false, error: 'Customer not found.' };
-  if (all[idx].balance !== 0) {
-    return { ok: false, error: 'Cannot delete customer with outstanding balance. Set inactive instead.' };
-  }
-  all.splice(idx, 1);
-  saveAll(all);
-  return { ok: true };
-}
-
-export function getCustomerSummary(branchCode: string) {
-  const list = listCustomersByBranch(branchCode);
-  const active = list.filter((c) => c.status === 'active').length;
-  const receivable = list.reduce((s, c) => s + Math.max(0, c.balance), 0);
-  const blocked = list.filter((c) => c.status === 'blocked').length;
-  return { total: list.length, active, receivable, blocked };
+/** Download every statement row (not one page) as Excel or PDF. */
+export function downloadStatement(
+  id: number,
+  file: 'xlsx' | 'pdf',
+  filters: StatementFilters = {},
+): Promise<void> {
+  return apiDownload(
+    `/customers/${id}/statement/${statementQuery(filters, { export: file })}`,
+    `customer-statement.${file}`,
+  );
 }
 
 export function formatNpr(n: number): string {
@@ -351,10 +274,4 @@ export const TYPE_LABEL: Record<CustomerType, string> = {
   individual: 'Individual',
   business: 'Business',
   fleet: 'Fleet',
-};
-
-export const STATUS_LABEL: Record<CustomerStatus, string> = {
-  active: 'Active',
-  inactive: 'Inactive',
-  blocked: 'Blocked',
 };
