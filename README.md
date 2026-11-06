@@ -41,6 +41,14 @@ How it works (`src/lib/`):
 - Statement: every sale, payment, return, refund, replacement and credit adjustment with a running balance, filtered by date and type, with Excel and PDF download.
 - Customers are deactivated, not deleted. A company owner viewing a branch is read-only.
 
+## Staff
+
+`/dashboard/staff` is for the owner only (the business admin). Admin, accountant and staff accounts do not see it in the menu, are redirected away if they open the address, and the API refuses them with 403 as well. A company owner viewing a branch can look but not change anything.
+
+- **Team:** add, edit, reset password, deactivate and reactivate accounts (nobody is deleted). Roles are admin, accountant and staff; staff need a position. Search and filter by role and status.
+- **Passwords:** leave the password empty and the server generates a temporary one. It is shown once in a dialog (with a Copy button) and cleared from the page when the dialog closes. The person must choose their own password at first sign-in. Resetting a password signs that person out everywhere.
+- **Positions:** create positions with View/Create/Edit/Delete rights per module. A position that still has active staff cannot be deactivated or deleted.
+
 ## Not connected to the API yet
 
-The Staff page (`src/lib/staff-demo.ts`), inventory and the Settings profile/preferences still use demo data stored in the browser.
+Inventory and the Settings profile/preferences still use demo data stored in the browser.

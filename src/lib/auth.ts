@@ -246,9 +246,12 @@ export function canSwitchBranch(session: AuthSession | null): boolean {
   return auth.user.scope === 'company' && auth.user.role !== 'staff';
 }
 
-/** Owner or admin can manage staff. */
+/**
+ * Only the owner (the business admin) can manage staff and positions. The
+ * API enforces this too; this only decides whether the page and menu show.
+ */
 export function canManageStaff(session: AuthSession | null): boolean {
-  return session?.role === 'owner' || session?.role === 'headoffice' || session?.role === 'branch_owner';
+  return session?.role === 'owner' || session?.role === 'branch_owner';
 }
 
 /** Head Office (the business signed in with) plus every active branch. */
