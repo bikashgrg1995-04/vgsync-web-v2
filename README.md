@@ -58,6 +58,17 @@ How it works (`src/lib/`):
 - **Positions:** View/Create/Edit/Delete rights per module. A position that still has active staff cannot be deactivated or deleted.
 - The sign-in response and `/auth/me/` carry `can_manage_team` and the position's `permissions`, which is what the menu and page use.
 
+## Inventory
+
+The Inventory page uses `/api/v1/inventory/`. The product catalog belongs to Head Office (or an independent business); branches see it read-only and keep their own stock. Stock is never edited directly: every change is a movement, and the server works out the balance and the status (in stock, low at or below the product's reorder level, out).
+
+- Stock list: products with good and damaged stock, prices, search, category and status filters.
+- Movements: paginated, filter by type, date and search.
+- Adjust: increase, decrease or opening stock, for good or damaged stock.
+- Add, edit and deactivate products: Head Office and independent businesses only. A company owner viewing a branch is read-only.
+
+Stock transfers between branches are not on this page yet.
+
 ## Not connected to the API yet
 
-Inventory and the Settings profile/preferences still use demo data stored in the browser.
+The Settings profile/preferences still use demo data stored in the browser.
