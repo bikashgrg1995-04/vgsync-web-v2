@@ -22,6 +22,16 @@ export interface ApiUser {
   business_name: string | null;
   position_name: string | null;
   must_change_password: boolean;
+  /** What a staff member's position allows (empty for other roles). */
+  permissions?: Array<{
+    module: string;
+    can_view: boolean;
+    can_create: boolean;
+    can_update: boolean;
+    can_delete: boolean;
+  }>;
+  /** Owner, or staff whose position grants the staff module ("Administration"). */
+  can_manage_team?: boolean;
 }
 
 export interface ApiBusiness {

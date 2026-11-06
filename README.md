@@ -43,11 +43,20 @@ How it works (`src/lib/`):
 
 ## Staff
 
-`/dashboard/staff` is for the owner only (the business admin). Admin, accountant and staff accounts do not see it in the menu, are redirected away if they open the address, and the API refuses them with 403 as well. A company owner viewing a branch can look but not change anything.
+`/dashboard/staff` is for the owner and for staff whose position grants the **Staff & payroll** module (the "Administration" position). Everyone else does not see it in the menu, is redirected away if they open the address, and the API refuses them with 403 as well. A company owner viewing a branch can look but not change anything.
 
-- **Team:** add, edit, reset password, deactivate and reactivate accounts (nobody is deleted). Roles are admin, accountant and staff; staff need a position. Search and filter by role and status.
+| | Owner | Administration position |
+| --- | --- | --- |
+| Add, edit, reset password, deactivate staff accounts | yes | yes, staff accounts only |
+| Create admin / accountant accounts | yes | no |
+| Create, edit, delete positions | yes | no (can read them) |
+| Assign a position | any | only positions that grant no more than their own |
+| Manage their own account | no (the owner is not listed) | no |
+
+- **Team:** accounts are never deleted, only deactivated and reactivated. Staff need a position. Search and filter by role and status.
 - **Passwords:** leave the password empty and the server generates a temporary one. It is shown once in a dialog (with a Copy button) and cleared from the page when the dialog closes. The person must choose their own password at first sign-in. Resetting a password signs that person out everywhere.
-- **Positions:** create positions with View/Create/Edit/Delete rights per module. A position that still has active staff cannot be deactivated or deleted.
+- **Positions:** View/Create/Edit/Delete rights per module. A position that still has active staff cannot be deactivated or deleted.
+- The sign-in response and `/auth/me/` carry `can_manage_team` and the position's `permissions`, which is what the menu and page use.
 
 ## Not connected to the API yet
 

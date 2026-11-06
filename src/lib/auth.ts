@@ -247,11 +247,21 @@ export function canSwitchBranch(session: AuthSession | null): boolean {
 }
 
 /**
- * Only the owner (the business admin) can manage staff and positions. The
- * API enforces this too; this only decides whether the page and menu show.
+ * The owner, and staff whose position grants the staff module (the
+ * "Administration" position), can open the Staff page. The API enforces this
+ * too; this only decides what is shown.
  */
 export function canManageStaff(session: AuthSession | null): boolean {
-  return session?.role === 'owner' || session?.role === 'branch_owner';
+  const auth = readAuth();
+  if (!session || !auth) return false;
+  return auth.user.can_manage_team === true;
+}
+
+/** Only the owner can create or change positions (others may read them). */
+export function canEditPositions(session: AuthSession | null): boolean {
+  const auth = readAuth();
+  if (!session || !auth) return false;
+  return auth.user.role === 'owner';
 }
 
 /** Head Office (the business signed in with) plus every active branch. */
