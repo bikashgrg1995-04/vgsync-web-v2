@@ -55,7 +55,6 @@ const ROLE_MENU: Record<UserRole, string[]> = {
     'suppliers',
     'payments',
     'customers',
-    'staff',
     'reports',
   ],
   branch_manager: [

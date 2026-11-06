@@ -19,251 +19,759 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <div class="staff-page">
-    <section class="staff-panel">
-      <h2 class="staff-title">Assign staff</h2>
-      <p class="staff-sub" id="staff-scope-hint">
-        Create temporary logins. New users must update password on first login.
-      </p>
+  <div class="st-page">
+    <div class="st-toolbar">
+      <div>
+        <p class="st-scope" id="st-scope">Team</p>
+        <h2 class="st-heading">Team and positions</h2>
+      </div>
+      <div class="st-tabs" role="tablist" aria-label="Staff sections">
+        <button type="button" role="tab" id="tab-team" aria-selected="true" aria-controls="panel-team">Team</button>
+        <button type="button" role="tab" id="tab-positions" aria-selected="false" aria-controls="panel-positions">Positions</button>
+      </div>
+    </div>
 
-      <form id="assign-staff-form" class="staff-form" novalidate>
-        <label class="staff-field">
-          <span>Full name</span>
-          <input name="displayName" required placeholder="e.g. Ram Thapa" />
-        </label>
-        <label class="staff-field">
-          <span>Username</span>
-          <input name="username" required placeholder="e.g. ram" />
-        </label>
-        <label class="staff-field">
-          <span>Branch</span>
-          <select name="branchCode" id="staff-branch-select" required></select>
-        </label>
-        <label class="staff-field">
-          <span>Role</span>
-          <select name="role" required>
+    <p class="st-banner" id="st-banner" role="alert" hidden></p>
+
+    <!-- TEAM -->
+    <section class="st-panel" id="panel-team" role="tabpanel" aria-labelledby="tab-team">
+      <div class="st-panel-head">
+        <div class="st-filters">
+          <input type="search" id="st-search" placeholder="Search name, username, phone…" autocomplete="off" aria-label="Search team" />
+          <select id="st-role-filter" aria-label="Filter by role">
+            <option value="">All roles</option>
+            <option value="admin">Admin</option>
+            <option value="accountant">Accountant</option>
             <option value="staff">Staff</option>
-            <option value="branch_manager">Manager</option>
           </select>
-        </label>
-        <label class="staff-field">
-          <span>Temporary password</span>
-          <input name="temporaryPassword" type="text" required minlength="6" placeholder="min 6 chars" />
-        </label>
+          <select id="st-status-filter" aria-label="Filter by status">
+            <option value="">All status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+        <button type="button" class="btn-primary-sm" id="member-add">+ Add team member</button>
+      </div>
 
-        <p class="staff-message" id="staff-message" hidden></p>
-        <button type="submit" class="staff-submit">Assign account</button>
-      </form>
-    </section>
-
-    <section class="staff-panel">
-      <h2 class="staff-title">Team accounts</h2>
-      <div class="staff-table-wrap">
-        <table class="staff-table">
+      <div class="st-table-wrap">
+        <table class="st-table">
           <thead>
             <tr>
               <th>Name</th>
-              <th>User</th>
-              <th>Branch</th>
+              <th>Username</th>
               <th>Role</th>
+              <th>Position</th>
               <th>Status</th>
+              <th>Last sign-in</th>
+              <th><span class="visually-hidden">Actions</span></th>
             </tr>
           </thead>
-          <tbody id="staff-table-body">
-            <tr><td colspan="5">Loading…</td></tr>
-          </tbody>
+          <tbody id="member-tbody"><tr><td colspan="7">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="st-footnote" id="member-count"></p>
+    </section>
+
+    <!-- POSITIONS -->
+    <section class="st-panel" id="panel-positions" role="tabpanel" aria-labelledby="tab-positions" hidden>
+      <div class="st-panel-head">
+        <p class="st-hint">A position decides what a staff member can see and do in each module. Staff must have one.</p>
+        <button type="button" class="btn-primary-sm" id="position-add">+ New position</button>
+      </div>
+      <div class="st-table-wrap">
+        <table class="st-table">
+          <thead>
+            <tr>
+              <th>Position</th>
+              <th>Access</th>
+              <th class="num">Active staff</th>
+              <th>Status</th>
+              <th><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="position-tbody"><tr><td colspan="5">Loading…</td></tr></tbody>
         </table>
       </div>
     </section>
   </div>
+
+  <!-- Member dialog -->
+  <dialog class="st-dialog" id="member-dialog" aria-labelledby="member-title">
+    <form class="st-dialog-inner" id="member-form" novalidate>
+      <h2 class="st-dialog-title" id="member-title">Add team member</h2>
+      <input type="hidden" id="m-id" />
+      <div class="st-form-grid">
+        <label class="st-field"><span>First name *</span><input type="text" id="m-first" autocomplete="off" /></label>
+        <label class="st-field"><span>Last name</span><input type="text" id="m-last" autocomplete="off" /></label>
+        <label class="st-field span2"><span>Username *</span><input type="text" id="m-username" autocomplete="off" autocapitalize="none" spellcheck="false" /></label>
+        <label class="st-field"><span>Email</span><input type="email" id="m-email" autocomplete="off" /></label>
+        <label class="st-field"><span>Phone</span><input type="tel" id="m-phone" autocomplete="off" /></label>
+        <label class="st-field">
+          <span>Role *</span>
+          <select id="m-role">
+            <option value="staff">Staff</option>
+            <option value="accountant">Accountant</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+        <label class="st-field" id="m-position-wrap">
+          <span>Position *</span>
+          <select id="m-position"></select>
+        </label>
+        <label class="st-field span2" id="m-password-wrap">
+          <span>Temporary password</span>
+          <input type="text" id="m-password" autocomplete="off" placeholder="Leave empty to generate one" />
+        </label>
+      </div>
+      <p class="st-hint" id="m-hint">The person must choose a new password the first time they sign in.</p>
+      <p class="st-error" id="m-error" role="alert" hidden></p>
+      <div class="st-dialog-actions">
+        <button type="button" class="btn-ghost-sm" id="m-cancel">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="m-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Temporary password shown once -->
+  <dialog class="st-dialog" id="secret-dialog" aria-labelledby="secret-title">
+    <div class="st-dialog-inner">
+      <h2 class="st-dialog-title" id="secret-title">Temporary password</h2>
+      <p class="st-hint" id="secret-who"></p>
+      <div class="st-secret">
+        <code id="secret-value"></code>
+        <button type="button" class="btn-ghost-sm" id="secret-copy">Copy</button>
+      </div>
+      <p class="st-warn">Shown only once. Give it to the person now; they must change it when they sign in.</p>
+      <div class="st-dialog-actions">
+        <button type="button" class="btn-primary-sm" id="secret-close">Done</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Position dialog -->
+  <dialog class="st-dialog st-dialog-wide" id="position-dialog" aria-labelledby="position-title">
+    <form class="st-dialog-inner" id="position-form" novalidate>
+      <h2 class="st-dialog-title" id="position-title">New position</h2>
+      <input type="hidden" id="p-id" />
+      <div class="st-form-grid">
+        <label class="st-field"><span>Name *</span><input type="text" id="p-name" autocomplete="off" placeholder="e.g. Sales counter" /></label>
+        <label class="st-field"><span>Description</span><input type="text" id="p-desc" autocomplete="off" /></label>
+      </div>
+      <div class="st-table-wrap st-perm-wrap">
+        <table class="st-table st-perm">
+          <thead>
+            <tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr>
+          </thead>
+          <tbody id="perm-tbody"></tbody>
+        </table>
+      </div>
+      <p class="st-hint">Create, edit and delete need View as well.</p>
+      <p class="st-error" id="p-error" role="alert" hidden></p>
+      <div class="st-dialog-actions">
+        <button type="button" class="btn-ghost-sm" id="p-cancel">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="p-save">Save</button>
+      </div>
+    </form>
+  </dialog>
 </AppLayout>
 
 <script>
-  import { getSession, canManageStaff } from '../../lib/auth';
+  import { getSession, canManageStaff, refreshProfile } from '../../lib/auth';
+  import { ApiError } from '../../lib/api';
   import {
-    assignStaff,
-    listStaffForManagement,
-    getAssignableBranches,
-  } from '../../lib/staff-demo';
+    MODULES,
+    ROLE_LABEL,
+    listStaff,
+    createStaff,
+    updateStaff,
+    deactivateStaff,
+    reactivateStaff,
+    resetStaffPassword,
+    listPositions,
+    createPosition,
+    updatePosition,
+    setPositionActive,
+    deletePosition,
+    type StaffMember,
+    type StaffRole,
+    type Position,
+    type PositionPermission,
+  } from '../../lib/staff';
 
   const session = getSession();
   if (!session) {
     window.location.replace('/');
   } else if (!canManageStaff(session)) {
+    // Only the owner manages staff.
     window.location.replace('/dashboard');
   }
 
-  const form = document.getElementById('assign-staff-form') as HTMLFormElement | null;
-  const msg = document.getElementById('staff-message');
-  const tbody = document.getElementById('staff-table-body');
-  const branchSelect = document.getElementById('staff-branch-select') as HTMLSelectElement | null;
-  const scopeHint = document.getElementById('staff-scope-hint');
+  let members: StaffMember[] = [];
+  let positions: Position[] = [];
+  let canWrite = true;
 
-  if (session && scopeHint) {
-    if (session.role === 'branch_owner') {
-      scopeHint.textContent = `You can assign staff only for ${session.activeBranchName}.`;
-    } else {
-      scopeHint.textContent =
-        'System owner/admin can assign staff to any branch. New users must update password on first login.';
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+  const val = (id: string) => ($<HTMLInputElement>(id)?.value ?? '').trim();
+
+  function esc(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  const FIELD_LABELS: Record<string, string> = {
+    username: 'Username',
+    first_name: 'First name',
+    last_name: 'Last name',
+    email: 'Email',
+    phone: 'Phone',
+    role: 'Role',
+    position: 'Position',
+    password: 'Password',
+    name: 'Name',
+    description: 'Description',
+    permissions: 'Permissions',
+    is_active: 'Status',
+  };
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    const entries = Object.entries(error.fields);
+    if (entries.length > 0 && error.status === 400) {
+      return entries.map(([k, m]) => `${FIELD_LABELS[k] ?? k}: ${m}`).join(' ');
+    }
+    return error.message;
+  }
+
+  function banner(message: string | null): void {
+    const el = $('st-banner');
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
+  function fmtDate(iso: string | null): string {
+    return iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Never';
+  }
+
+  // ---------- tabs ----------
+
+  function selectTab(name: 'team' | 'positions'): void {
+    for (const t of ['team', 'positions'] as const) {
+      $(`tab-${t}`)?.setAttribute('aria-selected', String(t === name));
+      const panel = $(`panel-${t}`);
+      if (panel) panel.hidden = t !== name;
     }
   }
+  $('tab-team')?.addEventListener('click', () => selectTab('team'));
+  $('tab-positions')?.addEventListener('click', () => selectTab('positions'));
 
-  if (session && branchSelect) {
-    const branches = getAssignableBranches(session);
-    branchSelect.innerHTML = branches
-      .map((b) => `<option value="${b.code}">${b.name} (${b.code})</option>`)
-      .join('');
+  // ---------- team table ----------
+
+  function filteredMembers(): StaffMember[] {
+    const q = val('st-search').toLowerCase();
+    const role = $<HTMLSelectElement>('st-role-filter')?.value ?? '';
+    const status = $<HTMLSelectElement>('st-status-filter')?.value ?? '';
+    return members.filter((m) => {
+      if (role && m.role !== role) return false;
+      if (status === 'active' && !m.isActive) return false;
+      if (status === 'inactive' && m.isActive) return false;
+      if (!q) return true;
+      return (
+        m.name.toLowerCase().includes(q) ||
+        m.username.toLowerCase().includes(q) ||
+        m.phone.includes(q) ||
+        m.email.toLowerCase().includes(q)
+      );
+    });
   }
 
-  function showMsg(text: string, ok = false): void {
-    if (!msg) return;
-    msg.hidden = false;
-    msg.textContent = text;
-    msg.classList.toggle('is-ok', ok);
-    msg.classList.toggle('is-err', !ok);
+  function statusOf(m: StaffMember): { label: string; cls: string } {
+    if (!m.isActive) return { label: 'Inactive', cls: 'inactive' };
+    if (m.mustChangePassword) return { label: 'Must change password', cls: 'pending' };
+    return { label: 'Active', cls: 'active' };
   }
 
-  function renderTable(): void {
+  function renderMembers(): void {
+    const tbody = $('member-tbody');
+    const count = $('member-count');
     if (!tbody) return;
-    const rows = listStaffForManagement();
+    const rows = filteredMembers();
+
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5">No staff assigned yet.</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="7" class="st-empty">${members.length ? 'No one matches.' : 'No team members yet.'}</td></tr>`;
+      if (count) count.textContent = '';
       return;
     }
+
     tbody.innerHTML = rows
-      .map((u) => {
-        const status = !u.active
-          ? 'Inactive'
-          : u.mustChangePassword
-            ? 'Must update password'
-            : 'Active';
+      .map((m) => {
+        const st = statusOf(m);
+        const actions = canWrite
+          ? `<div class="st-actions">
+              <button type="button" class="btn-ghost-sm" data-act="edit" data-id="${m.id}">Edit</button>
+              <button type="button" class="btn-ghost-sm" data-act="reset" data-id="${m.id}">Reset password</button>
+              <button type="button" class="btn-ghost-sm ${m.isActive ? 'is-danger' : ''}" data-act="${m.isActive ? 'deactivate' : 'reactivate'}" data-id="${m.id}">${m.isActive ? 'Deactivate' : 'Reactivate'}</button>
+            </div>`
+          : '';
         return `<tr>
-          <td>${u.displayName}</td>
-          <td>${u.username}</td>
-          <td>${u.branchCode}</td>
-          <td>${u.roleLabel}</td>
-          <td>${status}</td>
+          <td><strong>${esc(m.name)}</strong>${m.email ? `<br /><span class="st-sub">${esc(m.email)}</span>` : ''}</td>
+          <td class="mono">${esc(m.username)}</td>
+          <td>${esc(ROLE_LABEL[m.role] ?? m.role)}</td>
+          <td>${esc(m.positionName) || '—'}</td>
+          <td><span class="st-badge st-badge-${st.cls}">${st.label}</span></td>
+          <td>${esc(fmtDate(m.lastLogin))}</td>
+          <td>${actions}</td>
+        </tr>`;
+      })
+      .join('');
+    if (count) count.textContent = `${rows.length} of ${members.length} team member${members.length === 1 ? '' : 's'}`;
+  }
+
+  // ---------- positions table ----------
+
+  function accessSummary(p: Position): string {
+    const modules = p.permissions.filter((x) => x.canView);
+    if (modules.length === 0) return 'No access';
+    return modules
+      .map((x) => MODULES.find((m) => m.id === x.module)?.label ?? x.module)
+      .join(', ');
+  }
+
+  function renderPositions(): void {
+    const tbody = $('position-tbody');
+    if (!tbody) return;
+    if (positions.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="st-empty">No positions yet. Create one before adding staff.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = positions
+      .map((p) => {
+        const actions = canWrite
+          ? `<div class="st-actions">
+              <button type="button" class="btn-ghost-sm" data-pact="edit" data-id="${p.id}">Edit</button>
+              <button type="button" class="btn-ghost-sm" data-pact="${p.isActive ? 'deactivate' : 'activate'}" data-id="${p.id}">${p.isActive ? 'Deactivate' : 'Activate'}</button>
+              <button type="button" class="btn-ghost-sm is-danger" data-pact="delete" data-id="${p.id}">Delete</button>
+            </div>`
+          : '';
+        return `<tr>
+          <td><strong>${esc(p.name)}</strong>${p.description ? `<br /><span class="st-sub">${esc(p.description)}</span>` : ''}</td>
+          <td class="st-access">${esc(accessSummary(p))}</td>
+          <td class="num">${p.staffCount}</td>
+          <td><span class="st-badge st-badge-${p.isActive ? 'active' : 'inactive'}">${p.isActive ? 'Active' : 'Inactive'}</span></td>
+          <td>${actions}</td>
         </tr>`;
       })
       .join('');
   }
 
-  form?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const data = new FormData(form);
-    const result = assignStaff({
-      displayName: String(data.get('displayName') || ''),
-      username: String(data.get('username') || ''),
-      branchCode: String(data.get('branchCode') || ''),
-      role: String(data.get('role') || 'staff') as 'staff' | 'branch_manager',
-      temporaryPassword: String(data.get('temporaryPassword') || ''),
-    });
+  // ---------- load ----------
 
-    if (!result.ok) {
-      showMsg(result.error);
+  function applyWriteAccess(): void {
+    // A company owner is read-only inside a branch.
+    canWrite = getSession()?.accessMode !== 'read_only';
+    for (const id of ['member-add', 'position-add']) {
+      const el = $(id);
+      if (el) el.hidden = !canWrite;
+    }
+  }
+
+  async function reload(): Promise<void> {
+    const s = getSession();
+    const scope = $('st-scope');
+    if (scope && s) scope.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
+    applyWriteAccess();
+
+    try {
+      [members, positions] = await Promise.all([listStaff(), listPositions()]);
+      banner(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+    } catch (error) {
+      members = [];
+      positions = [];
+      banner(describe(error));
+    }
+    renderMembers();
+    renderPositions();
+  }
+
+  // ---------- member dialog ----------
+
+  const memberDialog = $<HTMLDialogElement>('member-dialog');
+  const secretDialog = $<HTMLDialogElement>('secret-dialog');
+
+  function fillPositionSelect(selectedId: number | null): void {
+    const select = $<HTMLSelectElement>('m-position');
+    if (!select) return;
+    const usable = positions.filter((p) => p.isActive || p.id === selectedId);
+    select.innerHTML =
+      usable.length === 0
+        ? '<option value="">Create a position first</option>'
+        : usable.map((p) => `<option value="${p.id}">${esc(p.name)}${p.isActive ? '' : ' (inactive)'}</option>`).join('');
+    if (selectedId) select.value = String(selectedId);
+  }
+
+  function syncRole(): void {
+    const isStaff = $<HTMLSelectElement>('m-role')?.value === 'staff';
+    const wrap = $('m-position-wrap');
+    if (wrap) wrap.hidden = !isStaff;
+  }
+  $('m-role')?.addEventListener('change', syncRole);
+
+  function openMember(edit?: StaffMember): void {
+    $('member-title')!.textContent = edit ? 'Edit team member' : 'Add team member';
+    $<HTMLInputElement>('m-id')!.value = edit ? String(edit.id) : '';
+    $<HTMLInputElement>('m-first')!.value = edit?.firstName ?? '';
+    $<HTMLInputElement>('m-last')!.value = edit?.lastName ?? '';
+    const username = $<HTMLInputElement>('m-username')!;
+    username.value = edit?.username ?? '';
+    username.readOnly = !!edit; // a username cannot be changed
+    $<HTMLInputElement>('m-email')!.value = edit?.email ?? '';
+    $<HTMLInputElement>('m-phone')!.value = edit?.phone ?? '';
+    $<HTMLSelectElement>('m-role')!.value = edit?.role ?? 'staff';
+    $<HTMLInputElement>('m-password')!.value = '';
+    $('m-password-wrap')!.hidden = !!edit;
+    $('m-hint')!.hidden = !!edit;
+    fillPositionSelect(edit?.positionId ?? null);
+    syncRole();
+    $('m-error')!.hidden = true;
+    memberDialog?.showModal();
+  }
+
+  function showSecret(who: string, password: string): void {
+    $('secret-who')!.textContent = who;
+    $('secret-value')!.textContent = password;
+    $('secret-copy')!.textContent = 'Copy';
+    secretDialog?.showModal();
+  }
+
+  $('member-add')?.addEventListener('click', () => openMember());
+  $('m-cancel')?.addEventListener('click', () => memberDialog?.close());
+
+  $('secret-copy')?.addEventListener('click', async () => {
+    const text = $('secret-value')?.textContent ?? '';
+    try {
+      await navigator.clipboard.writeText(text);
+      $('secret-copy')!.textContent = 'Copied';
+    } catch {
+      // Clipboard can be blocked; the text is selectable on screen.
+      $('secret-copy')!.textContent = 'Select and copy';
+    }
+  });
+  // Clear the password from the page as soon as the dialog closes.
+  secretDialog?.addEventListener('close', () => {
+    $('secret-value')!.textContent = '';
+  });
+  $('secret-close')?.addEventListener('click', () => secretDialog?.close());
+
+  $<HTMLFormElement>('member-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = $('m-error')!;
+    const save = $<HTMLButtonElement>('m-save')!;
+    err.hidden = true;
+
+    const id = Number(val('m-id')) || null;
+    const role = $<HTMLSelectElement>('m-role')!.value as StaffRole;
+    const positionId = Number($<HTMLSelectElement>('m-position')!.value) || null;
+    const input = {
+      firstName: val('m-first'),
+      lastName: val('m-last'),
+      username: val('m-username'),
+      email: val('m-email'),
+      phone: val('m-phone'),
+      role,
+      positionId,
+      password: $<HTMLInputElement>('m-password')!.value,
+    };
+
+    const problem = !input.firstName
+      ? 'First name is required.'
+      : !id && !input.username
+        ? 'Username is required.'
+        : role === 'staff' && !positionId
+          ? 'Choose a position for staff.'
+          : null;
+    if (problem) {
+      err.hidden = false;
+      err.textContent = problem;
       return;
     }
 
-    showMsg(
-      `Assigned ${result.user.displayName} · ${result.user.branchCode}/${result.user.username}`,
-      true,
-    );
-    form.reset();
-    if (session && branchSelect) {
-      const branches = getAssignableBranches(session);
-      branchSelect.innerHTML = branches
-        .map((b) => `<option value="${b.code}">${b.name} (${b.code})</option>`)
-        .join('');
+    save.disabled = true;
+    try {
+      if (id) {
+        await updateStaff(id, input);
+        memberDialog?.close();
+      } else {
+        const { member, temporaryPassword } = await createStaff(input);
+        memberDialog?.close();
+        if (temporaryPassword) {
+          showSecret(`Username: ${member.username}`, temporaryPassword);
+        }
+      }
+      await reload();
+    } catch (error) {
+      err.hidden = false;
+      err.textContent = describe(error);
+    } finally {
+      save.disabled = false;
     }
-    renderTable();
   });
 
-  renderTable();
+  // ---------- team row actions ----------
+
+  $('member-tbody')?.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-act]');
+    if (!button) return;
+    const member = members.find((m) => m.id === Number(button.dataset.id));
+    if (!member) return;
+
+    const act = button.dataset.act;
+    if (act === 'edit') {
+      openMember(member);
+      return;
+    }
+
+    if (act === 'deactivate' && !confirm(`Deactivate ${member.name}? They will be signed out and cannot sign in again until reactivated.`)) return;
+    if (act === 'reset' && !confirm(`Reset the password for ${member.name}? They will be signed out everywhere.`)) return;
+
+    button.disabled = true;
+    try {
+      if (act === 'deactivate') await deactivateStaff(member.id);
+      else if (act === 'reactivate') await reactivateStaff(member.id);
+      else if (act === 'reset') {
+        const password = await resetStaffPassword(member.id);
+        if (password) showSecret(`New password for ${member.username}`, password);
+      }
+      await reload();
+    } catch (error) {
+      alert(describe(error));
+      button.disabled = false;
+    }
+  });
+
+  ['st-search'].forEach((id) => $(id)?.addEventListener('input', renderMembers));
+  ['st-role-filter', 'st-status-filter'].forEach((id) => $(id)?.addEventListener('change', renderMembers));
+
+  // ---------- position dialog ----------
+
+  const positionDialog = $<HTMLDialogElement>('position-dialog');
+
+  function permRow(module: { id: string; label: string }, perm?: PositionPermission): string {
+    const box = (key: string, on: boolean, label: string) =>
+      `<td><input type="checkbox" data-module="${module.id}" data-key="${key}" aria-label="${label} ${esc(module.label)}" ${on ? 'checked' : ''} /></td>`;
+    return `<tr>
+      <th scope="row">${esc(module.label)}</th>
+      ${box('canView', !!perm?.canView, 'View')}
+      ${box('canCreate', !!perm?.canCreate, 'Create')}
+      ${box('canUpdate', !!perm?.canUpdate, 'Edit')}
+      ${box('canDelete', !!perm?.canDelete, 'Delete')}
+    </tr>`;
+  }
+
+  function openPosition(edit?: Position): void {
+    $('position-title')!.textContent = edit ? 'Edit position' : 'New position';
+    $<HTMLInputElement>('p-id')!.value = edit ? String(edit.id) : '';
+    $<HTMLInputElement>('p-name')!.value = edit?.name ?? '';
+    $<HTMLInputElement>('p-desc')!.value = edit?.description ?? '';
+    $('perm-tbody')!.innerHTML = MODULES.map((m) =>
+      permRow(m, edit?.permissions.find((p) => p.module === m.id)),
+    ).join('');
+    $('p-error')!.hidden = true;
+    positionDialog?.showModal();
+  }
+
+  // Create/Edit/Delete need View: tick View for them, untick the rest with it.
+  $('perm-tbody')?.addEventListener('change', (event) => {
+    const box = event.target as HTMLInputElement;
+    const row = box.closest('tr');
+    if (!row) return;
+    const get = (key: string) => row.querySelector<HTMLInputElement>(`input[data-key="${key}"]`)!;
+    if (box.dataset.key !== 'canView' && box.checked) get('canView').checked = true;
+    if (box.dataset.key === 'canView' && !box.checked) {
+      ['canCreate', 'canUpdate', 'canDelete'].forEach((k) => (get(k).checked = false));
+    }
+  });
+
+  function readPermissions(): PositionPermission[] {
+    return MODULES.map((m) => {
+      const get = (key: string) =>
+        !!document.querySelector<HTMLInputElement>(`#perm-tbody input[data-module="${m.id}"][data-key="${key}"]`)?.checked;
+      return {
+        module: m.id,
+        canView: get('canView'),
+        canCreate: get('canCreate'),
+        canUpdate: get('canUpdate'),
+        canDelete: get('canDelete'),
+      };
+    });
+  }
+
+  $('position-add')?.addEventListener('click', () => openPosition());
+  $('p-cancel')?.addEventListener('click', () => positionDialog?.close());
+
+  $<HTMLFormElement>('position-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = $('p-error')!;
+    const save = $<HTMLButtonElement>('p-save')!;
+    err.hidden = true;
+
+    const id = Number(val('p-id')) || null;
+    const input = { name: val('p-name'), description: val('p-desc'), permissions: readPermissions() };
+    if (!input.name) {
+      err.hidden = false;
+      err.textContent = 'Name is required.';
+      return;
+    }
+
+    save.disabled = true;
+    try {
+      if (id) await updatePosition(id, input);
+      else await createPosition(input);
+      positionDialog?.close();
+      await reload();
+    } catch (error) {
+      err.hidden = false;
+      err.textContent = describe(error);
+    } finally {
+      save.disabled = false;
+    }
+  });
+
+  $('position-tbody')?.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-pact]');
+    if (!button) return;
+    const position = positions.find((p) => p.id === Number(button.dataset.id));
+    if (!position) return;
+
+    const act = button.dataset.pact;
+    if (act === 'edit') {
+      openPosition(position);
+      return;
+    }
+    if (act === 'delete' && !confirm(`Delete the position "${position.name}"?`)) return;
+
+    button.disabled = true;
+    try {
+      if (act === 'delete') await deletePosition(position.id);
+      else await setPositionActive(position.id, act === 'activate');
+      await reload();
+    } catch (error) {
+      alert(describe(error));
+      button.disabled = false;
+    }
+  });
+
+  if (session && canManageStaff(session)) {
+    void reload();
+    refreshProfile()
+      .then((fresh) => {
+        // Re-check after the server confirms the role.
+        if (fresh && !canManageStaff(fresh)) window.location.replace('/dashboard');
+        else applyWriteAccess();
+      })
+      .catch(() => {});
+  }
 </script>
 
 <style>
-  .staff-page {
-    display: grid;
-    gap: 16px;
-    grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+  .st-page { display: flex; flex-direction: column; gap: 14px; }
+  .st-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .st-scope { margin: 0 0 2px; font-size: 0.75rem; color: var(--text-muted); }
+  .st-heading { margin: 0; font-size: 1.05rem; font-weight: 650; letter-spacing: -0.02em; }
+
+  .btn-primary-sm, .btn-ghost-sm {
+    height: 34px; padding: 0 12px; border-radius: 8px;
+    font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer; white-space: nowrap;
   }
-  @media (max-width: 900px) {
-    .staff-page { grid-template-columns: 1fr; }
+  .btn-primary-sm { border: none; background: var(--accent); color: #fff; }
+  .btn-ghost-sm { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); }
+  .btn-ghost-sm:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .btn-ghost-sm.is-danger { color: #ef334e; border-color: color-mix(in srgb, #ef334e 35%, var(--border)); }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .st-tabs { display: inline-flex; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .st-tabs button {
+    height: 30px; padding: 0 14px; border: none; border-radius: 7px; background: transparent;
+    color: var(--text-secondary); font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer;
   }
-  .staff-panel {
-    padding: 18px 16px;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: var(--panel-bg);
+  .st-tabs button[aria-selected='true'] { background: var(--accent); color: #fff; }
+
+  .st-banner {
+    margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 0.8rem;
+    background: rgba(245, 158, 11, 0.12); color: #b45309;
   }
-  .staff-title {
-    margin: 0 0 4px;
-    font-size: 1rem;
-    font-weight: 650;
+
+  .st-panel { padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel-bg); }
+  .st-panel[hidden] { display: none; }
+  .st-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .st-filters { display: flex; gap: 8px; flex-wrap: wrap; flex: 1 1 320px; }
+  .st-filters input, .st-filters select {
+    height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem;
   }
-  .staff-sub {
-    margin: 0 0 14px;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    line-height: 1.4;
+  .st-filters input { flex: 1 1 200px; min-width: 0; }
+
+  .st-table-wrap { overflow-x: auto; }
+  .st-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .st-table th, .st-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .st-table thead th {
+    color: var(--text-muted); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em;
   }
-  .staff-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+  .st-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .st-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.76rem; }
+  .st-empty { text-align: center !important; color: var(--text-muted); padding: 22px 10px !important; }
+  .st-sub { font-size: 0.72rem; color: var(--text-muted); }
+  .st-access { max-width: 340px; color: var(--text-secondary); }
+  .st-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .st-footnote { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
+  .st-hint { margin: 8px 0 0; font-size: 0.74rem; color: var(--text-muted); line-height: 1.4; }
+  .st-panel-head .st-hint { margin: 0; flex: 1 1 260px; }
+
+  .st-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 650; white-space: nowrap; }
+  .st-badge-active { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .st-badge-inactive { background: rgba(148, 163, 184, 0.15); color: #64748b; }
+  .st-badge-pending { background: rgba(245, 158, 11, 0.14); color: #b45309; }
+
+  .st-dialog {
+    border: none; border-radius: 14px; padding: 0; background: var(--panel-bg);
+    color: var(--text-primary); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+    max-width: 520px; width: calc(100% - 32px);
   }
-  .staff-field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--text-secondary);
+  .st-dialog-wide { max-width: 640px; }
+  .st-dialog::backdrop { background: rgba(8, 15, 29, 0.55); backdrop-filter: blur(4px); }
+  .st-dialog-inner { padding: 20px; }
+  .st-dialog-title { margin: 0 0 14px; font-size: 1rem; font-weight: 650; }
+  .st-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  .st-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); }
+  .st-field[hidden] { display: none; }
+  .st-field.span2 { grid-column: 1 / -1; }
+  .st-field input, .st-field select {
+    height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
   }
-  .staff-field input,
-  .staff-field select {
-    height: 36px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--surface);
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 0.85rem;
+  .st-field input[readonly] { opacity: 0.7; }
+  .st-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
+  .st-error[hidden], .st-banner[hidden], .st-hint[hidden] { display: none; }
+  .st-warn { margin: 10px 0 0; font-size: 0.78rem; color: #b45309; }
+  .st-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+  .st-secret {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px;
+    padding: 12px; border: 1px dashed var(--border); border-radius: 10px; background: var(--surface);
   }
-  .staff-submit {
-    height: 38px;
-    border: none;
-    border-radius: 9px;
-    background: var(--accent);
-    color: #fff;
-    font-family: inherit;
-    font-weight: 650;
-    cursor: pointer;
+  .st-secret code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1rem; letter-spacing: 0.04em; word-break: break-all; user-select: all; }
+
+  .st-perm-wrap { margin-top: 14px; max-height: 320px; overflow: auto; }
+  .st-perm th[scope='row'] { font-weight: 600; }
+  .st-perm td { text-align: center; }
+  .st-perm thead th:not(:first-child) { text-align: center; }
+  .st-perm input[type='checkbox'] { width: 16px; height: 16px; accent-color: var(--accent); }
+
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
-  .staff-message {
-    margin: 0;
-    font-size: 0.8rem;
-  }
-  .staff-message.is-err { color: #ef334e; }
-  .staff-message.is-ok { color: var(--success, #22c55e); }
-  .staff-table-wrap { overflow-x: auto; }
-  .staff-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.82rem;
-  }
-  .staff-table th,
-  .staff-table td {
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border);
-    text-align: left;
-  }
-  .staff-table th {
-    color: var(--text-muted);
-    font-weight: 600;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+
+  @media (max-width: 520px) {
+    .st-form-grid { grid-template-columns: 1fr; }
+    .st-field.span2 { grid-column: auto; }
   }
 </style>
