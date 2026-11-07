@@ -1,0 +1,381 @@
+
+/* =========================================================
+   VG AUTOMOBILES — FULL SCREEN LOGIN
+   ========================================================= */
+
+/* 1. GLOBAL RESET */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    overflow: hidden;
+}
+
+/* 2. THEME VARIABLES */
+
+:root,
+[data-theme="dark"] {
+    color-scheme: dark;
+
+    --page-bg: #080f20;
+    --panel-bg: rgba(7, 15, 31, 0.88);
+
+    --surface: rgba(255, 255, 255, 0.045);
+    --surface-hover: rgba(255, 255, 255, 0.075);
+
+    --text-primary: #f8fafc;
+    --text-secondary: #d4dced;
+    --text-muted: #a1aec3;
+
+    --border: rgba(203, 213, 225, 0.2);
+    --panel-divider: rgba(203, 213, 225, 0.2);
+
+    --accent: #f21d35;
+    --accent-hover: #d91029;
+    --accent-soft: rgba(242, 29, 53, 0.14);
+
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+
+    --card-shadow: 0 25px 80px rgba(0, 0, 0, 0.42);
+    --input-shadow: 0 0 0 3px rgba(242, 29, 53, 0.14);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+}
+
+[data-theme="light"] {
+    color-scheme: light;
+
+    --page-bg: #edf1f7;
+    --panel-bg: rgba(248, 250, 255, 0.9);
+
+    --surface: rgba(15, 23, 42, 0.045);
+    --surface-hover: rgba(15, 23, 42, 0.075);
+
+    --text-primary: #172033;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+
+    --border: rgba(51, 65, 85, 0.2);
+    --panel-divider: rgba(51, 65, 85, 0.16);
+
+    --accent: #e51b32;
+    --accent-hover: #c9142a;
+    --accent-soft: rgba(229, 27, 50, 0.1);
+
+    --success: #16a34a;
+    --danger: #dc2626;
+    --warning: #d97706;
+
+    --card-shadow: 0 25px 75px rgba(15, 23, 42, 0.2);
+    --input-shadow: 0 0 0 3px rgba(229, 27, 50, 0.12);
+}
+
+/* 3. FULL VIEWPORT PAGE */
+
+.login-page {
+    position: relative;
+    isolation: isolate;
+
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+
+    padding: 0;
+    overflow: hidden;
+
+    color: var(--text-primary);
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(4, 12, 28, 0.12) 0%,
+            rgba(4, 12, 28, 0.08) 48%,
+            rgba(4, 10, 23, 0.5) 100%
+        ),
+        url("/images/vstrom-login-bg.png") center center / cover no-repeat;
+
+    transition: none;
+}
+
+/* 4. MAIN TWO-COLUMN LAYOUT */
+
+.login-shell {
+    position: relative;
+    z-index: 1;
+
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.95fr);
+
+    align-items: center;
+
+    width: 100%;
+    max-width: 1800px;
+
+    flex: 1;
+    min-height: 0;
+
+    margin: 0 auto;
+    padding: 24px 3vw;
+
+    column-gap: 28px;
+
+    overflow: hidden;
+
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+
+    transition: none;
+}
+
+/* 5. LARGE DESKTOP */
+
+@media (min-width: 1200px) {
+    .login-shell {
+        grid-template-columns: minmax(0, 1.55fr) minmax(0, 0.95fr);
+        column-gap: 32px;
+        padding-right: 3vw;
+        padding-left: 3vw;
+    }
+}
+
+/* 6. COMPACT DESKTOP / TABLET */
+
+@media (max-width: 1199px) and (min-width: 651px) {
+    .login-shell {
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+        column-gap: 20px;
+        padding: 68px 22px 24px;
+    }
+}
+
+/* 7. SHORT DESKTOP VIEWPORT */
+
+@media (max-height: 800px) and (min-width: 651px) {
+    .login-shell {
+        padding-top: 54px;
+        padding-bottom: 20px;
+    }
+}
+
+@media (max-height: 680px) and (min-width: 651px) {
+    .login-shell {
+        padding-top: 48px;
+        padding-bottom: 14px;
+        column-gap: 18px;
+    }
+}
+
+/* 8. PAGE FOOTER */
+
+.page-footer {
+    position: relative;
+    z-index: 10;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+
+    gap: 20px;
+    margin: 0;
+    padding: 12px 3vw 16px;
+
+    border: 0;
+
+    pointer-events: none;
+}
+
+/* Half-width centered divider */
+
+.page-footer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 3vw;
+
+    width: 70%;
+    height: 1px;
+
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.3),
+        rgba(255, 255, 255, 0.12),
+        transparent
+    );
+}
+
+.page-footer-message {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    min-width: 0;
+    flex: 1 1 auto;
+
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 11px;
+}
+
+.page-footer-message svg {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+
+    color: #22c55e;
+}
+
+.page-footer-message strong {
+    color: #fff;
+}
+
+.page-footer-copyright {
+    min-width: 0;
+    max-width: 45%;
+    flex: 0 1 auto;
+
+    margin-right: 100px;
+
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 10px;
+    line-height: 1.5;
+    text-align: right;
+
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
+/* 9. MOBILE */
+
+@media (max-width: 650px) {
+    body {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .login-page {
+        display: flex;
+        flex-direction: column;
+
+        width: 100%;
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+
+        padding: 76px 16px 0;
+
+        overflow: visible;
+
+        background-position: center;
+        background-attachment: scroll;
+    }
+
+    .login-shell {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+
+        width: 100%;
+        max-width: 480px;
+
+        flex: 1 0 auto;
+        height: auto;
+        min-height: 0;
+
+        margin: 0 auto;
+        padding: 0 0 24px;
+
+        gap: 24px;
+
+        overflow: visible;
+    }
+
+    .page-footer {
+        width: 100%;
+        min-width: 0;
+
+        justify-content: flex-end;
+        gap: 0;
+
+        padding: 10px 0 12px;
+    }
+
+    .page-footer-message {
+        display: none;
+    }
+
+    .page-footer-copyright {
+        width: 100%;
+        max-width: 100%;
+        flex: 1 1 100%;
+
+        margin-right: 0;
+
+        font-size: 9px;
+        text-align: right;
+
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+
+    .page-footer::before {
+        width: 50%;
+    }
+}
+
+/* 10. SMALL MOBILE */
+
+@media (max-width: 380px) {
+    .login-page {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .login-shell {
+        gap: 18px;
+    }
+
+    .page-footer {
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .page-footer-copyright {
+        font-size: 9px;
+    }
+}
+
+/* 11. ACCESSIBILITY */
+
+@media (prefers-reduced-motion: reduce) {
+    .login-page,
+    .login-shell {
+        transition: none !important;
+    }
+}

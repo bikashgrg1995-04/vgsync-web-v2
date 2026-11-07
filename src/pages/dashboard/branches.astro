@@ -1,0 +1,197 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+
+const meta = PAGE_META.branches;
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="br-page">
+    <div class="br-head">
+      <div>
+        <p class="br-scope" id="br-company">Company</p>
+        <h2 class="br-title">Head Office and branches</h2>
+      </div>
+    </div>
+
+    <p class="br-notice" id="br-notice" hidden></p>
+
+    <section class="br-card">
+      <div class="br-filters">
+        <input type="search" id="br-search" placeholder="Search name or code…" autocomplete="off" />
+        <select id="br-status" aria-label="Status">
+          <option value="">All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="br-table-wrap">
+        <table class="br-table">
+          <thead>
+            <tr><th>Name</th><th>Code</th><th>Contact</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="br-tbody"><tr><td colspan="5" class="br-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="br-foot" id="br-foot"></p>
+    </section>
+  </div>
+
+</AppLayout>
+
+<script>
+  import { getSession, switchBranch } from '../../lib/auth';
+  import { ApiError } from '../../lib/api';
+  import { getCompanyName } from '../../lib/settings';
+  import { listBusinesses, TYPE_LABEL, type BusinessRow } from '../../lib/branches';
+
+  if (!getSession()) window.location.replace('/');
+
+  let rows: BusinessRow[] = [];
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const val = (id: string) => $<HTMLInputElement>(id).value;
+  const esc = (s: string) =>
+    String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    if (error.status === 403) return 'Only the company owner can see this.';
+    const parts = Object.entries(error.fields ?? {}).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${[v].flat().join(' ')}`);
+    return error.status === 400 && parts.length ? parts.join(' ') : error.message;
+  }
+
+  function notice(message: string | null): void {
+    const el = $('br-notice');
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
+  async function open(id: number): Promise<void> {
+    try {
+      await switchBranch(id);
+      window.location.href = '/dashboard/branches';
+    } catch (error) {
+      notice(describe(error));
+    }
+  }
+
+  function render(): void {
+    const q = val('br-search').trim().toLowerCase();
+    const st = val('br-status');
+    const view = rows.filter(
+      (r) =>
+        (!q || r.name.toLowerCase().includes(q) || r.code.toLowerCase().includes(q)) &&
+        (!st || (st === 'active' ? r.isActive : !r.isActive)),
+    );
+    const session = getSession();
+    const tbody = $('br-tbody');
+    if (view.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="br-empty">${rows.length ? 'Nothing matches.' : 'No branches yet.'}</td></tr>`;
+    } else {
+      tbody.innerHTML = view
+        .map((r) => {
+          const here = session?.activeBusinessId === r.id;
+          const acts: string[] = [];
+          if (r.isActive && !here) acts.push(`<button class="br-link" data-open="${r.id}">Open</button>`);
+          const contact = [r.phone, r.email].filter(Boolean).map(esc).join('<br />');
+          return `<tr class="${r.isActive ? '' : 'is-off'}">
+            <td><strong>${esc(r.name)}</strong>${here ? ' <span class="br-tag">You are here</span>' : ''}<br /><span class="br-muted">${esc(TYPE_LABEL[r.type])}${r.address ? ' · ' + esc(r.address) : ''}</span></td>
+            <td>${esc(r.code)}</td>
+            <td>${contact || '<span class="br-muted">—</span>'}</td>
+            <td><span class="br-badge ${r.isActive ? 'br-ok' : 'br-off'}">${r.isActive ? 'Active' : 'Inactive'}</span></td>
+            <td class="br-acts">${acts.join(' ')}</td>
+          </tr>`;
+        })
+        .join('');
+    }
+    const branches = rows.filter((r) => r.type === 'branch');
+    $('br-foot').textContent = `${branches.filter((r) => r.isActive).length} active and ${branches.filter((r) => !r.isActive).length} inactive branches. A switched-off branch cannot be used.`;
+
+    tbody.querySelectorAll<HTMLButtonElement>('[data-open]').forEach((b) => b.addEventListener('click', () => void open(Number(b.dataset.open))));
+  }
+
+  async function load(): Promise<void> {
+    const s = getSession();
+    if (!s) return;
+    if (s.role !== 'owner') {
+      $('br-tbody').innerHTML = `<tr><td colspan="5" class="br-empty">Branches are managed by the company owner.</td></tr>`;
+      return;
+    }
+    try {
+      const [list, company] = await Promise.all([listBusinesses(), getCompanyName().catch(() => null)]);
+      rows = list;
+      $('br-company').textContent = company ?? s.companyName ?? 'Company';
+    } catch (error) {
+      $('br-tbody').innerHTML = `<tr><td colspan="5" class="br-empty">${esc(describe(error))}</td></tr>`;
+      return;
+    }
+    notice('To add a branch, change details or switch one off (for example when a subscription is unpaid), contact VGSync support.');
+    render();
+  }
+
+  $('br-search').addEventListener('input', render);
+  $('br-status').addEventListener('change', render);
+  void load();
+</script>
+
+<style is:global>
+  .br-page { display: flex; flex-direction: column; gap: 14px; max-width: 1000px; }
+  .br-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .br-scope { margin: 0 0 2px; font-size: 0.78rem; color: var(--text-muted); }
+  .br-title { margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+  .br-btn { height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer; }
+  .br-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .br-btn.br-primary { border: none; background: var(--accent); color: #fff; }
+  .br-btn:disabled { opacity: 0.6; cursor: default; }
+  .br-link { border: none; background: transparent; padding: 0; font-family: inherit; font-size: 0.78rem; font-weight: 650; color: var(--accent); cursor: pointer; }
+  .br-link.br-danger { color: #ef334e; }
+  .br-notice { margin: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 0.8rem; color: var(--text-secondary); }
+  .br-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 12px; }
+  .br-filters { display: flex; gap: 8px; margin-bottom: 10px; }
+  .br-filters input, .br-filters select { height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; }
+  .br-filters input { flex: 1; min-width: 160px; }
+  .br-table-wrap { overflow-x: auto; }
+  .br-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .br-table th, .br-table td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .br-table th { font-size: 0.66rem; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .br-table tr.is-off td { color: var(--text-muted); }
+  .br-acts { white-space: nowrap; text-align: right !important; display: table-cell; }
+  .br-acts .br-link { margin-left: 10px; }
+  .br-muted { font-size: 0.74rem; color: var(--text-muted); }
+  .br-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
+  .br-foot { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
+  .br-tag { font-size: 0.62rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .br-badge { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 650; }
+  .br-badge.br-ok { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .br-badge.br-off { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+  .br-dialog { border: none; border-radius: 14px; padding: 0; background: var(--panel-bg); color: var(--text-primary); box-shadow: 0 24px 60px rgba(0,0,0,0.28); max-width: 460px; width: calc(100% - 32px); }
+  .br-dialog::backdrop { background: rgba(8,15,29,0.55); backdrop-filter: blur(4px); }
+  .br-dialog-inner { padding: 20px; }
+  .br-dialog-title { margin: 0 0 8px; font-size: 1rem; font-weight: 650; }
+  .br-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 10px 0; }
+  @media (max-width: 520px) { .br-grid { grid-template-columns: 1fr; } }
+  .br-span2 { grid-column: 1 / -1; }
+  .br-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); }
+  .br-field[hidden] { display: none; }
+  .br-field input { height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; }
+  .br-hint { margin: 6px 0 0; font-size: 0.76rem; color: var(--text-muted); }
+  .br-hint[hidden] { display: none; }
+  .br-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
+  .br-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+</style>

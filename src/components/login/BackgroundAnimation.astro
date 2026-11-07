@@ -1,0 +1,51 @@
+
+---
+import '../../styles/login/background-animation.css';
+
+interface Props {
+    variant?: 'page' | 'card';
+}
+
+const { variant = 'page' } = Astro.props;
+
+const particles = Array.from({ length: 20 }, (_, index) => {
+    const particle = index + 1;
+
+    return {
+        id: particle,
+        x: (particle * 37) % 100,
+        y: (particle * 53) % 100,
+    };
+});
+---
+
+<div
+    class:list={[
+        'background-animation',
+        `background-animation--${variant}`,
+    ]}
+    aria-hidden="true"
+>
+    <div class="animation-grid"></div>
+
+    <div class="animation-orb animation-orb--one"></div>
+    <div class="animation-orb animation-orb--two"></div>
+    <div class="animation-orb animation-orb--three"></div>
+
+    <div class="animation-glow animation-glow--one"></div>
+    <div class="animation-glow animation-glow--two"></div>
+
+    <div class="animation-particles">
+        {particles.map((particle) => (
+            <span
+                class="animation-particle"
+                style={`--particle-index: ${particle.id}; --particle-x: ${particle.x}; --particle-y: ${particle.y};`}
+            ></span>
+        ))}
+    </div>
+
+    <div class="animation-trail animation-trail--one"></div>
+    <div class="animation-trail animation-trail--two"></div>
+
+    <div class="animation-center-glow"></div>
+</div>

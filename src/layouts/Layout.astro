@@ -1,0 +1,55 @@
+---
+import '../styles/global.css';
+
+interface Props {
+    title?: string;
+}
+
+const {
+    title = 'VG Automobiles | Business Management',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#080f20" />
+
+        <meta
+            name="description"
+            content="VG Automobiles - Dealer Management System. Manage inventory, sales, purchases, service operations and business performance in one connected platform."
+        />
+
+        <meta name="application-name" content="VG Automobiles" />
+
+        <title>{title}</title>
+
+        <script is:inline>
+            (() => {
+                try {
+                    const savedTheme = localStorage.getItem(
+                        'vgsync-theme'
+                    );
+
+                    const theme = savedTheme === 'light' ? 'light' : 'dark';
+
+                    document.documentElement.setAttribute(
+                        'data-theme',
+                        theme
+                    );
+                } catch {
+                    document.documentElement.setAttribute(
+                        'data-theme',
+                        'dark'
+                    );
+                }
+            })();
+        </script>
+    </head>
+
+    <body>
+        <slot />
+    </body>
+</html>

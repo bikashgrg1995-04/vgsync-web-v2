@@ -1,0 +1,469 @@
+
+/* =========================================================
+   VG Automobiles Background Animation
+   Subtle automotive atmosphere
+   ========================================================= */
+
+/* =========================================================
+   1. BASE
+   ========================================================= */
+
+.background-animation {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+
+    overflow: hidden;
+    pointer-events: none;
+    isolation: isolate;
+
+    border-radius: inherit;
+}
+
+.background-animation--page {
+    position: fixed;
+    z-index: -1;
+
+    border-radius: 0;
+
+    opacity: 0.65;
+}
+
+/* =========================================================
+   2. TECHNICAL GRID
+   ========================================================= */
+
+.animation-grid {
+    position: absolute;
+    inset: -40%;
+
+    opacity: 0.12;
+
+    background-image:
+        linear-gradient(
+            rgba(148, 163, 184, 0.10) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(148, 163, 184, 0.10) 1px,
+            transparent 1px
+        );
+
+    background-size: 64px 64px;
+
+    mask-image: radial-gradient(
+        ellipse at center,
+        black 5%,
+        transparent 70%
+    );
+
+    -webkit-mask-image: radial-gradient(
+        ellipse at center,
+        black 5%,
+        transparent 70%
+    );
+
+    animation: grid-drift 55s linear infinite;
+}
+
+/* =========================================================
+   3. AMBIENT ORBS
+   ========================================================= */
+
+.animation-orb {
+    position: absolute;
+
+    width: 380px;
+    aspect-ratio: 1;
+
+    border-radius: 50%;
+
+    filter: blur(85px);
+    opacity: 0.10;
+
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.animation-orb--one {
+    top: -25%;
+    left: -15%;
+
+    background: #1d4ed8;
+
+    animation: orb-float-one 24s ease-in-out infinite alternate;
+}
+
+.animation-orb--two {
+    right: -18%;
+    bottom: -25%;
+
+    background: #0e7490;
+
+    animation: orb-float-two 28s ease-in-out infinite alternate;
+}
+
+.animation-orb--three {
+    top: 35%;
+    left: 42%;
+
+    width: 260px;
+
+    background: #dc1432;
+
+    opacity: 0.045;
+
+    animation: orb-float-three 30s ease-in-out infinite alternate;
+}
+
+/* =========================================================
+   4. AMBIENT LIGHTING
+   ========================================================= */
+
+.animation-glow {
+    position: absolute;
+
+    width: 42%;
+    height: 42%;
+
+    border-radius: 50%;
+
+    filter: blur(90px);
+    opacity: 0.07;
+}
+
+.animation-glow--one {
+    top: 5%;
+    right: 8%;
+
+    background: #2563eb;
+}
+
+.animation-glow--two {
+    bottom: 0;
+    left: 5%;
+
+    background: #dc1432;
+
+    opacity: 0.035;
+}
+
+/* =========================================================
+   5. FLOATING PARTICLES
+   ========================================================= */
+
+.animation-particles {
+    position: absolute;
+    inset: 0;
+}
+
+.animation-particle {
+    position: absolute;
+
+    left: calc(var(--particle-x) * 1%);
+    top: calc(var(--particle-y) * 1%);
+
+    width: 2px;
+    height: 2px;
+
+    border-radius: 50%;
+
+    background: #94a3b8;
+
+    box-shadow:
+        0 0 6px rgba(148, 163, 184, 0.35);
+
+    opacity: 0.22;
+
+    animation: particle-float 12s ease-in-out infinite;
+    animation-delay: calc(var(--particle-index) * -0.8s);
+}
+
+/* =========================================================
+   6. LIGHT TRAILS
+   ========================================================= */
+
+.animation-trail {
+    position: absolute;
+
+    width: 38%;
+    height: 1px;
+
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(239, 51, 78, 0.45),
+        transparent
+    );
+
+    opacity: 0.22;
+    filter: blur(1px);
+}
+
+.animation-trail--one {
+    top: 28%;
+    left: -45%;
+
+    animation: trail-move 20s linear infinite;
+}
+
+.animation-trail--two {
+    top: 74%;
+    left: -45%;
+
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(59, 130, 246, 0.40),
+        transparent
+    );
+
+    animation: trail-move 26s linear infinite;
+    animation-delay: -12s;
+}
+
+/* =========================================================
+   7. CENTRAL GLOW
+   ========================================================= */
+
+.animation-center-glow {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    width: 50%;
+    height: 50%;
+
+    transform: translate(-50%, -50%);
+
+    border-radius: 50%;
+
+    background: radial-gradient(
+        circle,
+        rgba(220, 20, 50, 0.035),
+        transparent 70%
+    );
+
+    animation: center-pulse 12s ease-in-out infinite alternate;
+}
+
+/* =========================================================
+   8. PAGE VARIANT
+   Keep the area outside the login shell very subtle.
+   ========================================================= */
+
+.background-animation--page .animation-grid {
+    opacity: 0.08;
+}
+
+.background-animation--page .animation-orb {
+    opacity: 0.075;
+}
+
+.background-animation--page .animation-particles {
+    opacity: 0.45;
+}
+
+.background-animation--page .animation-trail {
+    opacity: 0.18;
+}
+
+/* =========================================================
+   9. CARD VARIANT
+   Keep the showroom image visible underneath.
+   ========================================================= */
+
+.background-animation--card .animation-grid {
+    opacity: 0.055;
+}
+
+.background-animation--card .animation-orb {
+    opacity: 0.055;
+}
+
+.background-animation--card .animation-particles {
+    opacity: 0.35;
+}
+
+.background-animation--card .animation-glow {
+    opacity: 0.045;
+}
+
+.background-animation--card .animation-trail {
+    opacity: 0.14;
+}
+
+/* =========================================================
+   10. LIGHT THEME
+   ========================================================= */
+
+[data-theme="light"] .animation-grid {
+    opacity: 0.13;
+
+    background-image:
+        linear-gradient(
+            rgba(71, 85, 105, 0.08) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(71, 85, 105, 0.08) 1px,
+            transparent 1px
+        );
+}
+
+[data-theme="light"] .animation-orb {
+    opacity: 0.055;
+}
+
+[data-theme="light"] .animation-orb--three {
+    opacity: 0.025;
+}
+
+[data-theme="light"] .animation-glow {
+    opacity: 0.045;
+}
+
+[data-theme="light"] .animation-particle {
+    background: #64748b;
+    box-shadow: none;
+    opacity: 0.20;
+}
+
+[data-theme="light"] .animation-trail {
+    opacity: 0.16;
+}
+
+[data-theme="light"] .animation-center-glow {
+    opacity: 0.5;
+}
+
+/* =========================================================
+   11. ANIMATIONS
+   ========================================================= */
+
+@keyframes grid-drift {
+    from {
+        transform: translate3d(0, 0, 0);
+    }
+
+    to {
+        transform: translate3d(64px, 64px, 0);
+    }
+}
+
+@keyframes orb-float-one {
+    from {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    to {
+        transform: translate3d(55px, 35px, 0) scale(1.08);
+    }
+}
+
+@keyframes orb-float-two {
+    from {
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    to {
+        transform: translate3d(-55px, -40px, 0) scale(1.10);
+    }
+}
+
+@keyframes orb-float-three {
+    from {
+        transform: translate3d(-20px, 15px, 0);
+    }
+
+    to {
+        transform: translate3d(30px, -25px, 0);
+    }
+}
+
+@keyframes particle-float {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0);
+        opacity: 0.12;
+    }
+
+    50% {
+        transform: translate3d(5px, -10px, 0);
+        opacity: 0.35;
+    }
+}
+
+@keyframes trail-move {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(350%);
+    }
+}
+
+@keyframes center-pulse {
+    from {
+        opacity: 0.35;
+        transform: translate(-50%, -50%) scale(0.95);
+    }
+
+    to {
+        opacity: 0.7;
+        transform: translate(-50%, -50%) scale(1.08);
+    }
+}
+
+/* =========================================================
+   12. MOBILE OPTIMIZATION
+   ========================================================= */
+
+@media (max-width: 650px) {
+    .animation-orb {
+        width: 240px;
+        filter: blur(65px);
+    }
+
+    .animation-orb--three {
+        width: 160px;
+    }
+
+    .animation-grid {
+        background-size: 48px 48px;
+    }
+
+    .animation-particle {
+        width: 2px;
+        height: 2px;
+    }
+
+    .animation-trail {
+        width: 55%;
+    }
+
+    .animation-glow {
+        filter: blur(65px);
+    }
+}
+
+/* =========================================================
+   13. ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .background-animation *,
+    .background-animation *::before,
+    .background-animation *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .animation-orb {
+        will-change: auto;
+    }
+}

@@ -1,0 +1,206 @@
+/* =========================================================
+   VG Automobiles Theme Toggle
+   Premium automotive glass interface
+   ========================================================= */
+
+.theme-toggle {
+    position: absolute;
+    top: 24px;
+    right: 32px;
+    z-index: 20;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+
+    min-height: 40px;
+    padding: 0 15px;
+
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+
+    background: rgba(9, 19, 36, 0.72);
+    color: #e2e8f0;
+
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0.025em;
+
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    box-shadow:
+        0 3px 10px rgba(0, 0, 0, 0.16),
+        0 8px 24px rgba(0, 0, 0, 0.12);
+
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease,
+        color 0.18s ease,
+        box-shadow 0.18s ease,
+        transform 0.18s ease;
+}
+
+/* Hover */
+
+.theme-toggle:hover {
+    background: rgba(18, 31, 52, 0.92);
+    border-color: rgba(239, 51, 78, 0.7);
+    color: #ffffff;
+
+    box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.2),
+        0 0 0 3px rgba(239, 51, 78, 0.08);
+
+    transform: translateY(-2px);
+}
+
+/* Active */
+
+.theme-toggle:active {
+    transform: translateY(0) scale(0.97);
+}
+
+/* Keyboard focus */
+
+.theme-toggle:focus-visible {
+    outline: 2px solid #ef334e;
+    outline-offset: 4px;
+}
+
+/* Icon wrapper */
+
+.theme-toggle-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+
+    width: 17px;
+    height: 17px;
+}
+
+/* Theme icons */
+
+.theme-icon {
+    display: block;
+
+    width: 17px;
+    height: 17px;
+
+    transition: none;
+}
+
+.theme-icon.is-hidden {
+    display: none;
+}
+
+/* =========================================================
+   Light theme
+   ========================================================= */
+
+[data-theme="light"] .theme-toggle {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(15, 23, 42, 0.12);
+    color: #334155;
+
+    box-shadow:
+        0 3px 10px rgba(15, 23, 42, 0.07),
+        0 8px 22px rgba(15, 23, 42, 0.05);
+}
+
+[data-theme="light"] .theme-toggle:hover {
+    background: #ffffff;
+    border-color: #ef334e;
+    color: #dc263f;
+
+    box-shadow:
+        0 4px 14px rgba(15, 23, 42, 0.09),
+        0 0 0 3px rgba(239, 51, 78, 0.07);
+}
+
+/* =========================================================
+   Dark theme
+   ========================================================= */
+
+[data-theme="dark"] .theme-toggle {
+    background: rgba(9, 19, 36, 0.72);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #e2e8f0;
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+    background: rgba(18, 31, 52, 0.92);
+    border-color: rgba(239, 51, 78, 0.7);
+    color: #ffffff;
+}
+
+/* =========================================================
+   Tablet
+   ========================================================= */
+
+@media (max-width: 900px) {
+    .theme-toggle {
+        top: 20px;
+        right: 22px;
+    }
+}
+
+/* =========================================================
+   Mobile
+   ========================================================= */
+
+@media (max-width: 650px) {
+    .theme-toggle {
+        top: 16px;
+        right: 16px;
+
+        min-height: 38px;
+        padding: 0 12px;
+        gap: 7px;
+
+        font-size: 11px;
+    }
+}
+
+/* =========================================================
+   Small mobile
+   ========================================================= */
+
+@media (max-width: 380px) {
+    .theme-toggle {
+        top: 14px;
+        right: 12px;
+
+        min-height: 36px;
+        padding: 0 10px;
+        gap: 6px;
+    }
+
+    .theme-toggle-icon,
+    .theme-icon {
+        width: 15px;
+        height: 15px;
+    }
+}
+
+/* =========================================================
+   Reduced motion accessibility
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .theme-toggle,
+    .theme-icon {
+        transition: none !important;
+    }
+
+    .theme-toggle:hover,
+    .theme-toggle:active {
+        transform: none;
+    }
+}
