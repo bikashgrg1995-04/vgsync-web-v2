@@ -1,0 +1,735 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+
+const meta = PAGE_META.orders;
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="or-page">
+    <div class="or-toolbar">
+      <div>
+        <p class="or-scope" id="or-scope">Orders</p>
+        <h2 class="or-heading" id="or-heading">Stock orders</h2>
+      </div>
+      <div class="or-toolbar-right">
+        <button type="button" class="btn-ghost-sm" id="or-refresh">Refresh</button>
+        <button type="button" class="btn-primary-sm" id="or-new" hidden>+ New order</button>
+      </div>
+    </div>
+
+    <p class="or-notice" id="or-notice" hidden></p>
+
+    <div class="or-kpis">
+      <article class="or-kpi"><span>Orders</span><strong id="kpi-total">—</strong></article>
+      <article class="or-kpi"><span id="kpi-a-label">Open</span><strong id="kpi-a">—</strong></article>
+      <article class="or-kpi"><span id="kpi-b-label">In transit</span><strong id="kpi-b">—</strong></article>
+      <article class="or-kpi is-warn"><span>Damaged to return</span><strong id="kpi-dmg">—</strong></article>
+    </div>
+
+    <div class="or-layout">
+      <div class="or-card">
+        <div class="or-filters">
+          <input type="search" id="f-search" placeholder="Search reference or product…" autocomplete="off" />
+          <select id="f-status" aria-label="Status">
+            <option value="">All status</option>
+            <option value="ordered">Ordered</option>
+            <option value="partially_dispatched">Part dispatched</option>
+            <option value="dispatched">In transit</option>
+            <option value="partially_received">Part received</option>
+            <option value="received">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="or-table-wrap">
+          <table class="or-table">
+            <thead>
+              <tr>
+                <th>Order</th><th id="th-who">Branch</th><th>Date</th><th>Status</th>
+                <th class="num">Ordered</th><th class="num">Sent</th><th class="num">Good</th><th class="num">Damaged</th>
+              </tr>
+            </thead>
+            <tbody id="or-tbody"><tr><td colspan="8" class="or-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="or-foot" id="or-count"></p>
+      </div>
+
+      <aside class="or-card" id="or-detail">
+        <p class="or-empty-detail">Select an order to see its items and history.</p>
+      </aside>
+    </div>
+  </div>
+
+  <!-- New order -->
+  <dialog class="or-dialog or-wide" id="dlg-new">
+    <form method="dialog" class="or-dialog-inner" id="form-new">
+      <h2 class="or-dialog-title">New stock order</h2>
+      <p class="or-sub">Ask Head Office for stock. Nothing moves until Head Office dispatches it.</p>
+      <div class="or-lines-head"><strong>Items</strong><button type="button" class="btn-ghost-sm" id="new-add">+ Add item</button></div>
+      <div id="new-lines" class="or-lines"></div>
+      <label class="or-field"><span>Note to Head Office</span><input type="text" id="new-notes" /></label>
+      <p class="or-error" id="new-error" hidden></p>
+      <div class="or-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-new">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="new-save">Place order</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Generic quantities dialog (dispatch, receive, return, receive return, review) -->
+  <dialog class="or-dialog or-wide" id="dlg-qty">
+    <form method="dialog" class="or-dialog-inner" id="form-qty">
+      <h2 class="or-dialog-title" id="q-title"></h2>
+      <p class="or-sub" id="q-sub"></p>
+      <div id="q-rows" class="or-lines"></div>
+      <label class="or-field"><span id="q-note-label">Note</span><input type="text" id="q-note" /></label>
+      <p class="or-error" id="q-error" hidden></p>
+      <div class="or-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-qty">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="q-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Cancel -->
+  <dialog class="or-dialog" id="dlg-cancel">
+    <form method="dialog" class="or-dialog-inner" id="form-cancel">
+      <h2 class="or-dialog-title">Cancel order</h2>
+      <p class="or-sub" id="c-sub"></p>
+      <label class="or-field"><span>Reason *</span><input type="text" id="c-reason" required /></label>
+      <p class="or-error" id="c-error" hidden></p>
+      <div class="or-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-cancel">Back</button>
+        <button type="submit" class="btn-primary-sm is-danger" id="c-save">Cancel order</button>
+      </div>
+    </form>
+  </dialog>
+</AppLayout>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import { ApiError } from '../../lib/api';
+  import { listStock, type StockItem } from '../../lib/inventory';
+  import {
+    listOrders,
+    getOrder,
+    createOrder,
+    cancelOrder,
+    dispatchOrder,
+    receiveOrder,
+    returnDamaged,
+    receiveReturn,
+    reviewReturn,
+    formatQty,
+    STATUS_LABEL,
+    DECISION_LABEL,
+    type Order,
+    type OrderSummary,
+    type OrderReturn,
+  } from '../../lib/orders';
+
+  if (!getSession()) window.location.replace('/');
+
+  let orders: OrderSummary[] = [];
+  let selected: Order | null = null;
+  let stock: StockItem[] = [];
+  let isBranch = false;
+  let isHeadOffice = false;
+  let canWrite = true;
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+  const val = (id: string) => $<HTMLInputElement>(id)?.value ?? '';
+
+  function esc(s: string): string {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  const when = (iso: string) => {
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  };
+
+  function flatten(value: unknown): string {
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) return value.map(flatten).filter(Boolean).join(' ');
+    if (value && typeof value === 'object') return Object.values(value).map(flatten).filter(Boolean).join(' ');
+    return '';
+  }
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    const entries = Object.entries(error.fields);
+    if (entries.length > 0 && error.status === 400) return entries.map(([, v]) => flatten(v)).join(' ');
+    return error.message;
+  }
+
+  function showError(id: string, message: string | null): void {
+    const el = $(id);
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
+  function notice(message: string | null, error = false): void {
+    const el = $('or-notice')!;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+    el.classList.toggle('is-error', error);
+  }
+
+  const dlg = (id: string) => $<HTMLDialogElement>(id)!;
+  document.querySelectorAll<HTMLButtonElement>('[data-close]').forEach((b) =>
+    b.addEventListener('click', () => dlg(b.dataset.close!).close()),
+  );
+
+  async function submit(btnId: string, errId: string, dialogId: string, work: () => Promise<void>): Promise<void> {
+    const btn = $<HTMLButtonElement>(btnId)!;
+    btn.disabled = true;
+    showError(errId, null);
+    try {
+      await work();
+      dlg(dialogId).close();
+    } catch (error) {
+      showError(errId, describe(error));
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  const badge = (status: string) =>
+    `<span class="or-badge or-badge-${status}">${esc(STATUS_LABEL[status as keyof typeof STATUS_LABEL] ?? status)}</span>`;
+
+  // ---- List ----------------------------------------------------------
+
+  function renderKpis(): void {
+    $('kpi-total')!.textContent = String(orders.length);
+    const open = orders.filter((o) => !['received', 'cancelled'].includes(o.status));
+    const transit = orders.filter((o) => ['dispatched', 'partially_dispatched', 'partially_received'].includes(o.status));
+    const waiting = orders.filter((o) => ['ordered', 'partially_dispatched'].includes(o.status));
+    $('kpi-a-label')!.textContent = isHeadOffice ? 'Waiting to dispatch' : 'Open';
+    $('kpi-a')!.textContent = String(isHeadOffice ? waiting.length : open.length);
+    $('kpi-b')!.textContent = String(transit.length);
+    $('kpi-dmg')!.textContent = formatQty(orders.reduce((s, o) => s + o.damagedToReturn, 0));
+  }
+
+  function renderList(): void {
+    const tbody = $('or-tbody')!;
+    $('th-who')!.textContent = isHeadOffice ? 'Branch' : 'Head Office';
+    if (orders.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" class="or-empty">${
+        isBranch ? 'No orders yet. Place one with “New order”.' : isHeadOffice ? 'No orders from your branches.' : 'No orders.'
+      }</td></tr>`;
+    } else {
+      tbody.innerHTML = orders
+        .map(
+          (o) => `<tr class="or-row ${selected?.id === o.id ? 'is-selected' : ''}" data-id="${o.id}">
+            <td class="mono">${esc(o.reference)}</td>
+            <td>${esc(isHeadOffice ? o.branchName : o.headOfficeName)}</td>
+            <td>${esc(o.createdAt.slice(0, 10))}</td>
+            <td>${badge(o.status)}</td>
+            <td class="num">${formatQty(o.ordered)}</td>
+            <td class="num">${formatQty(o.dispatched)}</td>
+            <td class="num">${formatQty(o.receivedGood)}</td>
+            <td class="num ${o.receivedDamaged > 0 ? 'warn' : ''}">${formatQty(o.receivedDamaged)}</td>
+          </tr>`,
+        )
+        .join('');
+    }
+    $('or-count')!.textContent = `${orders.length} order${orders.length === 1 ? '' : 's'}`;
+    tbody.querySelectorAll<HTMLTableRowElement>('.or-row').forEach((row) =>
+      row.addEventListener('click', () => void openDetail(Number(row.dataset.id))),
+    );
+  }
+
+  async function loadList(): Promise<void> {
+    try {
+      orders = await listOrders(val('f-status') as never, val('f-search').trim());
+      notice(
+        !canWrite
+          ? 'Read-only: you are viewing this business from the company owner account.'
+          : !isBranch && !isHeadOffice
+            ? 'Orders are between a Branch and its Head Office. This business has none.'
+            : null,
+      );
+    } catch (error) {
+      orders = [];
+      notice(describe(error), true);
+    }
+    renderKpis();
+    renderList();
+  }
+
+  // ---- Detail --------------------------------------------------------
+
+  async function openDetail(id: number): Promise<void> {
+    try {
+      selected = await getOrder(id);
+    } catch (error) {
+      notice(describe(error), true);
+      return;
+    }
+    renderList();
+    renderDetail();
+  }
+
+  async function refresh(id?: number): Promise<void> {
+    await loadList();
+    if (id) {
+      try { selected = await getOrder(id); } catch { selected = null; }
+      renderList();
+      renderDetail();
+    }
+  }
+
+  function returnBlock(r: OrderReturn): string {
+    const actions: string[] = [];
+    if (canWrite && isHeadOffice && !r.receipt) actions.push(`<button class="btn-ghost-sm" data-recv-ret="${r.id}">Receive returned goods</button>`);
+    if (canWrite && isHeadOffice && r.receipt && !r.review) actions.push(`<button class="btn-primary-sm" data-review="${r.id}">Review</button>`);
+    return `<li>
+      <p><strong>Returned to Head Office</strong> <span class="muted">${esc(when(r.at))} · ${esc(r.by)}</span></p>
+      <p>${r.items.map((i) => `${esc(i.productName)} ×${formatQty(i.quantity)}`).join(', ')}</p>
+      <p class="muted">Note: ${esc(r.notes)}</p>
+      ${r.receipt ? `<p class="small">Received by Head Office ${esc(when(r.receipt.at))}.</p>` : `<p class="small warn">Waiting for Head Office to receive.</p>`}
+      ${r.review
+        ? `<p class="small"><strong>${esc(DECISION_LABEL[r.review.decision])}</strong>: ${esc(r.review.remarks)}
+            <span class="muted">(${r.review.items.map((i) => `${esc(i.productName)} ${formatQty(i.acceptedQuantity)} ok / ${formatQty(i.rejectedQuantity)} rejected`).join(', ')})</span></p>`
+        : r.receipt ? `<p class="small warn">Waiting for review.</p>` : ''}
+      <div class="or-detail-actions">${actions.join('')}</div>
+    </li>`;
+  }
+
+  function renderDetail(): void {
+    const el = $('or-detail')!;
+    const o = selected;
+    if (!o) {
+      el.innerHTML = `<p class="or-empty-detail">Select an order to see its items and history.</p>`;
+      return;
+    }
+    const canDispatch = o.items.some((i) => i.toDispatch > 0) && ['ordered', 'partially_dispatched', 'partially_received'].includes(o.status);
+    const canReceive = o.items.some((i) => i.toReceive > 0);
+    const canReturn = o.items.some((i) => i.damagedToReturn > 0);
+    const acts: string[] = [];
+    if (canWrite && isHeadOffice && canDispatch) acts.push(`<button class="btn-primary-sm" data-act="dispatch">Dispatch stock</button>`);
+    if (canWrite && isBranch && canReceive) acts.push(`<button class="btn-primary-sm" data-act="receive">Receive goods</button>`);
+    if (canWrite && isBranch && canReturn) acts.push(`<button class="btn-ghost-sm" data-act="return">Return damaged</button>`);
+    if (canWrite && o.status === 'ordered') acts.push(`<button class="btn-ghost-sm is-danger" data-act="cancel">${isHeadOffice ? 'Reject order' : 'Cancel order'}</button>`);
+
+    el.innerHTML = `
+      <p class="mono muted">${esc(o.reference)}</p>
+      <h3>${esc(isHeadOffice ? o.branchName : o.headOfficeName)}</h3>
+      <p>${badge(o.status)} <span class="muted small">ordered ${esc(o.createdAt.slice(0, 10))} by ${esc(o.createdByName || '—')}</span></p>
+      ${o.notes ? `<p class="small notes">${esc(o.notes)}</p>` : ''}
+      <div class="or-detail-actions">${acts.join('')}</div>
+
+      <div class="or-table-wrap">
+      <table class="or-table or-mini">
+        <thead><tr><th>Item</th><th class="num">Ordered</th><th class="num">Sent</th><th class="num">Good</th><th class="num">Damaged</th><th class="num">On the way</th></tr></thead>
+        <tbody>${o.items.map((i) => `<tr>
+          <td>${esc(i.productName)}<br /><span class="muted mono">${esc(i.stockNo)}</span></td>
+          <td class="num">${formatQty(i.ordered)}</td>
+          <td class="num">${formatQty(i.dispatched)}</td>
+          <td class="num">${formatQty(i.receivedGood)}</td>
+          <td class="num ${i.receivedDamaged > 0 ? 'warn' : ''}">${formatQty(i.receivedDamaged)}${i.returned > 0 ? `<br /><span class="muted">${formatQty(i.returned)} sent back</span>` : ''}</td>
+          <td class="num">${formatQty(i.toReceive)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+
+      <h4>History</h4>
+      ${o.dispatches.length + o.receipts.length + o.returns.length === 0 ? `<p class="muted small">Nothing has moved yet.</p>` : `
+      <ul class="or-history">
+        ${o.dispatches.map((d) => `<li><p><strong>Dispatched by Head Office</strong> <span class="muted">${esc(when(d.at))} · ${esc(d.by)}</span></p>
+          <p>${d.items.map((i) => `${esc(i.productName)} ×${formatQty(i.quantity)}`).join(', ')}</p>${d.notes ? `<p class="muted">${esc(d.notes)}</p>` : ''}</li>`).join('')}
+        ${o.receipts.map((r) => `<li><p><strong>Received by branch</strong> <span class="muted">${esc(when(r.at))} · ${esc(r.by)}</span></p>
+          <p>${r.items.map((i) => `${esc(i.productName)}: ${formatQty(i.goodQuantity)} good${i.damagedQuantity > 0 ? `, <span class="warn">${formatQty(i.damagedQuantity)} damaged</span>` : ''}`).join('; ')}</p>${r.notes ? `<p class="muted">${esc(r.notes)}</p>` : ''}</li>`).join('')}
+        ${o.returns.map((r) => returnBlock(r)).join('')}
+      </ul>`}
+    `;
+
+    el.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const act = b.dataset.act;
+        if (act === 'dispatch') openDispatch(o);
+        else if (act === 'receive') openReceive(o);
+        else if (act === 'return') openReturn(o);
+        else if (act === 'cancel') openCancel(o);
+      }),
+    );
+    el.querySelectorAll<HTMLButtonElement>('[data-recv-ret]').forEach((b) =>
+      b.addEventListener('click', () => openReceiveReturn(o, Number(b.dataset.recvRet))),
+    );
+    el.querySelectorAll<HTMLButtonElement>('[data-review]').forEach((b) =>
+      b.addEventListener('click', () => openReview(o, Number(b.dataset.review))),
+    );
+  }
+
+  // ---- Generic quantities dialog -------------------------------------
+
+  interface QtyRow {
+    key: number;
+    label: string;
+    hint?: string;
+    fields: { name: string; label: string; value: number; max?: number }[];
+  }
+
+  let qtyHandler: ((values: Map<number, Record<string, number>>, note: string) => Promise<void>) | null = null;
+
+  function openQty(opts: {
+    title: string;
+    sub: string;
+    rows: QtyRow[];
+    noteLabel: string;
+    noteRequired?: boolean;
+    submitLabel: string;
+    onSubmit: (values: Map<number, Record<string, number>>, note: string) => Promise<void>;
+  }): void {
+    $('q-title')!.textContent = opts.title;
+    $('q-sub')!.textContent = opts.sub;
+    $('q-note-label')!.textContent = opts.noteLabel + (opts.noteRequired ? ' *' : '');
+    $<HTMLInputElement>('q-note')!.required = Boolean(opts.noteRequired);
+    $<HTMLInputElement>('q-note')!.value = '';
+    $('q-save')!.textContent = opts.submitLabel;
+    $('q-rows')!.innerHTML = opts.rows
+      .map(
+        (r) => `<div class="or-qrow" data-key="${r.key}">
+          <span>${esc(r.label)}${r.hint ? ` <span class="muted">${esc(r.hint)}</span>` : ''}</span>
+          ${r.fields.map((f) => `<label>${esc(f.label)}<input type="number" data-name="${f.name}" min="0" ${f.max !== undefined ? `max="${f.max}"` : ''} step="0.001" value="${f.value}" /></label>`).join('')}
+        </div>`,
+      )
+      .join('');
+    showError('q-error', null);
+    qtyHandler = opts.onSubmit;
+    dlg('dlg-qty').showModal();
+  }
+
+  $('form-qty')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!qtyHandler) return;
+    const values = new Map<number, Record<string, number>>();
+    document.querySelectorAll<HTMLElement>('#q-rows .or-qrow').forEach((row) => {
+      const rec: Record<string, number> = {};
+      row.querySelectorAll<HTMLInputElement>('input').forEach((i) => (rec[i.dataset.name!] = Number(i.value) || 0));
+      values.set(Number(row.dataset.key), rec);
+    });
+    const handler = qtyHandler;
+    void submit('q-save', 'q-error', 'dlg-qty', () => handler(values, val('q-note').trim()));
+  });
+
+  function openDispatch(o: Order): void {
+    const available = new Map(stock.map((s) => [s.productId, s.quantity]));
+    openQty({
+      title: 'Dispatch stock',
+      sub: `${o.reference} to ${o.branchName}. Check the order, then send what you have. Only good stock is dispatched; you can send the rest later.`,
+      rows: o.items.filter((i) => i.toDispatch > 0).map((i) => {
+        const have = available.get(i.productId) ?? 0;
+        return {
+          key: i.id,
+          label: i.productName,
+          hint: `ordered ${formatQty(i.toDispatch)} more · you have ${formatQty(have)}`,
+          fields: [{ name: 'q', label: 'Send', value: Math.min(i.toDispatch, Math.max(have, 0)), max: i.toDispatch }],
+        };
+      }),
+      noteLabel: 'Note (optional)',
+      submitLabel: 'Dispatch',
+      onSubmit: async (values, note) => {
+        const lines = [...values].map(([itemId, v]) => ({ itemId, quantity: v.q })).filter((l) => l.quantity > 0);
+        if (lines.length === 0) throw new ApiError('Enter a quantity to send.', 400);
+        await dispatchOrder(o.id, lines, note);
+        await refresh(o.id);
+      },
+    });
+  }
+
+  function openReceive(o: Order): void {
+    openQty({
+      title: 'Check and receive goods',
+      sub: `${o.reference}. Count what arrived: good stock is added to your stock, damaged stock is kept apart.`,
+      rows: o.items.filter((i) => i.toReceive > 0).map((i) => ({
+        key: i.id,
+        label: i.productName,
+        hint: `on the way ${formatQty(i.toReceive)}`,
+        fields: [
+          { name: 'good', label: 'Good', value: i.toReceive, max: i.toReceive },
+          { name: 'damaged', label: 'Damaged', value: 0, max: i.toReceive },
+        ],
+      })),
+      noteLabel: 'Note (optional)',
+      submitLabel: 'Add to stock',
+      onSubmit: async (values, note) => {
+        const lines = [...values]
+          .map(([itemId, v]) => ({ itemId, good: v.good, damaged: v.damaged }))
+          .filter((l) => l.good > 0 || l.damaged > 0);
+        if (lines.length === 0) throw new ApiError('Enter what arrived.', 400);
+        await receiveOrder(o.id, lines, note);
+        await refresh(o.id);
+      },
+    });
+  }
+
+  function openReturn(o: Order): void {
+    openQty({
+      title: 'Return damaged stock to Head Office',
+      sub: `${o.reference}. Damaged stock leaves your damaged stock now; Head Office checks it when it arrives. Say why.`,
+      rows: o.items.filter((i) => i.damagedToReturn > 0).map((i) => ({
+        key: i.id,
+        label: i.productName,
+        hint: `damaged ${formatQty(i.damagedToReturn)}`,
+        fields: [{ name: 'q', label: 'Return', value: i.damagedToReturn, max: i.damagedToReturn }],
+      })),
+      noteLabel: 'Reason for return',
+      noteRequired: true,
+      submitLabel: 'Return to Head Office',
+      onSubmit: async (values, note) => {
+        const lines = [...values].map(([itemId, v]) => ({ itemId, quantity: v.q })).filter((l) => l.quantity > 0);
+        if (lines.length === 0) throw new ApiError('Enter a quantity to return.', 400);
+        await returnDamaged(o.id, lines, note);
+        await refresh(o.id);
+      },
+    });
+  }
+
+  function openReceiveReturn(o: Order, batchId: number): void {
+    const batch = o.returns.find((r) => r.id === batchId);
+    if (!batch) return;
+    openQty({
+      title: 'Receive returned goods',
+      sub: `${batch.reference}. Branch note: “${batch.notes}”. Head Office must receive the whole returned quantity.`,
+      rows: batch.items.map((i) => ({
+        key: i.id,
+        label: i.productName,
+        hint: `returned ${formatQty(i.quantity)}`,
+        fields: [{ name: 'q', label: 'Received', value: i.quantity, max: i.quantity }],
+      })),
+      noteLabel: 'Note (optional)',
+      submitLabel: 'Confirm received',
+      onSubmit: async (values, note) => {
+        await receiveReturn(o.id, batchId, [...values].map(([returnItemId, v]) => ({ returnItemId, quantity: v.q })), note);
+        await refresh(o.id);
+      },
+    });
+  }
+
+  function openReview(o: Order, batchId: number): void {
+    const batch = o.returns.find((r) => r.id === batchId);
+    if (!batch?.receipt) return;
+    openQty({
+      title: 'Review returned goods',
+      sub: `${batch.reference}. For each item, how many are accepted and how many are rejected? They must add up to what you received.`,
+      rows: batch.receipt.items.map((i) => ({
+        key: i.id,
+        label: i.productName,
+        hint: `received ${formatQty(i.receivedQuantity)}`,
+        fields: [
+          { name: 'accepted', label: 'Accepted', value: i.receivedQuantity, max: i.receivedQuantity },
+          { name: 'rejected', label: 'Rejected', value: 0, max: i.receivedQuantity },
+        ],
+      })),
+      noteLabel: 'Remarks',
+      noteRequired: true,
+      submitLabel: 'Save review',
+      onSubmit: async (values, note) => {
+        await reviewReturn(
+          o.id,
+          batchId,
+          [...values].map(([receiptItemId, v]) => ({ receiptItemId, accepted: v.accepted, rejected: v.rejected })),
+          note,
+        );
+        await refresh(o.id);
+      },
+    });
+  }
+
+  // ---- Cancel --------------------------------------------------------
+
+  function openCancel(o: Order): void {
+    $('c-sub')!.textContent = `${o.reference}. Only an order that has not been dispatched can be cancelled.`;
+    $<HTMLInputElement>('c-reason')!.value = '';
+    showError('c-error', null);
+    $('form-cancel')!.dataset.id = String(o.id);
+    dlg('dlg-cancel').showModal();
+  }
+
+  $('form-cancel')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = Number($('form-cancel')!.dataset.id);
+    void submit('c-save', 'c-error', 'dlg-cancel', async () => {
+      await cancelOrder(id, val('c-reason').trim());
+      await refresh(id);
+    });
+  });
+
+  // ---- New order -----------------------------------------------------
+
+  const productOptions = () =>
+    `<option value="">Choose product…</option>` +
+    stock.map((s) => `<option value="${s.productId}">${esc(s.stockNo)} · ${esc(s.name)}</option>`).join('');
+
+  function addNewLine(): void {
+    const row = document.createElement('div');
+    row.className = 'or-line';
+    row.innerHTML = `
+      <select class="ln-product" aria-label="Product">${productOptions()}</select>
+      <input class="ln-qty" type="number" min="0.001" step="0.001" value="1" aria-label="Quantity" />
+      <button type="button" class="btn-link is-danger ln-remove" aria-label="Remove">✕</button>`;
+    $('new-lines')!.appendChild(row);
+    row.querySelector('.ln-remove')!.addEventListener('click', () => row.remove());
+  }
+
+  $('or-new')?.addEventListener('click', () => {
+    $('new-lines')!.innerHTML = '';
+    addNewLine();
+    $<HTMLInputElement>('new-notes')!.value = '';
+    showError('new-error', null);
+    dlg('dlg-new').showModal();
+  });
+  $('new-add')?.addEventListener('click', addNewLine);
+
+  $('form-new')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const lines = Array.from(document.querySelectorAll<HTMLElement>('#new-lines .or-line'))
+      .map((r) => ({
+        productId: Number(r.querySelector<HTMLSelectElement>('.ln-product')!.value),
+        quantity: Number(r.querySelector<HTMLInputElement>('.ln-qty')!.value),
+      }))
+      .filter((l) => l.productId);
+    if (lines.length === 0) {
+      showError('new-error', 'Add at least one item.');
+      return;
+    }
+    if (new Set(lines.map((l) => l.productId)).size !== lines.length) {
+      showError('new-error', 'A product can appear only once in an order.');
+      return;
+    }
+    void submit('new-save', 'new-error', 'dlg-new', async () => {
+      const created = await createOrder(lines, val('new-notes'));
+      await refresh(created.id);
+    });
+  });
+
+  // ---- Filters, load -------------------------------------------------
+
+  let timer: number | undefined;
+  $('f-search')?.addEventListener('input', () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => void loadList(), 300);
+  });
+  $('f-status')?.addEventListener('change', () => void loadList());
+  $('or-refresh')?.addEventListener('click', () => void init());
+  document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => void init(), 300));
+
+  async function init(): Promise<void> {
+    const s = getSession();
+    if (s) $('or-scope')!.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
+    isBranch = s?.businessType === 'branch';
+    isHeadOffice = s?.businessType === 'head_office';
+    canWrite = s?.accessMode !== 'read_only';
+    $('or-heading')!.textContent = isHeadOffice ? 'Orders from branches' : 'Stock orders';
+    $('or-new')!.hidden = !(isBranch && canWrite);
+    selected = null;
+    renderDetail();
+    try { stock = await listStock(); } catch { stock = []; }
+    await loadList();
+  }
+
+  void init();
+</script>
+
+<style is:global>
+  .or-page { display: flex; flex-direction: column; gap: 14px; }
+  .or-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .or-toolbar-right { display: flex; gap: 8px; }
+  .or-scope { margin: 0 0 2px; font-size: 0.75rem; color: var(--text-muted); }
+  .or-heading { margin: 0; font-size: 1.05rem; font-weight: 650; letter-spacing: -0.02em; }
+
+  .btn-primary-sm, .btn-ghost-sm { height: 34px; padding: 0 12px; border-radius: 8px; font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer; }
+  .btn-primary-sm { border: none; background: var(--accent); color: #fff; }
+  .btn-primary-sm.is-danger { background: #ef334e; }
+  .btn-primary-sm:disabled { opacity: 0.6; cursor: default; }
+  .btn-ghost-sm { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); }
+  .btn-ghost-sm:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .btn-ghost-sm.is-danger { color: #ef334e; border-color: color-mix(in srgb, #ef334e 35%, var(--border)); }
+  .btn-link { border: none; background: transparent; color: var(--accent); font-family: inherit; font-size: 0.78rem; font-weight: 650; cursor: pointer; padding: 0; }
+  .btn-link.is-danger { color: #ef334e; }
+
+  .or-notice { margin: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-secondary); font-size: 0.8rem; }
+  .or-notice.is-error { color: #ef334e; border-color: rgba(239, 51, 78, 0.4); }
+
+  .or-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 700px) { .or-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .or-kpi { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); }
+  .or-kpi span { display: block; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .or-kpi strong { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+  .or-kpi.is-warn strong { color: #d97706; }
+
+  .or-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); gap: 12px; align-items: start; }
+  @media (max-width: 1000px) { .or-layout { grid-template-columns: 1fr; } }
+  .or-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 12px; }
+  .or-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .or-filters input, .or-filters select { height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; }
+  .or-filters input[type='search'] { flex: 1; min-width: 160px; }
+
+  .or-table-wrap { overflow-x: auto; }
+  .or-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .or-table th, .or-table td { padding: 8px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .or-table th { font-size: 0.66rem; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+  .or-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .or-table .mono, .or-page .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.74rem; }
+  .or-row { cursor: pointer; }
+  .or-row:hover td { background: var(--surface-hover); }
+  .or-row.is-selected td { background: var(--accent-soft); }
+  .or-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
+  .or-foot { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
+  .or-page .muted { color: var(--text-muted); }
+  .or-page .small { font-size: 0.75rem; }
+  .or-page .warn { color: #d97706; }
+  .or-mini { margin-top: 10px; }
+
+  .or-badge { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 650; white-space: nowrap; }
+  .or-badge-ordered { background: rgba(148, 163, 184, 0.18); color: #64748b; }
+  .or-badge-partially_dispatched, .or-badge-partially_received { background: rgba(217, 119, 6, 0.12); color: #d97706; }
+  .or-badge-dispatched { background: rgba(59, 130, 246, 0.14); color: #3b82f6; }
+  .or-badge-received { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .or-badge-cancelled { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+
+  .or-empty-detail { margin: 0; padding: 24px 8px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
+  #or-detail h3 { margin: 2px 0 6px; font-size: 1rem; font-weight: 650; }
+  #or-detail h4 { margin: 14px 0 6px; font-size: 0.78rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
+  #or-detail p { margin: 0 0 4px; font-size: 0.8rem; }
+  #or-detail .notes { padding: 6px 8px; border-radius: 8px; background: var(--surface); }
+  .or-detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+  .or-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .or-history li { padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+
+  .or-dialog { border: none; border-radius: 14px; padding: 0; background: var(--panel-bg); color: var(--text-primary); box-shadow: 0 24px 60px rgba(0,0,0,0.28); max-width: 440px; width: calc(100% - 32px); }
+  .or-dialog.or-wide { max-width: 640px; }
+  .or-dialog::backdrop { background: rgba(8,15,29,0.55); backdrop-filter: blur(4px); }
+  .or-dialog-inner { padding: 20px; max-height: 88vh; overflow-y: auto; }
+  .or-dialog-title { margin: 0 0 6px; font-size: 1rem; font-weight: 650; }
+  .or-sub { margin: 0 0 12px; font-size: 0.8rem; color: var(--text-muted); }
+  .or-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); margin-top: 12px; }
+  .or-field input { height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; }
+  .or-lines-head { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 6px; font-size: 0.85rem; }
+  .or-lines { display: flex; flex-direction: column; gap: 8px; }
+  .or-line { display: grid; grid-template-columns: minmax(0, 2fr) 100px auto; gap: 6px; align-items: center; }
+  .or-line select, .or-line input { height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; min-width: 0; }
+  .or-qrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 0.8rem; }
+  .or-qrow > span { flex: 1 1 200px; }
+  .or-qrow label { display: flex; flex-direction: column; gap: 2px; font-size: 0.66rem; font-weight: 600; color: var(--text-muted); }
+  .or-qrow input { width: 96px; height: 32px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-bg); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; }
+  .or-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
+  .or-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+</style>
