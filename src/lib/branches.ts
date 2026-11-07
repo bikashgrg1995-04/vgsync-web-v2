@@ -1,4 +1,4 @@
-/** Head Office and Branch management (company owner). */
+/** Head Office and branches of the company (read only). A super admin changes them in Django Admin. */
 
 import { api, ApiError } from './api';
 
@@ -15,14 +15,6 @@ export interface BusinessRow {
   email: string;
   isActive: boolean;
   createdAt: string;
-}
-
-export interface BusinessInput {
-  name: string;
-  code?: string;
-  address: string;
-  phone: string;
-  email: string;
 }
 
 interface ApiRow {
@@ -68,38 +60,5 @@ async function all(): Promise<BusinessRow[]> {
 }
 
 export const listBusinesses = all;
-
-export async function createBranch(input: BusinessInput): Promise<BusinessRow> {
-  return toRow(
-    await api<ApiRow>('/businesses/', {
-      method: 'POST',
-      body: {
-        name: input.name.trim(),
-        business_code: (input.code ?? '').trim(),
-        address: input.address.trim(),
-        phone: input.phone.trim(),
-        email: input.email.trim(),
-      },
-    }),
-  );
-}
-
-export async function updateBusiness(id: number, input: BusinessInput): Promise<BusinessRow> {
-  return toRow(
-    await api<ApiRow>(`/businesses/${id}/`, {
-      method: 'PATCH',
-      body: {
-        name: input.name.trim(),
-        address: input.address.trim(),
-        phone: input.phone.trim(),
-        email: input.email.trim(),
-      },
-    }),
-  );
-}
-
-export async function setBranchActive(id: number, active: boolean): Promise<BusinessRow> {
-  return toRow(await api<ApiRow>(`/businesses/${id}/${active ? 'activate' : 'deactivate'}/`, { method: 'POST' }));
-}
 
 export { ApiError };

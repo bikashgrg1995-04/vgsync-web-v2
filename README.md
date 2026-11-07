@@ -136,20 +136,14 @@ Pages build tables and dialogs from script, so their `<style>` blocks are `is:gl
 
 ## Branches
 
-The Branches page (company owner only) uses `/api/v1/businesses/`.
-
-- Lists Head Office and every branch with search and an active/inactive filter.
-- Add a branch (name, code, phone, email, address) and edit details. The code signs people in to the branch, is made upper case, and cannot change.
-- Switch a branch off (its users cannot sign in, nothing is deleted) and switch it on again. Head Office cannot be switched off.
-- "Open" moves you into a branch. Inside a branch the owner is read-only, so adding, editing and switching off need Head Office, and the page offers a "Switch to Head Office" button.
-- Independent businesses have no branches and do not see this page.
+The Branches page (company owner only) lists Head Office and every branch from `/api/v1/businesses/`, with search and an active/inactive filter, and an "Open" button to work inside a branch. It is read-only: only a super admin, in Django Admin, adds a branch, edits a business or switches one off (for example when a subscription is unpaid). A switched-off business cannot sign in. Independent businesses do not see this page.
 
 ## Settings
 
 Settings has four tabs, all on the real API.
 
 - Profile: change your first name, last name, email and phone (`PATCH /auth/me/`). Username, role and home branch are read-only. The photo is kept on this device only.
-- Business (owner only): edit the business name, address, phone and email, and the company name from Head Office. A company owner viewing a branch sees it read-only.
+- Business (owner only): shows the business and company details, read-only. VGSync support changes them.
 - Security: session start, password status and a link to change password.
 - Appearance: light or dark theme on this device.
 

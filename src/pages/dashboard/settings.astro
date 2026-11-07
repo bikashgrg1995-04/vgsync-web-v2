@@ -75,9 +75,8 @@ const navItems = getNavItemsForRole(defaultRole);
       </section>
 
       <section class="settings-panel" data-settings-panel="business">
-        <header class="settings-panel-head"><h2>Business</h2><p>Details shown on your documents. Only the owner can change them.</p></header>
+        <header class="settings-panel-head"><h2>Business</h2><p>Your business details. To change them, contact VGSync support.</p></header>
         <div class="settings-card">
-          <p class="settings-note" id="biz-note" hidden></p>
           <div class="settings-kv">
             <div><span class="kv-label">Working in</span><strong id="biz-active">—</strong></div>
             <div><span class="kv-label">Code</span><strong id="biz-code">—</strong></div>
@@ -90,7 +89,6 @@ const navItems = getNavItemsForRole(defaultRole);
             <label class="settings-field"><span>Email</span><input type="email" id="biz-email" /></label>
           </div>
           <p class="settings-error" id="biz-error" hidden></p>
-          <div class="settings-actions"><button type="button" class="btn-primary" id="save-business">Save business</button></div>
         </div>
       </section>
 
@@ -124,7 +122,7 @@ const navItems = getNavItemsForRole(defaultRole);
   import { getSession, canSwitchBranch, ApiError } from '../../lib/auth';
   import { paintAvatar, setAvatarFromFile, clearAvatar } from '../../lib/avatar';
   import {
-    getMyProfile, saveMyProfile, getBusiness, saveBusiness, getCompanyName, saveCompanyName,
+    getMyProfile, saveMyProfile, getBusiness, getCompanyName,
   } from '../../lib/settings';
 
   const THEME_KEY = 'vgsync-theme';
@@ -239,34 +237,24 @@ const navItems = getNavItemsForRole(defaultRole);
       }
     });
 
-    // Business: owners only.
+    // Business details: owners can look, only VGSync support changes them.
     const isOwner = me.role === 'owner' || me.role === 'branch_owner';
-    const canEdit = isOwner && me.accessMode !== 'read_only';
-    const isCompanyOwner = me.role === 'owner';
     if (isOwner) {
       $('tab-business')!.hidden = false;
       $('biz-active')!.textContent = me.activeBranchName;
       $('biz-code')!.textContent = me.activeBranchCode;
-      const note = $('biz-note')!;
-      const fields = ['biz-company', 'biz-name', 'biz-address', 'biz-phone', 'biz-email'];
-      if (!canEdit) {
-        note.hidden = false;
-        note.textContent = 'You are viewing this branch from Head Office, so it is read-only. Switch to Head Office to edit company details, or open the branch to see its own.';
-        fields.forEach((id) => (input(id).disabled = true));
-        $('save-business')!.hidden = true;
-      }
+      ['biz-company', 'biz-name', 'biz-address', 'biz-phone', 'biz-email'].forEach((id) => (input(id).readOnly = true));
       void (async () => {
         try {
           const [biz, company] = await Promise.all([
             getBusiness(me.activeBusinessId),
-            isCompanyOwner ? getCompanyName() : Promise.resolve(null),
+            me.role === 'owner' ? getCompanyName() : Promise.resolve(null),
           ]);
           input('biz-name').value = biz.name;
           input('biz-address').value = biz.address;
           input('biz-phone').value = biz.phone;
           input('biz-email').value = biz.email;
-          // The company name belongs to the company, so edit it from Head Office.
-          if (company !== null && biz.type === 'head_office') {
+          if (company !== null) {
             $('biz-company-wrap')!.hidden = false;
             input('biz-company').value = company;
           }
@@ -274,27 +262,6 @@ const navItems = getNavItemsForRole(defaultRole);
           setError('biz-error', describe(error));
         }
       })();
-
-      $('save-business')?.addEventListener('click', async () => {
-        const btn = $<HTMLButtonElement>('save-business')!;
-        btn.disabled = true;
-        setError('biz-error', null);
-        try {
-          if (!$('biz-company-wrap')!.hidden) await saveCompanyName(input('biz-company').value);
-          const saved = await saveBusiness(me.activeBusinessId, {
-            name: input('biz-name').value,
-            address: input('biz-address').value,
-            phone: input('biz-phone').value,
-            email: input('biz-email').value,
-          });
-          $('biz-active')!.textContent = saved.name;
-          toast('Business saved');
-        } catch (error) {
-          setError('biz-error', describe(error));
-        } finally {
-          btn.disabled = false;
-        }
-      });
     }
 
     const secSession = $('sec-session');

@@ -78,23 +78,6 @@ export async function getBusiness(id: number): Promise<BusinessInfo> {
   return toBusiness(await api<ApiBusinessInfo>(`/businesses/${id}/`));
 }
 
-export async function saveBusiness(
-  id: number,
-  input: { name: string; address: string; phone: string; email: string },
-): Promise<BusinessInfo> {
-  return toBusiness(
-    await api<ApiBusinessInfo>(`/businesses/${id}/`, {
-      method: 'PATCH',
-      body: {
-        name: input.name.trim(),
-        address: input.address.trim(),
-        phone: input.phone.trim(),
-        email: input.email.trim(),
-      },
-    }),
-  );
-}
-
 /** Company name, for a company owner. Returns null for an independent business. */
 export async function getCompanyName(): Promise<string | null> {
   try {
@@ -103,8 +86,4 @@ export async function getCompanyName(): Promise<string | null> {
     if (error instanceof ApiError && error.status === 409) return null;
     throw error;
   }
-}
-
-export async function saveCompanyName(name: string): Promise<string> {
-  return (await api<{ name: string }>('/company/', { method: 'PATCH', body: { name: name.trim() } })).name;
 }
