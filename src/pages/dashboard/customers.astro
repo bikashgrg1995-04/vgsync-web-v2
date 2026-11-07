@@ -638,7 +638,7 @@ const navItems = getNavItemsForRole(defaultRole);
   refreshProfile().then(applyWriteAccess).catch(() => {});
 </script>
 
-<style>
+<style is:global>
   .cus-page { display: flex; flex-direction: column; gap: 14px; }
 
   .cus-toolbar {
