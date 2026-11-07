@@ -134,6 +134,16 @@ The Overview page is built from the existing APIs, so it shows only what the sig
 
 Pages build tables and dialogs from script, so their `<style>` blocks are `is:global` (Astro's scoped styles would not reach that markup). Keep class names prefixed per page (`cus-`, `sa-`, `pu-`, `rp-`, `py-`).
 
+## Branches
+
+The Branches page (company owner only) uses `/api/v1/businesses/`.
+
+- Lists Head Office and every branch with search and an active/inactive filter.
+- Add a branch (name, code, phone, email, address) and edit details. The code signs people in to the branch, is made upper case, and cannot change.
+- Switch a branch off (its users cannot sign in, nothing is deleted) and switch it on again. Head Office cannot be switched off.
+- "Open" moves you into a branch. Inside a branch the owner is read-only, so adding, editing and switching off need Head Office, and the page offers a "Switch to Head Office" button.
+- Independent businesses have no branches and do not see this page.
+
 ## Settings
 
 Settings has four tabs, all on the real API.
