@@ -122,6 +122,14 @@ The Payments page uses `/api/v1/finance/` and `/api/v1/payroll/` (owner only), i
 - Staff pay: set pay (monthly salary with allowances and salary day, or daily wage), record payments (full, part or advance), add wage, bonus or deduction, and see what is owed, the advance and a statement. Void a payment or entry with a reason.
 - A company owner viewing a branch is read-only. A non-owner sees "only available to the business owner".
 
+## Overview (dashboard home)
+
+The Overview page is built from the existing APIs, so it shows only what the signed-in person may see.
+
+- Everyone with access: today's and this month's sales, pending follow-ups (overdue highlighted), low or out of stock, open stock orders, a 14-day sales chart, and short lists of follow-ups, stock to watch and recent sales.
+- Owner only: this month's money in, money out, cash profit, what customers owe and what is owed to suppliers.
+- It reloads when the branch is switched.
+
 ## Styling note
 
 Pages build tables and dialogs from script, so their `<style>` blocks are `is:global` (Astro's scoped styles would not reach that markup). Keep class names prefixed per page (`cus-`, `sa-`, `pu-`, `rp-`).
