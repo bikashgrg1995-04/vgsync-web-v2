@@ -1,117 +1,164 @@
-import { getSession } from '../lib/auth';
-import { ApiError } from '../lib/api';
+
+import { getSession } from "../lib/auth";
+import { ApiError } from "../lib/api";
 import {
   listStock,
   listMovements,
   createProduct,
   updateProduct,
   deactivateProduct,
-  addMovement,
+  addStockAdjustment,
   getInventorySummary,
   formatNpr,
   formatQty,
   STATUS_LABEL,
   MOVEMENT_LABEL,
-  MANUAL_MOVEMENTS,
+  ADJUSTMENT_OPTIONS,
   type StockItem,
   type MovementType,
-  type StockCondition,
-} from '../lib/inventory';
+  type AdjustmentMode,
+  type AdjustmentReason,
+} from "../lib/inventory";
 
-if (!getSession()) window.location.replace('/');
+if (!getSession()) window.location.replace("/");
 
 const PAGE_SIZE = 25;
+const CATEGORY_PAGE_SIZE = 5;
+const ACTIVITY_PAGE_SIZE = 5;
 
 let items: StockItem[] = [];
 let canAdjust = true;
 let canEditCatalog = true;
+
 let mvPage = 1;
 let mvHasNext = false;
 let mvLoaded = false;
 
-const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+let categoryPage = 1;
+let activityPage = 1;
+let activityHasNext = false;
+let activityCount = 0;
+
+const $ = <T extends HTMLElement>(id: string) =>
+  document.getElementById(id) as T | null;
 
 function esc(s: string): string {
   return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 const FIELD_LABELS: Record<string, string> = {
-  stock_no: 'Stock no',
-  name: 'Name',
-  unit: 'Unit',
-  mrp: 'MRP',
-  purchase_price: 'Purchase price',
-  sale_price: 'Sale price',
-  reorder_level: 'Reorder at',
-  quantity: 'Quantity',
-  product_id: 'Product',
-  movement_type: 'Type',
-  stock_condition: 'Stock',
+  stock_no: "Stock no",
+  name: "Name",
+  unit: "Unit",
+  mrp: "MRP",
+  purchase_price: "Purchase price",
+  sale_price: "Sale price",
+  reorder_level: "Reorder at",
+  quantity: "Quantity",
+  product_id: "Product",
+  movement_type: "Type",
+  stock_condition: "Stock",
+  adjustment_action: "Adjustment type",
+  adjustment_reason: "Reason",
 };
 
 function describe(error: unknown): string {
-  if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+  if (!(error instanceof ApiError)) {
+    return "Something went wrong. Please try again.";
+  }
+
   const entries = Object.entries(error.fields);
+
   if (entries.length > 0 && error.status === 400) {
     return entries
-      .map(([key, msg]) => (FIELD_LABELS[key] ? `${FIELD_LABELS[key]}: ${msg}` : msg))
-      .join(' ');
+      .map(([key, msg]) =>
+        FIELD_LABELS[key] ? `${FIELD_LABELS[key]}: ${msg}` : msg,
+      )
+      .join(" ");
   }
+
   return error.message;
 }
 
-function showNotice(message: string | null, kind: 'info' | 'error' = 'info'): void {
-  const el = $('inv-notice');
+function showNotice(
+  message: string | null,
+  kind: "info" | "error" = "info",
+): void {
+  const el = $("inv-notice");
   if (!el) return;
+
   el.hidden = !message;
-  el.textContent = message ?? '';
-  el.classList.toggle('is-error', kind === 'error');
+  el.textContent = message ?? "";
+  el.classList.toggle("is-error", kind === "error");
 }
 
-function statusBadge(status: string): string {
-  const label = STATUS_LABEL[status as keyof typeof STATUS_LABEL] ?? status;
-  return `<span class="inv-badge inv-badge-${status}">${esc(label)}</span>`;
+function statusBadge(status?: string): string {
+  const safeStatus = status || "unknown";
+
+  const label =
+    STATUS_LABEL[safeStatus as keyof typeof STATUS_LABEL] ?? "Unknown";
+
+  return `<span class="inv-badge inv-badge-${esc(safeStatus)}">${esc(label)}</span>`;
 }
 
 function renderKpis(): void {
   const s = getInventorySummary(items);
+
   const set = (id: string, text: string) => {
     const el = $(id);
     if (el) el.textContent = text;
   };
-  set('kpi-skus', String(s.skuCount));
-  set('kpi-units', formatQty(s.units));
-  set('kpi-value', formatNpr(s.stockValue));
-  set('kpi-low', String(s.lowCount));
-  set('kpi-out', String(s.outCount));
+
+  set("kpi-skus", String(s.skuCount));
+  set("kpi-units", formatQty(s.units));
+  set("kpi-value", formatNpr(s.stockValue));
+  set("kpi-low", String(s.lowCount));
+  set("kpi-out", String(s.outCount));
 }
 
 function fillCategories(): void {
-  const cats = Array.from(new Set(items.map((i) => i.category).filter(Boolean))).sort();
-  const sel = $<HTMLSelectElement>('inv-category');
+  const cats = Array.from(
+    new Set(items.map((i) => i.category).filter(Boolean)),
+  ).sort();
+
+  const sel = $<HTMLSelectElement>("inv-category");
+
   if (sel) {
     const current = sel.value;
+
     sel.innerHTML =
       `<option value="">All Categories</option>` +
-      cats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-    sel.value = cats.includes(current) ? current : '';
+      cats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+
+    sel.value = cats.includes(current) ? current : "";
   }
-  const list = $('prd-category-list');
-  if (list) list.innerHTML = cats.map((c) => `<option value="${esc(c)}"></option>`).join('');
+
+  const list = $("prd-category-list");
+
+  if (list) {
+    list.innerHTML = cats
+      .map((c) => `<option value="${esc(c)}"></option>`)
+      .join("");
+  }
 }
 
 function filteredItems(): StockItem[] {
-  const q = ($<HTMLInputElement>('inv-search')?.value ?? '').trim().toLowerCase();
-  const cat = $<HTMLSelectElement>('inv-category')?.value ?? '';
-  const st = $<HTMLSelectElement>('inv-status')?.value ?? '';
+  const q = ($<HTMLInputElement>("inv-search")?.value ?? "")
+    .trim()
+    .toLowerCase();
+
+  const cat = $<HTMLSelectElement>("inv-category")?.value ?? "";
+  const st = $<HTMLSelectElement>("inv-status")?.value ?? "";
+
   return items.filter((i) => {
     if (cat && i.category !== cat) return false;
     if (st && i.status !== st) return false;
     if (!q) return true;
+
     return (
       i.stockNo.toLowerCase().includes(q) ||
       i.name.toLowerCase().includes(q) ||
@@ -122,331 +169,825 @@ function filteredItems(): StockItem[] {
 }
 
 function renderTable(): void {
-  const tbody = $('inv-tbody');
-  const count = $('inv-count');
+  const tbody = $("inv-tbody");
+  const count = $("inv-count");
+
   if (!tbody) return;
+
   const rows = filteredItems();
+
   if (rows.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="inv-empty">${
-      items.length === 0 ? 'No products yet.' : 'No products match this filter.'
+      items.length === 0
+        ? "No products yet."
+        : "No products match this filter."
     }</td></tr>`;
-    if (count) count.textContent = '0 products';
+
+    if (count) count.textContent = "0 products";
+
     renderCategoryChart();
+    void loadRecentActivity();
     return;
   }
+
   tbody.innerHTML = rows
     .map((i) => {
-      const sub = [i.brand, i.model, i.unit].filter(Boolean).join(' · ');
+      const sub = [i.brand, i.model, i.unit].filter(Boolean).join(" · ");
       const actions: string[] = [];
-      if (canAdjust) actions.push(`<button type="button" class="btn-link" data-adjust="${i.productId}">Adjust</button>`);
-      if (canEditCatalog) {
-        actions.push(`<button type="button" class="btn-link" data-edit="${i.productId}">Edit</button>`);
-        actions.push(`<button type="button" class="btn-link is-danger" data-hide="${i.productId}">Deactivate</button>`);
+
+      if (canAdjust) {
+        actions.push(
+          `<button type="button" class="btn-link" data-adjust="${i.productId}">Adjust</button>`,
+        );
       }
+
+      if (canEditCatalog) {
+        actions.push(
+          `<button type="button" class="btn-link" data-edit="${i.productId}">Edit</button>`,
+        );
+
+        actions.push(
+          `<button type="button" class="btn-link is-danger" data-hide="${i.productId}">Deactivate</button>`,
+        );
+      }
+
       return `<tr>
         <td class="mono">${esc(i.stockNo)}</td>
         <td>
           <div class="inv-prod">
-            <span class="inv-prod-icon" aria-hidden="true">${esc((i.name || '?')[0].toUpperCase())}</span>
+            <div class="inv-prod-image-wrap">
+              <span class="inv-prod-icon">
+                ${esc((i.name || "?")[0].toUpperCase())}
+              </span>
+              ${
+                i.image
+                  ? `<img class="inv-prod-image"
+                      src="${esc(i.image)}"
+                      alt="${esc(i.name)}"
+                      loading="lazy">`
+                  : ""
+              }
+            </div>
+
             <div class="inv-prod-text">
               <strong>${esc(i.name)}</strong>
-              <span>${esc(sub || i.category || '')}</span>
+              <span>${esc(sub || i.category || "")}</span>
             </div>
           </div>
         </td>
+
         <td class="num">
           <strong>${formatQty(i.quantity)}</strong>
-          <span class="inv-unit">${esc(i.unit || 'pcs')}</span>
-          ${i.damagedQuantity > 0 ? `<span class="inv-dmg">+${formatQty(i.damagedQuantity)} dmg</span>` : ''}
+          <span class="inv-unit">${esc(i.unit || "pcs")}</span>
+          ${
+            i.damagedQuantity > 0
+              ? `<span class="inv-dmg">+${formatQty(i.damagedQuantity)} dmg</span>`
+              : ""
+          }
         </td>
+
         <td class="num hide-sm">${formatNpr(i.salePrice)}</td>
         <td>${statusBadge(i.status)}</td>
-        <td class="actions">${actions.join(' ')}</td>
+        <td class="actions">${actions.join(" ")}</td>
       </tr>`;
     })
-    .join('');
-  if (count) count.textContent = `Showing ${rows.length} of ${items.length} items`;
+    .join("");
+
+  if (count) {
+    count.textContent = `Showing ${rows.length} of ${items.length} items`;
+  }
+
   renderCategoryChart();
   void loadRecentActivity();
 
-  tbody.querySelectorAll<HTMLButtonElement>('[data-adjust]').forEach((btn) => {
-    btn.addEventListener('click', () => openAdjust(Number(btn.dataset.adjust)));
+  tbody.querySelectorAll<HTMLButtonElement>("[data-adjust]").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      openAdjust(Number(btn.dataset.adjust)),
+    );
   });
-  tbody.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((btn) => {
-    btn.addEventListener('click', () => openProduct(Number(btn.dataset.edit)));
+
+  tbody.querySelectorAll<HTMLButtonElement>("[data-edit]").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      openProduct(Number(btn.dataset.edit)),
+    );
   });
-  tbody.querySelectorAll<HTMLButtonElement>('[data-hide]').forEach((btn) => {
-    btn.addEventListener('click', () => hideProduct(Number(btn.dataset.hide)));
+
+  tbody.querySelectorAll<HTMLButtonElement>("[data-hide]").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      hideProduct(Number(btn.dataset.hide)),
+    );
   });
 }
 
-const OUT_TYPES: MovementType[] = ['sale_issue', 'purchase_return', 'adjustment_out', 'transfer_out'];
-const CAT_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#06b6d4', '#ef4444', '#64748b'];
+// ==================================================
+// MOVEMENT HELPERS
+// ==================================================
+
+const OUT_TYPES: MovementType[] = [
+  "sale_issue",
+  "purchase_return",
+  "adjustment_out",
+  "transfer_out",
+];
+
+const CAT_COLORS = [
+  "#3b82f6",
+  "#22c55e",
+  "#f59e0b",
+  "#a855f7",
+  "#06b6d4",
+  "#ef4444",
+  "#64748b",
+];
+
+// ==================================================
+// STOCK BY CATEGORY
+// ==================================================
 
 function renderCategoryChart(): void {
-  const legend = $('inv-cat-legend');
-  const donut = document.getElementById('inv-donut');
-  const totalEl = $('inv-cat-total');
+  const legend = $("inv-cat-legend");
+  const donut = $("inv-donut");
+  const totalEl = $("inv-cat-total");
+
   if (!legend || !donut) return;
+
   const map = new Map<string, number>();
+
   for (const i of items) {
-    const key = i.category?.trim() || 'Others';
+    const key = i.category?.trim() || "Others";
     map.set(key, (map.get(key) ?? 0) + i.quantity);
   }
-  const entries = [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
-  const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
-  if (totalEl) totalEl.textContent = formatQty(entries.reduce((s, [, v]) => s + v, 0));
+
+  const entries = [...map.entries()].sort((a, b) => b[1] - a[1]);
+
+  const actualTotal = entries.reduce(
+    (sum, [, qty]) => sum + qty,
+    0,
+  );
+
+  const total = actualTotal || 1;
+
+  if (totalEl) {
+    totalEl.textContent = formatQty(actualTotal);
+  }
+
+  // Donut represents all categories.
   let offset = 0;
   const r = 15.9155;
+
   const circles = entries
     .map(([, qty], idx) => {
       const pct = (qty / total) * 100;
       const dash = `${pct} ${100 - pct}`;
-      const el = `<circle cx="21" cy="21" r="${r}" fill="transparent" stroke="${CAT_COLORS[idx % CAT_COLORS.length]}" stroke-width="3.5" stroke-dasharray="${dash}" stroke-dashoffset="${-offset}" />`;
-      offset += pct;
-      return el;
-    })
-    .join('');
-  donut.innerHTML =
-    `<circle cx="21" cy="21" r="${r}" fill="transparent" stroke="var(--border)" stroke-width="3.5" />` + circles;
-  legend.innerHTML =
-    entries
-      .map(([name, qty], idx) => {
-        const pct = ((qty / total) * 100).toFixed(1);
-        return `<li><span class="dot" style="background:${CAT_COLORS[idx % CAT_COLORS.length]}"></span><span class="name">${esc(name)}</span><span class="pct">${pct}%</span></li>`;
-      })
-      .join('') || '<li class="inv-activity-empty">No categories</li>';
-}
 
-async function loadRecentActivity(): Promise<void> {
-  const list = $('inv-activity');
-  if (!list) return;
-  try {
-    const data = await listMovements(1, {}, 6);
-    if (!data.results.length) {
-      list.innerHTML = '<li class="inv-activity-empty">No recent movements</li>';
-      return;
-    }
-    list.innerHTML = data.results
-      .map((m) => {
-        const isOut = OUT_TYPES.includes(m.type);
-        const isAdj = m.type.startsWith('adjustment');
-        const isTr = m.type.startsWith('transfer');
-        const cls = isTr ? 'is-transfer' : isAdj ? 'is-adjust' : isOut ? 'is-out' : 'is-in';
-        const label = MOVEMENT_LABEL[m.type] ?? m.type;
-        const ago = relativeTime(new Date(m.createdAt));
-        return `<li class="inv-activity-item">
-          <span class="inv-activity-dot ${cls}"></span>
-          <div class="inv-activity-body">
-            <strong>${esc(label)} – ${formatQty(m.quantity)} ${esc(m.productName)}</strong>
-            <span>by ${esc(m.createdByName || 'System')}</span>
-          </div>
-          <time>${esc(ago)}</time>
+      const circle = `<circle
+        cx="21"
+        cy="21"
+        r="${r}"
+        fill="transparent"
+        stroke="${CAT_COLORS[idx % CAT_COLORS.length]}"
+        stroke-width="3.5"
+        stroke-dasharray="${dash}"
+        stroke-dashoffset="${-offset}"
+      />`;
+
+      offset += pct;
+      return circle;
+    })
+    .join("");
+
+  donut.innerHTML =
+    `<circle cx="21" cy="21" r="${r}" fill="transparent" stroke="var(--border)" stroke-width="3.5" />` +
+    circles;
+
+  // Paginated category legend.
+  const totalPages = Math.max(
+    1,
+    Math.ceil(entries.length / CATEGORY_PAGE_SIZE),
+  );
+
+  categoryPage = Math.min(categoryPage, totalPages);
+
+  const start = (categoryPage - 1) * CATEGORY_PAGE_SIZE;
+
+  const visibleEntries = entries.slice(
+    start,
+    start + CATEGORY_PAGE_SIZE,
+  );
+
+  legend.innerHTML =
+    visibleEntries
+      .map(([name, qty], idx) => {
+        const actualIndex = start + idx;
+        const pct = ((qty / total) * 100).toFixed(1);
+
+        return `<li>
+          <span class="dot" style="background:${CAT_COLORS[actualIndex % CAT_COLORS.length]}"></span>
+          <span class="name">${esc(name)}</span>
+          <span class="pct">${pct}%</span>
         </li>`;
       })
-      .join('');
+      .join("") || '<li class="inv-activity-empty">No categories</li>';
+
+  const pager = $("inv-cat-pager");
+  const pageInfo = $("inv-cat-page-info");
+  const prev = $<HTMLButtonElement>("inv-cat-prev");
+  const next = $<HTMLButtonElement>("inv-cat-next");
+
+  if (pager) {
+    pager.hidden = entries.length <= CATEGORY_PAGE_SIZE;
+  }
+
+  if (pageInfo) {
+    pageInfo.textContent = `Page ${categoryPage} of ${totalPages}`;
+  }
+
+  if (prev) prev.disabled = categoryPage <= 1;
+  if (next) next.disabled = categoryPage >= totalPages;
+}
+
+// ==================================================
+// RECENT STOCK ACTIVITIES
+// ==================================================
+
+async function loadRecentActivity(): Promise<void> {
+  const list = $("inv-activity");
+  if (!list) return;
+
+  try {
+    const data = await listMovements(
+      activityPage,
+      {},
+      ACTIVITY_PAGE_SIZE,
+    );
+
+    activityCount = data.count;
+    activityHasNext = data.hasNext;
+
+    // If records were removed and the current page no longer exists,
+    // move back to the last valid page.
+    const totalPages = Math.max(
+      1,
+      Math.ceil(activityCount / ACTIVITY_PAGE_SIZE),
+    );
+
+    if (activityPage > totalPages) {
+      activityPage = totalPages;
+      void loadRecentActivity();
+      return;
+    }
+
+    if (!data.results.length) {
+      list.innerHTML =
+        '<li class="inv-activity-empty">No recent movements</li>';
+    } else {
+      list.innerHTML = data.results
+        .map((m) => {
+          const isOut = OUT_TYPES.includes(m.type);
+          const isAdj = m.type.startsWith("adjustment");
+          const isTr = m.type.startsWith("transfer");
+
+          const cls = isTr
+            ? "is-transfer"
+            : isAdj
+              ? "is-adjust"
+              : isOut
+                ? "is-out"
+                : "is-in";
+
+          const label = MOVEMENT_LABEL[m.type] ?? m.type;
+          const ago = relativeTime(new Date(m.createdAt));
+
+          return `<li class="inv-activity-item">
+            <span class="inv-activity-dot ${cls}"></span>
+
+            <div class="inv-activity-body">
+              <strong>${esc(label)} – ${formatQty(m.quantity)} ${esc(m.productName)}</strong>
+              <span>by ${esc(m.createdByName || "System")}</span>
+            </div>
+
+            <time>${esc(ago)}</time>
+          </li>`;
+        })
+        .join("");
+    }
+
+    const pager = $("inv-act-pager");
+    const pageInfo = $("inv-act-page-info");
+    const prev = $<HTMLButtonElement>("inv-act-prev");
+    const next = $<HTMLButtonElement>("inv-act-next");
+
+    if (pager) {
+      pager.hidden = activityCount <= ACTIVITY_PAGE_SIZE;
+    }
+
+    if (pageInfo) {
+      pageInfo.textContent = `Page ${activityPage} of ${totalPages}`;
+    }
+
+    if (prev) prev.disabled = activityPage <= 1;
+    if (next) next.disabled = !activityHasNext;
   } catch {
-    /* ignore */
+    /* Keep the dashboard usable if activity loading fails. */
   }
 }
 
 function relativeTime(d: Date): string {
   const sec = Math.max(0, (Date.now() - d.getTime()) / 1000);
-  if (sec < 60) return 'just now';
+
+  if (sec < 60) return "just now";
   if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
   if (sec < 86400) return `${Math.floor(sec / 3600)} hr ago`;
+
   return d.toLocaleDateString();
 }
 
 function fillMovementTypes(): void {
-  const sel = $<HTMLSelectElement>('mv-type');
+  const sel = $<HTMLSelectElement>("mv-type");
   if (!sel) return;
+
   sel.innerHTML =
     `<option value="">All types</option>` +
     (Object.keys(MOVEMENT_LABEL) as MovementType[])
-      .map((t) => `<option value="${t}">${esc(MOVEMENT_LABEL[t])}</option>`)
-      .join('');
+      .map(
+        (t) =>
+          `<option value="${t}">${esc(MOVEMENT_LABEL[t])}</option>`,
+      )
+      .join("");
 }
 
 async function loadMovements(): Promise<void> {
-  const tbody = $('moves-tbody');
+  const tbody = $("moves-tbody");
   if (!tbody) return;
+
   try {
     const data = await listMovements(
       mvPage,
       {
-        search: ($<HTMLInputElement>('mv-search')?.value ?? '').trim(),
-        type: ($<HTMLSelectElement>('mv-type')?.value ?? '') as MovementType | '',
-        dateFrom: $<HTMLInputElement>('mv-from')?.value ?? '',
-        dateTo: $<HTMLInputElement>('mv-to')?.value ?? '',
+        search: ($<HTMLInputElement>("mv-search")?.value ?? "").trim(),
+        type: ($<HTMLSelectElement>("mv-type")?.value ?? "") as
+          MovementType | "",
+        dateFrom: $<HTMLInputElement>("mv-from")?.value ?? "",
+        dateTo: $<HTMLInputElement>("mv-to")?.value ?? "",
       },
       PAGE_SIZE,
     );
+
     mvHasNext = data.hasNext;
     mvLoaded = true;
+
     if (data.results.length === 0) {
       tbody.innerHTML = `<tr><td colspan="9" class="inv-empty">No movements found.</td></tr>`;
     } else {
       tbody.innerHTML = data.results
         .map((m) => {
           let when = m.createdAt;
+
           try {
             when = new Date(m.createdAt).toLocaleString();
-          } catch {}
+          } catch {
+            /* keep original */
+          }
+
           const out =
             OUT_TYPES.includes(m.type) ||
-            (m.type === 'reversal' && m.balanceAfter < m.balanceBefore);
-          const sign = out ? '−' : '+';
+            (m.type === "reversal" &&
+              m.balanceAfter < m.balanceBefore);
+
+          const sign = out ? "−" : "+";
+
           return `<tr>
             <td class="muted">${esc(when)}</td>
             <td class="mono">${esc(m.stockNo)}</td>
             <td>${esc(m.productName)}</td>
-            <td><span class="inv-move ${out ? 'inv-move-out' : 'inv-move-in'}">${esc(MOVEMENT_LABEL[m.type] ?? m.type)}</span></td>
-            <td class="hide-sm">${m.condition === 'damaged' ? 'Damaged' : 'Good'}</td>
+            <td>
+              <span class="inv-move ${out ? "inv-move-out" : "inv-move-in"}">
+                ${esc(MOVEMENT_LABEL[m.type] ?? m.type)}
+              </span>
+            </td>
+            <td class="hide-sm">${m.condition === "damaged" ? "Damaged" : "Good"}</td>
             <td class="num">${sign}${formatQty(m.quantity)}</td>
             <td class="num muted hide-sm">${formatQty(m.balanceBefore)} → ${formatQty(m.balanceAfter)}</td>
-            <td class="mono hide-md">${esc(m.reference || '—')}</td>
-            <td class="muted hide-md">${esc(m.createdByName || '—')}</td>
+            <td class="mono hide-md">${esc(m.reference || "—")}</td>
+            <td class="muted hide-md">${esc(m.createdByName || "—")}</td>
           </tr>`;
         })
-        .join('');
+        .join("");
     }
-    const from = data.count === 0 ? 0 : (mvPage - 1) * PAGE_SIZE + 1;
+
+    const from =
+      data.count === 0 ? 0 : (mvPage - 1) * PAGE_SIZE + 1;
+
     const to = Math.min(mvPage * PAGE_SIZE, data.count);
-    const el = $('mv-count');
-    if (el) el.textContent = data.count ? `${from}–${to} of ${data.count}` : '0 movements';
-    ($('mv-prev') as HTMLButtonElement | null)?.toggleAttribute('disabled', mvPage <= 1);
-    ($('mv-next') as HTMLButtonElement | null)?.toggleAttribute('disabled', !mvHasNext);
+    const el = $("mv-count");
+
+    if (el) {
+      el.textContent = data.count
+        ? `${from}–${to} of ${data.count}`
+        : "0 movements";
+    }
+
+    ($("mv-prev") as HTMLButtonElement | null)?.toggleAttribute(
+      "disabled",
+      mvPage <= 1,
+    );
+
+    ($("mv-next") as HTMLButtonElement | null)?.toggleAttribute(
+      "disabled",
+      !mvHasNext,
+    );
   } catch (error) {
     tbody.innerHTML = `<tr><td colspan="9" class="inv-empty">${esc(describe(error))}</td></tr>`;
   }
 }
 
+// ==================================================
+// DATA RELOAD
+// ==================================================
+
 async function reload(): Promise<void> {
   showNotice(null);
+
   try {
     items = await listStock();
+
     fillCategories();
     renderKpis();
     renderTable();
-    if (mvLoaded) void loadMovements();
+
+    if (mvLoaded) {
+      void loadMovements();
+    }
   } catch (error) {
-    showNotice(describe(error), 'error');
+    showNotice(describe(error), "error");
   }
+}
+
+// ==================================================
+// STOCK ADJUSTMENT
+// ==================================================
+
+function updateAdjustmentReasons(): void {
+  const typeSel = $<HTMLSelectElement>("adj-type");
+  const reasonSel = $<HTMLSelectElement>("adj-reason");
+
+  if (!typeSel || !reasonSel) return;
+
+  const selected = ADJUSTMENT_OPTIONS.find(
+    (option) => option.value === typeSel.value,
+  );
+
+  if (!selected) return;
+
+  reasonSel.innerHTML = selected.reasons
+    .map(
+      (reason) =>
+        `<option value="${reason.value}">${esc(reason.label)}</option>`,
+    )
+    .join("");
 }
 
 function openAdjust(productId: number): void {
   const item = items.find((i) => i.productId === productId);
   if (!item) return;
-  ($('adj-id') as HTMLInputElement).value = String(productId);
-  const sub = $('adj-product');
-  if (sub) sub.textContent = `${item.stockNo} · ${item.name}`;
-  const typeSel = $<HTMLSelectElement>('adj-type');
-  if (typeSel) {
-    typeSel.innerHTML = MANUAL_MOVEMENTS.map((m) => `<option value="${m.value}">${esc(m.label)}</option>`).join('');
+
+  ($("adj-id") as HTMLInputElement).value = String(productId);
+
+  const sub = $("adj-product");
+
+  if (sub) {
+    sub.textContent = `${item.stockNo} · ${item.name}`;
   }
-  ($('adj-qty') as HTMLInputElement).value = '1';
-  ($('adj-ref') as HTMLInputElement).value = '';
-  ($('adj-note') as HTMLInputElement).value = '';
-  const err = $('adj-error');
-  if (err) err.hidden = true;
-  ($('inv-adjust-dialog') as HTMLDialogElement | null)?.showModal();
+
+  const typeSel = $<HTMLSelectElement>("adj-type");
+
+  if (typeSel) {
+    typeSel.value = "increase";
+    updateAdjustmentReasons();
+  }
+
+  ($("adj-qty") as HTMLInputElement).value = "1";
+  ($("adj-ref") as HTMLInputElement).value = "";
+  ($("adj-note") as HTMLInputElement).value = "";
+
+  const err = $("adj-error");
+
+  if (err) {
+    err.hidden = true;
+    err.textContent = "";
+  }
+
+  ($("inv-adjust-dialog") as HTMLDialogElement | null)?.showModal();
 }
 
+// ==================================================
+// PRODUCT MANAGEMENT
+// ==================================================
+
 function openProduct(productId?: number): void {
-  const item = productId ? items.find((i) => i.productId === productId) : null;
-  ($('prd-id') as HTMLInputElement).value = item ? String(item.productId) : '';
-  const title = $('prd-title');
-  if (title) title.textContent = item ? 'Edit product' : 'Add product';
-  ($('prd-stock-no') as HTMLInputElement).value = item?.stockNo ?? '';
-  ($('prd-name') as HTMLInputElement).value = item?.name ?? '';
-  ($('prd-brand') as HTMLInputElement).value = item?.brand ?? '';
-  ($('prd-model') as HTMLInputElement).value = item?.model ?? '';
-  ($('prd-category') as HTMLInputElement).value = item?.category ?? '';
-  ($('prd-group') as HTMLInputElement).value = item?.group ?? '';
-  ($('prd-unit') as HTMLInputElement).value = item?.unit || 'pcs';
-  ($('prd-reorder') as HTMLInputElement).value = String(item?.reorderLevel ?? 0);
-  ($('prd-cost') as HTMLInputElement).value = String(item?.purchasePrice ?? 0);
-  ($('prd-sale') as HTMLInputElement).value = String(item?.salePrice ?? 0);
-  ($('prd-mrp') as HTMLInputElement).value = String(item?.mrp ?? 0);
-  const err = $('prd-error');
+  const item = productId
+    ? items.find((i) => i.productId === productId)
+    : null;
+
+  ($("prd-id") as HTMLInputElement).value = item
+    ? String(item.productId)
+    : "";
+
+  const title = $("prd-title");
+
+  if (title) {
+    title.textContent = item ? "Edit product" : "Add product";
+  }
+
+  ($("prd-stock-no") as HTMLInputElement).value = item?.stockNo ?? "";
+  ($("prd-name") as HTMLInputElement).value = item?.name ?? "";
+  ($("prd-brand") as HTMLInputElement).value = item?.brand ?? "";
+  ($("prd-model") as HTMLInputElement).value = item?.model ?? "";
+  ($("prd-category") as HTMLInputElement).value = item?.category ?? "";
+  ($("prd-group") as HTMLInputElement).value = item?.group ?? "";
+  ($("prd-unit") as HTMLInputElement).value = item?.unit || "pcs";
+
+  ($("prd-reorder") as HTMLInputElement).value = String(
+    item?.reorderLevel ?? 0,
+  );
+
+  ($("prd-cost") as HTMLInputElement).value = String(
+    item?.purchasePrice ?? 0,
+  );
+
+  ($("prd-sale") as HTMLInputElement).value = String(
+    item?.salePrice ?? 0,
+  );
+
+  ($("prd-mrp") as HTMLInputElement).value = String(
+    item?.mrp ?? 0,
+  );
+
+  const err = $("prd-error");
+
   if (err) err.hidden = true;
-  ($('inv-product-dialog') as HTMLDialogElement | null)?.showModal();
+
+  ($("inv-product-dialog") as HTMLDialogElement | null)?.showModal();
 }
 
 async function hideProduct(productId: number): Promise<void> {
   const item = items.find((i) => i.productId === productId);
   if (!item) return;
-  if (!confirm(`Deactivate ${item.name}? Stock history stays; product is hidden from lists.`)) return;
+
+  if (
+    !confirm(
+      `Deactivate ${item.name}? Stock history stays; product is hidden from lists.`,
+    )
+  ) {
+    return;
+  }
+
   try {
     await deactivateProduct(productId);
     await reload();
   } catch (error) {
-    showNotice(describe(error), 'error');
+    showNotice(describe(error), "error");
   }
 }
 
-function showPanel(name: 'stock' | 'moves'): void {
-  document.querySelectorAll('[data-inv-panel]').forEach((p) => {
+// ==================================================
+// PANEL NAVIGATION
+// ==================================================
+
+function showPanel(name: "stock" | "moves"): void {
+  document.querySelectorAll("[data-inv-panel]").forEach((p) => {
     const el = p as HTMLElement;
-    el.classList.toggle('is-active', el.dataset.invPanel === name);
+    el.classList.toggle("is-active", el.dataset.invPanel === name);
   });
-  if (name === 'moves' && !mvLoaded) void loadMovements();
+
+  if (name === "moves" && !mvLoaded) {
+    void loadMovements();
+  }
 }
 
-$('inv-search')?.addEventListener('input', () => renderTable());
-$('inv-category')?.addEventListener('change', () => renderTable());
-$('inv-status')?.addEventListener('change', () => {
-  const sel = $<HTMLSelectElement>('inv-status');
-  $('inv-low-filter')?.classList.toggle('is-active', sel?.value === 'low');
-  renderTable();
-});
-$('inv-add')?.addEventListener('click', () => openProduct());
-$('inv-low-filter')?.addEventListener('click', () => {
-  const sel = $<HTMLSelectElement>('inv-status');
-  if (!sel) return;
-  const on = sel.value !== 'low';
-  sel.value = on ? 'low' : '';
-  $('inv-low-filter')?.classList.toggle('is-active', on);
-  renderTable();
-});
-$('inv-view-moves')?.addEventListener('click', () => showPanel('moves'));
-$('inv-back-stock')?.addEventListener('click', () => showPanel('stock'));
+// ==================================================
+// EVENT LISTENERS
+// ==================================================
 
-$('mv-prev')?.addEventListener('click', () => {
+$("inv-search")?.addEventListener("input", () => renderTable());
+
+$("inv-category")?.addEventListener("change", () => renderTable());
+
+$("inv-status")?.addEventListener("change", () => {
+  const sel = $<HTMLSelectElement>("inv-status");
+
+  $("inv-low-filter")?.classList.toggle(
+    "is-active",
+    sel?.value === "low",
+  );
+
+  renderTable();
+});
+
+$("inv-add")?.addEventListener("click", () => openProduct());
+
+$("inv-low-filter")?.addEventListener("click", () => {
+  const sel = $<HTMLSelectElement>("inv-status");
+  if (!sel) return;
+
+  const on = sel.value !== "low";
+
+  sel.value = on ? "low" : "";
+
+  $("inv-low-filter")?.classList.toggle("is-active", on);
+
+  renderTable();
+});
+
+$("inv-view-moves")?.addEventListener("click", () =>
+  showPanel("moves"),
+);
+
+$("inv-back-stock")?.addEventListener("click", () =>
+  showPanel("stock"),
+);
+
+// Category pagination
+
+$("inv-cat-prev")?.addEventListener("click", () => {
+  if (categoryPage <= 1) return;
+
+  categoryPage -= 1;
+  renderCategoryChart();
+});
+
+$("inv-cat-next")?.addEventListener("click", () => {
+  categoryPage += 1;
+  renderCategoryChart();
+});
+
+// Recent activity pagination
+
+$("inv-act-prev")?.addEventListener("click", () => {
+  if (activityPage <= 1) return;
+
+  activityPage -= 1;
+  void loadRecentActivity();
+});
+
+$("inv-act-next")?.addEventListener("click", () => {
+  if (!activityHasNext) return;
+
+  activityPage += 1;
+  void loadRecentActivity();
+});
+
+// Movement pagination
+
+$("mv-prev")?.addEventListener("click", () => {
   if (mvPage > 1) {
     mvPage -= 1;
     void loadMovements();
   }
 });
-$('mv-next')?.addEventListener('click', () => {
+
+$("mv-next")?.addEventListener("click", () => {
   if (mvHasNext) {
     mvPage += 1;
     void loadMovements();
   }
 });
-['mv-search', 'mv-type', 'mv-from', 'mv-to'].forEach((id) => {
-  $(id)?.addEventListener('change', () => {
+
+["mv-search", "mv-type", "mv-from", "mv-to"].forEach((id) => {
+  $(id)?.addEventListener("change", () => {
     mvPage = 1;
     void loadMovements();
   });
 });
 
-$('adj-cancel')?.addEventListener('click', () => ($('inv-adjust-dialog') as HTMLDialogElement)?.close());
-$('inv-adjust-form')?.addEventListener('submit', async (e) => {
+// Adjustment dialog
+
+$("adj-type")?.addEventListener("change", () => {
+  updateAdjustmentReasons();
+});
+
+$("adj-cancel")?.addEventListener("click", () =>
+  ($("inv-adjust-dialog") as HTMLDialogElement)?.close(),
+);
+
+$("inv-adjust-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const err = $('adj-error');
-  if (err) err.hidden = true;
+
+  const err = $("adj-error");
+  const submit = $<HTMLButtonElement>("adj-submit");
+
+  if (err) {
+    err.hidden = true;
+    err.textContent = "";
+  }
+
+  const mode = (
+    $("adj-type") as HTMLSelectElement
+  ).value as AdjustmentMode;
+
+  const reason = (
+    $("adj-reason") as HTMLSelectElement
+  ).value as AdjustmentReason;
+
+  const actionMap: Record<
+    AdjustmentMode,
+    "increase" | "decrease" | "remove_damaged"
+  > = {
+    increase: "increase",
+    decrease: "decrease",
+    mark_damaged: "decrease",
+    remove_damaged: "remove_damaged",
+  };
+
+  const quantity = Number(
+    ($("adj-qty") as HTMLInputElement).value,
+  );
+
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    if (err) {
+      err.hidden = false;
+      err.textContent = "Enter a valid quantity greater than zero.";
+    }
+
+    return;
+  }
+
+  if (submit) submit.disabled = true;
+
   try {
-    await addMovement({
-      productId: Number(($('adj-id') as HTMLInputElement).value),
-      type: ($('adj-type') as HTMLSelectElement).value as MovementType,
-      condition: ($('adj-condition') as HTMLSelectElement).value as StockCondition,
-      quantity: Number(($('adj-qty') as HTMLInputElement).value),
-      reference: ($('adj-ref') as HTMLInputElement).value,
-      notes: ($('adj-note') as HTMLInputElement).value,
+    await addStockAdjustment({
+      productId: Number(
+        ($("adj-id") as HTMLInputElement).value,
+      ),
+      action: actionMap[mode],
+      reason,
+      quantity,
+      reference: ($("adj-ref") as HTMLInputElement).value,
+      notes: ($("adj-note") as HTMLInputElement).value,
     });
-    ($('inv-adjust-dialog') as HTMLDialogElement)?.close();
+
+    ($("inv-adjust-dialog") as HTMLDialogElement)?.close();
+
+    // Start activity at the newest page after a new movement.
+    activityPage = 1;
+
+    await reload();
+  } catch (error) {
+    if (err) {
+      err.hidden = false;
+      err.textContent = describe(error);
+    }
+  } finally {
+    if (submit) submit.disabled = false;
+  }
+});
+
+// Product dialog
+
+$("prd-cancel")?.addEventListener("click", () =>
+  ($("inv-product-dialog") as HTMLDialogElement)?.close(),
+);
+
+$("inv-product-form")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const err = $("prd-error");
+
+  if (err) err.hidden = true;
+
+  const id = ($("prd-id") as HTMLInputElement).value;
+
+  const body = {
+    stockNo: ($("prd-stock-no") as HTMLInputElement).value,
+    name: ($("prd-name") as HTMLInputElement).value,
+    brand: ($("prd-brand") as HTMLInputElement).value,
+    model: ($("prd-model") as HTMLInputElement).value,
+    category: ($("prd-category") as HTMLInputElement).value,
+    group: ($("prd-group") as HTMLInputElement).value,
+    unit: ($("prd-unit") as HTMLInputElement).value,
+    reorderLevel: Number(
+      ($("prd-reorder") as HTMLInputElement).value,
+    ),
+    purchasePrice: Number(
+      ($("prd-cost") as HTMLInputElement).value,
+    ),
+    salePrice: Number(
+      ($("prd-sale") as HTMLInputElement).value,
+    ),
+    mrp: Number(
+      ($("prd-mrp") as HTMLInputElement).value,
+    ),
+  };
+
+  try {
+    if (id) {
+      await updateProduct(Number(id), body);
+    } else {
+      await createProduct(body);
+    }
+
+    ($("inv-product-dialog") as HTMLDialogElement)?.close();
+
     await reload();
   } catch (error) {
     if (err) {
@@ -456,63 +997,51 @@ $('inv-adjust-form')?.addEventListener('submit', async (e) => {
   }
 });
 
-$('prd-cancel')?.addEventListener('click', () => ($('inv-product-dialog') as HTMLDialogElement)?.close());
-$('inv-product-form')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const err = $('prd-error');
-  if (err) err.hidden = true;
-  const id = ($('prd-id') as HTMLInputElement).value;
-  const body = {
-    stockNo: ($('prd-stock-no') as HTMLInputElement).value,
-    name: ($('prd-name') as HTMLInputElement).value,
-    brand: ($('prd-brand') as HTMLInputElement).value,
-    model: ($('prd-model') as HTMLInputElement).value,
-    category: ($('prd-category') as HTMLInputElement).value,
-    group: ($('prd-group') as HTMLInputElement).value,
-    unit: ($('prd-unit') as HTMLInputElement).value,
-    reorderLevel: Number(($('prd-reorder') as HTMLInputElement).value),
-    purchasePrice: Number(($('prd-cost') as HTMLInputElement).value),
-    salePrice: Number(($('prd-sale') as HTMLInputElement).value),
-    mrp: Number(($('prd-mrp') as HTMLInputElement).value),
-  };
-  try {
-    if (id) await updateProduct(Number(id), body);
-    else await createProduct(body);
-    ($('inv-product-dialog') as HTMLDialogElement)?.close();
-    await reload();
-  } catch (error) {
-    if (err) {
-      err.hidden = false;
-      err.textContent = describe(error);
-    }
-  }
-});
+// ==================================================
+// ROLE / PERMISSION INITIALIZATION
+// ==================================================
 
 try {
   const session = getSession();
-  const role = session?.user?.role;
-  canEditCatalog = role === 'owner' || role === 'headoffice';
+  const role = session?.role;
+
+  canEditCatalog = role === "owner" || role === "headoffice";
+
   const viewingBranchAsHO =
-    role === 'owner' &&
-    session?.activeBusiness?.type === 'branch' &&
-    session?.activeBusiness?.isCompanyOwned;
+    role === "owner" &&
+    session?.businessType === "branch" &&
+    session?.accessMode === "read_only";
+
   if (viewingBranchAsHO) {
     canAdjust = false;
     canEditCatalog = false;
-    showNotice('Read-only: you are viewing this branch from Head Office.');
+
+    showNotice(
+      "Read-only: you are viewing this branch from Head Office.",
+    );
   }
-  const addBtn = $('inv-add');
-  if (addBtn) addBtn.hidden = !canEditCatalog;
+
+  const addBtn = $("inv-add");
+
+  if (addBtn) {
+    addBtn.hidden = !canEditCatalog;
+  }
 } catch {
   /* ignore */
 }
 
-// Always start on All Status so products are visible
+// Always start on All Status so products are visible.
 {
-  const sel = $<HTMLSelectElement>('inv-status');
-  if (sel) sel.value = '';
-  $('inv-low-filter')?.classList.remove('is-active');
+  const sel = $<HTMLSelectElement>("inv-status");
+
+  if (sel) sel.value = "";
+
+  $("inv-low-filter")?.classList.remove("is-active");
 }
+
+// ==================================================
+// INITIALIZATION
+// ==================================================
 
 fillMovementTypes();
 void reload();

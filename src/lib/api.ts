@@ -12,7 +12,7 @@
 import { clearAuth, readAuth, writeAuth } from './session-store';
 
 export const API_BASE = (
-  import.meta.env.PUBLIC_API_URL ?? 'http://localhost:8000/api/v1'
+  import.meta.env.PUBLIC_API_URL ?? 'http://127.0.0.1:8000/api/v1'
 ).replace(/\/+$/, '');
 
 export class ApiError extends Error {
