@@ -181,7 +181,6 @@ function renderTable(): void {
 }
 
 const OUT_TYPES: MovementType[] = ['sale_issue', 'purchase_return', 'adjustment_out', 'transfer_out'];
-
 const CAT_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#a855f7', '#06b6d4', '#ef4444', '#64748b'];
 
 function renderCategoryChart(): void {
@@ -189,7 +188,6 @@ function renderCategoryChart(): void {
   const donut = document.getElementById('inv-donut');
   const totalEl = $('inv-cat-total');
   if (!legend || !donut) return;
-
   const map = new Map<string, number>();
   for (const i of items) {
     const key = i.category?.trim() || 'Others';
@@ -198,7 +196,6 @@ function renderCategoryChart(): void {
   const entries = [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
   const total = entries.reduce((s, [, v]) => s + v, 0) || 1;
   if (totalEl) totalEl.textContent = formatQty(entries.reduce((s, [, v]) => s + v, 0));
-
   let offset = 0;
   const r = 15.9155;
   const circles = entries
@@ -212,7 +209,6 @@ function renderCategoryChart(): void {
     .join('');
   donut.innerHTML =
     `<circle cx="21" cy="21" r="${r}" fill="transparent" stroke="var(--border)" stroke-width="3.5" />` + circles;
-
   legend.innerHTML =
     entries
       .map(([name, qty], idx) => {
@@ -288,7 +284,6 @@ async function loadMovements(): Promise<void> {
     );
     mvHasNext = data.hasNext;
     mvLoaded = true;
-
     if (data.results.length === 0) {
       tbody.innerHTML = `<tr><td colspan="9" class="inv-empty">No movements found.</td></tr>`;
     } else {
@@ -298,7 +293,9 @@ async function loadMovements(): Promise<void> {
           try {
             when = new Date(m.createdAt).toLocaleString();
           } catch {}
-          const out = OUT_TYPES.includes(m.type) || (m.type === 'reversal' && m.balanceAfter < m.balanceBefore);
+          const out =
+            OUT_TYPES.includes(m.type) ||
+            (m.type === 'reversal' && m.balanceAfter < m.balanceBefore);
           const sign = out ? '−' : '+';
           return `<tr>
             <td class="muted">${esc(when)}</td>
@@ -389,33 +386,32 @@ async function hideProduct(productId: number): Promise<void> {
   }
 }
 
-// Tabs
-document.querySelectorAll<HTMLButtonElement>('[data-inv-tab]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const tab = btn.dataset.invTab;
-    document.querySelectorAll('[data-inv-tab]').forEach((b) => b.classList.toggle('is-active', b === btn));
-    document.querySelectorAll('[data-inv-panel]').forEach((p) => {
-      p.classList.toggle('is-active', (p as HTMLElement).dataset.invPanel === tab);
-    });
-    if (tab === 'moves' && !mvLoaded) void loadMovements();
+function showPanel(name: 'stock' | 'moves'): void {
+  document.querySelectorAll('[data-inv-panel]').forEach((p) => {
+    const el = p as HTMLElement;
+    el.classList.toggle('is-active', el.dataset.invPanel === name);
   });
-});
+  if (name === 'moves' && !mvLoaded) void loadMovements();
+}
 
-$('inv-refresh')?.addEventListener('click', () => void reload());
 $('inv-search')?.addEventListener('input', () => renderTable());
 $('inv-category')?.addEventListener('change', () => renderTable());
-$('inv-status')?.addEventListener('change', () => renderTable());
+$('inv-status')?.addEventListener('change', () => {
+  const sel = $<HTMLSelectElement>('inv-status');
+  $('inv-low-filter')?.classList.toggle('is-active', sel?.value === 'low');
+  renderTable();
+});
 $('inv-add')?.addEventListener('click', () => openProduct());
 $('inv-low-filter')?.addEventListener('click', () => {
   const sel = $<HTMLSelectElement>('inv-status');
-  if (sel) {
-    sel.value = sel.value === 'low' ? '' : 'low';
-    renderTable();
-  }
+  if (!sel) return;
+  const on = sel.value !== 'low';
+  sel.value = on ? 'low' : '';
+  $('inv-low-filter')?.classList.toggle('is-active', on);
+  renderTable();
 });
-$('inv-view-moves')?.addEventListener('click', () => {
-  document.querySelector<HTMLButtonElement>('[data-inv-tab="moves"]')?.click();
-});
+$('inv-view-moves')?.addEventListener('click', () => showPanel('moves'));
+$('inv-back-stock')?.addEventListener('click', () => showPanel('stock'));
 
 $('mv-prev')?.addEventListener('click', () => {
   if (mvPage > 1) {
@@ -429,21 +425,11 @@ $('mv-next')?.addEventListener('click', () => {
     void loadMovements();
   }
 });
-$('mv-search')?.addEventListener('change', () => {
-  mvPage = 1;
-  void loadMovements();
-});
-$('mv-type')?.addEventListener('change', () => {
-  mvPage = 1;
-  void loadMovements();
-});
-$('mv-from')?.addEventListener('change', () => {
-  mvPage = 1;
-  void loadMovements();
-});
-$('mv-to')?.addEventListener('change', () => {
-  mvPage = 1;
-  void loadMovements();
+['mv-search', 'mv-type', 'mv-from', 'mv-to'].forEach((id) => {
+  $(id)?.addEventListener('change', () => {
+    mvPage = 1;
+    void loadMovements();
+  });
 });
 
 $('adj-cancel')?.addEventListener('click', () => ($('inv-adjust-dialog') as HTMLDialogElement)?.close());
@@ -502,13 +488,14 @@ $('inv-product-form')?.addEventListener('submit', async (e) => {
   }
 });
 
-// Permissions from session (best-effort; server enforces)
 try {
   const session = getSession();
   const role = session?.user?.role;
   canEditCatalog = role === 'owner' || role === 'headoffice';
   const viewingBranchAsHO =
-    role === 'owner' && session?.activeBusiness?.type === 'branch' && session?.activeBusiness?.isCompanyOwned;
+    role === 'owner' &&
+    session?.activeBusiness?.type === 'branch' &&
+    session?.activeBusiness?.isCompanyOwned;
   if (viewingBranchAsHO) {
     canAdjust = false;
     canEditCatalog = false;
@@ -518,6 +505,13 @@ try {
   if (addBtn) addBtn.hidden = !canEditCatalog;
 } catch {
   /* ignore */
+}
+
+// Always start on All Status so products are visible
+{
+  const sel = $<HTMLSelectElement>('inv-status');
+  if (sel) sel.value = '';
+  $('inv-low-filter')?.classList.remove('is-active');
 }
 
 fillMovementTypes();
