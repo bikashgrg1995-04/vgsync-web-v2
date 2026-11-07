@@ -24,11 +24,7 @@ const navItems = getNavItemsForRole(defaultRole);
   <div class="settings-page" id="settings-page">
     <nav class="settings-nav" aria-label="Settings sections">
       <button type="button" class="settings-nav-item is-active" data-settings-tab="profile">Profile</button>
-      <button type="button" class="settings-nav-item" data-settings-tab="organization">Organization</button>
-      <button type="button" class="settings-nav-item" data-settings-tab="branch">Branch</button>
-      <button type="button" class="settings-nav-item" data-settings-tab="inventory">Inventory</button>
-      <button type="button" class="settings-nav-item" data-settings-tab="regional">Regional</button>
-      <button type="button" class="settings-nav-item" data-settings-tab="notifications">Notifications</button>
+      <button type="button" class="settings-nav-item" data-settings-tab="business" id="tab-business" hidden>Business</button>
       <button type="button" class="settings-nav-item" data-settings-tab="security">Security</button>
       <button type="button" class="settings-nav-item" data-settings-tab="appearance">Appearance</button>
     </nav>
@@ -58,97 +54,43 @@ const navItems = getNavItemsForRole(defaultRole);
                 <button type="button" class="btn-ghost" id="avatar-change">Change photo</button>
                 <button type="button" class="btn-ghost is-danger" id="avatar-remove">Remove</button>
               </div>
-              <p class="settings-avatar-hint" id="avatar-hint">JPG, PNG or WebP · max 512 KB</p>
+              <p class="settings-avatar-hint" id="avatar-hint">JPG, PNG or WebP · max 512 KB · kept on this device</p>
             </div>
           </div>
 
           <div class="settings-grid">
-            <label class="settings-field"><span>Display name</span><input type="text" id="set-display-name" autocomplete="name" /></label>
+            <label class="settings-field"><span>First name</span><input type="text" id="set-first" autocomplete="given-name" maxlength="150" /></label>
+            <label class="settings-field"><span>Last name</span><input type="text" id="set-last" autocomplete="family-name" maxlength="150" /></label>
+            <label class="settings-field"><span>Email</span><input type="email" id="set-email" autocomplete="email" /></label>
+            <label class="settings-field"><span>Phone</span><input type="tel" id="set-phone" autocomplete="tel" maxlength="20" /></label>
             <label class="settings-field"><span>Username</span><input type="text" id="set-username" readonly /></label>
             <label class="settings-field"><span>Role</span><input type="text" id="set-role" readonly /></label>
-            <label class="settings-field"><span>Home branch</span><input type="text" id="set-home-branch" readonly /></label>
+            <label class="settings-field settings-field-span2"><span>Home branch</span><input type="text" id="set-home-branch" readonly /></label>
           </div>
-
+          <p class="settings-error" id="profile-error" hidden></p>
           <div class="settings-actions">
             <button type="button" class="btn-primary" id="save-profile">Save profile</button>
           </div>
         </div>
       </section>
 
-      <section class="settings-panel" data-settings-panel="organization">
-        <header class="settings-panel-head"><h2>Organization</h2><p>Tenant company details for invoices and reports.</p></header>
+      <section class="settings-panel" data-settings-panel="business">
+        <header class="settings-panel-head"><h2>Business</h2><p>Details shown on your documents. Only the owner can change them.</p></header>
         <div class="settings-card">
-          <div class="settings-grid">
-            <label class="settings-field settings-field-span2"><span>Legal name</span><input type="text" id="org-name" placeholder="VG Automobiles Pvt. Ltd." /></label>
-            <label class="settings-field"><span>Trade name</span><input type="text" id="org-trade" placeholder="VGSync" /></label>
-            <label class="settings-field"><span>PAN / VAT</span><input type="text" id="org-tax" /></label>
-            <label class="settings-field settings-field-span2"><span>Registered address</span><input type="text" id="org-address" placeholder="Kathmandu, Nepal" /></label>
-            <label class="settings-field"><span>Phone</span><input type="tel" id="org-phone" /></label>
-            <label class="settings-field"><span>Email</span><input type="email" id="org-email" /></label>
-          </div>
-          <div class="settings-actions"><button type="button" class="btn-primary" id="save-org">Save organization</button></div>
-        </div>
-      </section>
-
-      <section class="settings-panel" data-settings-panel="branch">
-        <header class="settings-panel-head"><h2>Branch context</h2><p>Working branch for inventory and sales.</p></header>
-        <div class="settings-card">
+          <p class="settings-note" id="biz-note" hidden></p>
           <div class="settings-kv">
-            <div><span class="kv-label">Active branch</span><strong id="branch-active-name">—</strong></div>
-            <div><span class="kv-label">Code</span><strong id="branch-active-code">—</strong></div>
-            <div><span class="kv-label">Home branch</span><strong id="branch-home-name">—</strong></div>
-            <div><span class="kv-label">Access</span><strong id="branch-access">—</strong></div>
+            <div><span class="kv-label">Working in</span><strong id="biz-active">—</strong></div>
+            <div><span class="kv-label">Code</span><strong id="biz-code">—</strong></div>
           </div>
           <div class="settings-grid" style="margin-top:14px">
-            <label class="settings-field"><span>Default warehouse code</span><input type="text" id="branch-warehouse" placeholder="WH-01" /></label>
-            <label class="settings-field"><span>Branch phone</span><input type="tel" id="branch-phone" /></label>
+            <label class="settings-field settings-field-span2" id="biz-company-wrap" hidden><span>Company name</span><input type="text" id="biz-company" maxlength="150" /></label>
+            <label class="settings-field settings-field-span2"><span>Business name</span><input type="text" id="biz-name" maxlength="150" /></label>
+            <label class="settings-field settings-field-span2"><span>Address</span><input type="text" id="biz-address" /></label>
+            <label class="settings-field"><span>Phone</span><input type="tel" id="biz-phone" maxlength="20" /></label>
+            <label class="settings-field"><span>Email</span><input type="email" id="biz-email" /></label>
           </div>
-          <div class="settings-actions"><button type="button" class="btn-primary" id="save-branch">Save branch prefs</button></div>
-        </div>
-      </section>
-
-      <section class="settings-panel" data-settings-panel="inventory">
-        <header class="settings-panel-head"><h2>Inventory defaults</h2><p>Defaults for stock documents.</p></header>
-        <div class="settings-card">
-          <div class="settings-grid">
-            <label class="settings-field"><span>Default unit</span><select id="inv-unit"><option value="pcs">Pieces</option><option value="set">Set</option><option value="box">Box</option><option value="kg">kg</option></select></label>
-            <label class="settings-field"><span>Low stock alert qty</span><input type="number" id="inv-low-stock" min="0" value="5" /></label>
-            <label class="settings-field"><span>SKU prefix</span><input type="text" id="inv-sku-prefix" placeholder="VG-" /></label>
-            <label class="settings-field"><span>Costing method</span><select id="inv-costing"><option value="avg">Weighted average</option><option value="fifo">FIFO</option><option value="last">Last purchase</option></select></label>
-          </div>
-          <div class="settings-toggles">
-            <label class="settings-toggle"><input type="checkbox" id="inv-allow-negative" /><span>Allow negative stock</span></label>
-            <label class="settings-toggle"><input type="checkbox" id="inv-batch" checked /><span>Track batch / lot</span></label>
-            <label class="settings-toggle"><input type="checkbox" id="inv-serial" /><span>Track serial numbers</span></label>
-          </div>
-          <div class="settings-actions"><button type="button" class="btn-primary" id="save-inventory">Save inventory</button></div>
-        </div>
-      </section>
-
-      <section class="settings-panel" data-settings-panel="regional">
-        <header class="settings-panel-head"><h2>Regional</h2><p>Currency and calendar formats.</p></header>
-        <div class="settings-card">
-          <div class="settings-grid">
-            <label class="settings-field"><span>Currency</span><select id="reg-currency"><option value="NPR">NPR</option><option value="INR">INR</option><option value="USD">USD</option></select></label>
-            <label class="settings-field"><span>Timezone</span><select id="reg-tz"><option value="Asia/Kathmandu">Asia/Kathmandu</option><option value="Asia/Kolkata">Asia/Kolkata</option><option value="UTC">UTC</option></select></label>
-            <label class="settings-field"><span>Date format</span><select id="reg-date"><option value="YYYY-MM-DD">YYYY-MM-DD</option><option value="DD/MM/YYYY">DD/MM/YYYY</option></select></label>
-            <label class="settings-field"><span>Fiscal year start</span><select id="reg-fiscal"><option value="shrawan">Shrawan</option><option value="april">April</option><option value="january">January</option></select></label>
-          </div>
-          <div class="settings-actions"><button type="button" class="btn-primary" id="save-regional">Save regional</button></div>
-        </div>
-      </section>
-
-      <section class="settings-panel" data-settings-panel="notifications">
-        <header class="settings-panel-head"><h2>Notifications</h2><p>Operational alerts.</p></header>
-        <div class="settings-card">
-          <div class="settings-toggles">
-            <label class="settings-toggle"><input type="checkbox" id="ntf-low-stock" checked /><span>Low stock alerts</span></label>
-            <label class="settings-toggle"><input type="checkbox" id="ntf-purchase" checked /><span>Purchase updates</span></label>
-            <label class="settings-toggle"><input type="checkbox" id="ntf-sales" checked /><span>Sales activity</span></label>
-            <label class="settings-toggle"><input type="checkbox" id="ntf-staff" /><span>Staff events</span></label>
-            <label class="settings-toggle"><input type="checkbox" id="ntf-email" /><span>Email digest</span></label>
-          </div>
-          <div class="settings-actions"><button type="button" class="btn-primary" id="save-notifications">Save notifications</button></div>
+          <p class="settings-error" id="biz-error" hidden></p>
+          <div class="settings-actions"><button type="button" class="btn-primary" id="save-business">Save business</button></div>
         </div>
       </section>
 
@@ -179,28 +121,37 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession, canSwitchBranch } from '../../lib/auth';
+  import { getSession, canSwitchBranch, ApiError } from '../../lib/auth';
   import { paintAvatar, setAvatarFromFile, clearAvatar } from '../../lib/avatar';
+  import {
+    getMyProfile, saveMyProfile, getBusiness, saveBusiness, getCompanyName, saveCompanyName,
+  } from '../../lib/settings';
 
-  const PREFS_KEY = 'vgsync-settings';
   const THEME_KEY = 'vgsync-theme';
-  type Prefs = Record<string, unknown>;
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
+  const input = (id: string) => $<HTMLInputElement>(id)!;
 
-  function loadPrefs(): Prefs {
-    try { const raw = localStorage.getItem(PREFS_KEY); return raw ? JSON.parse(raw) as Prefs : {}; } catch { return {}; }
-  }
-  function savePrefs(patch: Prefs): void {
-    try { localStorage.setItem(PREFS_KEY, JSON.stringify({ ...loadPrefs(), ...patch })); } catch {}
-  }
   function toast(msg = 'Saved'): void {
-    const el = document.getElementById('settings-toast');
+    const el = $('settings-toast');
     if (!el) return;
     el.textContent = msg; el.hidden = false;
     window.clearTimeout((el as any)._t);
-    (el as any)._t = window.setTimeout(() => { el.hidden = true; }, 1800);
+    (el as any)._t = window.setTimeout(() => { el.hidden = true; }, 2200);
   }
-  function val(id: string) { return document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null; }
-  function check(id: string) { return document.getElementById(id) as HTMLInputElement | null; }
+
+  function setError(id: string, message: string | null): void {
+    const el = $(id);
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    if (error.status === 403) return 'You do not have permission to change this.';
+    const parts = Object.entries(error.fields ?? {}).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${[v].flat().join(' ')}`);
+    return error.status === 400 && parts.length ? parts.join(' ') : error.message;
+  }
 
   document.querySelectorAll<HTMLButtonElement>('[data-settings-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -215,22 +166,36 @@ const navItems = getNavItemsForRole(defaultRole);
   const session = getSession();
   if (!session) window.location.replace('/');
   else {
-    const prefs = loadPrefs();
-    const avatar = document.getElementById('settings-avatar');
-    const nameLine = document.getElementById('settings-display-name');
-    const roleLine = document.getElementById('settings-role-line');
-    const avatarHint = document.getElementById('avatar-hint');
-
-    paintAvatar(avatar, session.userId, session.displayName);
-    if (nameLine) nameLine.textContent = session.displayName;
-    if (roleLine) roleLine.textContent = `${session.roleLabel} · ${session.homeBranchName}`;
-    if (val('set-display-name')) val('set-display-name')!.value = session.displayName;
-    if (val('set-username')) val('set-username')!.value = session.username;
-    if (val('set-role')) val('set-role')!.value = session.roleLabel;
-    if (val('set-home-branch')) val('set-home-branch')!.value = session.homeBranchName;
-
     const me = session;
+    const avatar = $('settings-avatar');
+    const avatarHint = $('avatar-hint');
+    const nameLine = $('settings-display-name');
 
+    function paintName(name: string): void {
+      if (nameLine) nameLine.textContent = name;
+      paintAvatar(avatar, me.userId, name);
+      const side = $('sidebar-profile-name');
+      if (side) side.textContent = name;
+      paintAvatar($('sidebar-profile-initials'), me.userId, name);
+    }
+
+    paintAvatar(avatar, me.userId, me.displayName);
+    if (nameLine) nameLine.textContent = me.displayName;
+    const roleLine = $('settings-role-line');
+    if (roleLine) roleLine.textContent = `${me.roleLabel} · ${me.homeBranchName}`;
+    input('set-username').value = me.username;
+    input('set-role').value = me.roleLabel;
+    input('set-home-branch').value = me.homeBranchName;
+    input('set-email').value = me.email;
+
+    getMyProfile().then((p) => {
+      input('set-first').value = p.firstName;
+      input('set-last').value = p.lastName;
+      input('set-email').value = p.email;
+      input('set-phone').value = p.phone;
+    }).catch(() => setError('profile-error', 'Could not load your profile.'));
+
+    // Photo stays on this device.
     async function onAvatarFile(file: File | undefined | null) {
       if (!file) return;
       const result = await setAvatarFromFile(me.userId, file);
@@ -240,62 +205,102 @@ const navItems = getNavItemsForRole(defaultRole);
         return;
       }
       paintAvatar(avatar, me.userId, me.displayName);
-      paintAvatar(document.getElementById('sidebar-profile-initials'), me.userId, me.displayName);
-      if (avatarHint) { avatarHint.textContent = 'JPG, PNG or WebP · max 512 KB'; avatarHint.classList.remove('is-error'); }
+      paintAvatar($('sidebar-profile-initials'), me.userId, me.displayName);
+      if (avatarHint) { avatarHint.textContent = 'JPG, PNG or WebP · max 512 KB · kept on this device'; avatarHint.classList.remove('is-error'); }
       toast('Profile photo updated');
     }
-
-    const fileInput = document.getElementById('avatar-file') as HTMLInputElement | null;
+    const fileInput = $<HTMLInputElement>('avatar-file');
     fileInput?.addEventListener('change', () => { void onAvatarFile(fileInput.files?.[0]); fileInput.value = ''; });
-    document.getElementById('avatar-change')?.addEventListener('click', () => fileInput?.click());
-    document.getElementById('avatar-remove')?.addEventListener('click', () => {
-      clearAvatar(session.userId);
-      paintAvatar(avatar, session.userId, session.displayName);
-      paintAvatar(document.getElementById('sidebar-profile-initials'), session.userId, session.displayName);
+    $('avatar-change')?.addEventListener('click', () => fileInput?.click());
+    $('avatar-remove')?.addEventListener('click', () => {
+      clearAvatar(me.userId);
+      paintAvatar(avatar, me.userId, me.displayName);
+      paintAvatar($('sidebar-profile-initials'), me.userId, me.displayName);
       toast('Profile photo removed');
     });
 
-    if (val('org-name')) val('org-name')!.value = String(prefs.orgName ?? 'VG Automobiles Pvt. Ltd.');
-    if (val('org-trade')) val('org-trade')!.value = String(prefs.orgTrade ?? 'VGSync');
-    if (val('org-tax')) val('org-tax')!.value = String(prefs.orgTax ?? '');
-    if (val('org-address')) val('org-address')!.value = String(prefs.orgAddress ?? 'Kathmandu, Nepal');
-    if (val('org-phone')) val('org-phone')!.value = String(prefs.orgPhone ?? '');
-    if (val('org-email')) val('org-email')!.value = String(prefs.orgEmail ?? '');
+    $('save-profile')?.addEventListener('click', async () => {
+      const btn = $<HTMLButtonElement>('save-profile')!;
+      btn.disabled = true;
+      setError('profile-error', null);
+      try {
+        const saved = await saveMyProfile({
+          firstName: input('set-first').value,
+          lastName: input('set-last').value,
+          email: input('set-email').value,
+          phone: input('set-phone').value,
+        });
+        paintName(`${saved.firstName} ${saved.lastName}`.trim() || me.username);
+        toast('Profile saved');
+      } catch (error) {
+        setError('profile-error', describe(error));
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
-    const aName = document.getElementById('branch-active-name');
-    const aCode = document.getElementById('branch-active-code');
-    const hName = document.getElementById('branch-home-name');
-    const access = document.getElementById('branch-access');
-    if (aName) aName.textContent = session.activeBranchName;
-    if (aCode) aCode.textContent = session.activeBranchCode;
-    if (hName) hName.textContent = session.homeBranchName;
-    if (access) access.textContent = canSwitchBranch(session) ? 'All branches (switchable)' : 'Home branch only';
-    if (val('branch-warehouse')) val('branch-warehouse')!.value = String(prefs.warehouse ?? '');
-    if (val('branch-phone')) val('branch-phone')!.value = String(prefs.branchPhone ?? '');
+    // Business: owners only.
+    const isOwner = me.role === 'owner' || me.role === 'branch_owner';
+    const canEdit = isOwner && me.accessMode !== 'read_only';
+    const isCompanyOwner = me.role === 'owner';
+    if (isOwner) {
+      $('tab-business')!.hidden = false;
+      $('biz-active')!.textContent = me.activeBranchName;
+      $('biz-code')!.textContent = me.activeBranchCode;
+      const note = $('biz-note')!;
+      const fields = ['biz-company', 'biz-name', 'biz-address', 'biz-phone', 'biz-email'];
+      if (!canEdit) {
+        note.hidden = false;
+        note.textContent = 'You are viewing this branch from Head Office, so it is read-only. Switch to Head Office to edit company details, or open the branch to see its own.';
+        fields.forEach((id) => (input(id).disabled = true));
+        $('save-business')!.hidden = true;
+      }
+      void (async () => {
+        try {
+          const [biz, company] = await Promise.all([
+            getBusiness(me.activeBusinessId),
+            isCompanyOwner ? getCompanyName() : Promise.resolve(null),
+          ]);
+          input('biz-name').value = biz.name;
+          input('biz-address').value = biz.address;
+          input('biz-phone').value = biz.phone;
+          input('biz-email').value = biz.email;
+          // The company name belongs to the company, so edit it from Head Office.
+          if (company !== null && biz.type === 'head_office') {
+            $('biz-company-wrap')!.hidden = false;
+            input('biz-company').value = company;
+          }
+        } catch (error) {
+          setError('biz-error', describe(error));
+        }
+      })();
 
-    if (val('inv-unit')) val('inv-unit')!.value = String(prefs.invUnit ?? 'pcs');
-    if (val('inv-low-stock')) val('inv-low-stock')!.value = String(prefs.invLowStock ?? 5);
-    if (val('inv-sku-prefix')) val('inv-sku-prefix')!.value = String(prefs.invSkuPrefix ?? 'VG-');
-    if (val('inv-costing')) val('inv-costing')!.value = String(prefs.invCosting ?? 'avg');
-    if (check('inv-allow-negative')) check('inv-allow-negative')!.checked = Boolean(prefs.invNeg);
-    if (check('inv-batch')) check('inv-batch')!.checked = prefs.invBatch !== false;
-    if (check('inv-serial')) check('inv-serial')!.checked = Boolean(prefs.invSerial);
+      $('save-business')?.addEventListener('click', async () => {
+        const btn = $<HTMLButtonElement>('save-business')!;
+        btn.disabled = true;
+        setError('biz-error', null);
+        try {
+          if (!$('biz-company-wrap')!.hidden) await saveCompanyName(input('biz-company').value);
+          const saved = await saveBusiness(me.activeBusinessId, {
+            name: input('biz-name').value,
+            address: input('biz-address').value,
+            phone: input('biz-phone').value,
+            email: input('biz-email').value,
+          });
+          $('biz-active')!.textContent = saved.name;
+          toast('Business saved');
+        } catch (error) {
+          setError('biz-error', describe(error));
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
 
-    if (val('reg-currency')) val('reg-currency')!.value = String(prefs.currency ?? 'NPR');
-    if (val('reg-tz')) val('reg-tz')!.value = String(prefs.tz ?? 'Asia/Kathmandu');
-    if (val('reg-date')) val('reg-date')!.value = String(prefs.dateFmt ?? 'YYYY-MM-DD');
-    if (val('reg-fiscal')) val('reg-fiscal')!.value = String(prefs.fiscal ?? 'shrawan');
-
-    if (check('ntf-low-stock')) check('ntf-low-stock')!.checked = prefs.ntfLow !== false;
-    if (check('ntf-purchase')) check('ntf-purchase')!.checked = prefs.ntfPurchase !== false;
-    if (check('ntf-sales')) check('ntf-sales')!.checked = prefs.ntfSales !== false;
-    if (check('ntf-staff')) check('ntf-staff')!.checked = Boolean(prefs.ntfStaff);
-    if (check('ntf-email')) check('ntf-email')!.checked = Boolean(prefs.ntfEmail);
-
-    const secSession = document.getElementById('sec-session');
-    const secPass = document.getElementById('sec-password-status');
-    if (secSession) { try { secSession.textContent = new Date(session.loggedInAt).toLocaleString(); } catch { secSession.textContent = session.loggedInAt; } }
-    if (secPass) secPass.textContent = session.mustChangePassword ? 'Must update password' : 'Up to date';
+    const secSession = $('sec-session');
+    const secPass = $('sec-password-status');
+    if (secSession) { try { secSession.textContent = new Date(me.loggedInAt).toLocaleString(); } catch { secSession.textContent = me.loggedInAt; } }
+    if (secPass) secPass.textContent = me.mustChangePassword ? 'Must update password' : 'Up to date';
 
     const root = document.documentElement;
     const theme = root.dataset.theme === 'light' ? 'light' : 'dark';
@@ -306,42 +311,11 @@ const navItems = getNavItemsForRole(defaultRole);
         root.dataset.theme = t;
         try { localStorage.setItem(THEME_KEY, t); } catch {}
         document.querySelectorAll('[data-set-theme]').forEach((x) => x.classList.toggle('is-active', x.getAttribute('data-set-theme') === t));
-        const toggle = document.getElementById('theme-toggle');
+        const toggle = $('theme-toggle');
         toggle?.classList.toggle('is-dark', t === 'dark');
         toggle?.classList.toggle('is-light', t === 'light');
         toast('Theme updated');
       });
-    });
-
-    document.getElementById('save-profile')?.addEventListener('click', () => {
-      const name = val('set-display-name')?.value.trim() || session.displayName;
-      if (nameLine) nameLine.textContent = name;
-      paintAvatar(avatar, session.userId, name);
-      const sideName = document.getElementById('sidebar-profile-name');
-      if (sideName) sideName.textContent = name;
-      paintAvatar(document.getElementById('sidebar-profile-initials'), session.userId, name);
-      toast('Profile saved');
-    });
-
-    document.getElementById('save-org')?.addEventListener('click', () => {
-      savePrefs({ orgName: val('org-name')?.value ?? '', orgTrade: val('org-trade')?.value ?? '', orgTax: val('org-tax')?.value ?? '', orgAddress: val('org-address')?.value ?? '', orgPhone: val('org-phone')?.value ?? '', orgEmail: val('org-email')?.value ?? '' });
-      toast('Organization saved');
-    });
-    document.getElementById('save-branch')?.addEventListener('click', () => {
-      savePrefs({ warehouse: val('branch-warehouse')?.value ?? '', branchPhone: val('branch-phone')?.value ?? '' });
-      toast('Branch prefs saved');
-    });
-    document.getElementById('save-inventory')?.addEventListener('click', () => {
-      savePrefs({ invUnit: val('inv-unit')?.value ?? 'pcs', invLowStock: Number(val('inv-low-stock')?.value || 5), invSkuPrefix: val('inv-sku-prefix')?.value ?? 'VG-', invCosting: val('inv-costing')?.value ?? 'avg', invNeg: Boolean(check('inv-allow-negative')?.checked), invBatch: Boolean(check('inv-batch')?.checked), invSerial: Boolean(check('inv-serial')?.checked) });
-      toast('Inventory defaults saved');
-    });
-    document.getElementById('save-regional')?.addEventListener('click', () => {
-      savePrefs({ currency: val('reg-currency')?.value ?? 'NPR', tz: val('reg-tz')?.value ?? 'Asia/Kathmandu', dateFmt: val('reg-date')?.value ?? 'YYYY-MM-DD', fiscal: val('reg-fiscal')?.value ?? 'shrawan' });
-      toast('Regional settings saved');
-    });
-    document.getElementById('save-notifications')?.addEventListener('click', () => {
-      savePrefs({ ntfLow: Boolean(check('ntf-low-stock')?.checked), ntfPurchase: Boolean(check('ntf-purchase')?.checked), ntfSales: Boolean(check('ntf-sales')?.checked), ntfStaff: Boolean(check('ntf-staff')?.checked), ntfEmail: Boolean(check('ntf-email')?.checked) });
-      toast('Notifications saved');
     });
   }
 </script>
@@ -394,5 +368,8 @@ const navItems = getNavItemsForRole(defaultRole);
   .theme-option-swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border); }
   .theme-option-swatch.is-light { background: #f8fafc; }
   .theme-option-swatch.is-dark { background: #0f172a; }
+  .settings-error { margin: 10px 0 0; font-size: 0.8rem; color: #ef334e; }
+  .settings-note { margin: 0 0 12px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 0.78rem; color: var(--text-secondary); }
+  .settings-nav-item[hidden] { display: none; }
   .settings-toast { position: fixed; right: 20px; bottom: 20px; z-index: 50; padding: 10px 14px; border-radius: 10px; background: var(--panel-bg); border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.18); font-size: 0.85rem; font-weight: 600; }
 </style>
