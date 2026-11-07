@@ -101,6 +101,13 @@ export const PAGE_META: Record<string, PageMeta> = {
     skeletonTitle: 'Settings',
     skeletonHint: 'Profile, preferences and system settings will appear here.',
   },
+  help: {
+    id: 'help',
+    title: 'Help & Support',
+    breadcrumb: 'Help & Support /',
+    skeletonTitle: 'Help & Support',
+    skeletonHint: 'Find answers, get support, or track your requests.',
+  },
   'change-password': {
     id: 'change-password',
     title: 'Update Password',
