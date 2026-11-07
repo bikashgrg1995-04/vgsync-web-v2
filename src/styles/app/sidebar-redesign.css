@@ -248,5 +248,45 @@
 }
 
 .app-content-inner {
-  max-width: 1280px;
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Overflow / responsive shell fixes */
+.app-main {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-content {
+  overflow-x: hidden;
+}
+
+.app-header {
+  min-width: 0;
+}
+
+.header-right {
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.header-search {
+  max-width: min(220px, 40vw);
+}
+
+@media (max-width: 900px) {
+  .app-sidebar {
+    width: min(280px, 86vw);
+    min-width: 0;
+  }
+}
+
+@media (min-width: 1400px) {
+  .app-content-inner {
+    max-width: 1320px;
+  }
 }
