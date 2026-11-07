@@ -5,7 +5,7 @@ Astro frontend for the VGSync backend (`vgsync-backend-v2`).
 ## Run locally
 
 ```sh
-cp .env.example .env      # PUBLIC_API_URL, default http://127.0.0.1:8000/api/v1
+cp .env.example .env      # PUBLIC_API_URL (default http://127.0.0.1:8000/api/v1), optional PUBLIC_LIVE_CHAT_URL
 npm ci
 npm run dev               # http://localhost:4321
 ```
@@ -148,3 +148,11 @@ Settings has four tabs, all on the real API.
 - Appearance: light or dark theme on this device.
 
 The old demo tabs (organization, inventory defaults, regional, notifications) were removed because nothing used them. They can come back when the backend has settings to store.
+
+## Help & Support
+
+`/dashboard/help` (sidebar: Help & Support) uses the backend's `/support/` API (`src/lib/support.ts`):
+
+- **FAQs** load from the API (the first five show, "View All" shows the rest). The search box searches question and answer text.
+- **My Support Tickets** lists the tickets of the active business (staff see only their own). "Create Support Ticket" opens a form (subject, category, description); "View" shows one ticket. Only the VGSync team changes a ticket's status, in Django Admin.
+- **Other Ways to Get Help** shows the email, phone and hours set in the backend (`SUPPORT_*` variables). The User Guide download and the Video Tutorials card appear only when `SUPPORT_USER_GUIDE_URL` / `SUPPORT_VIDEO_TUTORIALS_URL` are set on the backend. The Live Chat card appears only when `PUBLIC_LIVE_CHAT_URL` is set here, and opens that link in a new tab.

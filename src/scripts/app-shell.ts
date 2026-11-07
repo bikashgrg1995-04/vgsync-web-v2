@@ -158,18 +158,9 @@ function applySessionUI(): void {
     getNavItemsForRole(session.role as UserRole, canManageStaff(session)).map((i) => i.id),
   );
   document.querySelectorAll<HTMLElement>('[data-nav-id]').forEach((el) => {
-  const id = el.dataset.navId;
-
-    // Bottom navigation items are not part of role-based primary navigation.
-    if (
-      !id ||
-      id === 'settings' ||
-      id === 'help' ||
-      id === 'logout'
-    ) {
-      return;
-    }
-
+    const id = el.dataset.navId;
+    // Settings, Help & Support and Logout are for every role.
+    if (!id || id === 'settings' || id === 'help' || id === 'logout') return;
     const li = el.closest('li');
     const target = (li ?? el) as HTMLElement;
 
