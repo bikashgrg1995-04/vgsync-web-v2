@@ -87,6 +87,13 @@ export const PAGE_META: Record<string, PageMeta> = {
     skeletonHint:
       'Business reports and exports will appear here.<br />Owner can run across branches.',
   },
+  branches: {
+    id: 'branches',
+    title: 'Branches',
+    breadcrumb: 'Company /',
+    skeletonTitle: 'Branches',
+    skeletonHint: 'Head Office and branches of the company.',
+  },
   settings: {
     id: 'settings',
     title: 'Settings',

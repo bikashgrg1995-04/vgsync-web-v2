@@ -1,0 +1,341 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+
+const meta = PAGE_META.branches;
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="br-page">
+    <div class="br-head">
+      <div>
+        <p class="br-scope" id="br-company">Company</p>
+        <h2 class="br-title">Head Office and branches</h2>
+      </div>
+      <button type="button" class="br-btn br-primary" id="br-add" hidden>+ Add branch</button>
+    </div>
+
+    <p class="br-notice" id="br-notice" hidden></p>
+
+    <section class="br-card">
+      <div class="br-filters">
+        <input type="search" id="br-search" placeholder="Search name or code…" autocomplete="off" />
+        <select id="br-status" aria-label="Status">
+          <option value="">All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="br-table-wrap">
+        <table class="br-table">
+          <thead>
+            <tr><th>Name</th><th>Code</th><th>Contact</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody id="br-tbody"><tr><td colspan="5" class="br-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="br-foot" id="br-foot"></p>
+    </section>
+  </div>
+
+  <dialog class="br-dialog" id="dlg-form">
+    <form method="dialog" class="br-dialog-inner" id="form-biz">
+      <h2 class="br-dialog-title" id="f-title">Add branch</h2>
+      <input type="hidden" id="f-id" />
+      <div class="br-grid">
+        <label class="br-field br-span2"><span>Name *</span><input type="text" id="f-name" required maxlength="150" /></label>
+        <label class="br-field" id="f-code-wrap"><span>Code *</span><input type="text" id="f-code" maxlength="50" placeholder="VG-PKR" /></label>
+        <label class="br-field"><span>Phone</span><input type="tel" id="f-phone" maxlength="20" /></label>
+        <label class="br-field br-span2"><span>Email</span><input type="email" id="f-email" /></label>
+        <label class="br-field br-span2"><span>Address</span><input type="text" id="f-address" /></label>
+      </div>
+      <p class="br-hint" id="f-hint">The code is used to sign in to this branch and cannot be changed later.</p>
+      <p class="br-error" id="f-error" hidden></p>
+      <div class="br-actions">
+        <button type="button" class="br-btn" data-close="dlg-form">Cancel</button>
+        <button type="submit" class="br-btn br-primary" id="f-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="br-dialog" id="dlg-confirm">
+    <form method="dialog" class="br-dialog-inner" id="form-confirm">
+      <h2 class="br-dialog-title" id="c-title">Switch off branch</h2>
+      <p class="br-hint" id="c-text"></p>
+      <p class="br-error" id="c-error" hidden></p>
+      <div class="br-actions">
+        <button type="button" class="br-btn" data-close="dlg-confirm">Cancel</button>
+        <button type="submit" class="br-btn br-primary" id="c-save">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+</AppLayout>
+
+<script>
+  import { getSession, switchBranch } from '../../lib/auth';
+  import { ApiError } from '../../lib/api';
+  import { getCompanyName } from '../../lib/settings';
+  import {
+    listBusinesses,
+    createBranch,
+    updateBusiness,
+    setBranchActive,
+    TYPE_LABEL,
+    type BusinessRow,
+  } from '../../lib/branches';
+
+  if (!getSession()) window.location.replace('/');
+
+  let rows: BusinessRow[] = [];
+  let canWrite = false;
+  let confirmWork: (() => Promise<void>) | null = null;
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const val = (id: string) => $<HTMLInputElement>(id).value;
+  const dlg = (id: string) => $<HTMLDialogElement>(id);
+  const esc = (s: string) =>
+    String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  document.querySelectorAll<HTMLButtonElement>('[data-close]').forEach((b) =>
+    b.addEventListener('click', () => dlg(b.dataset.close!).close()),
+  );
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    if (error.status === 403) return 'Only the company owner can manage branches.';
+    const parts = Object.entries(error.fields ?? {}).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${[v].flat().join(' ')}`);
+    return error.status === 400 && parts.length ? parts.join(' ') : error.message;
+  }
+
+  function setError(id: string, message: string | null): void {
+    const el = $(id);
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
+  function notice(message: string | null, switchToHo = false): void {
+    const el = $('br-notice');
+    el.hidden = !message;
+    el.innerHTML = message ? esc(message) : '';
+    if (message && switchToHo) {
+      const ho = rows.find((r) => r.type === 'head_office');
+      if (ho) {
+        el.insertAdjacentHTML('beforeend', ` <button type="button" class="br-link" id="br-to-ho">Switch to Head Office</button>`);
+        $('br-to-ho').addEventListener('click', () => void open(ho.id));
+      }
+    }
+  }
+
+  async function open(id: number): Promise<void> {
+    try {
+      await switchBranch(id);
+      window.location.href = '/dashboard/branches';
+    } catch (error) {
+      notice(describe(error));
+    }
+  }
+
+  function render(): void {
+    const q = val('br-search').trim().toLowerCase();
+    const st = val('br-status');
+    const view = rows.filter(
+      (r) =>
+        (!q || r.name.toLowerCase().includes(q) || r.code.toLowerCase().includes(q)) &&
+        (!st || (st === 'active' ? r.isActive : !r.isActive)),
+    );
+    const session = getSession();
+    const tbody = $('br-tbody');
+    if (view.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="br-empty">${rows.length ? 'Nothing matches.' : 'No branches yet.'}</td></tr>`;
+    } else {
+      tbody.innerHTML = view
+        .map((r) => {
+          const here = session?.activeBusinessId === r.id;
+          const acts: string[] = [];
+          if (r.isActive && !here) acts.push(`<button class="br-link" data-open="${r.id}">Open</button>`);
+          if (canWrite) {
+            acts.push(`<button class="br-link" data-edit="${r.id}">Edit</button>`);
+            if (r.type === 'branch') {
+              acts.push(
+                r.isActive
+                  ? `<button class="br-link br-danger" data-off="${r.id}">Switch off</button>`
+                  : `<button class="br-link" data-on="${r.id}">Switch on</button>`,
+              );
+            }
+          }
+          const contact = [r.phone, r.email].filter(Boolean).map(esc).join('<br />');
+          return `<tr class="${r.isActive ? '' : 'is-off'}">
+            <td><strong>${esc(r.name)}</strong>${here ? ' <span class="br-tag">You are here</span>' : ''}<br /><span class="br-muted">${esc(TYPE_LABEL[r.type])}${r.address ? ' · ' + esc(r.address) : ''}</span></td>
+            <td>${esc(r.code)}</td>
+            <td>${contact || '<span class="br-muted">—</span>'}</td>
+            <td><span class="br-badge ${r.isActive ? 'br-ok' : 'br-off'}">${r.isActive ? 'Active' : 'Inactive'}</span></td>
+            <td class="br-acts">${acts.join(' ')}</td>
+          </tr>`;
+        })
+        .join('');
+    }
+    const branches = rows.filter((r) => r.type === 'branch');
+    $('br-foot').textContent = `${branches.filter((r) => r.isActive).length} active and ${branches.filter((r) => !r.isActive).length} inactive branches. A switched-off branch keeps its data but nobody can sign in to it.`;
+
+    tbody.querySelectorAll<HTMLButtonElement>('[data-open]').forEach((b) => b.addEventListener('click', () => void open(Number(b.dataset.open))));
+    tbody.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((b) => b.addEventListener('click', () => openForm(rows.find((r) => r.id === Number(b.dataset.edit)))));
+    tbody.querySelectorAll<HTMLButtonElement>('[data-off]').forEach((b) => b.addEventListener('click', () => ask(Number(b.dataset.off), false)));
+    tbody.querySelectorAll<HTMLButtonElement>('[data-on]').forEach((b) => b.addEventListener('click', () => ask(Number(b.dataset.on), true)));
+  }
+
+  function openForm(row?: BusinessRow): void {
+    $('f-title').textContent = row ? `Edit ${row.type === 'head_office' ? 'Head Office' : 'branch'}` : 'Add branch';
+    $<HTMLInputElement>('f-id').value = row ? String(row.id) : '';
+    $<HTMLInputElement>('f-name').value = row?.name ?? '';
+    $<HTMLInputElement>('f-code').value = row?.code ?? '';
+    $<HTMLInputElement>('f-code').disabled = Boolean(row);
+    $('f-code-wrap').hidden = Boolean(row);
+    $('f-hint').hidden = Boolean(row);
+    $<HTMLInputElement>('f-phone').value = row?.phone ?? '';
+    $<HTMLInputElement>('f-email').value = row?.email ?? '';
+    $<HTMLInputElement>('f-address').value = row?.address ?? '';
+    setError('f-error', null);
+    dlg('dlg-form').showModal();
+  }
+
+  $('form-biz').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = Number(val('f-id')) || 0;
+    const input = { name: val('f-name'), code: val('f-code'), address: val('f-address'), phone: val('f-phone'), email: val('f-email') };
+    const btn = $<HTMLButtonElement>('f-save');
+    btn.disabled = true;
+    setError('f-error', null);
+    void (async () => {
+      try {
+        if (id) await updateBusiness(id, input);
+        else await createBranch(input);
+        dlg('dlg-form').close();
+        // The branch switcher in the header is built on page load.
+        if (!id) window.location.reload();
+        else await load();
+      } catch (error) {
+        setError('f-error', describe(error));
+      } finally {
+        btn.disabled = false;
+      }
+    })();
+  });
+
+  function ask(id: number, on: boolean): void {
+    const row = rows.find((r) => r.id === id);
+    if (!row) return;
+    $('c-title').textContent = on ? 'Switch branch on' : 'Switch branch off';
+    $('c-text').textContent = on
+      ? `${row.name} will be open again and its users can sign in.`
+      : `${row.name} will close. Its users can no longer sign in or switch to it. Nothing is deleted and you can switch it on again.`;
+    setError('c-error', null);
+    confirmWork = async () => {
+      await setBranchActive(id, on);
+      window.location.reload();
+    };
+    dlg('dlg-confirm').showModal();
+  }
+
+  $('form-confirm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const btn = $<HTMLButtonElement>('c-save');
+    btn.disabled = true;
+    void (async () => {
+      try {
+        await confirmWork?.();
+      } catch (error) {
+        setError('c-error', describe(error));
+      } finally {
+        btn.disabled = false;
+      }
+    })();
+  });
+
+  async function load(): Promise<void> {
+    const s = getSession();
+    if (!s) return;
+    if (s.role !== 'owner') {
+      $('br-tbody').innerHTML = `<tr><td colspan="5" class="br-empty">Branches are managed by the company owner.</td></tr>`;
+      return;
+    }
+    try {
+      const [list, company] = await Promise.all([listBusinesses(), getCompanyName().catch(() => null)]);
+      rows = list;
+      $('br-company').textContent = company ?? s.companyName ?? 'Company';
+    } catch (error) {
+      $('br-tbody').innerHTML = `<tr><td colspan="5" class="br-empty">${esc(describe(error))}</td></tr>`;
+      return;
+    }
+    const atHo = rows.find((r) => r.id === s.activeBusinessId)?.type === 'head_office';
+    canWrite = atHo && s.accessMode !== 'read_only';
+    $('br-add').hidden = !canWrite;
+    notice(canWrite ? null : 'You are inside a branch, so changes are off. Go to Head Office to add or edit branches.', !canWrite);
+    render();
+  }
+
+  $('br-add').addEventListener('click', () => openForm());
+  $('br-search').addEventListener('input', render);
+  $('br-status').addEventListener('change', render);
+  void load();
+</script>
+
+<style is:global>
+  .br-page { display: flex; flex-direction: column; gap: 14px; max-width: 1000px; }
+  .br-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .br-scope { margin: 0 0 2px; font-size: 0.78rem; color: var(--text-muted); }
+  .br-title { margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+  .br-btn { height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer; }
+  .br-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .br-btn.br-primary { border: none; background: var(--accent); color: #fff; }
+  .br-btn:disabled { opacity: 0.6; cursor: default; }
+  .br-link { border: none; background: transparent; padding: 0; font-family: inherit; font-size: 0.78rem; font-weight: 650; color: var(--accent); cursor: pointer; }
+  .br-link.br-danger { color: #ef334e; }
+  .br-notice { margin: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 0.8rem; color: var(--text-secondary); }
+  .br-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 12px; }
+  .br-filters { display: flex; gap: 8px; margin-bottom: 10px; }
+  .br-filters input, .br-filters select { height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; }
+  .br-filters input { flex: 1; min-width: 160px; }
+  .br-table-wrap { overflow-x: auto; }
+  .br-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .br-table th, .br-table td { padding: 10px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .br-table th { font-size: 0.66rem; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .br-table tr.is-off td { color: var(--text-muted); }
+  .br-acts { white-space: nowrap; text-align: right !important; display: table-cell; }
+  .br-acts .br-link { margin-left: 10px; }
+  .br-muted { font-size: 0.74rem; color: var(--text-muted); }
+  .br-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
+  .br-foot { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
+  .br-tag { font-size: 0.62rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .br-badge { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 650; }
+  .br-badge.br-ok { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .br-badge.br-off { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+  .br-dialog { border: none; border-radius: 14px; padding: 0; background: var(--panel-bg); color: var(--text-primary); box-shadow: 0 24px 60px rgba(0,0,0,0.28); max-width: 460px; width: calc(100% - 32px); }
+  .br-dialog::backdrop { background: rgba(8,15,29,0.55); backdrop-filter: blur(4px); }
+  .br-dialog-inner { padding: 20px; }
+  .br-dialog-title { margin: 0 0 8px; font-size: 1rem; font-weight: 650; }
+  .br-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 10px 0; }
+  @media (max-width: 520px) { .br-grid { grid-template-columns: 1fr; } }
+  .br-span2 { grid-column: 1 / -1; }
+  .br-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); }
+  .br-field[hidden] { display: none; }
+  .br-field input { height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem; }
+  .br-hint { margin: 6px 0 0; font-size: 0.76rem; color: var(--text-muted); }
+  .br-hint[hidden] { display: none; }
+  .br-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
+  .br-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+</style>

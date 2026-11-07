@@ -23,6 +23,7 @@ const ALL_ITEMS: NavItem[] = [
   { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users' },
   { id: 'staff', label: 'Staff', href: '/dashboard/staff', icon: 'users' },
   { id: 'reports', label: 'Reports', href: '/dashboard/reports', icon: 'chart' },
+  { id: 'branches', label: 'Branches', href: '/dashboard/branches', icon: 'building' },
 ];
 
 const ROLE_MENU: Record<UserRole, string[]> = {
@@ -37,6 +38,7 @@ const ROLE_MENU: Record<UserRole, string[]> = {
     'customers',
     'staff',
     'reports',
+    'branches',
   ],
   branch_owner: [
     'overview',
