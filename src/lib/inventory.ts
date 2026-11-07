@@ -1,3 +1,4 @@
+
 /**
  * Inventory, from the API (/api/v1/inventory/).
  *
@@ -8,6 +9,10 @@
  */
 
 import { api } from './api';
+
+// ==================================================
+// TYPES
+// ==================================================
 
 export type StockStatus = 'in_stock' | 'low' | 'out';
 
@@ -24,8 +29,11 @@ export interface StockItem {
   salePrice: number;
   mrp: number;
   reorderLevel: number;
+  image: string | null;
+
   /** Good stock that can be sold. */
   quantity: number;
+
   damagedQuantity: number;
   totalQuantity: number;
   status: StockStatus;
@@ -89,6 +97,137 @@ export interface MovementPage {
   results: StockMovement[];
 }
 
+// ==================================================
+// STOCK ADJUSTMENT TYPES
+// ==================================================
+
+export type AdjustmentMode =
+  | 'increase'
+  | 'decrease'
+  | 'mark_damaged'
+  | 'remove_damaged';
+
+export type AdjustmentAction =
+  | 'increase'
+  | 'decrease'
+  | 'remove_damaged';
+
+export type AdjustmentReason =
+  | 'received'
+  | 'found'
+  | 'count_correction'
+  | 'damaged'
+  | 'lost'
+  | 'expired'
+  | 'used'
+  | 'disposed'
+  | 'written_off'
+  | 'other';
+
+export interface AdjustmentOption {
+  value: AdjustmentMode;
+  label: string;
+  reasons: {
+    value: AdjustmentReason;
+    label: string;
+  }[];
+}
+
+/**
+ * Available manual stock adjustment actions and their reasons.
+ */
+export const ADJUSTMENT_OPTIONS: AdjustmentOption[] = [
+  {
+    value: 'increase',
+    label: 'Increase good stock',
+    reasons: [
+      {
+        value: 'received',
+        label: 'Additional stock received',
+      },
+      {
+        value: 'found',
+        label: 'Previously missing stock found',
+      },
+      {
+        value: 'count_correction',
+        label: 'Stock count correction',
+      },
+      {
+        value: 'other',
+        label: 'Other',
+      },
+    ],
+  },
+  {
+    value: 'decrease',
+    label: 'Decrease good stock',
+    reasons: [
+      {
+        value: 'lost',
+        label: 'Lost or missing',
+      },
+      {
+        value: 'expired',
+        label: 'Expired stock',
+      },
+      {
+        value: 'used',
+        label: 'Used stock',
+      },
+      {
+        value: 'count_correction',
+        label: 'Stock count correction',
+      },
+      {
+        value: 'other',
+        label: 'Other',
+      },
+    ],
+  },
+  {
+    value: 'mark_damaged',
+    label: 'Mark as damaged',
+    reasons: [
+      {
+        value: 'damaged',
+        label: 'Reclassified as damaged',
+      },
+    ],
+  },
+  {
+    value: 'remove_damaged',
+    label: 'Remove damaged stock',
+    reasons: [
+      {
+        value: 'disposed',
+        label: 'Disposed',
+      },
+      {
+        value: 'written_off',
+        label: 'Written off',
+      },
+      {
+        value: 'other',
+        label: 'Other',
+      },
+    ],
+  },
+];
+
+export interface StockAdjustmentInput {
+  productId: number;
+  action: AdjustmentAction;
+  reason: AdjustmentReason;
+  quantity: number;
+  reference?: string;
+  notes?: string;
+}
+
+// ==================================================
+// LABELS
+// ==================================================
+
 export const STATUS_LABEL: Record<StockStatus, string> = {
   in_stock: 'In stock',
   low: 'Low stock',
@@ -108,12 +247,9 @@ export const MOVEMENT_LABEL: Record<MovementType, string> = {
   reversal: 'Reversal',
 };
 
-/** Movement types a person can enter by hand on this page. */
-export const MANUAL_MOVEMENTS: { value: MovementType; label: string }[] = [
-  { value: 'adjustment_in', label: 'Increase (count correction, found stock)' },
-  { value: 'adjustment_out', label: 'Decrease (lost, used, count correction)' },
-  { value: 'opening', label: 'Opening stock' },
-];
+// ==================================================
+// API TYPES
+// ==================================================
 
 interface ApiStockRow {
   product_id: number;
@@ -131,7 +267,8 @@ interface ApiStockRow {
   quantity: string;
   damaged_quantity: string;
   total_quantity: string;
-  stock_status: StockStatus;
+  stock_status?: StockStatus;
+  image: string | null;
 }
 
 interface ApiProduct {
@@ -172,26 +309,44 @@ interface Page<T> {
   results: T[];
 }
 
-const num = (value: string | number | null | undefined): number => Number(value ?? 0) || 0;
+// ==================================================
+// HELPERS
+// ==================================================
+
+const num = (
+  value: string | number | null | undefined,
+): number => Number(value ?? 0) || 0;
 
 function stockFromApi(r: ApiStockRow): StockItem {
+  const quantity = num(r.quantity);
+  const reorderLevel = num(r.reorder_level);
+
+  const status =
+    r.stock_status ??
+    (quantity <= 0
+      ? 'out'
+      : reorderLevel > 0 && quantity <= reorderLevel
+        ? 'low'
+        : 'in_stock');
+
   return {
     productId: r.product_id,
-    stockNo: r.stock_no,
-    name: r.product_name,
-    brand: r.brand,
-    model: r.model,
-    category: r.category,
-    group: r.group,
-    unit: r.unit,
+    stockNo: r.stock_no ?? '',
+    name: r.product_name ?? '',
+    brand: r.brand ?? '',
+    model: r.model ?? '',
+    category: r.category ?? '',
+    group: r.group ?? '',
+    unit: r.unit ?? 'pcs',
     purchasePrice: num(r.purchase_price),
     salePrice: num(r.sale_price),
     mrp: num(r.mrp),
-    reorderLevel: num(r.reorder_level),
-    quantity: num(r.quantity),
+    reorderLevel,
+    quantity,
     damagedQuantity: num(r.damaged_quantity),
     totalQuantity: num(r.total_quantity),
-    status: r.stock_status,
+    status,
+    image: r.image ?? null,
   };
 }
 
@@ -216,6 +371,7 @@ function movementFromApi(m: ApiMovement): StockMovement {
 function productBody(input: ProductInput): Record<string, unknown> {
   const text = (v?: string) => (v ?? '').trim();
   const money = (v?: number) => String(v ?? 0);
+
   return {
     stock_no: input.stockNo.trim(),
     name: input.name.trim(),
@@ -231,6 +387,10 @@ function productBody(input: ProductInput): Record<string, unknown> {
   };
 }
 
+// ==================================================
+// PRODUCTS
+// ==================================================
+
 /** Every active product with this business's stock (zero stock included). */
 export async function listStock(): Promise<StockItem[]> {
   const rows = await api<ApiStockRow[]>('/inventory/stock/');
@@ -238,70 +398,169 @@ export async function listStock(): Promise<StockItem[]> {
 }
 
 export async function createProduct(input: ProductInput): Promise<void> {
-  await api('/inventory/products/', { method: 'POST', body: productBody(input) });
+  await api('/inventory/products/', {
+    method: 'POST',
+    body: productBody(input),
+  });
 }
 
-export async function updateProduct(productId: number, input: ProductInput): Promise<void> {
-  await api(`/inventory/products/${productId}/`, { method: 'PATCH', body: productBody(input) });
+export async function updateProduct(
+  productId: number,
+  input: ProductInput,
+): Promise<void> {
+  await api(`/inventory/products/${productId}/`, {
+    method: 'PATCH',
+    body: productBody(input),
+  });
 }
 
 /** The API hides a product instead of deleting it, so history stays intact. */
 export async function deactivateProduct(productId: number): Promise<void> {
-  await api<ApiProduct>(`/inventory/products/${productId}/`, { method: 'DELETE' });
+  await api<ApiProduct>(`/inventory/products/${productId}/`, {
+    method: 'DELETE',
+  });
 }
+
+// ==================================================
+// STOCK MOVEMENTS
+// ==================================================
 
 export async function listMovements(
   page: number,
   filters: MovementFilters = {},
   pageSize = 25,
 ): Promise<MovementPage> {
-  const q = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
-  if (filters.productId) q.set('product_id', String(filters.productId));
-  if (filters.type) q.set('movement_type', filters.type);
-  if (filters.search) q.set('search', filters.search);
-  if (filters.dateFrom) q.set('date_from', filters.dateFrom);
-  if (filters.dateTo) q.set('date_to', filters.dateTo);
+  const q = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
 
-  const data = await api<Page<ApiMovement>>(`/inventory/stock/movements/?${q.toString()}`);
-  return { count: data.count, hasNext: Boolean(data.next), results: data.results.map(movementFromApi) };
+  if (filters.productId) {
+    q.set('product_id', String(filters.productId));
+  }
+
+  if (filters.type) {
+    q.set('movement_type', filters.type);
+  }
+
+  if (filters.search) {
+    q.set('search', filters.search);
+  }
+
+  if (filters.dateFrom) {
+    q.set('date_from', filters.dateFrom);
+  }
+
+  if (filters.dateTo) {
+    q.set('date_to', filters.dateTo);
+  }
+
+  const data = await api<Page<ApiMovement>>(
+    `/inventory/stock/movements/?${q.toString()}`,
+  );
+
+  return {
+    count: data.count,
+    hasNext: Boolean(data.next),
+    results: data.results.map(movementFromApi),
+  };
 }
+
+// ==================================================
+// LEGACY / GENERAL MOVEMENT INPUT
+// ==================================================
 
 export interface MovementInput {
   productId: number;
   type: MovementType;
   condition: StockCondition;
+
   /** Always positive; the type decides whether it adds or removes. */
   quantity: number;
+
   reference?: string;
   notes?: string;
 }
 
-export async function addMovement(input: MovementInput): Promise<StockMovement> {
+/**
+ * General stock movement API.
+ *
+ * Kept for existing purchase, sale and other movement integrations.
+ */
+export async function addMovement(
+  input: MovementInput,
+): Promise<StockMovement> {
   const data = await api<ApiMovement>('/inventory/stock/movements/', {
     method: 'POST',
     body: {
       product_id: input.productId,
       movement_type: input.type,
       stock_condition: input.condition,
-      // The API only accepts a decimal string (max 3 decimals).
       quantity: input.quantity.toFixed(3),
       reference: (input.reference ?? '').trim(),
       notes: (input.notes ?? '').trim(),
     },
   });
+
   return movementFromApi(data);
 }
+
+// ==================================================
+// MANUAL STOCK ADJUSTMENT
+// ==================================================
+
+/**
+ * Creates a manual stock adjustment.
+ *
+ * mark_damaged is represented as a decrease action with reason "damaged".
+ * The backend creates both immutable movement records for reclassification.
+ */
+export async function addStockAdjustment(
+  input: StockAdjustmentInput,
+): Promise<StockMovement> {
+  const data = await api<ApiMovement>('/inventory/stock/movements/', {
+    method: 'POST',
+    body: {
+      product_id: input.productId,
+      movement_type:
+        input.action === 'increase'
+          ? 'adjustment_in'
+          : 'adjustment_out',
+      adjustment_action: input.action,
+      adjustment_reason: input.reason,
+      quantity: input.quantity.toFixed(3),
+      reference: (input.reference ?? '').trim(),
+      notes: (input.notes ?? '').trim(),
+    },
+  });
+
+  return movementFromApi(data);
+}
+
+// ==================================================
+// INVENTORY SUMMARY
+// ==================================================
 
 export function getInventorySummary(items: StockItem[]) {
   return {
     skuCount: items.length,
     units: items.reduce((sum, i) => sum + i.quantity, 0),
-    damagedUnits: items.reduce((sum, i) => sum + i.damagedQuantity, 0),
-    stockValue: items.reduce((sum, i) => sum + i.quantity * i.purchasePrice, 0),
+    damagedUnits: items.reduce(
+      (sum, i) => sum + i.damagedQuantity,
+      0,
+    ),
+    stockValue: items.reduce(
+      (sum, i) => sum + i.quantity * i.purchasePrice,
+      0,
+    ),
     lowCount: items.filter((i) => i.status === 'low').length,
     outCount: items.filter((i) => i.status === 'out').length,
   };
 }
+
+// ==================================================
+// FORMATTING
+// ==================================================
 
 export function formatNpr(n: number): string {
   return new Intl.NumberFormat('en-NP', {
@@ -313,5 +572,7 @@ export function formatNpr(n: number): string {
 
 /** 12 or 12.5, never 12.000. */
 export function formatQty(n: number): string {
-  return new Intl.NumberFormat('en-NP', { maximumFractionDigits: 3 }).format(n);
+  return new Intl.NumberFormat('en-NP', {
+    maximumFractionDigits: 3,
+  }).format(n);
 }

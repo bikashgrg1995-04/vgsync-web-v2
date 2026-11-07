@@ -5,7 +5,7 @@ Astro frontend for the VGSync backend (`vgsync-backend-v2`).
 ## Run locally
 
 ```sh
-cp .env.example .env      # PUBLIC_API_URL, default http://localhost:8000/api/v1
+cp .env.example .env      # PUBLIC_API_URL, default http://127.0.0.1:8000/api/v1
 npm ci
 npm run dev               # http://localhost:4321
 ```
