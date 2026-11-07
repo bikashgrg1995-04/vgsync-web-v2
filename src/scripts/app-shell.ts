@@ -159,7 +159,8 @@ function applySessionUI(): void {
   );
   document.querySelectorAll<HTMLElement>('[data-nav-id]').forEach((el) => {
     const id = el.dataset.navId;
-    if (!id || id === 'settings' || id === 'logout') return;
+    // Settings, Help & Support and Logout are for every role.
+    if (!id || id === 'settings' || id === 'help' || id === 'logout') return;
     const li = el.closest('li');
     const target = (li ?? el) as HTMLElement;
     target.style.display = allowed.has(id) ? '' : 'none';
