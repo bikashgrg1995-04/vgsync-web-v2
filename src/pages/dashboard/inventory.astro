@@ -1,1 +1,1067 @@
-See local file - RESTORE_NEEDED
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+
+const meta = PAGE_META.inventory;
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="inv-page" id="inv-page">
+    <div class="inv-toolbar">
+      <div class="inv-toolbar-left">
+        <p class="inv-scope" id="inv-scope">Stock</p>
+        <div class="inv-tabs" role="tablist">
+          <button type="button" class="inv-tab is-active" data-inv-tab="stock">Stock list</button>
+          <button type="button" class="inv-tab" data-inv-tab="moves">Movements</button>
+        </div>
+      </div>
+      <div class="inv-toolbar-right">
+        <button type="button" class="btn-ghost-sm" id="inv-refresh">Refresh</button>
+        <button type="button" class="btn-primary-sm" id="inv-add" hidden>+ Add product</button>
+      </div>
+    </div>
+
+    <p class="inv-notice" id="inv-notice" hidden></p>
+
+    <div class="inv-kpis" id="inv-kpis">
+      <article class="inv-kpi">
+        <span class="inv-kpi-label">Products</span>
+        <strong class="inv-kpi-value" id="kpi-skus">—</strong>
+      </article>
+      <article class="inv-kpi">
+        <span class="inv-kpi-label">Units on hand</span>
+        <strong class="inv-kpi-value" id="kpi-units">—</strong>
+      </article>
+      <article class="inv-kpi">
+        <span class="inv-kpi-label">Stock value (cost)</span>
+        <strong class="inv-kpi-value" id="kpi-value">—</strong>
+      </article>
+      <article class="inv-kpi is-warn">
+        <span class="inv-kpi-label">Low stock</span>
+        <strong class="inv-kpi-value" id="kpi-low">—</strong>
+      </article>
+      <article class="inv-kpi is-danger">
+        <span class="inv-kpi-label">Out of stock</span>
+        <strong class="inv-kpi-value" id="kpi-out">—</strong>
+      </article>
+    </div>
+
+    <!-- Stock panel -->
+    <section class="inv-panel is-active" data-inv-panel="stock">
+      <div class="inv-filters">
+        <div class="inv-search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="inv-search" placeholder="Search stock no, name or brand…" autocomplete="off" />
+        </div>
+        <select id="inv-category" aria-label="Category">
+          <option value="">All categories</option>
+        </select>
+        <select id="inv-status" aria-label="Status">
+          <option value="">All status</option>
+          <option value="in_stock">In stock</option>
+          <option value="low">Low stock</option>
+          <option value="out">Out of stock</option>
+        </select>
+      </div>
+
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>Stock no</th>
+              <th>Product</th>
+              <th>Category</th>
+              <th class="num">Good</th>
+              <th class="num">Damaged</th>
+              <th class="num">Reorder at</th>
+              <th class="num">Cost</th>
+              <th class="num">Sale price</th>
+              <th class="num">Value</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="inv-tbody">
+            <tr><td colspan="11" class="inv-empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="inv-footnote" id="inv-count"></p>
+    </section>
+
+    <!-- Movements panel -->
+    <section class="inv-panel" data-inv-panel="moves">
+      <div class="inv-filters">
+        <div class="inv-search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="mv-search" placeholder="Search product, reference or note…" autocomplete="off" />
+        </div>
+        <select id="mv-type" aria-label="Movement type">
+          <option value="">All types</option>
+        </select>
+        <input type="date" id="mv-from" aria-label="From date" />
+        <input type="date" id="mv-to" aria-label="To date" />
+      </div>
+      <div class="inv-table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Stock no</th>
+              <th>Product</th>
+              <th>Type</th>
+              <th>Stock</th>
+              <th class="num">Qty</th>
+              <th class="num">Balance</th>
+              <th>Reference</th>
+              <th>Note</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody id="moves-tbody">
+            <tr><td colspan="10" class="inv-empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="inv-pager">
+        <span class="inv-footnote" id="mv-count"></span>
+        <div>
+          <button type="button" class="btn-ghost-sm" id="mv-prev">Previous</button>
+          <button type="button" class="btn-ghost-sm" id="mv-next">Next</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Adjust dialog -->
+  <dialog class="inv-dialog" id="inv-adjust-dialog">
+    <form method="dialog" class="inv-dialog-inner" id="inv-adjust-form">
+      <h2 class="inv-dialog-title">Adjust stock</h2>
+      <p class="inv-dialog-sub" id="adj-product">—</p>
+      <input type="hidden" id="adj-id" />
+      <label class="inv-field">
+        <span>Type</span>
+        <select id="adj-type"></select>
+      </label>
+      <label class="inv-field">
+        <span>Stock</span>
+        <select id="adj-condition">
+          <option value="good">Good stock</option>
+          <option value="damaged">Damaged stock</option>
+        </select>
+      </label>
+      <label class="inv-field">
+        <span>Quantity</span>
+        <input type="number" id="adj-qty" required min="0.001" step="0.001" value="1" />
+      </label>
+      <label class="inv-field">
+        <span>Reference (optional)</span>
+        <input type="text" id="adj-ref" maxlength="100" placeholder="e.g. Count sheet 12" />
+      </label>
+      <label class="inv-field">
+        <span>Note</span>
+        <input type="text" id="adj-note" placeholder="Why is this being adjusted?" />
+      </label>
+      <p class="inv-dialog-error" id="adj-error" hidden></p>
+      <div class="inv-dialog-actions">
+        <button type="button" class="btn-ghost-sm" id="adj-cancel">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="adj-submit">Apply</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Product dialog -->
+  <dialog class="inv-dialog inv-dialog-wide" id="inv-product-dialog">
+    <form method="dialog" class="inv-dialog-inner" id="inv-product-form">
+      <h2 class="inv-dialog-title" id="prd-title">Add product</h2>
+      <p class="inv-dialog-sub">Products are shared by Head Office and every branch. Each branch keeps its own stock.</p>
+      <input type="hidden" id="prd-id" />
+      <div class="inv-grid">
+        <label class="inv-field">
+          <span>Stock no *</span>
+          <input type="text" id="prd-stock-no" required maxlength="100" />
+        </label>
+        <label class="inv-field">
+          <span>Name *</span>
+          <input type="text" id="prd-name" required maxlength="200" />
+        </label>
+        <label class="inv-field">
+          <span>Brand</span>
+          <input type="text" id="prd-brand" maxlength="100" />
+        </label>
+        <label class="inv-field">
+          <span>Model</span>
+          <input type="text" id="prd-model" maxlength="100" />
+        </label>
+        <label class="inv-field">
+          <span>Category</span>
+          <input type="text" id="prd-category" maxlength="100" list="prd-category-list" />
+          <datalist id="prd-category-list"></datalist>
+        </label>
+        <label class="inv-field">
+          <span>Group</span>
+          <input type="text" id="prd-group" maxlength="100" />
+        </label>
+        <label class="inv-field">
+          <span>Unit</span>
+          <input type="text" id="prd-unit" maxlength="20" value="pcs" />
+        </label>
+        <label class="inv-field">
+          <span>Reorder at (0 = no alert)</span>
+          <input type="number" id="prd-reorder" min="0" step="0.001" value="0" />
+        </label>
+        <label class="inv-field">
+          <span>Purchase price</span>
+          <input type="number" id="prd-cost" min="0" step="0.01" value="0" />
+        </label>
+        <label class="inv-field">
+          <span>Sale price</span>
+          <input type="number" id="prd-sale" min="0" step="0.01" value="0" />
+        </label>
+        <label class="inv-field">
+          <span>MRP</span>
+          <input type="number" id="prd-mrp" min="0" step="0.01" value="0" />
+        </label>
+      </div>
+      <p class="inv-dialog-error" id="prd-error" hidden></p>
+      <div class="inv-dialog-actions">
+        <button type="button" class="btn-ghost-sm" id="prd-cancel">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="prd-submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+</AppLayout>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import { ApiError } from '../../lib/api';
+  import {
+    listStock,
+    listMovements,
+    createProduct,
+    updateProduct,
+    deactivateProduct,
+    addMovement,
+    getInventorySummary,
+    formatNpr,
+    formatQty,
+    STATUS_LABEL,
+    MOVEMENT_LABEL,
+    MANUAL_MOVEMENTS,
+    type StockItem,
+    type MovementType,
+    type StockCondition,
+  } from '../../lib/inventory';
+
+  if (!getSession()) window.location.replace('/');
+
+  const PAGE_SIZE = 25;
+
+  let items: StockItem[] = [];
+  let canAdjust = true;
+  let canEditCatalog = true;
+  let mvPage = 1;
+  let mvHasNext = false;
+  let mvLoaded = false;
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+
+  function esc(s: string): string {
+    return s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  const FIELD_LABELS: Record<string, string> = {
+    stock_no: 'Stock no',
+    name: 'Name',
+    unit: 'Unit',
+    mrp: 'MRP',
+    purchase_price: 'Purchase price',
+    sale_price: 'Sale price',
+    reorder_level: 'Reorder at',
+    quantity: 'Quantity',
+    product_id: 'Product',
+    movement_type: 'Type',
+    stock_condition: 'Stock',
+  };
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    const entries = Object.entries(error.fields);
+    if (entries.length > 0 && error.status === 400) {
+      return entries
+        .map(([key, msg]) => (FIELD_LABELS[key] ? `${FIELD_LABELS[key]}: ${msg}` : msg))
+        .join(' ');
+    }
+    return error.message;
+  }
+
+  function showNotice(message: string | null, kind: 'info' | 'error' = 'info'): void {
+    const el = $('inv-notice');
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+    el.classList.toggle('is-error', kind === 'error');
+  }
+
+  function statusBadge(status: string): string {
+    const label = STATUS_LABEL[status as keyof typeof STATUS_LABEL] ?? status;
+    return `<span class="inv-badge inv-badge-${status}">${esc(label)}</span>`;
+  }
+
+  function renderKpis(): void {
+    const s = getInventorySummary(items);
+    const set = (id: string, text: string) => {
+      const el = $(id);
+      if (el) el.textContent = text;
+    };
+    set('kpi-skus', String(s.skuCount));
+    set('kpi-units', formatQty(s.units));
+    set('kpi-value', formatNpr(s.stockValue));
+    set('kpi-low', String(s.lowCount));
+    set('kpi-out', String(s.outCount));
+  }
+
+  function fillCategories(): void {
+    const cats = Array.from(new Set(items.map((i) => i.category).filter(Boolean))).sort();
+
+    const sel = $<HTMLSelectElement>('inv-category');
+    if (sel) {
+      const current = sel.value;
+      sel.innerHTML =
+        `<option value="">All categories</option>` +
+        cats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      sel.value = cats.includes(current) ? current : '';
+    }
+
+    const list = $('prd-category-list');
+    if (list) list.innerHTML = cats.map((c) => `<option value="${esc(c)}"></option>`).join('');
+  }
+
+  function filteredItems(): StockItem[] {
+    const q = ($<HTMLInputElement>('inv-search')?.value ?? '').trim().toLowerCase();
+    const cat = $<HTMLSelectElement>('inv-category')?.value ?? '';
+    const st = $<HTMLSelectElement>('inv-status')?.value ?? '';
+    return items.filter((i) => {
+      if (cat && i.category !== cat) return false;
+      if (st && i.status !== st) return false;
+      if (!q) return true;
+      return (
+        i.stockNo.toLowerCase().includes(q) ||
+        i.name.toLowerCase().includes(q) ||
+        i.brand.toLowerCase().includes(q) ||
+        i.model.toLowerCase().includes(q)
+      );
+    });
+  }
+
+  function renderTable(): void {
+    const tbody = $('inv-tbody');
+    const count = $('inv-count');
+    if (!tbody) return;
+    const rows = filteredItems();
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="11" class="inv-empty">${
+        items.length === 0 ? 'No products yet.' : 'No products match this filter.'
+      }</td></tr>`;
+      if (count) count.textContent = '0 products';
+      return;
+    }
+    tbody.innerHTML = rows
+      .map((i) => {
+        const sub = [i.brand, i.model, i.unit].filter(Boolean).join(' · ');
+        const actions: string[] = [];
+        if (canAdjust) actions.push(`<button type="button" class="btn-link" data-adjust="${i.productId}">Adjust</button>`);
+        if (canEditCatalog) {
+          actions.push(`<button type="button" class="btn-link" data-edit="${i.productId}">Edit</button>`);
+          actions.push(`<button type="button" class="btn-link is-danger" data-hide="${i.productId}">Deactivate</button>`);
+        }
+        return `<tr>
+          <td class="mono">${esc(i.stockNo)}</td>
+          <td><div class="inv-prod"><strong>${esc(i.name)}</strong><span>${esc(sub)}</span></div></td>
+          <td>${esc(i.category || '—')}</td>
+          <td class="num">${formatQty(i.quantity)}</td>
+          <td class="num ${i.damagedQuantity > 0 ? '' : 'muted'}">${formatQty(i.damagedQuantity)}</td>
+          <td class="num muted">${i.reorderLevel > 0 ? formatQty(i.reorderLevel) : '—'}</td>
+          <td class="num">${formatNpr(i.purchasePrice)}</td>
+          <td class="num">${formatNpr(i.salePrice)}</td>
+          <td class="num">${formatNpr(i.quantity * i.purchasePrice)}</td>
+          <td>${statusBadge(i.status)}</td>
+          <td class="actions">${actions.join(' ')}</td>
+        </tr>`;
+      })
+      .join('');
+    if (count) count.textContent = `${rows.length} product${rows.length === 1 ? '' : 's'}`;
+
+    tbody.querySelectorAll<HTMLButtonElement>('[data-adjust]').forEach((btn) => {
+      btn.addEventListener('click', () => openAdjust(Number(btn.dataset.adjust)));
+    });
+    tbody.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((btn) => {
+      btn.addEventListener('click', () => openProduct(Number(btn.dataset.edit)));
+    });
+    tbody.querySelectorAll<HTMLButtonElement>('[data-hide]').forEach((btn) => {
+      btn.addEventListener('click', () => hideProduct(Number(btn.dataset.hide)));
+    });
+  }
+
+  // ---- Movements -------------------------------------------------------
+
+  const OUT_TYPES: MovementType[] = ['sale_issue', 'purchase_return', 'adjustment_out', 'transfer_out'];
+
+  function fillMovementTypes(): void {
+    const sel = $<HTMLSelectElement>('mv-type');
+    if (!sel) return;
+    sel.innerHTML =
+      `<option value="">All types</option>` +
+      (Object.keys(MOVEMENT_LABEL) as MovementType[])
+        .map((t) => `<option value="${t}">${esc(MOVEMENT_LABEL[t])}</option>`)
+        .join('');
+  }
+
+  async function loadMovements(): Promise<void> {
+    const tbody = $('moves-tbody');
+    if (!tbody) return;
+    try {
+      const data = await listMovements(
+        mvPage,
+        {
+          search: ($<HTMLInputElement>('mv-search')?.value ?? '').trim(),
+          type: ($<HTMLSelectElement>('mv-type')?.value ?? '') as MovementType | '',
+          dateFrom: $<HTMLInputElement>('mv-from')?.value ?? '',
+          dateTo: $<HTMLInputElement>('mv-to')?.value ?? '',
+        },
+        PAGE_SIZE,
+      );
+      mvHasNext = data.hasNext;
+      mvLoaded = true;
+
+      if (data.results.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="inv-empty">No movements found.</td></tr>`;
+      } else {
+        tbody.innerHTML = data.results
+          .map((m) => {
+            let when = m.createdAt;
+            try { when = new Date(m.createdAt).toLocaleString(); } catch {}
+            const out = OUT_TYPES.includes(m.type) || (m.type === 'reversal' && m.balanceAfter < m.balanceBefore);
+            const sign = out ? '−' : '+';
+            return `<tr>
+              <td class="muted">${esc(when)}</td>
+              <td class="mono">${esc(m.stockNo)}</td>
+              <td>${esc(m.productName)}</td>
+              <td><span class="inv-move ${out ? 'inv-move-out' : 'inv-move-in'}">${esc(MOVEMENT_LABEL[m.type] ?? m.type)}</span></td>
+              <td>${m.condition === 'damaged' ? 'Damaged' : 'Good'}</td>
+              <td class="num">${sign}${formatQty(m.quantity)}</td>
+              <td class="num muted">${formatQty(m.balanceBefore)} → ${formatQty(m.balanceAfter)}</td>
+              <td class="mono">${esc(m.reference || '—')}</td>
+              <td>${esc(m.notes || '—')}</td>
+              <td class="muted">${esc(m.createdByName || '—')}</td>
+            </tr>`;
+          })
+          .join('');
+      }
+
+      const from = data.count === 0 ? 0 : (mvPage - 1) * PAGE_SIZE + 1;
+      const to = (mvPage - 1) * PAGE_SIZE + data.results.length;
+      const count = $('mv-count');
+      if (count) count.textContent = `${from}–${to} of ${data.count}`;
+      ($('mv-prev') as HTMLButtonElement).disabled = mvPage <= 1;
+      ($('mv-next') as HTMLButtonElement).disabled = !mvHasNext;
+    } catch (error) {
+      tbody.innerHTML = `<tr><td colspan="10" class="inv-empty">${esc(describe(error))}</td></tr>`;
+    }
+  }
+
+  function resetMovements(): void {
+    mvPage = 1;
+    mvLoaded = false;
+    if ($('inv-page')?.querySelector('[data-inv-panel="moves"].is-active')) void loadMovements();
+  }
+
+  // ---- Load ------------------------------------------------------------
+
+  async function reload(): Promise<void> {
+    const s = getSession();
+    const scope = $('inv-scope');
+    if (scope && s) scope.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
+
+    // A company owner is read-only inside a branch; only Head Office and
+    // independent businesses own the product catalog.
+    canAdjust = s?.accessMode !== 'read_only';
+    canEditCatalog = canAdjust && s?.businessType !== 'branch';
+    const addBtn = $('inv-add');
+    if (addBtn) addBtn.hidden = !canEditCatalog;
+
+    try {
+      items = await listStock();
+      showNotice(
+        !canAdjust
+          ? 'Read-only: you are viewing this branch from Head Office.'
+          : !canEditCatalog
+            ? 'Products are managed by Head Office. You can adjust this branch’s stock here.'
+            : null,
+      );
+    } catch (error) {
+      items = [];
+      showNotice(describe(error), 'error');
+    }
+
+    fillCategories();
+    renderKpis();
+    renderTable();
+    resetMovements();
+  }
+
+  // Tabs
+  document.querySelectorAll<HTMLButtonElement>('[data-inv-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.invTab;
+      document.querySelectorAll('[data-inv-tab]').forEach((b) => b.classList.remove('is-active'));
+      document.querySelectorAll('[data-inv-panel]').forEach((p) => p.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      document.querySelector(`[data-inv-panel="${id}"]`)?.classList.add('is-active');
+      if (id === 'moves' && !mvLoaded) void loadMovements();
+    });
+  });
+
+  let searchTimer: number | undefined;
+  $('inv-search')?.addEventListener('input', () => renderTable());
+  $('inv-category')?.addEventListener('change', () => renderTable());
+  $('inv-status')?.addEventListener('change', () => renderTable());
+  $('inv-refresh')?.addEventListener('click', () => void reload());
+
+  $('mv-search')?.addEventListener('input', () => {
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => { mvPage = 1; void loadMovements(); }, 300);
+  });
+  for (const id of ['mv-type', 'mv-from', 'mv-to']) {
+    $(id)?.addEventListener('change', () => { mvPage = 1; void loadMovements(); });
+  }
+  $('mv-prev')?.addEventListener('click', () => { if (mvPage > 1) { mvPage -= 1; void loadMovements(); } });
+  $('mv-next')?.addEventListener('click', () => { if (mvHasNext) { mvPage += 1; void loadMovements(); } });
+
+  // Re-load when the branch is switched in the header
+  document.getElementById('branch-select')?.addEventListener('change', () => {
+    setTimeout(() => void reload(), 300);
+  });
+
+  // ---- Adjust dialog ---------------------------------------------------
+
+  const adjDialog = $<HTMLDialogElement>('inv-adjust-dialog');
+
+  function showError(id: string, message: string | null): void {
+    const el = $(id);
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
+  function openAdjust(productId: number): void {
+    const item = items.find((i) => i.productId === productId);
+    if (!item || !adjDialog) return;
+    $<HTMLInputElement>('adj-id')!.value = String(item.productId);
+    const typeSel = $<HTMLSelectElement>('adj-type')!;
+    typeSel.innerHTML = MANUAL_MOVEMENTS.map((m) => `<option value="${m.value}">${esc(m.label)}</option>`).join('');
+    $('adj-product')!.textContent =
+      `${item.stockNo} · ${item.name} · good ${formatQty(item.quantity)}, damaged ${formatQty(item.damagedQuantity)} ${item.unit}`;
+    $<HTMLSelectElement>('adj-condition')!.value = 'good';
+    $<HTMLInputElement>('adj-qty')!.value = '1';
+    $<HTMLInputElement>('adj-ref')!.value = '';
+    $<HTMLInputElement>('adj-note')!.value = '';
+    showError('adj-error', null);
+    adjDialog.showModal();
+  }
+
+  $('adj-cancel')?.addEventListener('click', () => adjDialog?.close());
+
+  $<HTMLFormElement>('inv-adjust-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submit = $<HTMLButtonElement>('adj-submit')!;
+    const qty = Number($<HTMLInputElement>('adj-qty')!.value);
+    if (!(qty > 0)) {
+      showError('adj-error', 'Quantity must be more than zero.');
+      return;
+    }
+    submit.disabled = true;
+    try {
+      await addMovement({
+        productId: Number($<HTMLInputElement>('adj-id')!.value),
+        type: $<HTMLSelectElement>('adj-type')!.value as MovementType,
+        condition: $<HTMLSelectElement>('adj-condition')!.value as StockCondition,
+        quantity: qty,
+        reference: $<HTMLInputElement>('adj-ref')!.value,
+        notes: $<HTMLInputElement>('adj-note')!.value,
+      });
+      adjDialog?.close();
+      await reload();
+    } catch (error) {
+      showError('adj-error', describe(error));
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  // ---- Product dialog --------------------------------------------------
+
+  const prdDialog = $<HTMLDialogElement>('inv-product-dialog');
+
+  function openProduct(productId?: number): void {
+    if (!prdDialog) return;
+    const item = productId ? items.find((i) => i.productId === productId) : undefined;
+    $('prd-title')!.textContent = item ? 'Edit product' : 'Add product';
+    $<HTMLInputElement>('prd-id')!.value = item ? String(item.productId) : '';
+    $<HTMLInputElement>('prd-stock-no')!.value = item?.stockNo ?? '';
+    $<HTMLInputElement>('prd-name')!.value = item?.name ?? '';
+    $<HTMLInputElement>('prd-brand')!.value = item?.brand ?? '';
+    $<HTMLInputElement>('prd-model')!.value = item?.model ?? '';
+    $<HTMLInputElement>('prd-category')!.value = item?.category ?? '';
+    $<HTMLInputElement>('prd-group')!.value = item?.group ?? '';
+    $<HTMLInputElement>('prd-unit')!.value = item?.unit ?? 'pcs';
+    $<HTMLInputElement>('prd-reorder')!.value = String(item?.reorderLevel ?? 0);
+    $<HTMLInputElement>('prd-cost')!.value = String(item?.purchasePrice ?? 0);
+    $<HTMLInputElement>('prd-sale')!.value = String(item?.salePrice ?? 0);
+    $<HTMLInputElement>('prd-mrp')!.value = String(item?.mrp ?? 0);
+    showError('prd-error', null);
+    prdDialog.showModal();
+  }
+
+  $('inv-add')?.addEventListener('click', () => openProduct());
+  $('prd-cancel')?.addEventListener('click', () => prdDialog?.close());
+
+  $<HTMLFormElement>('inv-product-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submit = $<HTMLButtonElement>('prd-submit')!;
+    const val = (id: string) => $<HTMLInputElement>(id)!.value;
+    const input = {
+      stockNo: val('prd-stock-no'),
+      name: val('prd-name'),
+      brand: val('prd-brand'),
+      model: val('prd-model'),
+      category: val('prd-category'),
+      group: val('prd-group'),
+      unit: val('prd-unit'),
+      reorderLevel: Number(val('prd-reorder')) || 0,
+      purchasePrice: Number(val('prd-cost')) || 0,
+      salePrice: Number(val('prd-sale')) || 0,
+      mrp: Number(val('prd-mrp')) || 0,
+    };
+    submit.disabled = true;
+    try {
+      const id = val('prd-id');
+      if (id) await updateProduct(Number(id), input);
+      else await createProduct(input);
+      prdDialog?.close();
+      await reload();
+    } catch (error) {
+      showError('prd-error', describe(error));
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  async function hideProduct(productId: number): Promise<void> {
+    const item = items.find((i) => i.productId === productId);
+    if (!item) return;
+    if (!confirm(`Deactivate "${item.name}"? It will no longer appear in the catalog. Past movements are kept.`)) return;
+    try {
+      await deactivateProduct(productId);
+      await reload();
+    } catch (error) {
+      showNotice(describe(error), 'error');
+    }
+  }
+
+  fillMovementTypes();
+  void reload();
+</script>
+
+<style is:global>
+  .inv-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .inv-toolbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .inv-scope {
+    margin: 0 0 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .inv-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .inv-tab {
+    border: none;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .inv-tab.is-active {
+    background: var(--panel-bg);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  .inv-toolbar-right {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-primary-sm,
+  .btn-ghost-sm {
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .btn-primary-sm {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-ghost-sm {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+  }
+
+  .btn-ghost-sm:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  .inv-kpis {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  @media (max-width: 900px) {
+    .inv-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .inv-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .inv-kpi {
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel-bg);
+  }
+
+  .inv-kpi-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+  }
+
+  .inv-kpi-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .inv-kpi.is-warn .inv-kpi-value { color: #d97706; }
+  .inv-kpi.is-danger .inv-kpi-value { color: #ef334e; }
+
+  .inv-panel { display: none; }
+  .inv-panel.is-active { display: block; }
+
+  .inv-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .inv-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 180px;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-muted);
+  }
+
+  .inv-search input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.82rem;
+  }
+
+  .inv-filters select {
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.8rem;
+  }
+
+  .inv-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel-bg);
+  }
+
+  .inv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+
+  .inv-table th,
+  .inv-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .inv-table th {
+    font-size: 0.68rem;
+    font-weight: 650;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+  }
+
+  .inv-table tbody tr:last-child td { border-bottom: none; }
+  .inv-table tbody tr:hover td { background: var(--surface-hover); }
+
+  .inv-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .inv-table .muted { color: var(--text-muted); }
+  .inv-table .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; }
+  .inv-table .actions { text-align: right; }
+
+  .inv-prod {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    white-space: normal;
+    min-width: 140px;
+  }
+
+  .inv-prod strong { font-weight: 600; color: var(--text-primary); }
+  .inv-prod span { font-size: 0.7rem; color: var(--text-muted); }
+
+  .inv-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 650;
+  }
+
+  .inv-badge-in_stock { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .inv-badge-low { background: rgba(217, 119, 6, 0.12); color: #d97706; }
+  .inv-badge-out { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+
+  .inv-move {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 650;
+    text-transform: uppercase;
+  }
+
+  .inv-move-in { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .inv-move-out { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+  .inv-move-adjust { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+  .inv-move-transfer { background: rgba(168, 85, 247, 0.12); color: #a855f7; }
+
+  .btn-link {
+    border: none;
+    background: transparent;
+    color: var(--accent);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 650;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .inv-empty {
+    text-align: center !important;
+    color: var(--text-muted);
+    padding: 28px 12px !important;
+  }
+
+  .inv-footnote {
+    margin: 8px 0 0;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .inv-dialog {
+    border: none;
+    border-radius: 14px;
+    padding: 0;
+    background: var(--panel-bg);
+    color: var(--text-primary);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+    max-width: 400px;
+    width: calc(100% - 32px);
+  }
+
+  .inv-dialog::backdrop {
+    background: rgba(8, 15, 29, 0.55);
+    backdrop-filter: blur(4px);
+  }
+
+  .inv-dialog-inner { padding: 20px; }
+  .inv-dialog-title { margin: 0 0 4px; font-size: 1rem; font-weight: 650; }
+  .inv-dialog-sub { margin: 0 0 14px; font-size: 0.8rem; color: var(--text-muted); }
+
+  .inv-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .inv-field input {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+  }
+
+  .inv-dialog-error {
+    margin: 0 0 8px;
+    font-size: 0.8rem;
+    color: #ef334e;
+  }
+
+  .inv-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .inv-notice {
+    margin: 0;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+  .inv-notice.is-error { color: #ef334e; border-color: rgba(239, 51, 78, 0.4); }
+
+  .inv-filters input[type='date'] {
+    height: 34px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.8rem;
+  }
+
+  .inv-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .inv-pager .inv-footnote { margin: 0; }
+  .inv-pager div { display: flex; gap: 6px; }
+  .inv-pager button:disabled { opacity: 0.5; cursor: default; }
+
+  .inv-dialog-wide { max-width: 560px; }
+  .inv-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 12px;
+  }
+  @media (max-width: 520px) { .inv-grid { grid-template-columns: 1fr; } }
+
+  .inv-field select {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.85rem;
+  }
+  .btn-link.is-danger { color: #ef334e; }
+  .inv-table .actions { display: flex; gap: 10px; justify-content: flex-end; }
+</style>
