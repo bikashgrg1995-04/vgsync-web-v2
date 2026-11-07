@@ -97,6 +97,15 @@ The Sales page uses `/api/v1/sales/`. The server works out every total (discount
 
 Not on this page yet: printable invoice and Excel/PDF export of sales.
 
+## Orders
+
+The Orders page uses `/api/v1/inventory/transfers/`: a Branch orders stock from Head Office, and the same page shows what each side can do.
+
+- Branch: place an order, cancel it before anything is sent, receive goods (good and damaged apart, in parts if needed), and send damaged stock back with a reason.
+- Head Office: see orders from its branches, dispatch (all or in parts, never more than ordered), reject an order before dispatch, receive returned goods, then review them (accepted or rejected, with remarks).
+- An order moves no stock until goods are dispatched and received. The history of dispatches, receipts and returns is listed under the order.
+- Independent businesses have no orders. A company owner viewing a branch is read-only.
+
 ## Reports
 
 The Reports page uses `/api/v1/reports/` (owner only). Pick a report, set the period, and download the same view as Excel or PDF.
