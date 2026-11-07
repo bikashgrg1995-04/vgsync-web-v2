@@ -40,7 +40,6 @@ const navItems = getNavItemsForRole(defaultRole);
         <button type="button" class="btn-ghost-sm" id="inv-mrp" title="Coming soon" disabled>Update MRP</button>
         <button type="button" class="btn-ghost-sm" id="inv-export" title="Coming soon" disabled>Export</button>
         <button type="button" class="btn-warn-sm" id="inv-low-filter">Low Stocks</button>
-        <button type="button" class="btn-ghost-sm" id="inv-refresh">Refresh</button>
       </div>
     </header>
 
@@ -52,11 +51,6 @@ const navItems = getNavItemsForRole(defaultRole);
       <article class="inv-kpi"><span class="inv-kpi-label">Stock value</span><strong class="inv-kpi-value" id="kpi-value">—</strong></article>
       <article class="inv-kpi is-warn"><span class="inv-kpi-label">Low stock</span><strong class="inv-kpi-value" id="kpi-low">—</strong></article>
       <article class="inv-kpi is-danger"><span class="inv-kpi-label">Out of stock</span><strong class="inv-kpi-value" id="kpi-out">—</strong></article>
-    </div>
-
-    <div class="inv-tabs-row" role="tablist">
-      <button type="button" class="inv-tab is-active" data-inv-tab="stock">Stock list</button>
-      <button type="button" class="inv-tab" data-inv-tab="moves">Movements</button>
     </div>
 
     <section class="inv-panel is-active" data-inv-panel="stock">
@@ -127,6 +121,7 @@ const navItems = getNavItemsForRole(defaultRole);
     </section>
 
     <section class="inv-panel" data-inv-panel="moves">
+      <button type="button" class="btn-link inv-back-stock" id="inv-back-stock">← Back to stock list</button>
       <div class="inv-card">
         <div class="inv-filters inv-filters-moves">
           <div class="inv-search">
