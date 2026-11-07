@@ -114,6 +114,14 @@ The Reports page uses `/api/v1/reports/` (owner only). Pick a report, set the pe
 - Sales trend (by month, week or day, less returns), Top products (by value or quantity), Top customers, Top suppliers, Payroll.
 - A non-owner who opens the page sees "Reports are only available to the business owner".
 
+## Payments
+
+The Payments page uses `/api/v1/finance/` and `/api/v1/payroll/` (owner only), in three tabs.
+
+- Expenses and Income: totals, refunds, net and a by-category split, with filters. Add, edit and void manual lines (expense categories rent, utilities, transport, marketing, maintenance, other; income category other). Lines marked "auto" come from staff, supplier or customer payments and are locked: void the payment instead.
+- Staff pay: set pay (monthly salary with allowances and salary day, or daily wage), record payments (full, part or advance), add wage, bonus or deduction, and see what is owed, the advance and a statement. Void a payment or entry with a reason.
+- A company owner viewing a branch is read-only. A non-owner sees "only available to the business owner".
+
 ## Styling note
 
 Pages build tables and dialogs from script, so their `<style>` blocks are `is:global` (Astro's scoped styles would not reach that markup). Keep class names prefixed per page (`cus-`, `sa-`, `pu-`, `rp-`).

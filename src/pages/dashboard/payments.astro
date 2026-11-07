@@ -1,12 +1,11 @@
 ---
 import AppLayout from '../../layouts/AppLayout.astro';
-import PageSkeleton from '../../components/app/PageSkeleton.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import { PAGE_META } from '../../lib/page-meta';
 import type { UserRole } from '../../lib/auth';
 
 const meta = PAGE_META.payments;
-const defaultRole: UserRole = 'headoffice';
+const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
 ---
 
@@ -22,5 +21,848 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <PageSkeleton title={meta.skeletonTitle} hint={meta.skeletonHint} />
+  <div class="py-page">
+    <div class="py-toolbar">
+      <div>
+        <p class="py-scope" id="py-scope">Payments</p>
+        <div class="py-tabs" role="tablist">
+          <button type="button" class="py-tab is-active" data-tab="expenses">Expenses</button>
+          <button type="button" class="py-tab" data-tab="income">Income</button>
+          <button type="button" class="py-tab" data-tab="payroll">Staff pay</button>
+        </div>
+      </div>
+      <div class="py-toolbar-right">
+        <button type="button" class="btn-ghost-sm" id="py-refresh">Refresh</button>
+        <button type="button" class="btn-primary-sm" id="py-add" hidden>+ Add expense</button>
+      </div>
+    </div>
+
+    <p class="py-notice" id="py-notice" hidden></p>
+
+    <!-- Expenses / Income -->
+    <section class="py-panel is-active" data-panel="ledger">
+      <div class="py-kpis" id="lg-kpis"></div>
+      <div class="py-card">
+        <div class="py-filters">
+          <select id="lg-category" aria-label="Category"></select>
+          <select id="lg-status" aria-label="Status">
+            <option value="">All status</option>
+            <option value="active">Active</option>
+            <option value="void">Void</option>
+          </select>
+          <label class="py-inline">From <input type="date" id="lg-from" /></label>
+          <label class="py-inline">To <input type="date" id="lg-to" /></label>
+        </div>
+        <div class="py-table-wrap">
+          <table class="py-table">
+            <thead>
+              <tr><th>Date</th><th>Category</th><th>Details</th><th>Method</th><th class="num">Amount</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="lg-tbody"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="py-foot" id="lg-foot"></p>
+      </div>
+    </section>
+
+    <!-- Payroll -->
+    <section class="py-panel" data-panel="payroll">
+      <div class="py-kpis" id="pr-kpis"></div>
+      <div id="pr-setup" class="py-setup" hidden></div>
+      <div class="py-layout">
+        <div class="py-card">
+          <div class="py-filters">
+            <input type="search" id="pr-search" placeholder="Search staff…" autocomplete="off" />
+          </div>
+          <div class="py-table-wrap">
+            <table class="py-table">
+              <thead>
+                <tr><th>Staff</th><th>Pay</th><th class="num">Owed now</th><th class="num">Advance</th><th>Next salary</th></tr>
+              </thead>
+              <tbody id="pr-tbody"><tr><td colspan="5" class="py-empty">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="py-card" id="pr-detail">
+          <p class="py-empty-detail">Select a person to see their account and statement.</p>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <!-- Ledger form -->
+  <dialog class="py-dialog" id="dlg-ledger">
+    <form method="dialog" class="py-dialog-inner" id="form-ledger">
+      <h2 class="py-dialog-title" id="lf-title">Add expense</h2>
+      <input type="hidden" id="lf-id" />
+      <div class="py-grid">
+        <label class="py-field"><span>Category *</span><select id="lf-category" required></select></label>
+        <label class="py-field"><span>Amount *</span><input type="number" id="lf-amount" required min="0.01" step="0.01" /></label>
+        <label class="py-field"><span>Date *</span><input type="date" id="lf-date" required /></label>
+        <label class="py-field"><span>Method</span>
+          <select id="lf-method">
+            <option value="">—</option><option value="cash">Cash</option><option value="bank">Bank transfer</option>
+            <option value="online">Online</option><option value="cheque">Cheque</option>
+          </select>
+        </label>
+        <label class="py-field"><span>Reference</span><input type="text" id="lf-ref" maxlength="100" /></label>
+        <label class="py-field"><span>Details</span><input type="text" id="lf-desc" /></label>
+      </div>
+      <p class="py-error" id="lf-error" hidden></p>
+      <div class="py-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-ledger">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="lf-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Pay setup -->
+  <dialog class="py-dialog" id="dlg-salary">
+    <form method="dialog" class="py-dialog-inner" id="form-salary">
+      <h2 class="py-dialog-title">Pay setup</h2>
+      <p class="py-sub" id="sl-sub"></p>
+      <div class="py-grid">
+        <label class="py-field"><span>Pay type *</span>
+          <select id="sl-type"><option value="monthly">Monthly salary</option><option value="daily">Daily wage</option></select>
+        </label>
+        <label class="py-field" data-monthly><span>Monthly salary *</span><input type="number" id="sl-rate" min="0" step="0.01" value="0" /></label>
+        <label class="py-field" data-monthly><span>Allowances</span><input type="number" id="sl-allow" min="0" step="0.01" value="0" /></label>
+        <label class="py-field" data-monthly><span>Salary day (1–31)</span><input type="number" id="sl-day" min="1" max="31" step="1" value="1" /></label>
+        <label class="py-field" id="sl-start-wrap"><span>Starts on</span><input type="date" id="sl-start" /></label>
+      </div>
+      <p class="py-note" id="sl-note"></p>
+      <p class="py-error" id="sl-error" hidden></p>
+      <div class="py-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-salary">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="sl-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Payroll payment -->
+  <dialog class="py-dialog" id="dlg-pay">
+    <form method="dialog" class="py-dialog-inner" id="form-pay">
+      <h2 class="py-dialog-title">Pay staff</h2>
+      <p class="py-sub" id="pp-sub"></p>
+      <div class="py-grid">
+        <label class="py-field"><span>Amount *</span><input type="number" id="pp-amount" required min="0.01" step="0.01" /></label>
+        <label class="py-field"><span>Method *</span>
+          <select id="pp-method"><option value="cash">Cash</option><option value="bank">Bank transfer</option><option value="online">Online</option></select>
+        </label>
+        <label class="py-field"><span>Paid on</span><input type="date" id="pp-date" /></label>
+        <label class="py-field"><span>Reference</span><input type="text" id="pp-ref" maxlength="100" /></label>
+      </div>
+      <p class="py-note">Paying more than is owed, or before the salary day, is kept as an advance and used up by the next amount due.</p>
+      <p class="py-error" id="pp-error" hidden></p>
+      <div class="py-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="pp-save">Record payment</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Payroll entry -->
+  <dialog class="py-dialog" id="dlg-entry">
+    <form method="dialog" class="py-dialog-inner" id="form-entry">
+      <h2 class="py-dialog-title">Add wage, bonus or deduction</h2>
+      <p class="py-sub" id="en-sub"></p>
+      <div class="py-grid">
+        <label class="py-field"><span>Type *</span><select id="en-kind"></select></label>
+        <label class="py-field"><span>Date *</span><input type="date" id="en-date" required /></label>
+        <label class="py-field"><span>Amount *</span><input type="number" id="en-amount" required min="0.01" step="0.01" /></label>
+        <label class="py-field"><span>Note</span><input type="text" id="en-desc" /></label>
+      </div>
+      <p class="py-error" id="en-error" hidden></p>
+      <div class="py-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-entry">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="en-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Reason -->
+  <dialog class="py-dialog" id="dlg-reason">
+    <form method="dialog" class="py-dialog-inner" id="form-reason">
+      <h2 class="py-dialog-title" id="rs-title">Void</h2>
+      <p class="py-sub" id="rs-sub"></p>
+      <label class="py-field"><span>Reason *</span><input type="text" id="rs-text" required /></label>
+      <p class="py-error" id="rs-error" hidden></p>
+      <div class="py-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-reason">Back</button>
+        <button type="submit" class="btn-primary-sm is-danger" id="rs-save">Confirm</button>
+      </div>
+    </form>
+  </dialog>
 </AppLayout>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import { ApiError } from '../../lib/api';
+  import { listStaff, type StaffMember } from '../../lib/staff';
+  import {
+    listLedger,
+    ledgerSummary,
+    createLedger,
+    updateLedger,
+    voidLedger,
+    listBalances,
+    getBalance,
+    listStatement,
+    listSalaries,
+    saveSalary,
+    addEntry,
+    voidEntry,
+    addPayrollPayment,
+    voidPayrollPayment,
+    formatNpr,
+    EXPENSE_LABEL,
+    INCOME_LABEL,
+    METHOD_LABEL,
+    MANUAL_EXPENSE,
+    type LedgerKind,
+    type LedgerEntry,
+    type LedgerSummary,
+    type PayBalance,
+    type PayMethod,
+    type PayType,
+    type EntryKind,
+    type SalaryProfile,
+  } from '../../lib/payments';
+
+  if (!getSession()) window.location.replace('/');
+
+  type Tab = 'expenses' | 'income' | 'payroll';
+  let tab: Tab = 'expenses';
+  let canWrite = true;
+  let entries: LedgerEntry[] = [];
+  let balances: PayBalance[] = [];
+  let staff: StaffMember[] = [];
+  let salaries: SalaryProfile[] = [];
+  let selectedId: number | null = null;
+  let token = 0;
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+  const val = (id: string) => $<HTMLInputElement>(id)?.value ?? '';
+  const today = () => new Date().toLocaleDateString('en-CA');
+  const esc = (s: string) =>
+    String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const pretty = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ') : '—');
+  const dlg = (id: string) => $<HTMLDialogElement>(id)!;
+  const kindOf = (): LedgerKind => (tab === 'income' ? 'income' : 'expenses');
+  const labelOf = (cat: string) =>
+    (kindOf() === 'expenses' ? EXPENSE_LABEL : INCOME_LABEL)[cat as keyof typeof EXPENSE_LABEL & keyof typeof INCOME_LABEL] ?? pretty(cat);
+
+  document.querySelectorAll<HTMLButtonElement>('[data-close]').forEach((b) =>
+    b.addEventListener('click', () => dlg(b.dataset.close!).close()),
+  );
+
+  const FIELDS: Record<string, string> = {
+    amount: 'Amount',
+    category: 'Category',
+    expense_date: 'Date',
+    income_date: 'Date',
+    paid_on: 'Paid on',
+    entry_date: 'Date',
+    rate: 'Salary',
+    allowances: 'Allowances',
+    salary_day: 'Salary day',
+    staff: 'Staff',
+    reason: 'Reason',
+  };
+
+  function flatten(v: unknown): string {
+    if (typeof v === 'string') return v;
+    if (Array.isArray(v)) return v.map(flatten).filter(Boolean).join(' ');
+    if (v && typeof v === 'object') return Object.values(v).map(flatten).filter(Boolean).join(' ');
+    return '';
+  }
+
+  function describe(error: unknown): string {
+    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
+    if (error.status === 403) return 'This page is only available to the business owner.';
+    const e = Object.entries(error.fields);
+    if (e.length > 0 && error.status === 400) {
+      return e.map(([k, v]) => (FIELDS[k] ? `${FIELDS[k]}: ${flatten(v)}` : flatten(v))).join(' ');
+    }
+    return error.message;
+  }
+
+  function showError(id: string, message: string | null): void {
+    const el = $(id);
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+  }
+
+  function notice(message: string | null, error = false): void {
+    const el = $('py-notice')!;
+    el.hidden = !message;
+    el.textContent = message ?? '';
+    el.classList.toggle('is-error', error);
+  }
+
+  async function submit(btnId: string, errId: string, dialogId: string, work: () => Promise<void>): Promise<void> {
+    const btn = $<HTMLButtonElement>(btnId)!;
+    btn.disabled = true;
+    showError(errId, null);
+    try {
+      await work();
+      dlg(dialogId).close();
+    } catch (error) {
+      showError(errId, describe(error));
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  const kpi = (label: string, value: string, tone = '') =>
+    `<article class="py-kpi ${tone}"><span>${esc(label)}</span><strong>${esc(value)}</strong></article>`;
+
+  const badge = (cls: string, text: string) => `<span class="py-badge py-badge-${cls}">${esc(text)}</span>`;
+
+  // ---- Reason dialog ---------------------------------------------------
+
+  let reasonWork: ((reason: string) => Promise<void>) | null = null;
+
+  function askReason(title: string, sub: string, work: (reason: string) => Promise<void>): void {
+    $('rs-title')!.textContent = title;
+    $('rs-sub')!.textContent = sub;
+    $<HTMLInputElement>('rs-text')!.value = '';
+    showError('rs-error', null);
+    reasonWork = work;
+    dlg('dlg-reason').showModal();
+  }
+
+  $('form-reason')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const reason = val('rs-text').trim();
+    if (!reason || !reasonWork) return;
+    void submit('rs-save', 'rs-error', 'dlg-reason', async () => {
+      await reasonWork!(reason);
+      await refresh();
+    });
+  });
+
+  // ---- Expenses and income ---------------------------------------------
+
+  function ledgerFilters() {
+    return {
+      category: val('lg-category'),
+      status: val('lg-status') as 'active' | 'void' | '',
+      dateFrom: val('lg-from'),
+      dateTo: val('lg-to'),
+    };
+  }
+
+  function fillCategoryFilter(): void {
+    const labels = kindOf() === 'expenses' ? EXPENSE_LABEL : INCOME_LABEL;
+    const sel = $<HTMLSelectElement>('lg-category')!;
+    sel.innerHTML =
+      `<option value="">All categories</option>` +
+      Object.entries(labels).map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+  }
+
+  function renderLedger(summary: LedgerSummary | null): void {
+    const expenses = kindOf() === 'expenses';
+    $('lg-kpis')!.innerHTML = summary
+      ? [
+          kpi(expenses ? 'Spent' : 'Received', formatNpr(summary.total)),
+          kpi(expenses ? 'Refunded by suppliers' : 'Refunded to customers', formatNpr(summary.refunds)),
+          kpi(expenses ? 'Net spent' : 'Net income', formatNpr(summary.net), 'strong'),
+        ].join('') + (summary.byCategory.length
+          ? `<article class="py-kpi wide"><span>By category</span><div class="py-cats">${summary.byCategory
+              .map((c) => `<em>${esc(labelOf(c.category))} <b>${formatNpr(c.total)}</b></em>`).join('')}</div></article>`
+          : '')
+      : '';
+
+    const tbody = $('lg-tbody')!;
+    if (entries.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="py-empty">${expenses ? 'No expenses' : 'No income'} found.</td></tr>`;
+    } else {
+      tbody.innerHTML = entries
+        .map((r) => {
+          const acts: string[] = [];
+          if (canWrite && r.status === 'active' && !r.locked) {
+            if (kindOf() === 'expenses') acts.push(`<button class="btn-link" data-edit="${r.id}">Edit</button>`);
+            acts.push(`<button class="btn-link is-danger" data-void="${r.id}">Void</button>`);
+          }
+          const detail = [r.description, r.reference ? `Ref ${r.reference}` : ''].filter(Boolean).map(esc).join(' · ');
+          return `<tr class="${r.status === 'void' ? 'is-void' : ''}">
+            <td>${esc(r.date)}</td>
+            <td>${esc(labelOf(r.category))}${r.locked ? ' <span class="py-lock" title="Created by a payment. Void the payment to remove it.">auto</span>' : ''}</td>
+            <td>${detail || '—'}${r.status === 'void' && r.voidReason ? `<br /><span class="muted">Voided: ${esc(r.voidReason)}</span>` : ''}</td>
+            <td>${r.method ? esc(METHOD_LABEL[r.method as PayMethod] ?? r.method) : '—'}</td>
+            <td class="num">${formatNpr(r.amount)}</td>
+            <td>${r.status === 'void' ? badge('void', 'Void') : badge('ok', 'Active')}</td>
+            <td class="actions">${acts.join(' ')}</td>
+          </tr>`;
+        })
+        .join('');
+    }
+    $('lg-foot')!.textContent =
+      `${entries.length} ${expenses ? 'expense' : 'income'} line${entries.length === 1 ? '' : 's'}.` +
+      (expenses
+        ? ' Lines marked "auto" come from staff and supplier payments; void the payment to remove them.'
+        : ' Lines marked "auto" come from customer payments; void the payment to remove them.');
+
+    tbody.querySelectorAll<HTMLButtonElement>('[data-edit]').forEach((b) =>
+      b.addEventListener('click', () => openLedger(entries.find((x) => x.id === Number(b.dataset.edit)))),
+    );
+    tbody.querySelectorAll<HTMLButtonElement>('[data-void]').forEach((b) =>
+      b.addEventListener('click', () =>
+        askReason(`Void this ${kindOf() === 'expenses' ? 'expense' : 'income'}`, 'It stops counting in totals and reports.', async (reason) => {
+          await voidLedger(kindOf(), Number(b.dataset.void), reason);
+        }),
+      ),
+    );
+  }
+
+  async function loadLedger(): Promise<void> {
+    const mine = ++token;
+    try {
+      const f = ledgerFilters();
+      const [list, summary] = await Promise.all([listLedger(kindOf(), f), ledgerSummary(kindOf(), f)]);
+      if (mine !== token) return;
+      entries = list;
+      notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+      renderLedger(summary);
+    } catch (error) {
+      if (mine !== token) return;
+      entries = [];
+      notice(describe(error), true);
+      renderLedger(null);
+    }
+  }
+
+  function openLedger(entry?: LedgerEntry): void {
+    const expenses = kindOf() === 'expenses';
+    $('lf-title')!.textContent = entry ? 'Edit expense' : expenses ? 'Add expense' : 'Add income';
+    $<HTMLInputElement>('lf-id')!.value = entry ? String(entry.id) : '';
+    // Salary, purchase and the sale categories come from payments.
+    const cats: [string, string][] = expenses
+      ? MANUAL_EXPENSE.map((c) => [c, EXPENSE_LABEL[c]])
+      : [['other', INCOME_LABEL.other]];
+    $<HTMLSelectElement>('lf-category')!.innerHTML = cats.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+    $<HTMLSelectElement>('lf-category')!.value = entry?.category ?? cats[0][0];
+    $<HTMLInputElement>('lf-amount')!.value = entry ? String(entry.amount) : '';
+    $<HTMLInputElement>('lf-date')!.value = entry?.date ?? today();
+    $<HTMLInputElement>('lf-date')!.max = today();
+    $<HTMLSelectElement>('lf-method')!.value = entry?.method ?? '';
+    $<HTMLInputElement>('lf-ref')!.value = entry?.reference ?? '';
+    $<HTMLInputElement>('lf-desc')!.value = entry?.description ?? '';
+    showError('lf-error', null);
+    dlg('dlg-ledger').showModal();
+  }
+
+  $('form-ledger')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = Number(val('lf-id')) || 0;
+    const input = {
+      category: val('lf-category'),
+      amount: Number(val('lf-amount')),
+      date: val('lf-date'),
+      description: val('lf-desc'),
+      method: val('lf-method') as PayMethod | '',
+      reference: val('lf-ref'),
+    };
+    void submit('lf-save', 'lf-error', 'dlg-ledger', async () => {
+      if (id) await updateLedger(kindOf(), id, input);
+      else await createLedger(kindOf(), input);
+      await refresh();
+    });
+  });
+
+  // ---- Payroll ---------------------------------------------------------
+
+  const payLabel = (t: PayType) => (t === 'monthly' ? 'Monthly' : 'Daily');
+
+  function renderPayrollKpis(): void {
+    const owed = balances.reduce((s, b) => s + b.remaining, 0);
+    const advance = balances.reduce((s, b) => s + b.advance, 0);
+    const owing = balances.filter((b) => b.remaining > 0).length;
+    $('pr-kpis')!.innerHTML = [
+      kpi('Staff with pay set up', String(balances.length)),
+      kpi('Owed to staff now', formatNpr(owed), owed > 0 ? 'danger' : ''),
+      kpi('Staff owed money', String(owing)),
+      kpi('Paid ahead (advance)', formatNpr(advance)),
+    ].join('');
+  }
+
+  function renderSetup(): void {
+    const el = $('pr-setup')!;
+    const have = new Set(salaries.map((s) => s.staffId));
+    const missing = staff.filter((s) => s.isActive && !have.has(s.id));
+    el.hidden = missing.length === 0 || !canWrite;
+    if (el.hidden) return;
+    el.innerHTML =
+      `<strong>No pay set up yet:</strong> ` +
+      missing.map((s) => `<button type="button" class="py-chip" data-setup="${s.id}">${esc(s.name || s.username)} · Set pay</button>`).join('');
+    el.querySelectorAll<HTMLButtonElement>('[data-setup]').forEach((b) =>
+      b.addEventListener('click', () => openSalary(Number(b.dataset.setup))),
+    );
+  }
+
+  function renderBalances(): void {
+    const tbody = $('pr-tbody')!;
+    if (balances.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="py-empty">No staff pay yet. Set up pay for a person above.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = balances
+      .map((b) => `<tr class="py-row ${selectedId === b.staffId ? 'is-selected' : ''}" data-id="${b.staffId}">
+        <td>${esc(b.name)}${b.isActive ? '' : ' <span class="muted">(inactive)</span>'}</td>
+        <td>${payLabel(b.payType)}</td>
+        <td class="num ${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}</td>
+        <td class="num">${b.advance > 0 ? formatNpr(b.advance) : '—'}</td>
+        <td>${b.nextSalaryDate ? esc(b.nextSalaryDate) : '—'}</td>
+      </tr>`)
+      .join('');
+    tbody.querySelectorAll<HTMLTableRowElement>('.py-row').forEach((r) =>
+      r.addEventListener('click', () => void openStaff(Number(r.dataset.id))),
+    );
+  }
+
+  async function loadPayroll(): Promise<void> {
+    const mine = ++token;
+    try {
+      const [b, s, st] = await Promise.all([listBalances(val('pr-search').trim()), listSalaries(), listStaff()]);
+      if (mine !== token) return;
+      balances = b;
+      salaries = s;
+      staff = st;
+      notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+    } catch (error) {
+      if (mine !== token) return;
+      balances = [];
+      notice(describe(error), true);
+    }
+    renderPayrollKpis();
+    renderSetup();
+    renderBalances();
+    if (selectedId) void openStaff(selectedId);
+  }
+
+  async function openStaff(id: number): Promise<void> {
+    selectedId = id;
+    renderBalances();
+    const el = $('pr-detail')!;
+    try {
+      const [{ balance: b, unsettled }, statement] = await Promise.all([getBalance(id), listStatement(id)]);
+      const profile = salaries.find((s) => s.staffId === id);
+      const acts: string[] = [];
+      if (canWrite) {
+        acts.push(`<button class="btn-primary-sm" data-act="pay">Pay</button>`);
+        acts.push(`<button class="btn-ghost-sm" data-act="entry">${b.payType === 'daily' ? 'Add wage / bonus' : 'Add bonus / deduction'}</button>`);
+        acts.push(`<button class="btn-ghost-sm" data-act="setup">Pay setup</button>`);
+      }
+      el.innerHTML = `
+        <div class="py-detail-head">
+          <h3>${esc(b.name)}</h3>
+          <p class="muted small">${payLabel(b.payType)}${profile && b.payType === 'monthly' ? ` · ${formatNpr(profile.rate)}${profile.allowances ? ` + ${formatNpr(profile.allowances)} allowances` : ''} · due on day ${profile.salaryDay}` : ''}</p>
+        </div>
+        <div class="py-detail-actions">${acts.join('')}</div>
+        <div class="py-mini-kpis">
+          <div><span>Owed now</span><strong class="${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}</strong></div>
+          <div><span>Advance</span><strong>${formatNpr(b.advance)}</strong></div>
+          <div><span>Earned</span><strong>${formatNpr(b.totalEarned)}</strong></div>
+          <div><span>Paid</span><strong>${formatNpr(b.totalPaid)}</strong></div>
+        </div>
+        ${b.previousRemaining > 0 ? `<p class="py-note is-warn">${formatNpr(b.previousRemaining)} is carried over from earlier periods.</p>` : ''}
+        ${unsettled.length ? `<h4>Not paid yet</h4>
+          <ul class="py-list">${unsettled.map((u) => `<li><span>${esc(u.date)} · ${esc(pretty(u.kind))}${u.carriedOver ? ' · earlier' : ''}${u.description ? ` · ${esc(u.description)}` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`).join('')}</ul>` : ''}
+        <h4>Statement</h4>
+        ${statement.length === 0 ? `<p class="muted small">Nothing yet.</p>` : `
+        <div class="py-table-wrap"><table class="py-table py-mini">
+          <thead><tr><th>Date</th><th>What</th><th class="num">Amount</th><th class="num">Owed after</th><th></th></tr></thead>
+          <tbody>${statement.slice(0, 60).map((s) => {
+            const sign = s.direction === 'paid' ? '−' : s.direction === 'deducted' ? '−' : '+';
+            const what = s.type === 'payment'
+              ? `Paid${s.method ? ` (${esc(METHOD_LABEL[s.method as PayMethod] ?? s.method)})` : ''}${s.advancePart > 0 ? ` · advance ${formatNpr(s.advancePart)}` : ''}`
+              : esc(pretty(s.type));
+            const note = [s.description, s.reference ? `Ref ${s.reference}` : ''].filter(Boolean).map(esc).join(' · ');
+            return `<tr><td>${esc(s.date)}</td><td>${what}${note ? `<br /><span class="muted">${note}</span>` : ''}</td>
+              <td class="num">${sign}${formatNpr(s.amount)}</td>
+              <td class="num">${s.advanceAfter > 0 ? `<span class="muted">adv ${formatNpr(s.advanceAfter)}</span>` : formatNpr(s.owedAfter)}</td>
+              <td>${canWrite ? `<button class="btn-link is-danger" data-void-${s.type === 'payment' ? 'pay' : 'entry'}="${s.id}">Void</button>` : ''}</td></tr>`;
+          }).join('')}</tbody></table></div>
+        ${statement.length > 60 ? `<p class="muted small">Showing the latest 60 of ${statement.length}.</p>` : ''}`}`;
+
+      el.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((x) =>
+        x.addEventListener('click', () => {
+          if (x.dataset.act === 'pay') openPay(b);
+          else if (x.dataset.act === 'entry') openEntry(b);
+          else openSalary(id);
+        }),
+      );
+      el.querySelectorAll<HTMLButtonElement>('[data-void-pay]').forEach((x) =>
+        x.addEventListener('click', () =>
+          askReason('Void payment', 'The amount goes back onto what is owed.', async (reason) => {
+            await voidPayrollPayment(Number(x.dataset.voidPay), reason);
+          }),
+        ),
+      );
+      el.querySelectorAll<HTMLButtonElement>('[data-void-entry]').forEach((x) =>
+        x.addEventListener('click', () =>
+          askReason('Void entry', 'It stops counting as earned or deducted.', async (reason) => {
+            await voidEntry(Number(x.dataset.voidEntry), reason);
+          }),
+        ),
+      );
+    } catch (error) {
+      el.innerHTML = `<p class="py-empty-detail">${esc(describe(error))}</p>`;
+    }
+  }
+
+  function openSalary(staffId: number): void {
+    const person = staff.find((s) => s.id === staffId);
+    const profile = salaries.find((s) => s.staffId === staffId);
+    $('sl-sub')!.textContent = person ? person.name || person.username : '';
+    $('form-salary')!.dataset.id = String(staffId);
+    $<HTMLSelectElement>('sl-type')!.value = profile?.payType ?? 'monthly';
+    $<HTMLInputElement>('sl-rate')!.value = String(profile?.rate ?? 0);
+    $<HTMLInputElement>('sl-allow')!.value = String(profile?.allowances ?? 0);
+    $<HTMLInputElement>('sl-day')!.value = String(profile?.salaryDay ?? 1);
+    $<HTMLInputElement>('sl-start')!.value = profile?.startDate ?? today();
+    // The start date is fixed once pay is set up.
+    $('sl-start-wrap')!.hidden = Boolean(profile);
+    $('sl-note')!.textContent = profile
+      ? 'Changing the pay applies to future months only. Switching between monthly and daily starts the new type from today.'
+      : 'Monthly salary is recorded by the system on the salary day. Daily wages are entered each day.';
+    syncSalaryType();
+    showError('sl-error', null);
+    dlg('dlg-salary').showModal();
+  }
+
+  function syncSalaryType(): void {
+    const monthly = val('sl-type') === 'monthly';
+    document.querySelectorAll<HTMLElement>('[data-monthly]').forEach((el) => (el.hidden = !monthly));
+  }
+  $('sl-type')?.addEventListener('change', syncSalaryType);
+
+  $('form-salary')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = Number($('form-salary')!.dataset.id);
+    const hasProfile = salaries.some((s) => s.staffId === id);
+    void submit('sl-save', 'sl-error', 'dlg-salary', async () => {
+      await saveSalary(id, {
+        payType: val('sl-type') as PayType,
+        rate: Number(val('sl-rate')) || 0,
+        allowances: Number(val('sl-allow')) || 0,
+        salaryDay: Number(val('sl-day')) || 1,
+        startDate: hasProfile ? undefined : val('sl-start'),
+      });
+      selectedId = id;
+      await refresh();
+    });
+  });
+
+  function openPay(b: PayBalance): void {
+    $('pp-sub')!.textContent = `${b.name} · owed now ${formatNpr(b.remaining)}${b.advance > 0 ? ` · advance ${formatNpr(b.advance)}` : ''}`;
+    $('form-pay')!.dataset.id = String(b.staffId);
+    $<HTMLInputElement>('pp-amount')!.value = b.remaining > 0 ? String(b.remaining) : '';
+    $<HTMLSelectElement>('pp-method')!.value = 'cash';
+    $<HTMLInputElement>('pp-date')!.value = today();
+    $<HTMLInputElement>('pp-date')!.max = today();
+    $<HTMLInputElement>('pp-ref')!.value = '';
+    showError('pp-error', null);
+    dlg('dlg-pay').showModal();
+  }
+
+  $('form-pay')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = Number($('form-pay')!.dataset.id);
+    void submit('pp-save', 'pp-error', 'dlg-pay', async () => {
+      await addPayrollPayment({
+        staffId: id,
+        amount: Number(val('pp-amount')),
+        method: val('pp-method') as PayMethod,
+        paidOn: val('pp-date'),
+        reference: val('pp-ref'),
+      });
+      await refresh();
+    });
+  });
+
+  function openEntry(b: PayBalance): void {
+    $('en-sub')!.textContent = b.name;
+    $('form-entry')!.dataset.id = String(b.staffId);
+    const kinds: [EntryKind, string][] =
+      b.payType === 'daily'
+        ? [['wage', 'Daily wage'], ['bonus', 'Bonus'], ['deduction', 'Deduction']]
+        : [['bonus', 'Bonus'], ['deduction', 'Deduction']];
+    $<HTMLSelectElement>('en-kind')!.innerHTML = kinds.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    $<HTMLInputElement>('en-date')!.value = today();
+    $<HTMLInputElement>('en-amount')!.value = '';
+    $<HTMLInputElement>('en-desc')!.value = '';
+    showError('en-error', null);
+    dlg('dlg-entry').showModal();
+  }
+
+  $('form-entry')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = Number($('form-entry')!.dataset.id);
+    void submit('en-save', 'en-error', 'dlg-entry', async () => {
+      await addEntry({
+        staffId: id,
+        kind: val('en-kind') as EntryKind,
+        date: val('en-date'),
+        amount: Number(val('en-amount')),
+        description: val('en-desc'),
+      });
+      await refresh();
+    });
+  });
+
+  // ---- Tabs and load ---------------------------------------------------
+
+  function syncTab(): void {
+    document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('is-active', (b as HTMLElement).dataset.tab === tab));
+    document.querySelectorAll('[data-panel]').forEach((p) => p.classList.remove('is-active'));
+    document.querySelector(`[data-panel="${tab === 'payroll' ? 'payroll' : 'ledger'}"]`)?.classList.add('is-active');
+    const add = $<HTMLButtonElement>('py-add')!;
+    add.hidden = !canWrite || tab === 'payroll';
+    add.textContent = tab === 'income' ? '+ Add income' : '+ Add expense';
+  }
+
+  async function refresh(): Promise<void> {
+    syncTab();
+    if (tab === 'payroll') await loadPayroll();
+    else await loadLedger();
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) =>
+    b.addEventListener('click', () => {
+      tab = b.dataset.tab as Tab;
+      if (tab !== 'payroll') fillCategoryFilter();
+      void refresh();
+    }),
+  );
+
+  for (const id of ['lg-category', 'lg-status', 'lg-from', 'lg-to']) $(id)?.addEventListener('change', () => void loadLedger());
+  let timer: number | undefined;
+  $('pr-search')?.addEventListener('input', () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => void loadPayroll(), 300);
+  });
+  $('py-add')?.addEventListener('click', () => openLedger());
+  $('py-refresh')?.addEventListener('click', () => void refresh());
+  document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => { selectedId = null; void init(); }, 300));
+
+  function init(): void {
+    const s = getSession();
+    if (s) $('py-scope')!.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
+    canWrite = s?.accessMode !== 'read_only';
+    fillCategoryFilter();
+    void refresh();
+  }
+
+  init();
+</script>
+
+<style is:global>
+  .py-page { display: flex; flex-direction: column; gap: 14px; }
+  .py-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .py-toolbar-right { display: flex; gap: 8px; }
+  .py-scope { margin: 0 0 6px; font-size: 0.78rem; color: var(--text-muted); }
+  .py-tabs { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .py-tab {
+    border: none; background: transparent; padding: 6px 14px; border-radius: 7px; font-family: inherit;
+    font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+  }
+  .py-tab.is-active { background: var(--panel-bg); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .btn-primary-sm, .btn-ghost-sm { height: 34px; padding: 0 12px; border-radius: 8px; font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer; }
+  .btn-primary-sm { border: none; background: var(--accent); color: #fff; }
+  .btn-primary-sm.is-danger { background: #ef334e; }
+  .btn-primary-sm:disabled { opacity: 0.6; cursor: default; }
+  .btn-ghost-sm { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); }
+  .btn-ghost-sm:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .btn-link { border: none; background: transparent; color: var(--accent); font-family: inherit; font-size: 0.78rem; font-weight: 650; cursor: pointer; padding: 0; }
+  .btn-link.is-danger { color: #ef334e; }
+
+  .py-notice { margin: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-secondary); font-size: 0.8rem; }
+  .py-notice.is-error { color: #ef334e; border-color: rgba(239, 51, 78, 0.4); }
+
+  .py-panel { display: none; }
+  .py-panel.is-active { display: block; }
+  .py-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .py-kpi { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); }
+  .py-kpi span { display: block; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .py-kpi strong { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+  .py-kpi.danger strong { color: #ef334e; }
+  .py-kpi.strong { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  .py-kpi.wide { grid-column: 1 / -1; }
+  .py-cats { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.8rem; }
+  .py-cats em { font-style: normal; color: var(--text-secondary); }
+  .py-cats b { color: var(--text-primary); margin-left: 4px; }
+
+  .py-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr); gap: 12px; align-items: start; }
+  @media (max-width: 1000px) { .py-layout { grid-template-columns: 1fr; } }
+  .py-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 12px; }
+  .py-setup { margin-bottom: 12px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 12px; font-size: 0.8rem; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+  .py-chip { border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); border-radius: 999px; padding: 4px 10px; font-family: inherit; font-size: 0.76rem; font-weight: 600; cursor: pointer; }
+  .py-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+  .py-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
+  .py-filters input, .py-filters select {
+    height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem;
+  }
+  .py-filters input[type='search'] { flex: 1; min-width: 160px; }
+  .py-inline { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
+
+  .py-table-wrap { overflow-x: auto; }
+  .py-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .py-table th, .py-table td { padding: 8px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .py-table th { font-size: 0.66rem; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+  .py-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .py-table .actions { white-space: nowrap; text-align: right; }
+  .py-table tr.is-void td { color: var(--text-muted); }
+  .py-table tr.is-void .num { text-decoration: line-through; }
+  .py-row { cursor: pointer; }
+  .py-row:hover td { background: var(--surface-hover); }
+  .py-row.is-selected td { background: var(--accent-soft); }
+  .py-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
+  .py-foot { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
+  .py-lock { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; padding: 1px 5px; border-radius: 4px; background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+  .muted { color: var(--text-muted); }
+  .small { font-size: 0.75rem; }
+  .neg { color: #ef334e; }
+
+  .py-badge { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 650; }
+  .py-badge-ok { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+  .py-badge-void { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+
+  .py-empty-detail { margin: 0; padding: 24px 8px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
+  .py-detail-head h3 { margin: 0 0 2px; font-size: 1rem; font-weight: 650; }
+  .py-detail-head p { margin: 0; }
+  .py-detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+  .py-mini-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .py-mini-kpis div { padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .py-mini-kpis span { display: block; font-size: 0.64rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+  .py-mini-kpis strong { font-size: 0.95rem; }
+  #pr-detail h4 { margin: 14px 0 6px; font-size: 0.74rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
+  .py-list { list-style: none; margin: 0; padding: 0; font-size: 0.8rem; }
+  .py-list li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .py-note { margin: 10px 0 0; font-size: 0.74rem; color: var(--text-muted); }
+  .py-note.is-warn { color: #d97706; }
+
+  .py-dialog {
+    border: none; border-radius: 14px; padding: 0; background: var(--panel-bg); color: var(--text-primary);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.28); max-width: 460px; width: calc(100% - 32px);
+  }
+  .py-dialog::backdrop { background: rgba(8,15,29,0.55); backdrop-filter: blur(4px); }
+  .py-dialog-inner { padding: 20px; max-height: 88vh; overflow-y: auto; }
+  .py-dialog-title { margin: 0 0 6px; font-size: 1rem; font-weight: 650; }
+  .py-sub { margin: 0 0 12px; font-size: 0.8rem; color: var(--text-muted); }
+  .py-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 10px 0; }
+  @media (max-width: 520px) { .py-grid { grid-template-columns: 1fr; } }
+  .py-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); }
+  .py-field[hidden] { display: none; }
+  .py-field input, .py-field select {
+    height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
+  }
+  .py-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
+  .py-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+</style>
