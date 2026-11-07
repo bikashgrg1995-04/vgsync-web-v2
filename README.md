@@ -97,6 +97,18 @@ The Sales page uses `/api/v1/sales/`. The server works out every total (discount
 
 Not on this page yet: printable invoice and Excel/PDF export of sales.
 
+## Reports
+
+The Reports page uses `/api/v1/reports/` (owner only). Pick a report, set the period, and download the same view as Excel or PDF.
+
+- Profit & loss (cash basis, by category and month), Receivables and Payables (aged 0-30, 31-60, 61-90, over 90 days), Stock value.
+- Sales trend (by month, week or day, less returns), Top products (by value or quantity), Top customers, Top suppliers, Payroll.
+- A non-owner who opens the page sees "Reports are only available to the business owner".
+
+## Styling note
+
+Pages build tables and dialogs from script, so their `<style>` blocks are `is:global` (Astro's scoped styles would not reach that markup). Keep class names prefixed per page (`cus-`, `sa-`, `pu-`, `rp-`).
+
 ## Not connected to the API yet
 
 The Settings profile/preferences still use demo data stored in the browser.
