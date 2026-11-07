@@ -1,6 +1,5 @@
 /**
- * Navigation menu definitions.
- * Later this will be driven by Django permissions / role + branch.
+ * Navigation menu definitions — aligned with the VGSync design mock.
  */
 
 import type { UserRole } from './auth';
@@ -13,68 +12,79 @@ export interface NavItem {
 }
 
 const ALL_ITEMS: NavItem[] = [
-  { id: 'overview', label: 'Overview', href: '/dashboard', icon: 'home' },
+  { id: 'overview', label: 'Dashboard', href: '/dashboard', icon: 'home' },
   { id: 'inventory', label: 'Inventory', href: '/dashboard/inventory', icon: 'box' },
-  { id: 'sales', label: 'Sales', href: '/dashboard/sales', icon: 'cart' },
   { id: 'purchase', label: 'Purchase', href: '/dashboard/purchase', icon: 'clipboard' },
+  { id: 'sales', label: 'Sales', href: '/dashboard/sales', icon: 'cart' },
+  { id: 'returns', label: 'Returns', href: '/dashboard/returns', icon: 'returns' },
+  { id: 'payments', label: 'Payments', href: '/dashboard/payments', icon: 'wallet' },
+  { id: 'reports', label: 'Reports', href: '/dashboard/reports', icon: 'chart' },
+  { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users' },
+  { id: 'servicing', label: 'Servicing', href: '/dashboard/servicing', icon: 'wrench' },
   { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck' },
   { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck' },
-  { id: 'payments', label: 'Payments', href: '/dashboard/payments', icon: 'wallet' },
-  { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users' },
   { id: 'staff', label: 'Staff', href: '/dashboard/staff', icon: 'users' },
-  { id: 'reports', label: 'Reports', href: '/dashboard/reports', icon: 'chart' },
   { id: 'branches', label: 'Branches', href: '/dashboard/branches', icon: 'building' },
 ];
 
+/** Primary sidebar order matching the design mock. Extra modules stay available by role. */
 const ROLE_MENU: Record<UserRole, string[]> = {
   owner: [
     'overview',
     'inventory',
-    'sales',
     'purchase',
+    'sales',
+    'returns',
+    'payments',
+    'reports',
+    'customers',
+    'servicing',
     'orders',
     'suppliers',
-    'payments',
-    'customers',
     'staff',
-    'reports',
     'branches',
   ],
   branch_owner: [
     'overview',
     'inventory',
-    'sales',
     'purchase',
+    'sales',
+    'returns',
+    'payments',
+    'reports',
+    'customers',
+    'servicing',
     'orders',
     'suppliers',
-    'payments',
-    'customers',
     'staff',
-    'reports',
   ],
   headoffice: [
     'overview',
     'inventory',
-    'sales',
     'purchase',
+    'sales',
+    'returns',
+    'payments',
+    'reports',
+    'customers',
+    'servicing',
     'orders',
     'suppliers',
-    'payments',
-    'customers',
-    'reports',
   ],
   branch_manager: [
     'overview',
     'inventory',
-    'sales',
     'purchase',
+    'sales',
+    'returns',
+    'payments',
+    'reports',
+    'customers',
+    'servicing',
     'orders',
     'suppliers',
-    'payments',
-    'customers',
-    'reports',
   ],
-  staff: ['overview', 'inventory', 'sales', 'customers'],
+  staff: ['overview', 'inventory', 'sales', 'customers', 'servicing'],
 };
 
 /**
@@ -91,5 +101,6 @@ export function getNavItemsForRole(role: UserRole, canManageTeam?: boolean): Nav
 
 export const BOTTOM_NAV: NavItem[] = [
   { id: 'settings', label: 'Settings', href: '/dashboard/settings', icon: 'settings' },
+  { id: 'help', label: 'Help & Support', href: '/dashboard/help', icon: 'help' },
   { id: 'logout', label: 'Logout', href: '#logout', icon: 'logout' },
 ];
