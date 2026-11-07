@@ -1,6 +1,5 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
-import PageSkeleton from '../components/app/PageSkeleton.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
 import { PAGE_META } from '../lib/page-meta';
 import type { UserRole } from '../lib/auth';
@@ -22,5 +21,204 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <PageSkeleton title={meta.skeletonTitle} hint={meta.skeletonHint} />
+  <div class="ov-page">
+    <div class="ov-head">
+      <div>
+        <p class="ov-scope" id="ov-scope">Overview</p>
+        <h2 class="ov-title" id="ov-title">Today</h2>
+      </div>
+      <button type="button" class="ov-refresh" id="ov-refresh">Refresh</button>
+    </div>
+
+    <div class="ov-kpis" id="ov-kpis"></div>
+
+    <section class="ov-card" id="ov-money" hidden>
+      <h3>This month's money <span class="ov-hint" id="ov-month"></span></h3>
+      <div class="ov-kpis" id="ov-money-kpis"></div>
+    </section>
+
+    <div class="ov-grid">
+      <section class="ov-card">
+        <h3>Sales, last 14 days <span class="ov-hint">confirmed sales</span></h3>
+        <div id="ov-chart"></div>
+      </section>
+      <section class="ov-card">
+        <h3>Follow-ups due <a href="/dashboard/sales" class="ov-more">Open</a></h3>
+        <div id="ov-follow"></div>
+      </section>
+      <section class="ov-card">
+        <h3>Stock to watch <a href="/dashboard/inventory" class="ov-more">Open</a></h3>
+        <div id="ov-stock"></div>
+      </section>
+      <section class="ov-card">
+        <h3>Recent sales <a href="/dashboard/sales" class="ov-more">Open</a></h3>
+        <div id="ov-sales"></div>
+      </section>
+    </div>
+  </div>
 </AppLayout>
+
+<script>
+  import { getSession } from '../lib/auth';
+  import { listSales, type Sale } from '../lib/sales';
+  import { listFollowups, type Followup } from '../lib/sales';
+  import { listStock, getInventorySummary, type StockItem } from '../lib/inventory';
+  import { listOrders, type OrderSummary } from '../lib/orders';
+  import { loadReport, formatNpr, type ProfitLoss, type Ageing } from '../lib/reports';
+
+  const session = getSession();
+  if (!session) window.location.replace('/');
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const esc = (s: string) =>
+    String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const iso = (d: Date) => d.toLocaleDateString('en-CA');
+  const daysAgo = (n: number) => new Date(Date.now() - n * 864e5);
+  const kpi = (label: string, value: string, sub = '', tone = '', href = '') =>
+    `<${href ? 'a href="' + href + '"' : 'article'} class="ov-kpi ${tone}"><span>${esc(label)}</span><strong>${esc(value)}</strong>${sub ? `<em>${esc(sub)}</em>` : ''}</${href ? 'a' : 'article'}>`;
+  const empty = (t: string) => `<p class="ov-empty">${esc(t)}</p>`;
+  let run = 0;
+
+  function chart(sales: Sale[]): string {
+    const days: { key: string; label: string; total: number }[] = [];
+    for (let i = 13; i >= 0; i -= 1) {
+      const d = daysAgo(i);
+      days.push({ key: iso(d), label: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), total: 0 });
+    }
+    for (const s of sales) {
+      const d = days.find((x) => x.key === s.saleDate);
+      if (d) d.total += s.netTotal;
+    }
+    const max = Math.max(...days.map((d) => d.total), 1);
+    if (days.every((d) => d.total === 0)) return empty('No confirmed sales in the last 14 days.');
+    return `<div class="ov-bars">${days
+      .map((d) => `<div class="ov-bar" title="${esc(d.label)}: ${esc(formatNpr(d.total))}"><i style="height:${Math.max((d.total / max) * 100, d.total ? 3 : 0)}%"></i><span>${d.label.split(' ')[0]}</span></div>`)
+      .join('')}</div>`;
+  }
+
+  async function load(): Promise<void> {
+    const mine = ++run;
+    const s = getSession();
+    if (!s) return;
+    $('ov-scope').textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
+    $('ov-title').textContent = `Hello, ${s.displayName.split(' ')[0]}`;
+    const isOwner = s.role === 'owner' || s.role === 'branch_owner';
+    const month = iso(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const from14 = iso(daysAgo(13));
+    const from = month < from14 ? month : from14;
+    const today = iso(new Date());
+
+    const [sales, follow, stock, orders] = await Promise.all([
+      listSales({ status: 'confirmed', dateFrom: from }).catch(() => null),
+      listFollowups({ status: 'pending' }).catch(() => null),
+      listStock().catch(() => null),
+      s.businessType === 'independent' || s.role === 'staff' ? Promise.resolve(null) : listOrders().catch(() => null),
+    ]);
+    if (mine !== run) return;
+
+    const kpis: string[] = [];
+    if (sales) {
+      const t = sales.filter((x) => x.saleDate === today);
+      const m = sales.filter((x) => x.saleDate >= month);
+      kpis.push(kpi("Today's sales", formatNpr(t.reduce((a, x) => a + x.netTotal, 0)), `${t.length} sale${t.length === 1 ? '' : 's'}`, 'strong', '/dashboard/sales'));
+      kpis.push(kpi('This month', formatNpr(m.reduce((a, x) => a + x.netTotal, 0)), `${m.length} sale${m.length === 1 ? '' : 's'}`));
+    }
+    if (follow) {
+      const over = follow.filter((f: Followup) => f.isOverdue).length;
+      kpis.push(kpi('Follow-ups pending', String(follow.length), over ? `${over} overdue` : 'none overdue', over ? 'danger' : '', '/dashboard/sales'));
+    }
+    if (stock) {
+      const sm = getInventorySummary(stock);
+      kpis.push(kpi('Low or out of stock', String(sm.lowCount + sm.outCount), `${sm.outCount} out · ${sm.lowCount} low`, sm.outCount ? 'danger' : '', '/dashboard/inventory'));
+    }
+    if (orders) {
+      const open = orders.filter((o: OrderSummary) => ['ordered', 'partially_dispatched', 'dispatched', 'partially_received'].includes(o.status));
+      kpis.push(kpi('Open stock orders', String(open.length), s.businessType === 'branch' ? 'with Head Office' : 'from branches', '', '/dashboard/orders'));
+    }
+    $('ov-kpis').innerHTML = kpis.join('');
+
+    $('ov-chart').innerHTML = sales ? chart(sales) : empty('Sales are not available for you.');
+    $('ov-sales').innerHTML = sales
+      ? sales.length
+        ? `<ul class="ov-list">${[...sales].sort((a, b) => b.id - a.id).slice(0, 6).map((x) => `<li><span>${esc(x.customerName || x.walkInName || 'Walk-in')}<em>${esc(x.invoiceNo || x.saleNo)} · ${esc(x.saleDate)}</em></span><strong>${formatNpr(x.netTotal)}</strong></li>`).join('')}</ul>`
+        : empty('No sales yet this month.')
+      : empty('Not available.');
+
+    $('ov-follow').innerHTML = follow
+      ? follow.length
+        ? `<ul class="ov-list">${[...follow].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 6).map((f) => `<li><span>${esc(f.customerName || '—')}<em>${esc(f.kind.replace(/_/g, ' '))} · due ${esc(f.dueDate)}</em></span>${f.isOverdue ? '<b class="ov-tag">Overdue</b>' : f.amount ? `<strong>${formatNpr(f.amount)}</strong>` : ''}</li>`).join('')}</ul>`
+        : empty('Nothing pending.')
+      : empty('Not available.');
+
+    $('ov-stock').innerHTML = stock
+      ? (() => {
+          const watch = stock.filter((i: StockItem) => i.status !== 'in_stock').sort((a, b) => a.quantity - b.quantity).slice(0, 7);
+          return watch.length
+            ? `<ul class="ov-list">${watch.map((i) => `<li><span>${esc(i.name)}<em>${esc(i.stockNo)}</em></span><strong class="${i.status === 'out' ? 'neg' : ''}">${i.status === 'out' ? 'Out' : i.quantity + ' left'}</strong></li>`).join('')}</ul>`
+            : empty('All stock is above its reorder level.');
+        })()
+      : empty('Not available.');
+
+    // Owner only: money panel.
+    const money = $('ov-money');
+    money.hidden = !isOwner;
+    if (isOwner) {
+      $('ov-month').textContent = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+      const [pl, rec, pay] = await Promise.all([
+        loadReport('profit-loss', { dateFrom: month, dateTo: today }).catch(() => null),
+        loadReport('receivables', {}).catch(() => null),
+        loadReport('payables', {}).catch(() => null),
+      ]);
+      if (mine !== run) return;
+      const out: string[] = [];
+      if (pl) {
+        const d = pl.data as ProfitLoss;
+        out.push(kpi('Money in', formatNpr(d.income.net)));
+        out.push(kpi('Money out', formatNpr(d.expenses.net)));
+        out.push(kpi('Profit (cash)', formatNpr(d.profit), '', d.profit < 0 ? 'danger' : 'strong', '/dashboard/reports'));
+      }
+      if (rec) out.push(kpi('Customers owe you', formatNpr((rec.data as Ageing).total), '', '', '/dashboard/reports'));
+      if (pay) out.push(kpi('You owe suppliers', formatNpr((pay.data as Ageing).total), '', '', '/dashboard/reports'));
+      $('ov-money-kpis').innerHTML = out.join('') || empty('Money figures are not available.');
+    }
+  }
+
+  $('ov-refresh').addEventListener('click', () => void load());
+  document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => void load(), 300));
+  void load();
+</script>
+
+<style is:global>
+  .ov-page { display: flex; flex-direction: column; gap: 14px; }
+  .ov-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .ov-scope { margin: 0 0 2px; font-size: 0.78rem; color: var(--text-muted); }
+  .ov-title { margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+  .ov-refresh { height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer; }
+  .ov-refresh:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .ov-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+  .ov-kpi { display: block; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); color: inherit; text-decoration: none; }
+  a.ov-kpi:hover { border-color: var(--accent); }
+  .ov-kpi span { display: block; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+  .ov-kpi strong { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }
+  .ov-kpi em { display: block; margin-top: 2px; font-style: normal; font-size: 0.72rem; color: var(--text-muted); }
+  .ov-kpi.strong { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  .ov-kpi.danger strong { color: #ef334e; }
+  .ov-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 14px; }
+  .ov-card[hidden] { display: none; }
+  .ov-card h3 { margin: 0 0 10px; display: flex; align-items: baseline; gap: 8px; font-size: 0.9rem; font-weight: 650; }
+  .ov-hint { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); }
+  .ov-more { margin-left: auto; font-size: 0.74rem; font-weight: 650; color: var(--accent); text-decoration: none; }
+  .ov-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 900px) { .ov-grid { grid-template-columns: 1fr; } }
+  .ov-empty { margin: 0; padding: 18px 4px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
+  .ov-list { list-style: none; margin: 0; padding: 0; font-size: 0.82rem; }
+  .ov-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .ov-list li:last-child { border-bottom: none; }
+  .ov-list em { display: block; font-style: normal; font-size: 0.72rem; color: var(--text-muted); }
+  .ov-list .neg { color: #ef334e; }
+  .ov-tag { font-size: 0.66rem; padding: 2px 8px; border-radius: 999px; background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+  .ov-bars { display: flex; align-items: flex-end; gap: 6px; height: 150px; padding-top: 6px; }
+  .ov-bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 4px; min-width: 0; }
+  .ov-bar i { display: block; width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 0; }
+  .ov-bar span { font-size: 0.62rem; color: var(--text-muted); }
+</style>
