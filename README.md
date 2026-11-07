@@ -83,6 +83,20 @@ The Purchase page uses `/api/v1/purchases/`. Totals are always worked out by the
 
 Not on this page yet: Excel/PDF export of purchases (the API has none).
 
+## Sales
+
+The Sales page uses `/api/v1/sales/`. The server works out every total (discount first, VAT on the discounted amount) and the finance charge of an EMI; the form only previews them.
+
+- Sales: stock, bike (full payment or EMI) and maintenance (parts, local items, service charge). Draft, edit, confirm (gives the invoice number and takes stock), cancel a draft with a reason.
+- Payments: record (also on a draft, as an advance) and void. A walk-in sale must be paid in full; an EMI sale needs its down payment before confirming.
+- Returns: from a confirmed sale; walk-in returns are refunded straight away. Void a return.
+- Customer credit: refund, replacement goods (mark handed over later) or set against a sale; void.
+- Follow-ups: post-service check, 90-day maintenance, EMI instalments and credit to receive. Maintenance follow-ups are marked done or skipped; EMI and credit ones close when paid.
+- Bikes: register a bike by chassis number (stock first), and local items (things sold that are not in the shared catalog).
+- A company owner viewing a branch is read-only.
+
+Not on this page yet: printable invoice and Excel/PDF export of sales.
+
 ## Not connected to the API yet
 
 The Settings profile/preferences still use demo data stored in the browser.
