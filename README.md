@@ -132,8 +132,15 @@ The Overview page is built from the existing APIs, so it shows only what the sig
 
 ## Styling note
 
-Pages build tables and dialogs from script, so their `<style>` blocks are `is:global` (Astro's scoped styles would not reach that markup). Keep class names prefixed per page (`cus-`, `sa-`, `pu-`, `rp-`).
+Pages build tables and dialogs from script, so their `<style>` blocks are `is:global` (Astro's scoped styles would not reach that markup). Keep class names prefixed per page (`cus-`, `sa-`, `pu-`, `rp-`, `py-`).
 
-## Not connected to the API yet
+## Settings
 
-The Settings profile/preferences still use demo data stored in the browser.
+Settings has four tabs, all on the real API.
+
+- Profile: change your first name, last name, email and phone (`PATCH /auth/me/`). Username, role and home branch are read-only. The photo is kept on this device only.
+- Business (owner only): edit the business name, address, phone and email, and the company name from Head Office. A company owner viewing a branch sees it read-only.
+- Security: session start, password status and a link to change password.
+- Appearance: light or dark theme on this device.
+
+The old demo tabs (organization, inventory defaults, regional, notifications) were removed because nothing used them. They can come back when the backend has settings to store.
