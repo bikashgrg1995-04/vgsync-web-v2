@@ -3,6 +3,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import { PAGE_META } from '../../lib/page-meta';
 import type { UserRole } from '../../lib/auth';
+import '../../styles/app/purchase-page.css';
 
 const meta = PAGE_META.purchase;
 const defaultRole: UserRole = 'owner';
@@ -21,76 +22,200 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <div class="pu-page">
-    <div class="pu-toolbar">
-      <div>
-        <p class="pu-scope" id="pu-scope">Purchases</p>
-        <div class="pu-tabs" role="tablist">
-          <button type="button" class="pu-tab is-active" data-tab="list">Purchases</button>
-          <button type="button" class="pu-tab" data-tab="returns">Returns</button>
-          <button type="button" class="pu-tab" data-tab="credits">Supplier credit</button>
+  <div class="pu-page pd-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div class="pd-hero-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg>
+        </div>
+        <div>
+          <h2 class="pd-hero-title">Purchase</h2>
+          <p class="pd-hero-sub">Manage your purchases, suppliers and purchase orders.</p>
+          <p class="pu-scope" id="pu-scope" hidden></p>
         </div>
       </div>
-      <div class="pu-toolbar-right">
-        <button type="button" class="btn-ghost-sm" id="pu-refresh">Refresh</button>
-        <button type="button" class="btn-primary-sm" id="pu-new" hidden>+ New purchase</button>
+
+      <div class="pd-hero-actions">
+        <button type="button" class="btn-primary-sm" id="pu-new" hidden>+ New Purchase</button>
+        <button type="button" class="btn-ghost-sm" id="pu-import" disabled title="Coming soon">Import PO</button>
+        <button type="button" class="btn-ghost-sm" id="pu-export">Export</button>
+        <a class="btn-ghost-sm pd-link-btn" href="/dashboard/reports">Reports</a>
       </div>
-    </div>
+    </header>
 
     <p class="pu-notice" id="pu-notice" hidden></p>
 
-    <div class="pu-kpis">
-      <article class="pu-kpi"><span>Purchases</span><strong id="kpi-count">—</strong></article>
-      <article class="pu-kpi"><span>To receive</span><strong id="kpi-receive">—</strong></article>
-      <article class="pu-kpi"><span>Total value</span><strong id="kpi-value">—</strong></article>
-      <article class="pu-kpi is-danger"><span>Still to pay</span><strong id="kpi-unpaid">—</strong></article>
-    </div>
-
-    <!-- Purchases -->
-    <section class="pu-panel is-active" data-panel="list">
-      <div class="pu-layout">
-        <div class="pu-card">
-          <div class="pu-filters">
-            <input type="search" id="f-search" placeholder="Search bill no or supplier…" autocomplete="off" />
-            <select id="f-status" aria-label="Status">
-              <option value="">All status</option>
-              <option value="draft">Draft</option>
-              <option value="partial">Part received</option>
-              <option value="received">Received</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <select id="f-pay" aria-label="Payment">
-              <option value="">All payments</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="partial">Part paid</option>
-              <option value="paid">Paid</option>
-            </select>
-            <select id="f-supplier" aria-label="Supplier"><option value="">All suppliers</option></select>
-            <input type="date" id="f-from" aria-label="From" />
-            <input type="date" id="f-to" aria-label="To" />
+    <!-- OVERVIEW -->
+    <section class="pu-panel is-active" data-panel="overview">
+      <div class="pd-kpis">
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-blue" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Total Purchases</span>
+            <div class="pd-kpi-row"><strong id="kpi-total">—</strong><span class="pd-trend" id="kpi-total-trend"></span></div>
+            <span class="pd-kpi-sub">vs previous 30 days</span>
           </div>
-          <div class="pu-table-wrap">
-            <table class="pu-table">
+        </article>
+
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-purple" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Total Orders</span>
+            <div class="pd-kpi-row"><strong id="kpi-orders">—</strong><span class="pd-trend" id="kpi-orders-trend"></span></div>
+            <span class="pd-kpi-sub">vs previous 30 days</span>
+          </div>
+        </article>
+
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-green" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"></path><path d="M14 8h4l4 4v5h-3"></path><circle cx="7.5" cy="17.5" r="2"></circle><circle cx="17.5" cy="17.5" r="2"></circle></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Active Suppliers</span>
+            <div class="pd-kpi-row"><strong id="kpi-suppliers">—</strong></div>
+            <span class="pd-kpi-sub" id="kpi-suppliers-sub">&nbsp;</span>
+          </div>
+        </article>
+
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-orange" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Pending Orders</span>
+            <div class="pd-kpi-row"><strong id="kpi-pending">—</strong></div>
+            <span class="pd-kpi-sub" id="kpi-pending-sub">&nbsp;</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="pd-grid">
+        <!-- PURCHASE OVERVIEW -->
+        <section class="pd-card pd-area-chart">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="11" width="4" height="9" rx="1"></rect><rect x="10" y="5" width="4" height="15" rx="1"></rect><rect x="16" y="8" width="4" height="12" rx="1"></rect></svg></span>Purchase Overview</h3>
+            <select id="pd-range" class="pd-select" aria-label="Range">
+              <option value="7">Last 7 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+            </select>
+          </div>
+          <div class="pd-chart" id="pd-chart"></div>
+          <div class="pd-legend">
+            <span><i class="is-this"></i>This Period</span>
+            <span><i class="is-last"></i>Last Period</span>
+          </div>
+        </section>
+
+        <!-- TOP SUPPLIERS -->
+        <section class="pd-card pd-area-suppliers">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"></path><path d="M14 8h4l4 4v5h-3"></path><circle cx="7.5" cy="17.5" r="2"></circle><circle cx="17.5" cy="17.5" r="2"></circle></svg></span>Top Suppliers</h3>
+            <a class="btn-link" href="/dashboard/suppliers">View All →</a>
+          </div>
+          <ol class="pd-suppliers" id="pd-suppliers"></ol>
+        </section>
+
+        <!-- QUICK ACTIONS + RECENT ACTIVITY -->
+        <aside class="pd-area-side">
+          <section class="pd-card pd-card-soft">
+            <div class="pd-card-head">
+              <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"></path></svg></span>Quick Actions</h3>
+            </div>
+            <div class="pd-quick">
+              <button type="button" class="pd-quick-btn" id="qa-new" hidden>
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span>New Purchase Order
+              </button>
+              <button type="button" class="pd-quick-btn" id="qa-import" disabled title="Coming soon">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M4 21h16"></path></svg></span>Import from Excel
+              </button>
+              <button type="button" class="pd-quick-btn" data-goto="list">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg></span>View All Purchases
+              </button>
+              <button type="button" class="pd-quick-btn" data-goto="returns">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg></span>Purchase Returns
+              </button>
+              <button type="button" class="pd-quick-btn" data-goto="credits">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg></span>Supplier Credit
+              </button>
+            </div>
+          </section>
+
+          <section class="pd-card">
+            <div class="pd-card-head">
+              <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>Recent Activity</h3>
+              <button type="button" class="btn-link" data-goto="list">View All →</button>
+            </div>
+            <ul class="pd-activity" id="pd-activity"></ul>
+          </section>
+        </aside>
+
+        <!-- RECENT PURCHASE ORDERS -->
+        <section class="pd-card pd-area-table">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg></span>Recent Purchase Orders</h3>
+            <button type="button" class="btn-link" data-goto="list">View All →</button>
+          </div>
+          <div class="pd-table-wrap">
+            <table class="pd-table">
               <thead>
                 <tr>
-                  <th>No</th><th>Date</th><th>Supplier</th><th>Bill</th><th>Status</th>
-                  <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Payment</th>
+                  <th>PO #</th>
+                  <th>Supplier</th>
+                  <th>Date</th>
+                  <th>Total Amount</th>
+                  <th>Status</th>
+                  <th class="actions">Actions</th>
                 </tr>
               </thead>
-              <tbody id="pu-tbody"><tr><td colspan="9" class="pu-empty">Loading…</td></tr></tbody>
+              <tbody id="pd-tbody"><tr><td colspan="6" class="pu-empty">Loading…</td></tr></tbody>
             </table>
           </div>
-          <p class="pu-foot" id="pu-count"></p>
-        </div>
+          <div class="pd-table-foot">
+            <p class="pd-foot" id="pd-count"></p>
+            <nav class="pd-pages" id="pd-pages" aria-label="Order pages"></nav>
+          </div>
+        </section>
+      </div>
+    </section>
 
-        <aside class="pu-card" id="pu-detail">
-          <p class="pu-empty-detail">Select a purchase to see its lines, payments and deliveries.</p>
-        </aside>
+    <!-- ALL PURCHASES -->
+    <section class="pu-panel" data-panel="list">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Purchase</button>
+      <div class="pu-card">
+        <div class="pu-filters">
+          <input type="search" id="f-search" placeholder="Search bill no or supplier…" autocomplete="off" />
+          <select id="f-status" aria-label="Status">
+            <option value="">All status</option>
+            <option value="draft">Draft</option>
+            <option value="partial">Part received</option>
+            <option value="received">Received</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <select id="f-pay" aria-label="Payment">
+            <option value="">All payments</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="partial">Part paid</option>
+            <option value="paid">Paid</option>
+          </select>
+          <select id="f-supplier" aria-label="Supplier"><option value="">All suppliers</option></select>
+          <input type="date" id="f-from" aria-label="From" />
+          <input type="date" id="f-to" aria-label="To" />
+        </div>
+        <div class="pu-table-wrap">
+          <table class="pu-table">
+            <thead>
+              <tr>
+                <th>No</th><th>Date</th><th>Supplier</th><th>Bill</th><th>Status</th>
+                <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Payment</th>
+              </tr>
+            </thead>
+            <tbody id="pu-tbody"><tr><td colspan="9" class="pu-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="pu-foot" id="pu-count"></p>
       </div>
     </section>
 
     <!-- Returns -->
     <section class="pu-panel" data-panel="returns">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Purchase</button>
       <div class="pu-card">
         <div class="pu-table-wrap">
           <table class="pu-table">
@@ -109,6 +234,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
     <!-- Credit -->
     <section class="pu-panel" data-panel="credits">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Purchase</button>
       <div class="pu-card">
         <div class="pu-credit-head">
           <p class="pu-foot" style="margin:0">Use credit from returned goods: take a refund, ask for replacement goods, or set it against a purchase.</p>
@@ -127,6 +253,16 @@ const navItems = getNavItemsForRole(defaultRole);
       </div>
     </section>
   </div>
+
+  <!-- Purchase details -->
+  <dialog class="pu-dialog pu-wide" id="dlg-detail">
+    <div class="pu-dialog-inner">
+      <div id="pu-detail"></div>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-detail">Close</button>
+      </div>
+    </div>
+  </dialog>
 
   <!-- Purchase form -->
   <dialog class="pu-dialog pu-wide" id="dlg-form">
@@ -301,6 +437,7 @@ const navItems = getNavItemsForRole(defaultRole);
   if (!getSession()) window.location.replace('/');
 
   let purchases: Purchase[] = [];
+  let allPurchases: Purchase[] = [];
   let returns: PurchaseReturn[] = [];
   let credits: CreditSettlement[] = [];
   let suppliers: Supplier[] = [];
@@ -399,13 +536,393 @@ const navItems = getNavItemsForRole(defaultRole);
     };
   }
 
-  function renderKpis(): void {
-    const s = summarize(purchases);
-    $('kpi-count')!.textContent = String(s.count);
-    $('kpi-receive')!.textContent = String(s.toReceive);
-    $('kpi-value')!.textContent = formatNpr(s.totalValue);
-    $('kpi-unpaid')!.textContent = formatNpr(s.unpaid);
+  // ---- Overview ------------------------------------------------------
+
+  const PO_PAGE_SIZE = 4;
+  let poPage = 1;
+
+  const DAY_MS = 86_400_000;
+
+  function parseDay(s: string): Date {
+    return new Date(`${s}T00:00:00`);
   }
+
+  function fmtDate(s: string): string {
+    const d = parseDay(s);
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function fmtWhen(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `${date} • ${time}`;
+  }
+
+  function dayStart(d = new Date()): number {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  }
+
+  /** Whole days between today and a purchase date (0 = today). */
+  function daysAgo(s: string): number {
+    return Math.round((dayStart() - parseDay(s).getTime()) / DAY_MS);
+  }
+
+  const live = () => allPurchases.filter((p) => p.status !== 'cancelled');
+
+  /** Purchases dated within [from, to] days ago, cancelled ones left out. */
+  function inWindow(fromDaysAgo: number, toDaysAgo: number): Purchase[] {
+    return live().filter((p) => {
+      const n = daysAgo(p.purchaseDate);
+      return n >= toDaysAgo && n <= fromDaysAgo;
+    });
+  }
+
+  function compact(n: number): string {
+    if (n >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${+(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
+    return String(Math.round(n));
+  }
+
+  function setTrend(id: string, current: number, previous: number): void {
+    const el = $(id);
+    if (!el) return;
+
+    el.className = 'pd-trend';
+
+    if (previous <= 0) {
+      el.textContent = current > 0 ? 'New' : '';
+      if (current > 0) el.classList.add('is-up');
+      return;
+    }
+
+    const pct = ((current - previous) / previous) * 100;
+    const flat = Math.abs(pct) < 0.05;
+
+    el.textContent = `${flat ? '' : pct > 0 ? '↑ ' : '↓ '}${Math.abs(pct).toFixed(1)}%`;
+    el.classList.add(flat ? 'is-flat' : pct > 0 ? 'is-up' : 'is-down');
+  }
+
+  function renderKpis(): void {
+    const now = inWindow(29, 0);
+    const before = inWindow(59, 30);
+
+    const sum = (list: Purchase[]) => list.reduce((t, p) => t + p.netTotal, 0);
+
+    $('kpi-total')!.textContent = formatNpr(sum(now));
+    setTrend('kpi-total-trend', sum(now), sum(before));
+
+    $('kpi-orders')!.textContent = String(now.length);
+    setTrend('kpi-orders-trend', now.length, before.length);
+
+    const active = suppliers.filter((x) => x.isActive).length;
+    const ordered = new Set(now.map((p) => p.supplierId)).size;
+
+    $('kpi-suppliers')!.textContent = String(active);
+    $('kpi-suppliers-sub')!.textContent = `${ordered} ordered from in last 30 days`;
+
+    const pending = summarize(allPurchases).toReceive;
+    const sub = $('kpi-pending-sub')!;
+
+    $('kpi-pending')!.textContent = String(pending);
+    sub.textContent = pending > 0 ? 'Requires attention' : 'Nothing waiting';
+    sub.classList.toggle('is-warn', pending > 0);
+  }
+
+  function smoothPath(pts: [number, number][]): string {
+    if (pts.length < 2) return '';
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i];
+      const [x1, y1] = pts[i + 1];
+      const cx = (x0 + x1) / 2;
+      d += ` C${cx},${y0} ${cx},${y1} ${x1},${y1}`;
+    }
+    return d;
+  }
+
+  function niceMax(v: number): number {
+    if (v <= 0) return 1000;
+    const pow = Math.pow(10, Math.floor(Math.log10(v)));
+    const step = pow / 2;
+    return Math.ceil(v / step) * step;
+  }
+
+  function rangeDays(): number {
+    return Number($<HTMLSelectElement>('pd-range')?.value ?? 30);
+  }
+
+  function renderChart(): void {
+    const host = $('pd-chart');
+    if (!host) return;
+
+    const days = rangeDays();
+
+    // Group days into buckets so sparse purchase dates still draw a readable line.
+    const size = days <= 7 ? 1 : days <= 30 ? 3 : 7;
+    const count = Math.ceil(days / size);
+    const thisP = new Array<number>(count).fill(0);
+    const lastP = new Array<number>(count).fill(0);
+
+    for (const p of live()) {
+      const n = daysAgo(p.purchaseDate);
+      if (n >= 0 && n < days) thisP[count - 1 - Math.floor(n / size)] += p.netTotal;
+      else if (n >= days && n < days * 2) lastP[count - 1 - Math.floor((n - days) / size)] += p.netTotal;
+    }
+
+    const W = 560, H = 230, padL = 44, padR = 14, padT = 14, padB = 28;
+    const yMax = niceMax(Math.max(...thisP, ...lastP));
+    const x = (i: number) => padL + (count <= 1 ? 0 : (i / (count - 1)) * (W - padL - padR));
+    const y = (v: number) => padT + (1 - v / yMax) * (H - padT - padB);
+
+    const thisPts = thisP.map((v, i): [number, number] => [x(i), y(v)]);
+    const lastPts = lastP.map((v, i): [number, number] => [x(i), y(v)]);
+
+    const grid = [0, 1 / 3, 2 / 3, 1]
+      .map((f) => `<line x1="${padL}" x2="${W - padR}" y1="${y(yMax * f)}" y2="${y(yMax * f)}" class="pd-grid-line" />
+        <text x="${padL - 8}" y="${y(yMax * f) + 3}" text-anchor="end" class="pd-axis">${compact(yMax * f)}</text>`)
+      .join('');
+
+    const every = Math.max(1, Math.ceil(count / 4));
+    const ticks = thisP
+      .map((_, i) => {
+        if (i % every !== 0 && i !== count - 1) return '';
+        // Label each bucket by its last day.
+        const ago = (count - 1 - i) * size;
+        const d = new Date(dayStart() - ago * DAY_MS);
+        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" class="pd-axis">${label}</text>`;
+      })
+      .join('');
+
+    const dots = (pts: [number, number][], cls: string) =>
+      pts.map(([px, py]) => `<circle cx="${px}" cy="${py}" r="3.2" class="${cls}" />`).join('');
+
+    const empty = thisP.every((v) => v === 0) && lastP.every((v) => v === 0);
+
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Purchases per day, this period and last period" preserveAspectRatio="xMidYMid meet">
+      ${grid}
+      <path d="${smoothPath(lastPts)}" class="pd-line-last" />
+      <path d="${smoothPath(thisPts)}" class="pd-line-this" />
+      ${dots(lastPts, 'pd-dot-last')}
+      ${dots(thisPts, 'pd-dot-this')}
+      ${ticks}
+    </svg>${empty ? '<p class="pd-chart-empty">No purchases in this period</p>' : ''}`;
+  }
+
+  function renderSuppliers(): void {
+    const el = $('pd-suppliers');
+    if (!el) return;
+
+    const days = rangeDays();
+    const totals = new Map<string, number>();
+
+    for (const p of inWindow(days - 1, 0)) {
+      totals.set(p.supplierName, (totals.get(p.supplierName) ?? 0) + p.netTotal);
+    }
+
+    const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+    const grand = sorted.reduce((t, [, v]) => t + v, 0);
+
+    if (sorted.length === 0 || grand <= 0) {
+      el.innerHTML = '<li class="pd-empty-note">No supplier purchases in this period.</li>';
+      return;
+    }
+
+    let rows = sorted;
+    if (sorted.length > 5) {
+      const others = sorted.slice(4).reduce((t, [, v]) => t + v, 0);
+      rows = [...sorted.slice(0, 4), ['Others', others]];
+    }
+
+    el.innerHTML = rows
+      .map(([name, amount], i) => {
+        const pct = (amount / grand) * 100;
+        return `<li class="pd-supplier">
+          <span class="pd-rank">${i + 1}</span>
+          <span class="pd-supplier-name">${esc(name)}</span>
+          <span class="pd-supplier-amount">${formatNpr(amount)}</span>
+          <span class="pd-supplier-pct">${pct.toFixed(1)}%</span>
+          <span class="pd-bar"><i style="width:${Math.max(2, pct).toFixed(1)}%"></i></span>
+        </li>`;
+      })
+      .join('');
+  }
+
+  const ACT_ICONS = {
+    received: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg>',
+    new: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg>',
+    cancelled: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>',
+  };
+
+  function renderActivity(): void {
+    const el = $('pd-activity');
+    if (!el) return;
+
+    type Event = { when: string; kind: 'received' | 'new' | 'cancelled'; title: string; no: string };
+    const events: Event[] = [];
+
+    for (const p of allPurchases) {
+      events.push({ when: p.createdAt ?? `${p.purchaseDate}T00:00:00`, kind: 'new', title: 'New purchase order', no: p.purchaseNo });
+      if (p.receivedAt) events.push({ when: p.receivedAt, kind: 'received', title: 'Purchase received', no: p.purchaseNo });
+      if (p.cancelledAt) events.push({ when: p.cancelledAt, kind: 'cancelled', title: 'Purchase cancelled', no: p.purchaseNo });
+    }
+
+    events.sort((a, b) => b.when.localeCompare(a.when));
+
+    if (events.length === 0) {
+      el.innerHTML = '<li class="pd-empty-note">No activity yet.</li>';
+      return;
+    }
+
+    el.innerHTML = events
+      .slice(0, 3)
+      .map(
+        (e) => `<li>
+          <span class="pd-act-icon is-${e.kind}">${ACT_ICONS[e.kind]}</span>
+          <div class="pd-act-body">
+            <strong>${esc(e.title)}</strong>
+            <span>${esc(e.no)}</span>
+            <time>${esc(fmtWhen(e.when))}</time>
+          </div>
+        </li>`,
+      )
+      .join('');
+  }
+
+  function poPill(p: Purchase): string {
+    if (p.status === 'cancelled') return `<span class="pd-pill pd-pill-cancelled">Cancelled</span>`;
+    if (p.status === 'draft') return `<span class="pd-pill pd-pill-draft">Draft</span>`;
+    if (p.status === 'partial') return `<span class="pd-pill pd-pill-partial">Part received</span>`;
+    if (p.paymentStatus === 'paid') return `<span class="pd-pill pd-pill-received">Completed</span>`;
+    return `<span class="pd-pill pd-pill-delivered">Received</span>`;
+  }
+
+  const EYE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+
+  function renderPager(total: number): void {
+    const el = $('pd-pages');
+    if (!el) return;
+
+    const pages = Math.max(1, Math.ceil(total / PO_PAGE_SIZE));
+    poPage = Math.min(poPage, pages);
+
+    if (pages <= 1) {
+      el.innerHTML = '';
+      return;
+    }
+
+    const items: (number | '…')[] = [];
+    for (let n = 1; n <= pages; n++) {
+      if (n === 1 || n === pages || Math.abs(n - poPage) <= 1) items.push(n);
+      else if (items[items.length - 1] !== '…') items.push('…');
+    }
+
+    el.innerHTML =
+      `<button type="button" class="pd-pg" data-pg="${poPage - 1}" aria-label="Previous page" ${poPage <= 1 ? 'disabled' : ''}>‹</button>` +
+      items
+        .map((n) =>
+          n === '…'
+            ? '<span class="pd-pg-gap">…</span>'
+            : `<button type="button" class="pd-pg${n === poPage ? ' is-active' : ''}" data-pg="${n}">${n}</button>`,
+        )
+        .join('') +
+      `<button type="button" class="pd-pg" data-pg="${poPage + 1}" aria-label="Next page" ${poPage >= pages ? 'disabled' : ''}>›</button>`;
+
+    el.querySelectorAll<HTMLButtonElement>('[data-pg]').forEach((b) =>
+      b.addEventListener('click', () => {
+        poPage = Number(b.dataset.pg);
+        renderRecentOrders();
+      }),
+    );
+  }
+
+  function renderRecentOrders(): void {
+    const tbody = $('pd-tbody');
+    if (!tbody) return;
+
+    const sorted = [...allPurchases].sort(
+      (a, b) => b.purchaseDate.localeCompare(a.purchaseDate) || b.id - a.id,
+    );
+
+    if (sorted.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="pu-empty">No purchase orders yet.</td></tr>';
+      $('pd-count')!.textContent = 'Showing 0 of 0 orders';
+      renderPager(0);
+      return;
+    }
+
+    const pages = Math.max(1, Math.ceil(sorted.length / PO_PAGE_SIZE));
+    poPage = Math.min(poPage, pages);
+
+    const start = (poPage - 1) * PO_PAGE_SIZE;
+    const slice = sorted.slice(start, start + PO_PAGE_SIZE);
+
+    tbody.innerHTML = slice
+      .map(
+        (p) => `<tr>
+          <td class="pd-po">${esc(p.purchaseNo)}</td>
+          <td>${esc(p.supplierName)}</td>
+          <td>${esc(fmtDate(p.purchaseDate))}</td>
+          <td>${formatNpr(p.netTotal)}</td>
+          <td>${poPill(p)}</td>
+          <td class="actions"><button type="button" class="pd-view-btn" data-view="${p.id}">${EYE} View</button></td>
+        </tr>`,
+      )
+      .join('');
+
+    $('pd-count')!.textContent = `Showing ${start + 1}–${start + slice.length} of ${sorted.length} orders`;
+    renderPager(sorted.length);
+
+    tbody.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) =>
+      b.addEventListener('click', () => void openDetail(Number(b.dataset.view))),
+    );
+  }
+
+  function renderOverview(): void {
+    renderKpis();
+    renderChart();
+    renderSuppliers();
+    renderActivity();
+    renderRecentOrders();
+  }
+
+  $('pd-range')?.addEventListener('change', () => {
+    renderChart();
+    renderSuppliers();
+  });
+
+  /** Downloads every purchase as a CSV file. */
+  function exportCsv(): void {
+    const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = [
+      ['PO no', 'Date', 'Supplier', 'Bill no', 'Status', 'Payment', 'Net total', 'Paid', 'Due'],
+      ...allPurchases.map((p) => [
+        p.purchaseNo,
+        p.purchaseDate,
+        p.supplierName,
+        p.billNo,
+        STATUS_LABEL[p.status],
+        p.status === 'cancelled' ? '' : PAYMENT_LABEL[p.paymentStatus],
+        p.netTotal,
+        p.paid,
+        p.status === 'cancelled' ? '' : p.remaining,
+      ]),
+    ];
+
+    const blob = new Blob([rows.map((r) => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    a.href = url;
+    a.download = `purchases-${today()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  $('pu-export')?.addEventListener('click', exportCsv);
 
   function renderList(): void {
     const tbody = $('pu-tbody')!;
@@ -435,15 +952,29 @@ const navItems = getNavItemsForRole(defaultRole);
   }
 
   async function loadList(): Promise<void> {
+    const f = filters();
+    const unfiltered = !f.search && !f.status && !f.paymentStatus && !f.supplierId && !f.dateFrom && !f.dateTo;
+
     try {
-      purchases = await listPurchases(filters());
-      notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+      purchases = unfiltered ? allPurchases : await listPurchases(f);
     } catch (error) {
       purchases = [];
       notice(describe(error), true);
     }
-    renderKpis();
     renderList();
+  }
+
+  /** Loads every purchase for the overview, then the list panel. */
+  async function loadAll(): Promise<void> {
+    try {
+      allPurchases = await listPurchases();
+      notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+    } catch (error) {
+      allPurchases = [];
+      notice(describe(error), true);
+    }
+    renderOverview();
+    await loadList();
   }
 
   // ---- Detail --------------------------------------------------------
@@ -457,6 +988,7 @@ const navItems = getNavItemsForRole(defaultRole);
     }
     renderList();
     renderDetail();
+    if (!dlg('dlg-detail').open) dlg('dlg-detail').showModal();
   }
 
   function renderDetail(): void {
@@ -555,7 +1087,7 @@ const navItems = getNavItemsForRole(defaultRole);
   }
 
   async function refreshAfterChange(id?: number): Promise<void> {
-    await loadList();
+    await loadAll();
     if (id) {
       try { selected = await getPurchase(id); } catch { selected = null; }
       renderList();
@@ -974,18 +1506,21 @@ const navItems = getNavItemsForRole(defaultRole);
 
   // ---- Tabs, filters, load -------------------------------------------
 
-  let activeTab = 'list';
-  document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((btn) =>
-    btn.addEventListener('click', () => {
-      activeTab = btn.dataset.tab!;
-      document.querySelectorAll('[data-tab]').forEach((b) => b.classList.remove('is-active'));
-      document.querySelectorAll('[data-panel]').forEach((p) => p.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      document.querySelector(`[data-panel="${activeTab}"]`)?.classList.add('is-active');
-      if (activeTab === 'returns' && !loaded.returns) void loadReturns();
-      if (activeTab === 'credits' && !loaded.credits) void loadCredits();
-    }),
+  let activeTab = 'overview';
+
+  function showPanel(name: string): void {
+    activeTab = name;
+    document.querySelectorAll('.pu-panel').forEach((p) => p.classList.toggle('is-active', (p as HTMLElement).dataset.panel === name));
+    if (name === 'returns' && !loaded.returns) void loadReturns();
+    if (name === 'credits' && !loaded.credits) void loadCredits();
+    window.scrollTo({ top: 0 });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-goto]').forEach((btn) =>
+    btn.addEventListener('click', () => showPanel(btn.dataset.goto!)),
   );
+
+  $('qa-new')?.addEventListener('click', () => openForm());
 
   let timer: number | undefined;
   $('f-search')?.addEventListener('input', () => {
@@ -995,7 +1530,6 @@ const navItems = getNavItemsForRole(defaultRole);
   for (const id of ['f-status', 'f-pay', 'f-supplier', 'f-from', 'f-to']) {
     $(id)?.addEventListener('change', () => void loadList());
   }
-  $('pu-refresh')?.addEventListener('click', () => void init());
   document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => void init(), 300));
 
   async function init(): Promise<void> {
@@ -1003,9 +1537,9 @@ const navItems = getNavItemsForRole(defaultRole);
     if (s) $('pu-scope')!.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
     canWrite = s?.accessMode !== 'read_only';
     $('pu-new')!.hidden = !canWrite;
+    $('qa-new')!.hidden = !canWrite;
     $('cr-new')!.hidden = !canWrite;
     selected = null;
-    renderDetail();
     loaded = { returns: false, credits: false };
 
     try {
@@ -1019,7 +1553,7 @@ const navItems = getNavItemsForRole(defaultRole);
       `<option value="">All suppliers</option>` + suppliers.map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('');
     filt.value = current;
 
-    await loadList();
+    await loadAll();
     if (activeTab === 'returns') void loadReturns();
     if (activeTab === 'credits') void loadCredits();
   }
