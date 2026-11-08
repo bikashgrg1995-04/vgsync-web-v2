@@ -8,7 +8,6 @@ import {
   updateProduct,
   deactivateProduct,
   addStockAdjustment,
-  getInventorySummary,
   formatNpr,
   formatQty,
   STATUS_LABEL,
@@ -105,21 +104,6 @@ function statusBadge(status?: string): string {
   return `<span class="inv-badge inv-badge-${esc(safeStatus)}">${esc(label)}</span>`;
 }
 
-function renderKpis(): void {
-  const s = getInventorySummary(items);
-
-  const set = (id: string, text: string) => {
-    const el = $(id);
-    if (el) el.textContent = text;
-  };
-
-  set("kpi-skus", String(s.skuCount));
-  set("kpi-units", formatQty(s.units));
-  set("kpi-value", formatNpr(s.stockValue));
-  set("kpi-low", String(s.lowCount));
-  set("kpi-out", String(s.outCount));
-}
-
 function fillCategories(): void {
   const cats = Array.from(
     new Set(items.map((i) => i.category).filter(Boolean)),
@@ -168,6 +152,54 @@ function filteredItems(): StockItem[] {
   });
 }
 
+const EYE_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+
+let tablePage = 1;
+
+function detailHref(productId: number): string {
+  return `/dashboard/inventory/detail?id=${productId}`;
+}
+
+function renderPager(totalRows: number): void {
+  const pager = $("inv-pages");
+  if (!pager) return;
+
+  const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+  tablePage = Math.min(tablePage, totalPages);
+
+  if (totalPages <= 1) {
+    pager.innerHTML = "";
+    return;
+  }
+
+  const pages: (number | "…")[] = [];
+  for (let n = 1; n <= totalPages; n++) {
+    if (n === 1 || n === totalPages || Math.abs(n - tablePage) <= 1) {
+      pages.push(n);
+    } else if (pages[pages.length - 1] !== "…") {
+      pages.push("…");
+    }
+  }
+
+  pager.innerHTML =
+    `<button type="button" class="inv-pg" data-pg="${tablePage - 1}" aria-label="Previous page" ${tablePage <= 1 ? "disabled" : ""}>‹</button>` +
+    pages
+      .map((n) =>
+        n === "…"
+          ? `<span class="inv-pg-gap">…</span>`
+          : `<button type="button" class="inv-pg${n === tablePage ? " is-active" : ""}" data-pg="${n}">${n}</button>`,
+      )
+      .join("") +
+    `<button type="button" class="inv-pg" data-pg="${tablePage + 1}" aria-label="Next page" ${tablePage >= totalPages ? "disabled" : ""}>›</button>`;
+
+  pager.querySelectorAll<HTMLButtonElement>("[data-pg]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tablePage = Number(btn.dataset.pg);
+      renderTable();
+    });
+  });
+}
+
 function renderTable(): void {
   const tbody = $("inv-tbody");
   const count = $("inv-count");
@@ -177,63 +209,50 @@ function renderTable(): void {
   const rows = filteredItems();
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="inv-empty">${
+    tbody.innerHTML = `<tr><td colspan="7" class="inv-empty">${
       items.length === 0
         ? "No products yet."
         : "No products match this filter."
     }</td></tr>`;
 
-    if (count) count.textContent = "0 products";
-
-    renderCategoryChart();
-    void loadRecentActivity();
+    if (count) count.textContent = "Showing 0 of 0 items";
+    renderPager(0);
     return;
   }
 
-  tbody.innerHTML = rows
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  tablePage = Math.min(tablePage, totalPages);
+
+  const start = (tablePage - 1) * PAGE_SIZE;
+  const pageRows = rows.slice(start, start + PAGE_SIZE);
+
+  tbody.innerHTML = pageRows
     .map((i) => {
-      const sub = [i.brand, i.model, i.unit].filter(Boolean).join(" · ");
-      const actions: string[] = [];
+      const menu: string[] = [];
 
       if (canAdjust) {
-        actions.push(
-          `<button type="button" class="btn-link" data-adjust="${i.productId}">Adjust</button>`,
-        );
+        menu.push(`<button type="button" data-adjust="${i.productId}">Adjust stock</button>`);
       }
 
       if (canEditCatalog) {
-        actions.push(
-          `<button type="button" class="btn-link" data-edit="${i.productId}">Edit</button>`,
-        );
-
-        actions.push(
-          `<button type="button" class="btn-link is-danger" data-hide="${i.productId}">Deactivate</button>`,
-        );
+        menu.push(`<button type="button" data-edit="${i.productId}">Edit product</button>`);
+        menu.push(`<button type="button" class="is-danger" data-hide="${i.productId}">Deactivate</button>`);
       }
 
       return `<tr>
         <td class="mono">${esc(i.stockNo)}</td>
-        <td>
-          <div class="inv-prod">
-            <div class="inv-prod-image-wrap">
-              <span class="inv-prod-icon">
-                ${esc((i.name || "?")[0].toUpperCase())}
-              </span>
-              ${
-                i.image
-                  ? `<img class="inv-prod-image"
-                      src="${esc(i.image)}"
-                      alt="${esc(i.name)}"
-                      loading="lazy">`
-                  : ""
-              }
-            </div>
-
-            <div class="inv-prod-text">
-              <strong>${esc(i.name)}</strong>
-              <span>${esc(sub || i.category || "")}</span>
-            </div>
+        <td class="inv-thumb-cell">
+          <div class="inv-thumb">
+            <span class="inv-prod-icon">${esc((i.name || "?")[0].toUpperCase())}</span>
+            ${
+              i.image
+                ? `<img class="inv-prod-image" src="${esc(i.image)}" alt="${esc(i.name)}" loading="lazy">`
+                : ""
+            }
           </div>
+        </td>
+        <td>
+          <a class="inv-name-link" href="${detailHref(i.productId)}">${esc(i.name)}</a>
         </td>
 
         <td class="num">
@@ -248,36 +267,66 @@ function renderTable(): void {
 
         <td class="num hide-sm">${formatNpr(i.salePrice)}</td>
         <td>${statusBadge(i.status)}</td>
-        <td class="actions">${actions.join(" ")}</td>
+        <td class="actions">
+          <a class="inv-view-btn" href="${detailHref(i.productId)}">${EYE_ICON} View</a>
+          ${
+            menu.length
+              ? `<div class="inv-more">
+                  <button type="button" class="inv-more-btn" aria-label="More actions" aria-haspopup="true">⋯</button>
+                  <div class="inv-more-menu" hidden>${menu.join("")}</div>
+                </div>`
+              : ""
+          }
+        </td>
       </tr>`;
     })
     .join("");
 
   if (count) {
-    count.textContent = `Showing ${rows.length} of ${items.length} items`;
+    count.textContent = `Showing ${start + 1}–${start + pageRows.length} of ${rows.length} items`;
   }
 
-  renderCategoryChart();
-  void loadRecentActivity();
+  renderPager(rows.length);
+
+  tbody.querySelectorAll<HTMLButtonElement>(".inv-more-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const menu = btn.nextElementSibling as HTMLElement | null;
+      const wasHidden = menu?.hidden ?? true;
+      closeMenus();
+      if (menu) menu.hidden = !wasHidden;
+    });
+  });
 
   tbody.querySelectorAll<HTMLButtonElement>("[data-adjust]").forEach((btn) => {
-    btn.addEventListener("click", () =>
-      openAdjust(Number(btn.dataset.adjust)),
-    );
+    btn.addEventListener("click", () => {
+      closeMenus();
+      openAdjust(Number(btn.dataset.adjust));
+    });
   });
 
   tbody.querySelectorAll<HTMLButtonElement>("[data-edit]").forEach((btn) => {
-    btn.addEventListener("click", () =>
-      openProduct(Number(btn.dataset.edit)),
-    );
+    btn.addEventListener("click", () => {
+      closeMenus();
+      openProduct(Number(btn.dataset.edit));
+    });
   });
 
   tbody.querySelectorAll<HTMLButtonElement>("[data-hide]").forEach((btn) => {
-    btn.addEventListener("click", () =>
-      hideProduct(Number(btn.dataset.hide)),
-    );
+    btn.addEventListener("click", () => {
+      closeMenus();
+      hideProduct(Number(btn.dataset.hide));
+    });
   });
 }
+
+function closeMenus(): void {
+  document
+    .querySelectorAll<HTMLElement>(".inv-more-menu")
+    .forEach((m) => (m.hidden = true));
+}
+
+document.addEventListener("click", closeMenus);
 
 // ==================================================
 // MOVEMENT HELPERS
@@ -612,8 +661,16 @@ async function reload(): Promise<void> {
     items = await listStock();
 
     fillCategories();
-    renderKpis();
     renderTable();
+    renderCategoryChart();
+    void loadRecentActivity();
+
+    const editId = Number(new URLSearchParams(location.search).get("edit"));
+
+    if (editId && canEditCatalog && items.some((i) => i.productId === editId)) {
+      history.replaceState(null, "", location.pathname);
+      openProduct(editId);
+    }
 
     if (mvLoaded) {
       void loadMovements();
@@ -769,9 +826,15 @@ function showPanel(name: "stock" | "moves"): void {
 // EVENT LISTENERS
 // ==================================================
 
-$("inv-search")?.addEventListener("input", () => renderTable());
+$("inv-search")?.addEventListener("input", () => {
+  tablePage = 1;
+  renderTable();
+});
 
-$("inv-category")?.addEventListener("change", () => renderTable());
+$("inv-category")?.addEventListener("change", () => {
+  tablePage = 1;
+  renderTable();
+});
 
 $("inv-status")?.addEventListener("change", () => {
   const sel = $<HTMLSelectElement>("inv-status");
@@ -781,6 +844,7 @@ $("inv-status")?.addEventListener("change", () => {
     sel?.value === "low",
   );
 
+  tablePage = 1;
   renderTable();
 });
 
@@ -796,6 +860,7 @@ $("inv-low-filter")?.addEventListener("click", () => {
 
   $("inv-low-filter")?.classList.toggle("is-active", on);
 
+  tablePage = 1;
   renderTable();
 });
 

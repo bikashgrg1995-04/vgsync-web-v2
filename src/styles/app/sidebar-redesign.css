@@ -289,3 +289,35 @@
     max-width: 1320px;
   }
 }
+
+/* Keep sidebar footer visible */
+.app-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sidebar-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.sidebar-profile-card {
+  flex: 0 0 auto;
+  margin-top: 8px;
+}
+
+.sidebar-bottom {
+  flex: 0 0 auto;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.sidebar-footer-links {
+  flex: 0 0 auto;
+}
+
+.sidebar-footer-links .sidebar-link {
+  min-height: 38px;
+}
