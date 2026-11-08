@@ -843,3 +843,9 @@
   resize: vertical;
   box-sizing: border-box;
 }
+
+/* All categories are listed; scroll if there are many. */
+.inv-cat-legend {
+  max-height: 220px;
+  overflow-y: auto;
+}
