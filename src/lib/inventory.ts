@@ -29,7 +29,9 @@ export interface StockItem {
   salePrice: number;
   mrp: number;
   reorderLevel: number;
+  description: string;
   image: string | null;
+  updatedAt: string | null;
 
   /** Good stock that can be sold. */
   quantity: number;
@@ -268,7 +270,9 @@ interface ApiStockRow {
   damaged_quantity: string;
   total_quantity: string;
   stock_status?: StockStatus;
+  description?: string;
   image: string | null;
+  updated_at?: string | null;
 }
 
 interface ApiProduct {
@@ -346,7 +350,9 @@ function stockFromApi(r: ApiStockRow): StockItem {
     damagedQuantity: num(r.damaged_quantity),
     totalQuantity: num(r.total_quantity),
     status,
+    description: r.description ?? '',
     image: r.image ?? null,
+    updatedAt: r.updated_at ?? null,
   };
 }
 
@@ -395,6 +401,12 @@ function productBody(input: ProductInput): Record<string, unknown> {
 export async function listStock(): Promise<StockItem[]> {
   const rows = await api<ApiStockRow[]>('/inventory/stock/');
   return rows.map(stockFromApi);
+}
+
+/** One product with this business's stock. */
+export async function getStock(productId: number): Promise<StockItem> {
+  const row = await api<ApiStockRow>(`/inventory/stock/${productId}/`);
+  return stockFromApi(row);
 }
 
 export async function createProduct(input: ProductInput): Promise<void> {
@@ -563,11 +575,9 @@ export function getInventorySummary(items: StockItem[]) {
 // ==================================================
 
 export function formatNpr(n: number): string {
-  return new Intl.NumberFormat('en-NP', {
-    style: 'currency',
-    currency: 'NPR',
+  return `Rs. ${new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 0,
-  }).format(n);
+  }).format(n)}`;
 }
 
 /** 12 or 12.5, never 12.000. */
