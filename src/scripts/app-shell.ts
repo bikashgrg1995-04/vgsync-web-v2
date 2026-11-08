@@ -148,6 +148,7 @@ function applySessionUI(): void {
   if (branchNameEl) branchNameEl.textContent = session.activeBranchName;
 
   paintAvatar(initialsEl, session.userId, session.displayName);
+  paintAvatar(document.getElementById('header-avatar'), session.userId, session.displayName);
 
   const branchInfo = document.getElementById('skeleton-branch-info');
   if (branchInfo) {

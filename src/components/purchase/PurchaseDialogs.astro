@@ -1,0 +1,101 @@
+---
+/** Purchase form, receive, payment, return and reason dialogs, shared by the purchase list and detail pages. */
+---
+
+  <!-- Purchase form -->
+  <dialog class="pu-dialog pu-wide" id="dlg-form">
+    <form method="dialog" class="pu-dialog-inner" id="form-purchase">
+      <h2 class="pu-dialog-title" id="pf-title">New purchase</h2>
+      <input type="hidden" id="pf-id" />
+      <div class="pu-grid">
+        <label class="pu-field"><span>Supplier *</span><select id="pf-supplier" required></select></label>
+        <label class="pu-field"><span>Supplier bill no</span><input type="text" id="pf-bill" maxlength="60" /></label>
+        <label class="pu-field"><span>Date</span><input type="date" id="pf-date" /></label>
+        <label class="pu-field"><span>Notes</span><input type="text" id="pf-notes" /></label>
+      </div>
+      <div class="pu-lines-head"><strong>Items</strong><button type="button" class="btn-ghost-sm" id="pf-add-line">+ Add item</button></div>
+      <div id="pf-lines" class="pu-lines"></div>
+      <div class="pu-grid pu-grid-3">
+        <label class="pu-field"><span>Discount</span><input type="number" id="pf-discount" min="0" step="0.01" value="0" /></label>
+        <label class="pu-field"><span>VAT % (on discounted amount)</span><input type="number" id="pf-vat" min="0" max="100" step="0.01" value="0" /></label>
+        <label class="pu-field"><span>Freight (not taxed)</span><input type="number" id="pf-freight" min="0" step="0.01" value="0" /></label>
+      </div>
+      <dl class="pu-totals" id="pf-totals"></dl>
+      <p class="pu-error" id="pf-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-form">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="pf-save">Save draft</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Receive -->
+  <dialog class="pu-dialog pu-wide" id="dlg-receive">
+    <form method="dialog" class="pu-dialog-inner" id="form-receive">
+      <h2 class="pu-dialog-title">Receive goods</h2>
+      <p class="pu-sub" id="rc-sub"></p>
+      <div id="rc-lines" class="pu-lines"></div>
+      <div class="pu-grid">
+        <label class="pu-field"><span>Received on</span><input type="date" id="rc-date" /></label>
+        <label class="pu-field"><span>Notes</span><input type="text" id="rc-notes" placeholder="e.g. First truck" /></label>
+      </div>
+      <p class="pu-error" id="rc-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-receive">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="rc-save">Add to stock</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Payment -->
+  <dialog class="pu-dialog" id="dlg-pay">
+    <form method="dialog" class="pu-dialog-inner" id="form-pay">
+      <h2 class="pu-dialog-title">Record payment</h2>
+      <p class="pu-sub" id="py-sub"></p>
+      <div class="pu-grid">
+        <label class="pu-field"><span>Amount *</span><input type="number" id="py-amount" required min="0.01" step="0.01" /></label>
+        <label class="pu-field"><span>Method *</span>
+          <select id="py-method">
+            <option value="cash">Cash</option><option value="bank">Bank</option>
+            <option value="online">Online</option><option value="cheque">Cheque</option>
+          </select>
+        </label>
+        <label class="pu-field"><span>Paid on</span><input type="date" id="py-date" /></label>
+        <label class="pu-field"><span>Reference</span><input type="text" id="py-ref" maxlength="100" /></label>
+      </div>
+      <p class="pu-error" id="py-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="py-save">Save payment</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Return -->
+  <dialog class="pu-dialog pu-wide" id="dlg-return">
+    <form method="dialog" class="pu-dialog-inner" id="form-return">
+      <h2 class="pu-dialog-title">Return goods to supplier</h2>
+      <p class="pu-sub" id="rt-sub"></p>
+      <div id="rt-lines" class="pu-lines"></div>
+      <label class="pu-field"><span>Reason *</span><input type="text" id="rt-reason" required /></label>
+      <p class="pu-error" id="rt-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-return">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="rt-save">Return goods</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Reason (cancel / void) -->
+  <dialog class="pu-dialog" id="dlg-reason">
+    <form method="dialog" class="pu-dialog-inner" id="form-reason">
+      <h2 class="pu-dialog-title" id="rs-title">Reason</h2>
+      <p class="pu-sub" id="rs-sub"></p>
+      <label class="pu-field"><span>Reason *</span><input type="text" id="rs-text" required /></label>
+      <p class="pu-error" id="rs-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-reason">Back</button>
+        <button type="submit" class="btn-primary-sm is-danger" id="rs-save">Confirm</button>
+      </div>
+    </form>
+  </dialog>

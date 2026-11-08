@@ -1,0 +1,63 @@
+/* Purchase detail page (builds on inventory-detail.css) */
+.pud-header .invd-photo .inv-prod-icon { font-size: 2.4rem; }
+.pud-actionbar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.pud-actionbar[hidden],
+.pud-actionbar [hidden] { display: none; }
+.pud-actionbar .btn-primary-sm,
+.pud-actionbar .btn-ghost-sm { height: 36px; padding: 0 16px; border-radius: 10px; }
+
+/* Payment and delivery progress */
+.pud-progress { display: flex; flex-direction: column; gap: 18px; }
+.pud-prog { display: flex; flex-direction: column; gap: 6px; }
+.pud-prog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.pud-prog-head strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.pud-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.pud-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+.pud-bar > i.is-pay { background: #16a34a; }
+.pud-bar > i.is-del { background: #2563eb; }
+.pud-prog small { font-size: 0.75rem; color: var(--text-muted); }
+.pud-values { margin-top: 0; }
+
+/* Tables */
+.pud-nowrap { white-space: nowrap; }
+.pud-sub { display: block; margin-top: 2px; color: var(--text-muted); }
+.pud-items td strong { font-weight: 650; }
+.inv-table tr.is-void td { color: var(--text-muted); }
+.inv-table tr.is-void td strong { text-decoration: line-through; }
+.inv-table td.actions { text-align: right; }
+
+@media (max-width: 640px) {
+  .pud-actionbar { justify-content: stretch; }
+  .pud-actionbar > * { flex: 1 1 auto; }
+}
