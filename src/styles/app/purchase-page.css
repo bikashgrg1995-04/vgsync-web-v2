@@ -405,3 +405,7 @@
 
 .pd-pill-delivered { background: rgba(37, 99, 235, 0.12); color: #2563eb; }
 .pd-card-head .pd-select { margin-left: auto; }
+
+/* Overview panel: even spacing between its rows */
+.pu-panel.is-active[data-panel='overview'] { display: flex; flex-direction: column; gap: 14px; }
+.pd-quick-btn { box-sizing: border-box; }
