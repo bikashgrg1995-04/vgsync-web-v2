@@ -55,30 +55,6 @@ const navItems = getNavItemsForRole(defaultRole);
 
     <p class="inv-notice" id="inv-notice" hidden></p>
 
-    <!-- INVENTORY SUMMARY -->
-    <div class="inv-kpis" id="inv-kpis">
-      <article class="inv-kpi">
-        <span class="inv-kpi-label">Products</span>
-        <strong class="inv-kpi-value" id="kpi-skus">—</strong>
-      </article>
-      <article class="inv-kpi">
-        <span class="inv-kpi-label">Units on hand</span>
-        <strong class="inv-kpi-value" id="kpi-units">—</strong>
-      </article>
-      <article class="inv-kpi">
-        <span class="inv-kpi-label">Stock value</span>
-        <strong class="inv-kpi-value" id="kpi-value">—</strong>
-      </article>
-      <article class="inv-kpi is-warn">
-        <span class="inv-kpi-label">Low stock</span>
-        <strong class="inv-kpi-value" id="kpi-low">—</strong>
-      </article>
-      <article class="inv-kpi is-danger">
-        <span class="inv-kpi-label">Out of stock</span>
-        <strong class="inv-kpi-value" id="kpi-out">—</strong>
-      </article>
-    </div>
-
     <!-- STOCK LIST -->
     <section class="inv-panel is-active" data-inv-panel="stock">
       <div class="inv-card">
@@ -112,6 +88,7 @@ const navItems = getNavItemsForRole(defaultRole);
             <thead>
               <tr>
                 <th>Stock ID</th>
+                <th class="thumb-col"><span class="sr-only">Image</span></th>
                 <th>Stock Name</th>
                 <th class="num">Current Stock</th>
                 <th class="num hide-sm">Selling Price</th>
@@ -121,13 +98,16 @@ const navItems = getNavItemsForRole(defaultRole);
             </thead>
             <tbody id="inv-tbody">
               <tr>
-                <td colspan="6" class="inv-empty">Loading…</td>
+                <td colspan="7" class="inv-empty">Loading…</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <p class="inv-footnote" id="inv-count"></p>
+        <div class="inv-table-foot">
+          <p class="inv-footnote" id="inv-count"></p>
+          <nav class="inv-pages" id="inv-pages" aria-label="Stock list pages"></nav>
+        </div>
       </div>
 
       <!-- CATEGORY + RECENT ACTIVITY -->

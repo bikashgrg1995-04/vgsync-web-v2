@@ -1,0 +1,282 @@
+---
+import AppLayout from "../../../layouts/AppLayout.astro";
+import { getNavItemsForRole, BOTTOM_NAV } from "../../../lib/navigation";
+import { PAGE_META } from "../../../lib/page-meta";
+import type { UserRole } from "../../../lib/auth";
+import "../../../styles/app/inventory-page.css";
+import "../../../styles/app/inventory-detail.css";
+
+const meta = PAGE_META.inventory;
+const defaultRole: UserRole = "owner";
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title="VGSync | Inventory Detail"
+  pageTitle={meta.title}
+  breadcrumb="Inventory / Detail"
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="inv-page invd-page" id="invd-page">
+    <a class="invd-back" href="/dashboard/inventory">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
+      Back to Inventory
+    </a>
+
+    <p class="inv-notice" id="invd-notice" hidden></p>
+
+    <!-- PRODUCT HEADER -->
+    <section class="inv-card invd-header" id="invd-header">
+      <div class="invd-photo" id="invd-photo">
+        <span class="inv-prod-icon" id="invd-initial">?</span>
+        <img id="invd-image" alt="" hidden />
+      </div>
+
+      <div class="invd-head-main">
+        <div class="invd-title-row">
+          <h2 class="invd-title" id="invd-name">Loading…</h2>
+          <span id="invd-status"></span>
+        </div>
+        <div class="invd-chips">
+          <span class="invd-chip" id="invd-stock-no">—</span>
+          <span class="invd-chip" id="invd-sku" hidden></span>
+        </div>
+        <p class="invd-desc" id="invd-desc"></p>
+        <div class="invd-chips">
+          <span class="invd-tag" id="invd-category" hidden></span>
+          <span class="invd-tag is-neutral" id="invd-unit"></span>
+        </div>
+      </div>
+
+      <div class="invd-stats">
+        <div class="invd-stat"><strong id="invd-stat-qty">—</strong><span>Current Stock</span></div>
+        <div class="invd-stat"><strong id="invd-stat-sale">—</strong><span>Selling Price</span></div>
+        <div class="invd-stat"><strong id="invd-stat-cost">—</strong><span>Purchase Price</span></div>
+      </div>
+
+      <button type="button" class="invd-edit" id="invd-edit" hidden>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+        Edit Product
+      </button>
+    </section>
+
+    <!-- TABS -->
+    <div class="invd-tabs" role="tablist">
+      <button type="button" class="invd-tab is-active" role="tab" data-tab="details">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73Z"></path></svg>
+        Stock Details
+      </button>
+      <button type="button" class="invd-tab" role="tab" data-tab="movements">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m17 3 4 4-4 4"></path><path d="M3 7h18"></path><path d="m7 21-4-4 4-4"></path><path d="M21 17H3"></path></svg>
+        Stock Movements
+      </button>
+      <button type="button" class="invd-tab" role="tab" data-tab="activities">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+        Activities
+      </button>
+      <button type="button" class="invd-tab" role="tab" data-tab="related">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+        Related Info
+      </button>
+    </div>
+
+    <!-- TAB: STOCK DETAILS -->
+    <section class="invd-panel is-active" data-panel="details">
+      <div class="invd-grid-top">
+        <div class="inv-card">
+          <div class="inv-card-head">
+            <h3 class="inv-card-title">Stock Information</h3>
+          </div>
+          <div class="invd-info">
+            <dl class="invd-dl">
+              <div><dt>Product Name</dt><dd id="inf-name">—</dd></div>
+              <div><dt>Stock ID</dt><dd id="inf-stock-no">—</dd></div>
+              <div><dt>Category</dt><dd id="inf-category">—</dd></div>
+              <div><dt>Brand</dt><dd id="inf-brand">—</dd></div>
+              <div><dt>Unit</dt><dd id="inf-unit">—</dd></div>
+            </dl>
+            <dl class="invd-dl">
+              <div><dt>Minimum Stock</dt><dd id="inf-min">—</dd></div>
+              <div><dt>Current Stock</dt><dd class="is-big" id="inf-qty">—</dd></div>
+              <div><dt>Available Stock</dt><dd class="is-good" id="inf-avail">—</dd></div>
+              <div><dt>Damaged Stock</dt><dd id="inf-dmg">—</dd></div>
+              <div><dt>Last Updated</dt><dd class="is-small" id="inf-updated">—</dd></div>
+            </dl>
+          </div>
+        </div>
+
+        <div class="inv-card">
+          <div class="inv-card-head">
+            <h3 class="inv-card-title">Stock Movement Overview</h3>
+            <select id="invd-range" aria-label="Range" class="invd-range">
+              <option value="7">Last 7 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+            </select>
+          </div>
+          <div class="invd-legend">
+            <span><i class="is-in"></i>Stock In</span>
+            <span><i class="is-out"></i>Stock Out</span>
+          </div>
+          <div class="invd-chart" id="invd-chart"></div>
+        </div>
+      </div>
+
+      <div class="invd-grid-bottom">
+        <div class="inv-card">
+          <div class="inv-card-head">
+            <h3 class="inv-card-title">Recent Stock Movements</h3>
+            <button type="button" class="btn-link" id="invd-view-all">View All →</button>
+          </div>
+          <div class="inv-table-wrap">
+            <table class="inv-table invd-table-recent">
+              <thead>
+                <tr>
+                  <th>Date &amp; Time</th>
+                  <th>Type</th>
+                  <th class="num">Quantity</th>
+                  <th>Reference</th>
+                  <th>Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="invd-recent"><tr><td colspan="5" class="inv-empty">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="inv-card">
+          <div class="inv-card-head">
+            <h3 class="inv-card-title">Quick Actions &amp; Info</h3>
+          </div>
+          <div class="invd-actions">
+            <button type="button" class="invd-act is-in" id="invd-stock-in">↑ Stock In</button>
+            <button type="button" class="invd-act is-out" id="invd-stock-out">↓ Stock Out</button>
+            <button type="button" class="invd-act is-adjust" id="invd-adjust">⇄ Adjust Stock</button>
+          </div>
+          <div class="invd-values">
+            <div>
+              <span>Stock Value (Current)</span>
+              <strong id="invd-value">—</strong>
+              <small id="invd-value-note"></small>
+            </div>
+            <div>
+              <span>Total Movements</span>
+              <strong id="invd-moves-total">—</strong>
+              <small id="invd-moves-note">(Last 30 days)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: STOCK MOVEMENTS -->
+    <section class="invd-panel" data-panel="movements">
+      <div class="inv-card">
+        <div class="inv-card-head">
+          <h3 class="inv-card-title">All Stock Movements</h3>
+        </div>
+        <div class="inv-table-wrap">
+          <table class="inv-table inv-table-moves">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Type</th>
+                <th class="hide-sm">Stock</th>
+                <th class="num">Qty</th>
+                <th class="num hide-sm">Balance</th>
+                <th class="hide-md">Reference</th>
+                <th class="hide-md">By</th>
+              </tr>
+            </thead>
+            <tbody id="invd-moves"><tr><td colspan="7" class="inv-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="inv-table-foot">
+          <p class="inv-footnote" id="invd-moves-count"></p>
+          <nav class="inv-pages" id="invd-moves-pages" aria-label="Movement pages"></nav>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: ACTIVITIES -->
+    <section class="invd-panel" data-panel="activities">
+      <div class="inv-card">
+        <div class="inv-card-head">
+          <h3 class="inv-card-title">Activities</h3>
+        </div>
+        <ul class="inv-activity" id="invd-activity">
+          <li class="inv-activity-empty">Loading…</li>
+        </ul>
+        <div class="inv-table-foot">
+          <p class="inv-footnote" id="invd-act-count"></p>
+          <nav class="inv-pages" id="invd-act-pages" aria-label="Activity pages"></nav>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: RELATED INFO -->
+    <section class="invd-panel" data-panel="related">
+      <div class="inv-card">
+        <div class="inv-card-head">
+          <h3 class="inv-card-title">Product Details</h3>
+        </div>
+        <dl class="invd-related" id="invd-related"></dl>
+      </div>
+    </section>
+  </div>
+
+  <!-- STOCK ADJUSTMENT DIALOG -->
+  <dialog class="inv-dialog" id="inv-adjust-dialog">
+    <form method="dialog" class="inv-dialog-inner" id="inv-adjust-form">
+      <h2 class="inv-dialog-title" id="adj-title">Adjust stock</h2>
+      <p class="inv-dialog-sub" id="adj-product">—</p>
+
+      <label class="inv-field">
+        <span>Adjustment type</span>
+        <select id="adj-type" required>
+          <option value="increase">Increase good stock</option>
+          <option value="decrease">Decrease good stock</option>
+          <option value="mark_damaged">Mark as damaged</option>
+          <option value="remove_damaged">Remove damaged stock</option>
+        </select>
+      </label>
+
+      <label class="inv-field">
+        <span>Reason</span>
+        <select id="adj-reason" required></select>
+      </label>
+
+      <label class="inv-field">
+        <span>Quantity</span>
+        <input type="number" id="adj-qty" required min="0.001" step="0.001" value="1" />
+      </label>
+
+      <label class="inv-field">
+        <span>Reference (optional)</span>
+        <input type="text" id="adj-ref" maxlength="100" placeholder="e.g. Count sheet 12" />
+      </label>
+
+      <label class="inv-field">
+        <span>Note (optional)</span>
+        <input type="text" id="adj-note" placeholder="Additional information" />
+      </label>
+
+      <p class="inv-dialog-error" id="adj-error" hidden></p>
+
+      <div class="inv-dialog-actions">
+        <button type="button" class="btn-ghost-sm" id="adj-cancel">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="adj-submit">Apply</button>
+      </div>
+    </form>
+  </dialog>
+</AppLayout>
+
+<script>
+  import "../../../scripts/inventory-detail.ts";
+</script>
