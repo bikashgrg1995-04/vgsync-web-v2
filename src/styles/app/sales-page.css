@@ -1,0 +1,126 @@
+/* Sales page: dashboard layout (builds on purchase-page.css pd-* classes) */
+
+.sa-dash {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(250px, 0.62fr);
+  grid-template-areas:
+    "chart suppliers side"
+    "table table products";
+}
+.sa-area-products { grid-area: products; }
+
+/* Overview panel: even spacing between its rows */
+.sa-panel.is-active[data-panel='overview'] { display: flex; flex-direction: column; gap: 14px; }
+.sa-dash .pd-card-head .btn-link { white-space: nowrap; }
+.pd-quick-btn { box-sizing: border-box; }
+
+.sa-page .btn-primary-sm { display: inline-flex; align-items: center; gap: 8px; }
+.pd-quick-btn { text-decoration: none; }
+.pd-quick-btn.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.pd-quick-btn.is-primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+.pd-quick-btn.is-primary .pd-quick-icon { background: rgba(255, 255, 255, 0.2); }
+
+/* Section chips */
+.sa-subnav { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0; }
+.sa-chip {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-bg);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.sa-chip:hover { background: var(--accent-soft); color: var(--accent); }
+
+/* Chart: area under this period, legend on top */
+.sa-area-this { fill: color-mix(in srgb, #2563eb 12%, transparent); stroke: none; }
+.sa-legend-top { justify-content: flex-end; margin: 0 0 2px; }
+
+/* Donut */
+.sa-donut-wrap { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px 18px; min-height: 200px; }
+.sa-donut { position: relative; width: 170px; flex-shrink: 0; }
+.sa-donut svg { display: block; width: 100%; height: auto; }
+.sa-donut-track { stroke: var(--surface); }
+.sa-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 38px;
+  pointer-events: none;
+}
+.sa-donut-center strong { font-size: 0.86rem; font-weight: 750; color: var(--text-primary); line-height: 1.2; }
+.sa-donut-center span { font-size: 0.7rem; color: var(--text-muted); }
+.sa-donut-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; min-width: 150px; flex: 1 1 150px; }
+.sa-donut-legend li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 0.82rem; }
+.sa-donut-legend i { width: 9px; height: 9px; border-radius: 50%; }
+.sa-donut-name { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sa-donut-pct { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+/* Top selling products */
+.sa-products { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.sa-products li {
+  display: grid;
+  grid-template-columns: 22px 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sa-products li:last-child { border-bottom: none; }
+.sa-prod-rank { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-align: center; }
+.sa-prod-thumb {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface) center / cover no-repeat;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.sa-prod-thumb.is-letter { background: var(--accent-soft); }
+.sa-prod-body { display: flex; flex-direction: column; min-width: 0; }
+.sa-prod-body strong { font-size: 0.85rem; font-weight: 650; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sa-prod-body span { font-size: 0.78rem; color: var(--text-secondary); }
+.sa-prod-pct { font-size: 0.78rem; font-weight: 650; color: #16a34a; font-variant-numeric: tabular-nums; }
+
+/* Recent sales */
+.pd-row { cursor: pointer; }
+.sa-muted { color: var(--text-muted); }
+.sa-paychip { display: inline-flex; padding: 3px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 650; }
+.sa-paychip.is-paid { background: rgba(34, 197, 94, 0.14); color: #16a34a; }
+.sa-paychip.is-partial { background: rgba(249, 115, 22, 0.14); color: #ea580c; }
+.sa-paychip.is-unpaid { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+.sa-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
+
+.sa-panel[data-panel] > .pd-back { margin-bottom: 10px; }
+
+@media (max-width: 1280px) {
+  .sa-dash {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "chart suppliers"
+      "side products"
+      "table table";
+  }
+  .sa-dash .pd-area-side { flex-direction: column; }
+}
+@media (max-width: 760px) {
+  .sa-dash {
+    grid-template-columns: 1fr;
+    grid-template-areas: "chart" "suppliers" "side" "table" "products";
+  }
+}
