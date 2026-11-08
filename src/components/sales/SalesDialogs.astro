@@ -1,0 +1,111 @@
+---
+// Dialogs shared by the sales list and detail pages. Logic: scripts/sales-dialogs.ts
+---
+
+  <!-- Sale form -->
+  <dialog class="sa-dialog sa-wide" id="dlg-form">
+    <form method="dialog" class="sa-dialog-inner" id="form-sale">
+      <h2 class="sa-dialog-title" id="sf-title">New sale</h2>
+      <input type="hidden" id="sf-id" />
+      <div class="sa-grid">
+        <label class="sa-field"><span>Kind of sale</span>
+          <select id="sf-type">
+            <option value="stock">Stock sale</option>
+            <option value="bike">Bike sale</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+        </label>
+        <label class="sa-field"><span>Date</span><input type="date" id="sf-date" /></label>
+        <label class="sa-field"><span>Customer (empty = walk-in)</span><select id="sf-customer"></select></label>
+        <label class="sa-field" id="sf-walkin-wrap"><span>Walk-in name</span><input type="text" id="sf-walkin" maxlength="150" /></label>
+        <label class="sa-field" id="sf-due-wrap"><span>Promised to pay by (credit sale)</span><input type="date" id="sf-due" /></label>
+        <label class="sa-field" id="sf-chassis-wrap" hidden><span>Vehicle chassis no</span><input type="text" id="sf-chassis" maxlength="60" /></label>
+        <label class="sa-field" id="sf-reg-wrap" hidden><span>Vehicle reg no</span><input type="text" id="sf-reg" maxlength="30" /></label>
+      </div>
+      <div class="sa-lines-head"><strong>Items</strong><button type="button" class="btn-ghost-sm" id="sf-add-line">+ Add item</button></div>
+      <div id="sf-lines" class="sa-lines"></div>
+      <div class="sa-grid">
+        <label class="sa-field"><span>Discount</span><input type="number" id="sf-discount" min="0" step="0.01" value="0" /></label>
+        <label class="sa-field"><span>VAT % (on discounted amount)</span><input type="number" id="sf-vat" min="0" max="100" step="0.01" value="0" /></label>
+      </div>
+      <div id="sf-emi-box" hidden>
+        <div class="sa-grid sa-grid-3">
+          <label class="sa-field"><span>Payment</span>
+            <select id="sf-mode"><option value="full">Full payment</option><option value="emi">EMI</option></select>
+          </label>
+        </div>
+        <div class="sa-grid sa-grid-3" id="sf-emi-fields" hidden>
+          <label class="sa-field"><span>Down payment</span><input type="number" id="sf-down" min="0" step="0.01" value="0" /></label>
+          <label class="sa-field"><span>Months</span><input type="number" id="sf-months" min="1" max="120" step="1" value="12" /></label>
+          <label class="sa-field"><span>Monthly EMI</span><input type="number" id="sf-emi" min="0" step="0.01" value="0" /></label>
+          <label class="sa-field"><span>First EMI due</span><input type="date" id="sf-first" /></label>
+        </div>
+      </div>
+      <label class="sa-field"><span>Notes</span><input type="text" id="sf-notes" /></label>
+      <dl class="sa-totals" id="sf-totals"></dl>
+      <p class="sa-error" id="sf-error" hidden></p>
+      <div class="sa-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-form">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="sf-save">Save draft</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Payment -->
+  <dialog class="sa-dialog" id="dlg-pay">
+    <form method="dialog" class="sa-dialog-inner" id="form-pay">
+      <h2 class="sa-dialog-title">Record payment</h2>
+      <p class="sa-sub" id="py-sub"></p>
+      <div class="sa-grid">
+        <label class="sa-field"><span>Amount *</span><input type="number" id="py-amount" required min="0.01" step="0.01" /></label>
+        <label class="sa-field"><span>Method *</span>
+          <select id="py-method">
+            <option value="cash">Cash</option><option value="bank">Bank</option>
+            <option value="online">Online</option><option value="cheque">Cheque</option>
+          </select>
+        </label>
+        <label class="sa-field"><span>Paid on</span><input type="date" id="py-date" /></label>
+        <label class="sa-field"><span>Reference</span><input type="text" id="py-ref" maxlength="100" /></label>
+      </div>
+      <p class="sa-error" id="py-error" hidden></p>
+      <div class="sa-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="py-save">Save payment</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Return -->
+  <dialog class="sa-dialog sa-wide" id="dlg-return">
+    <form method="dialog" class="sa-dialog-inner" id="form-return">
+      <h2 class="sa-dialog-title">Return goods</h2>
+      <p class="sa-sub" id="rt-sub"></p>
+      <div id="rt-lines" class="sa-lines"></div>
+      <label class="sa-field"><span>Reason *</span><input type="text" id="rt-reason" required /></label>
+      <label class="sa-field" id="rt-refund-wrap" hidden><span>Walk-in: refund the money now by</span>
+        <select id="rt-refund">
+          <option value="cash">Cash</option><option value="bank">Bank</option>
+          <option value="online">Online</option><option value="cheque">Cheque</option>
+        </select>
+      </label>
+      <p class="sa-error" id="rt-error" hidden></p>
+      <div class="sa-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-return">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="rt-save">Return goods</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Reason (cancel / void / skip) -->
+  <dialog class="sa-dialog" id="dlg-reason">
+    <form method="dialog" class="sa-dialog-inner" id="form-reason">
+      <h2 class="sa-dialog-title" id="rs-title">Reason</h2>
+      <p class="sa-sub" id="rs-sub"></p>
+      <label class="sa-field"><span>Reason *</span><input type="text" id="rs-text" required /></label>
+      <p class="sa-error" id="rs-error" hidden></p>
+      <div class="sa-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-reason">Back</button>
+        <button type="submit" class="btn-primary-sm is-danger" id="rs-save">Confirm</button>
+      </div>
+    </form>
+  </dialog>

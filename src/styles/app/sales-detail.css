@@ -1,0 +1,9 @@
+/* Sale detail page (builds on inventory-detail.css and purchase-detail.css) */
+.sad-page .invd-tab[hidden] { display: none; }
+.sad-page [hidden] { display: none; }
+.sad-emi-sum { margin: 0 0 10px; font-size: 0.85rem; color: var(--text-secondary); }
+.sad-emi-sum:empty { display: none; }
+.sad-page .pud-bar > i.is-del { background: #2563eb; }
+.sad-page .invd-dl > div[hidden] { display: none; }
+.sad-page .sad-sub { display: block; margin-top: 2px; color: var(--text-muted); }
+.sad-page .inv-table .num { font-variant-numeric: tabular-nums; }

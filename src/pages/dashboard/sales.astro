@@ -3,6 +3,10 @@ import AppLayout from '../../layouts/AppLayout.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import { PAGE_META } from '../../lib/page-meta';
 import type { UserRole } from '../../lib/auth';
+import SalesDialogs from '../../components/sales/SalesDialogs.astro';
+import '../../styles/app/sales-shared.css';
+import '../../styles/app/purchase-page.css';
+import '../../styles/app/sales-page.css';
 
 const meta = PAGE_META.sales;
 const defaultRole: UserRole = 'owner';
@@ -21,82 +25,214 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <div class="sa-page">
-    <div class="sa-toolbar">
-      <div>
-        <p class="sa-scope" id="sa-scope">Sales</p>
-        <div class="sa-tabs" role="tablist">
-          <button type="button" class="sa-tab is-active" data-tab="list">Sales</button>
-          <button type="button" class="sa-tab" data-tab="returns">Returns</button>
-          <button type="button" class="sa-tab" data-tab="credits">Customer credit</button>
-          <button type="button" class="sa-tab" data-tab="followups">Follow-ups</button>
-          <button type="button" class="sa-tab" data-tab="bikes">Bikes &amp; local products</button>
+  <div class="sa-page pd-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div class="pd-hero-icon" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m7 15 4-4 3 3 5-6"></path><path d="M15 8h4v4"></path></svg>
+        </div>
+        <div>
+          <h2 class="pd-hero-title">Sales</h2>
+          <p class="pd-hero-sub">Track your sales performance and manage invoices.</p>
+          <p class="sa-scope" id="sa-scope" hidden></p>
         </div>
       </div>
-      <div class="sa-toolbar-right">
-        <button type="button" class="btn-ghost-sm" id="sa-refresh">Refresh</button>
-        <button type="button" class="btn-primary-sm" id="sa-new" hidden>+ New sale</button>
+
+      <div class="pd-hero-actions">
+        <button type="button" class="btn-primary-sm" id="sa-new" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg>
+          New Sale
+        </button>
+        <a class="btn-ghost-sm pd-link-btn" href="/dashboard/reports">Sales Report</a>
+        <button type="button" class="btn-ghost-sm" id="sa-export">Export</button>
+        <a class="btn-ghost-sm pd-link-btn" href="/dashboard/settings">Settings</a>
       </div>
-    </div>
+    </header>
 
     <p class="sa-notice" id="sa-notice" hidden></p>
 
-    <div class="sa-kpis">
-      <article class="sa-kpi"><span>Sales</span><strong id="kpi-count">—</strong></article>
-      <article class="sa-kpi"><span>Drafts</span><strong id="kpi-drafts">—</strong></article>
-      <article class="sa-kpi"><span>Total value</span><strong id="kpi-value">—</strong></article>
-      <article class="sa-kpi is-danger"><span>Still to receive</span><strong id="kpi-receive">—</strong></article>
-    </div>
-
-    <!-- Sales -->
-    <section class="sa-panel is-active" data-panel="list">
-      <div class="sa-layout">
-        <div class="sa-card">
-          <div class="sa-filters">
-            <input type="search" id="f-search" placeholder="Search customer, phone or chassis…" autocomplete="off" />
-            <select id="f-status" aria-label="Status">
-              <option value="">All status</option>
-              <option value="draft">Draft</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <select id="f-type" aria-label="Kind">
-              <option value="">All kinds</option>
-              <option value="stock">Stock sale</option>
-              <option value="bike">Bike sale</option>
-              <option value="maintenance">Maintenance</option>
-            </select>
-            <select id="f-pay" aria-label="Payment">
-              <option value="">All payments</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="partial">Part paid</option>
-              <option value="paid">Paid</option>
-            </select>
-            <input type="date" id="f-from" aria-label="From" />
-            <input type="date" id="f-to" aria-label="To" />
+    <!-- OVERVIEW -->
+    <section class="sa-panel is-active" data-panel="overview">
+      <div class="pd-kpis">
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-blue" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Total Sales</span>
+            <div class="pd-kpi-row"><strong id="kpi-total">—</strong><span class="pd-trend" id="kpi-total-trend"></span></div>
+            <span class="pd-kpi-sub">vs previous 30 days</span>
           </div>
-          <div class="sa-table-wrap">
-            <table class="sa-table">
+        </article>
+
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-purple" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Total Invoices</span>
+            <div class="pd-kpi-row"><strong id="kpi-invoices">—</strong><span class="pd-trend" id="kpi-invoices-trend"></span></div>
+            <span class="pd-kpi-sub">vs previous 30 days</span>
+          </div>
+        </article>
+
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-green" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.6 7 6.5 9 9.5 12 10s5 1.6 5 3.5-2.2 3-5 3-5-1.1-5-3"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Average Sale</span>
+            <div class="pd-kpi-row"><strong id="kpi-average">—</strong><span class="pd-trend" id="kpi-average-trend"></span></div>
+            <span class="pd-kpi-sub">vs previous 30 days</span>
+          </div>
+        </article>
+
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-orange" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Total Customers</span>
+            <div class="pd-kpi-row"><strong id="kpi-customers">—</strong><span class="pd-trend" id="kpi-customers-trend"></span></div>
+            <span class="pd-kpi-sub" id="kpi-customers-sub">&nbsp;</span>
+          </div>
+        </article>
+      </div>
+
+      <nav class="sa-subnav" aria-label="Sales sections">
+        <button type="button" class="sa-chip" data-goto="list">All sales</button>
+        <button type="button" class="sa-chip" data-goto="returns">Returns</button>
+        <button type="button" class="sa-chip" data-goto="credits">Customer credit</button>
+        <button type="button" class="sa-chip" data-goto="followups">Follow-ups</button>
+        <button type="button" class="sa-chip" data-goto="bikes">Bikes &amp; local products</button>
+      </nav>
+
+      <div class="pd-grid sa-dash">
+        <!-- SALES OVERVIEW -->
+        <section class="pd-card pd-area-chart">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="m7 15 4-4 3 3 5-6"></path></svg></span>Sales Overview</h3>
+            <select id="pd-range" class="pd-select" aria-label="Range">
+              <option value="7">Last 7 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+            </select>
+          </div>
+          <div class="pd-legend sa-legend-top">
+            <span><i class="is-this"></i>This Period</span>
+            <span><i class="is-last"></i>Last Period</span>
+          </div>
+          <div class="pd-chart" id="pd-chart"></div>
+        </section>
+
+        <!-- SALES BY CATEGORY -->
+        <section class="pd-card pd-area-suppliers">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"></path><path d="M21 3v9h-9z"></path></svg></span>Sales by Category</h3>
+          </div>
+          <div class="sa-donut-wrap" id="sa-category"></div>
+        </section>
+
+        <!-- QUICK ACTIONS -->
+        <aside class="pd-area-side">
+          <section class="pd-card pd-card-soft">
+            <div class="pd-card-head">
+              <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"></path></svg></span>Quick Actions</h3>
+            </div>
+            <div class="pd-quick">
+              <button type="button" class="pd-quick-btn is-primary" id="qa-new" hidden>
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg></span>New Sale
+              </button>
+              <button type="button" class="pd-quick-btn" data-goto="list">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg></span>View Sales
+              </button>
+              <button type="button" class="pd-quick-btn" id="qa-export">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M4 21h16"></path></svg></span>Export Sales
+              </button>
+              <a class="pd-quick-btn" href="/dashboard/customers">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"></path></svg></span>Manage Customers
+              </a>
+            </div>
+          </section>
+        </aside>
+
+        <!-- RECENT SALES -->
+        <section class="pd-card pd-area-table">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg></span>Recent Sales</h3>
+            <button type="button" class="btn-link" data-goto="list">View All →</button>
+          </div>
+          <div class="pd-table-wrap">
+            <table class="pd-table">
               <thead>
                 <tr>
-                  <th>Invoice</th><th>Date</th><th>Customer</th><th>Kind</th><th>Status</th>
-                  <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Payment</th>
+                  <th>Invoice #</th>
+                  <th>Date &amp; Time</th>
+                  <th>Customer</th>
+                  <th>Total Amount</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th class="actions">Actions</th>
                 </tr>
               </thead>
-              <tbody id="sa-tbody"><tr><td colspan="9" class="sa-empty">Loading…</td></tr></tbody>
+              <tbody id="pd-tbody"><tr><td colspan="7" class="sa-empty">Loading…</td></tr></tbody>
             </table>
           </div>
-          <p class="sa-foot" id="sa-count"></p>
-        </div>
+          <div class="pd-table-foot">
+            <p class="pd-foot" id="pd-count"></p>
+            <nav class="pd-pages" id="pd-pages" aria-label="Sales pages"></nav>
+          </div>
+        </section>
 
-        <aside class="sa-card" id="sa-detail">
-          <p class="sa-empty-detail">Select a sale to see its lines, payments and instalments.</p>
-        </aside>
+        <!-- TOP SELLING PRODUCTS -->
+        <section class="pd-card sa-area-products">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v5a5 5 0 0 1-10 0z"></path><path d="M17 5h3v2a3 3 0 0 1-3 3"></path><path d="M7 5H4v2a3 3 0 0 0 3 3"></path></svg></span>Top Selling Products</h3>
+            <a class="btn-link" href="/dashboard/inventory">View All →</a>
+          </div>
+          <ol class="sa-products" id="sa-products"></ol>
+        </section>
       </div>
     </section>
 
+    <!-- ALL SALES -->
+    <section class="sa-panel" data-panel="list">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Sales</button>
+      <div class="sa-card">
+        <div class="sa-filters">
+          <input type="search" id="f-search" placeholder="Search customer, phone or chassis…" autocomplete="off" />
+          <select id="f-status" aria-label="Status">
+            <option value="">All status</option>
+            <option value="draft">Draft</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <select id="f-type" aria-label="Kind">
+            <option value="">All kinds</option>
+            <option value="stock">Stock sale</option>
+            <option value="bike">Bike sale</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+          <select id="f-pay" aria-label="Payment">
+            <option value="">All payments</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="partial">Part paid</option>
+            <option value="paid">Paid</option>
+          </select>
+          <input type="date" id="f-from" aria-label="From" />
+          <input type="date" id="f-to" aria-label="To" />
+        </div>
+        <div class="sa-table-wrap">
+          <table class="sa-table">
+            <thead>
+              <tr>
+                <th>Invoice</th><th>Date</th><th>Customer</th><th>Kind</th><th>Status</th>
+                <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Payment</th>
+              </tr>
+            </thead>
+            <tbody id="sa-tbody"><tr><td colspan="9" class="sa-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="sa-foot" id="sa-count"></p>
+      </div>
+    </section>
+
+
     <!-- Returns -->
     <section class="sa-panel" data-panel="returns">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Sales</button>
       <div class="sa-card">
         <div class="sa-table-wrap">
           <table class="sa-table">
@@ -115,6 +251,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
     <!-- Credit -->
     <section class="sa-panel" data-panel="credits">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Sales</button>
       <div class="sa-card">
         <div class="sa-credit-head">
           <p class="sa-foot" style="margin:0">Credit you owe a customer after a return: refund it, set it against another sale, or give other goods.</p>
@@ -133,6 +270,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
     <!-- Follow-ups -->
     <section class="sa-panel" data-panel="followups">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Sales</button>
       <div class="sa-card">
         <div class="sa-filters">
           <select id="fu-status" aria-label="Status">
@@ -164,6 +302,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
     <!-- Bikes + local products -->
     <section class="sa-panel" data-panel="bikes">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Sales</button>
       <div class="sa-layout sa-layout-even">
         <div class="sa-card">
           <div class="sa-credit-head">
@@ -195,113 +334,7 @@ const navItems = getNavItemsForRole(defaultRole);
     </section>
   </div>
 
-  <!-- Sale form -->
-  <dialog class="sa-dialog sa-wide" id="dlg-form">
-    <form method="dialog" class="sa-dialog-inner" id="form-sale">
-      <h2 class="sa-dialog-title" id="sf-title">New sale</h2>
-      <input type="hidden" id="sf-id" />
-      <div class="sa-grid">
-        <label class="sa-field"><span>Kind of sale</span>
-          <select id="sf-type">
-            <option value="stock">Stock sale</option>
-            <option value="bike">Bike sale</option>
-            <option value="maintenance">Maintenance</option>
-          </select>
-        </label>
-        <label class="sa-field"><span>Date</span><input type="date" id="sf-date" /></label>
-        <label class="sa-field"><span>Customer (empty = walk-in)</span><select id="sf-customer"></select></label>
-        <label class="sa-field" id="sf-walkin-wrap"><span>Walk-in name</span><input type="text" id="sf-walkin" maxlength="150" /></label>
-        <label class="sa-field" id="sf-due-wrap"><span>Promised to pay by (credit sale)</span><input type="date" id="sf-due" /></label>
-        <label class="sa-field" id="sf-chassis-wrap" hidden><span>Vehicle chassis no</span><input type="text" id="sf-chassis" maxlength="60" /></label>
-        <label class="sa-field" id="sf-reg-wrap" hidden><span>Vehicle reg no</span><input type="text" id="sf-reg" maxlength="30" /></label>
-      </div>
-      <div class="sa-lines-head"><strong>Items</strong><button type="button" class="btn-ghost-sm" id="sf-add-line">+ Add item</button></div>
-      <div id="sf-lines" class="sa-lines"></div>
-      <div class="sa-grid">
-        <label class="sa-field"><span>Discount</span><input type="number" id="sf-discount" min="0" step="0.01" value="0" /></label>
-        <label class="sa-field"><span>VAT % (on discounted amount)</span><input type="number" id="sf-vat" min="0" max="100" step="0.01" value="0" /></label>
-      </div>
-      <div id="sf-emi-box" hidden>
-        <div class="sa-grid sa-grid-3">
-          <label class="sa-field"><span>Payment</span>
-            <select id="sf-mode"><option value="full">Full payment</option><option value="emi">EMI</option></select>
-          </label>
-        </div>
-        <div class="sa-grid sa-grid-3" id="sf-emi-fields" hidden>
-          <label class="sa-field"><span>Down payment</span><input type="number" id="sf-down" min="0" step="0.01" value="0" /></label>
-          <label class="sa-field"><span>Months</span><input type="number" id="sf-months" min="1" max="120" step="1" value="12" /></label>
-          <label class="sa-field"><span>Monthly EMI</span><input type="number" id="sf-emi" min="0" step="0.01" value="0" /></label>
-          <label class="sa-field"><span>First EMI due</span><input type="date" id="sf-first" /></label>
-        </div>
-      </div>
-      <label class="sa-field"><span>Notes</span><input type="text" id="sf-notes" /></label>
-      <dl class="sa-totals" id="sf-totals"></dl>
-      <p class="sa-error" id="sf-error" hidden></p>
-      <div class="sa-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-form">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="sf-save">Save draft</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- Payment -->
-  <dialog class="sa-dialog" id="dlg-pay">
-    <form method="dialog" class="sa-dialog-inner" id="form-pay">
-      <h2 class="sa-dialog-title">Record payment</h2>
-      <p class="sa-sub" id="py-sub"></p>
-      <div class="sa-grid">
-        <label class="sa-field"><span>Amount *</span><input type="number" id="py-amount" required min="0.01" step="0.01" /></label>
-        <label class="sa-field"><span>Method *</span>
-          <select id="py-method">
-            <option value="cash">Cash</option><option value="bank">Bank</option>
-            <option value="online">Online</option><option value="cheque">Cheque</option>
-          </select>
-        </label>
-        <label class="sa-field"><span>Paid on</span><input type="date" id="py-date" /></label>
-        <label class="sa-field"><span>Reference</span><input type="text" id="py-ref" maxlength="100" /></label>
-      </div>
-      <p class="sa-error" id="py-error" hidden></p>
-      <div class="sa-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="py-save">Save payment</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- Return -->
-  <dialog class="sa-dialog sa-wide" id="dlg-return">
-    <form method="dialog" class="sa-dialog-inner" id="form-return">
-      <h2 class="sa-dialog-title">Return goods</h2>
-      <p class="sa-sub" id="rt-sub"></p>
-      <div id="rt-lines" class="sa-lines"></div>
-      <label class="sa-field"><span>Reason *</span><input type="text" id="rt-reason" required /></label>
-      <label class="sa-field" id="rt-refund-wrap" hidden><span>Walk-in: refund the money now by</span>
-        <select id="rt-refund">
-          <option value="cash">Cash</option><option value="bank">Bank</option>
-          <option value="online">Online</option><option value="cheque">Cheque</option>
-        </select>
-      </label>
-      <p class="sa-error" id="rt-error" hidden></p>
-      <div class="sa-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-return">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="rt-save">Return goods</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- Reason (cancel / void / skip) -->
-  <dialog class="sa-dialog" id="dlg-reason">
-    <form method="dialog" class="sa-dialog-inner" id="form-reason">
-      <h2 class="sa-dialog-title" id="rs-title">Reason</h2>
-      <p class="sa-sub" id="rs-sub"></p>
-      <label class="sa-field"><span>Reason *</span><input type="text" id="rs-text" required /></label>
-      <p class="sa-error" id="rs-error" hidden></p>
-      <div class="sa-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-reason">Back</button>
-        <button type="submit" class="btn-primary-sm is-danger" id="rs-save">Confirm</button>
-      </div>
-    </form>
-  </dialog>
+  <SalesDialogs />
 
   <!-- Use credit -->
   <dialog class="sa-dialog sa-wide" id="dlg-credit">
@@ -393,75 +426,34 @@ const navItems = getNavItemsForRole(defaultRole);
 
 <script>
   import { getSession } from '../../lib/auth';
-  import { ApiError } from '../../lib/api';
   import { listCustomers, type Customer } from '../../lib/customers';
   import { listStock, type StockItem } from '../../lib/inventory';
   import {
-    listSales, getSale, createSale, updateSale, confirmSale, cancelSale,
-    addPayment, voidPayment,
-    listReturns, createReturn, voidReturn,
+    $, val, today, esc, describe, showError, dlg, submit, badge,
+    configureSalesDialogs, openForm, openReason, itemOptions,
+  } from '../../scripts/sales-dialogs';
+  import {
+    listSales, listReturns, voidReturn,
     listCredits, useCredit, deliverReplacement, voidCredit,
     listFollowups, markFollowupDone, skipFollowup,
     listBikes, registerBike, listLocalProducts, createLocalProduct,
-    previewTotals, previewFinance, summarize, formatNpr, formatQty,
+    formatNpr, formatQty,
     STATUS_LABEL, TYPE_LABEL, PAYMENT_LABEL, METHOD_LABEL, CREDIT_LABEL, FOLLOWUP_LABEL,
     type Sale, type SaleType, type SaleReturn, type SaleCredit, type Followup, type BikeUnit,
-    type LocalProduct, type CreditKind, type PayMethod, type SaleLineInput,
+    type LocalProduct, type CreditKind, type PayMethod,
   } from '../../lib/sales';
 
   if (!getSession()) window.location.replace('/');
 
+  let allSales: Sale[] = [];
   let sales: Sale[] = [];
   let customers: Customer[] = [];
   let products: StockItem[] = [];
   let bikesInStock: BikeUnit[] = [];
   let localProducts: LocalProduct[] = [];
-  let selected: Sale | null = null;
   let canWrite = true;
-  let activeTab = 'list';
+  let activePanel = 'overview';
   let loaded: Record<string, boolean> = {};
-
-  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
-  const val = (id: string) => $<HTMLInputElement>(id)?.value ?? '';
-  const today = () => new Date().toLocaleDateString('en-CA');
-  const dlg = (id: string) => $<HTMLDialogElement>(id)!;
-
-  function esc(s: string): string {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  const FIELD_LABELS: Record<string, string> = {
-    customer: 'Customer', sale_date: 'Date', discount_amount: 'Discount', vat_rate: 'VAT',
-    down_payment: 'Down payment', emi_months: 'Months', emi_amount: 'EMI', first_emi_due: 'First EMI due',
-    due_date: 'Due date', amount: 'Amount', method: 'Method', reason: 'Reason', paid_on: 'Paid on',
-    chassis_no: 'Chassis no', engine_no: 'Engine no', name: 'Name', sale: 'Sale', note: 'Note',
-    refund_method: 'Refund method',
-  };
-
-  function flatten(value: unknown): string {
-    if (typeof value === 'string') return value;
-    if (Array.isArray(value)) return value.map(flatten).filter(Boolean).join(' ');
-    if (value && typeof value === 'object') return Object.values(value).map(flatten).filter(Boolean).join(' ');
-    return '';
-  }
-
-  function describe(error: unknown): string {
-    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
-    const entries = Object.entries(error.fields);
-    if (entries.length > 0 && error.status === 400) {
-      return entries
-        .map(([k, v]) => (FIELD_LABELS[k] ? `${FIELD_LABELS[k]}: ${flatten(v)}` : flatten(v)))
-        .join(' ');
-    }
-    return error.message;
-  }
-
-  function showError(id: string, message: string | null): void {
-    const el = $(id);
-    if (!el) return;
-    el.hidden = !message;
-    el.textContent = message ?? '';
-  }
 
   function notice(message: string | null, error = false): void {
     const el = $('sa-notice');
@@ -471,28 +463,378 @@ const navItems = getNavItemsForRole(defaultRole);
     el.classList.toggle('is-error', error);
   }
 
-  document.querySelectorAll<HTMLButtonElement>('[data-close]').forEach((b) =>
-    b.addEventListener('click', () => dlg(b.dataset.close!).close()),
-  );
-
-  async function submit(btnId: string, errId: string, dialogId: string, work: () => Promise<void>): Promise<void> {
-    const btn = $<HTMLButtonElement>(btnId)!;
-    btn.disabled = true;
-    showError(errId, null);
-    try {
-      await work();
-      dlg(dialogId).close();
-    } catch (error) {
-      showError(errId, describe(error));
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  const badge = (cls: string, text: string) => `<span class="sa-badge sa-badge-${cls}">${esc(text)}</span>`;
   const customerLabel = (s: Sale) => esc(s.customerId ? s.customerName : s.walkInName || 'Walk-in');
 
-  // ---- Sales list ----------------------------------------------------
+  // ---- Overview ------------------------------------------------------
+
+  const SALE_PAGE_SIZE = 5;
+  let salePage = 1;
+  const DAY_MS = 86_400_000;
+
+  const parseDay = (s: string) => new Date(`${s}T00:00:00`);
+  const dayStart = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysAgo = (s: string) => Math.round((dayStart() - parseDay(s).getTime()) / DAY_MS);
+
+  function fmtDate(s: string): string {
+    const d = parseDay(s);
+    return Number.isNaN(d.getTime()) ? s : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function fmtWhen(sale: Sale): string {
+    if (!sale.createdAt) return fmtDate(sale.saleDate);
+    const d = new Date(sale.createdAt);
+    if (Number.isNaN(d.getTime())) return fmtDate(sale.saleDate);
+    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `${fmtDate(sale.saleDate)} • ${time}`;
+  }
+
+  function compact(n: number): string {
+    if (n >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${+(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
+    return String(Math.round(n));
+  }
+
+  /** Confirmed sales are the real ones: drafts are not sold yet, cancelled ones never happened. */
+  const live = () => allSales.filter((s) => s.status === 'confirmed');
+
+  function inWindow(fromDaysAgo: number, toDaysAgo: number): Sale[] {
+    return live().filter((s) => {
+      const n = daysAgo(s.saleDate);
+      return n >= toDaysAgo && n <= fromDaysAgo;
+    });
+  }
+
+  function setTrend(id: string, current: number, previous: number): void {
+    const el = $(id);
+    if (!el) return;
+    el.className = 'pd-trend';
+    if (previous <= 0) {
+      el.textContent = current > 0 ? 'New' : '';
+      if (current > 0) el.classList.add('is-up');
+      return;
+    }
+    const pct = ((current - previous) / previous) * 100;
+    const flat = Math.abs(pct) < 0.05;
+    el.textContent = `${flat ? '' : pct > 0 ? '↑ ' : '↓ '}${Math.abs(pct).toFixed(1)}%`;
+    el.classList.add(flat ? 'is-flat' : pct > 0 ? 'is-up' : 'is-down');
+  }
+
+  function renderKpis(): void {
+    const now = inWindow(29, 0);
+    const before = inWindow(59, 30);
+    const sum = (list: Sale[]) => list.reduce((t, s) => t + s.netTotal, 0);
+    const avg = (list: Sale[]) => (list.length ? sum(list) / list.length : 0);
+
+    $('kpi-total')!.textContent = formatNpr(sum(now));
+    setTrend('kpi-total-trend', sum(now), sum(before));
+
+    $('kpi-invoices')!.textContent = String(now.length);
+    setTrend('kpi-invoices-trend', now.length, before.length);
+
+    $('kpi-average')!.textContent = formatNpr(Math.round(avg(now)));
+    setTrend('kpi-average-trend', avg(now), avg(before));
+
+    const since = dayStart() - 29 * DAY_MS;
+    const prior = dayStart() - 59 * DAY_MS;
+    const stamp = (c: Customer) => new Date(c.createdAt).getTime();
+    const added = customers.filter((c) => stamp(c) >= since).length;
+    const addedBefore = customers.filter((c) => stamp(c) >= prior && stamp(c) < since).length;
+    $('kpi-customers')!.textContent = String(customers.length);
+    setTrend('kpi-customers-trend', added, addedBefore);
+    $('kpi-customers-sub')!.textContent = `${added} new in last 30 days`;
+  }
+
+  function smoothPath(pts: [number, number][]): string {
+    if (pts.length < 2) return '';
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i];
+      const [x1, y1] = pts[i + 1];
+      const cx = (x0 + x1) / 2;
+      d += ` C${cx},${y0} ${cx},${y1} ${x1},${y1}`;
+    }
+    return d;
+  }
+
+  function niceMax(v: number): number {
+    if (v <= 0) return 1000;
+    const pow = Math.pow(10, Math.floor(Math.log10(v)));
+    const step = pow / 2;
+    return Math.ceil(v / step) * step;
+  }
+
+  const rangeDays = () => Number($<HTMLSelectElement>('pd-range')?.value ?? 30);
+
+  function renderChart(): void {
+    const host = $('pd-chart');
+    if (!host) return;
+    const days = rangeDays();
+    // Group days into buckets so sparse sale dates still draw a readable line.
+    const size = days <= 7 ? 1 : days <= 30 ? 3 : 7;
+    const count = Math.ceil(days / size);
+    const thisP = new Array<number>(count).fill(0);
+    const lastP = new Array<number>(count).fill(0);
+    for (const s of live()) {
+      const n = daysAgo(s.saleDate);
+      if (n >= 0 && n < days) thisP[count - 1 - Math.floor(n / size)] += s.netTotal;
+      else if (n >= days && n < days * 2) lastP[count - 1 - Math.floor((n - days) / size)] += s.netTotal;
+    }
+
+    const W = 560, H = 230, padL = 44, padR = 14, padT = 14, padB = 28;
+    const yMax = niceMax(Math.max(...thisP, ...lastP));
+    const x = (i: number) => padL + (count <= 1 ? 0 : (i / (count - 1)) * (W - padL - padR));
+    const y = (v: number) => padT + (1 - v / yMax) * (H - padT - padB);
+    const thisPts = thisP.map((v, i): [number, number] => [x(i), y(v)]);
+    const lastPts = lastP.map((v, i): [number, number] => [x(i), y(v)]);
+
+    const grid = [0, 1 / 3, 2 / 3, 1]
+      .map((f) => `<line x1="${padL}" x2="${W - padR}" y1="${y(yMax * f)}" y2="${y(yMax * f)}" class="pd-grid-line" />
+        <text x="${padL - 8}" y="${y(yMax * f) + 3}" text-anchor="end" class="pd-axis">${compact(yMax * f)}</text>`)
+      .join('');
+    const every = Math.max(1, Math.ceil(count / 4));
+    const ticks = thisP
+      .map((_, i) => {
+        if (i % every !== 0 && i !== count - 1) return '';
+        const ago = (count - 1 - i) * size;
+        const label = new Date(dayStart() - ago * DAY_MS).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" class="pd-axis">${label}</text>`;
+      })
+      .join('');
+    const dots = (pts: [number, number][], cls: string) =>
+      pts.map(([px, py]) => `<circle cx="${px}" cy="${py}" r="3.2" class="${cls}" />`).join('');
+    const baseline = y(0);
+    const area = (pts: [number, number][]) =>
+      pts.length < 2 ? '' : `${smoothPath(pts)} L${pts[pts.length - 1][0]},${baseline} L${pts[0][0]},${baseline} Z`;
+    const empty = thisP.every((v) => v === 0) && lastP.every((v) => v === 0);
+
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sales this period and last period" preserveAspectRatio="xMidYMid meet">
+      ${grid}
+      <path d="${area(thisPts)}" class="sa-area-this" />
+      <path d="${smoothPath(lastPts)}" class="pd-line-last" />
+      <path d="${smoothPath(thisPts)}" class="pd-line-this" />
+      ${dots(lastPts, 'pd-dot-last')}
+      ${dots(thisPts, 'pd-dot-this')}
+      ${ticks}
+    </svg>${empty ? '<p class="pd-chart-empty">No sales in this period</p>' : ''}`;
+  }
+
+  // ---- Category + top products (worked out from sale lines) ------------
+
+  const DONUT_COLORS = ['#2563eb', '#7c3aed', '#16a34a', '#f97316', '#94a3b8'];
+
+  function categoryOf(line: Sale['lines'][number]): string {
+    if (line.productId) {
+      const p = products.find((x) => x.productId === line.productId);
+      return p?.category?.trim() || 'Uncategorised';
+    }
+    if (line.bikeUnitId) return 'Bikes';
+    if (line.localProductId) return 'Local products';
+    return 'Services';
+  }
+
+  function renderCategories(): void {
+    const el = $('sa-category');
+    if (!el) return;
+    const totals = new Map<string, number>();
+    for (const s of inWindow(rangeDays() - 1, 0)) {
+      for (const l of s.lines) totals.set(categoryOf(l), (totals.get(categoryOf(l)) ?? 0) + l.lineTotal);
+    }
+    const sorted = [...totals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    const grand = sorted.reduce((t, [, v]) => t + v, 0);
+    if (sorted.length === 0 || grand <= 0) {
+      el.innerHTML = '<p class="pd-empty-note">No sales in this period.</p>';
+      return;
+    }
+    let rows = sorted;
+    if (sorted.length > 5) {
+      rows = [...sorted.slice(0, 4), ['Others', sorted.slice(4).reduce((t, [, v]) => t + v, 0)]];
+    }
+
+    const R = 62, C = 2 * Math.PI * R;
+    let offset = 0;
+    const arcs = rows
+      .map(([, v], i) => {
+        const len = (v / grand) * C;
+        const arc = `<circle cx="80" cy="80" r="${R}" fill="none" stroke="${DONUT_COLORS[i % DONUT_COLORS.length]}" stroke-width="26"
+          stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-offset}" transform="rotate(-90 80 80)" />`;
+        offset += len;
+        return arc;
+      })
+      .join('');
+
+    el.innerHTML = `
+      <div class="sa-donut">
+        <svg viewBox="0 0 160 160" role="img" aria-label="Sales by category">
+          <circle cx="80" cy="80" r="${R}" fill="none" class="sa-donut-track" stroke-width="26" />
+          ${arcs}
+        </svg>
+        <div class="sa-donut-center"><strong>${esc(formatNpr(grand))}</strong><span>Total Sales</span></div>
+      </div>
+      <ul class="sa-donut-legend">
+        ${rows.map(([name, v], i) => `<li>
+          <i style="background:${DONUT_COLORS[i % DONUT_COLORS.length]}"></i>
+          <span class="sa-donut-name">${esc(name)}</span>
+          <span class="sa-donut-pct">${((v / grand) * 100).toFixed(1)}%</span>
+        </li>`).join('')}
+      </ul>`;
+  }
+
+  function renderTopProducts(): void {
+    const el = $('sa-products');
+    if (!el) return;
+    const agg = new Map<string, { name: string; productId: number | null; total: number }>();
+    for (const s of inWindow(rangeDays() - 1, 0)) {
+      for (const l of s.lines) {
+        const key = l.productId ? `p${l.productId}` : `n:${l.name}`;
+        const row = agg.get(key) ?? { name: l.name, productId: l.productId, total: 0 };
+        row.total += l.lineTotal;
+        agg.set(key, row);
+      }
+    }
+    const sorted = [...agg.values()].filter((r) => r.total > 0).sort((a, b) => b.total - a.total).slice(0, 5);
+    const grand = [...agg.values()].reduce((t, r) => t + r.total, 0);
+    if (sorted.length === 0 || grand <= 0) {
+      el.innerHTML = '<li class="pd-empty-note">No product sales in this period.</li>';
+      return;
+    }
+    el.innerHTML = sorted
+      .map((r, i) => {
+        const img = r.productId ? products.find((p) => p.productId === r.productId)?.image : null;
+        const thumb = img
+          ? `<span class="sa-prod-thumb" style="background-image:url('${esc(img)}')"></span>`
+          : `<span class="sa-prod-thumb is-letter">${esc((r.name || '?')[0].toUpperCase())}</span>`;
+        return `<li>
+          <span class="sa-prod-rank">${i + 1}</span>
+          ${thumb}
+          <div class="sa-prod-body"><strong>${esc(r.name)}</strong><span>${esc(formatNpr(r.total))}</span></div>
+          <span class="sa-prod-pct">${((r.total / grand) * 100).toFixed(1)}%</span>
+        </li>`;
+      })
+      .join('');
+  }
+
+  // ---- Recent sales table ----------------------------------------------
+
+  function salePill(s: Sale): string {
+    if (s.status === 'cancelled') return `<span class="pd-pill pd-pill-cancelled">Cancelled</span>`;
+    if (s.status === 'draft') return `<span class="pd-pill pd-pill-draft">Draft</span>`;
+    if (s.paymentStatus === 'paid') return `<span class="pd-pill pd-pill-received">Completed</span>`;
+    return `<span class="pd-pill pd-pill-delivered">Confirmed</span>`;
+  }
+
+  function payPill(s: Sale): string {
+    if (s.status === 'cancelled') return '<span class="sa-muted">—</span>';
+    const cls = s.paymentStatus === 'paid' ? 'sa-paychip is-paid' : s.paymentStatus === 'partial' ? 'sa-paychip is-partial' : 'sa-paychip is-unpaid';
+    return `<span class="${cls}">${esc(PAYMENT_LABEL[s.paymentStatus])}</span>`;
+  }
+
+  const EYE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+
+  function renderPager(total: number): void {
+    const el = $('pd-pages');
+    if (!el) return;
+    const pages = Math.max(1, Math.ceil(total / SALE_PAGE_SIZE));
+    salePage = Math.min(salePage, pages);
+    if (pages <= 1) {
+      el.innerHTML = '';
+      return;
+    }
+    const items: (number | '…')[] = [];
+    for (let n = 1; n <= pages; n++) {
+      if (n === 1 || n === pages || Math.abs(n - salePage) <= 1) items.push(n);
+      else if (items[items.length - 1] !== '…') items.push('…');
+    }
+    el.innerHTML =
+      `<button type="button" class="pd-pg" data-pg="${salePage - 1}" aria-label="Previous page" ${salePage <= 1 ? 'disabled' : ''}>‹</button>` +
+      items.map((n) => (n === '…'
+        ? '<span class="pd-pg-gap">…</span>'
+        : `<button type="button" class="pd-pg${n === salePage ? ' is-active' : ''}" data-pg="${n}">${n}</button>`)).join('') +
+      `<button type="button" class="pd-pg" data-pg="${salePage + 1}" aria-label="Next page" ${salePage >= pages ? 'disabled' : ''}>›</button>`;
+    el.querySelectorAll<HTMLButtonElement>('[data-pg]').forEach((b) =>
+      b.addEventListener('click', () => {
+        salePage = Number(b.dataset.pg);
+        renderRecentSales();
+      }),
+    );
+  }
+
+  function renderRecentSales(): void {
+    const tbody = $('pd-tbody');
+    if (!tbody) return;
+    const sorted = [...allSales].sort((a, b) => b.saleDate.localeCompare(a.saleDate) || b.id - a.id);
+    if (sorted.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="sa-empty">No sales yet.</td></tr>';
+      $('pd-count')!.textContent = 'Showing 0 of 0 sales';
+      renderPager(0);
+      return;
+    }
+    const pages = Math.max(1, Math.ceil(sorted.length / SALE_PAGE_SIZE));
+    salePage = Math.min(salePage, pages);
+    const start = (salePage - 1) * SALE_PAGE_SIZE;
+    const slice = sorted.slice(start, start + SALE_PAGE_SIZE);
+    tbody.innerHTML = slice
+      .map((s) => `<tr class="pd-row" data-id="${s.id}">
+          <td class="pd-po">${esc(s.invoiceNo || s.saleNo)}</td>
+          <td>${esc(fmtWhen(s))}</td>
+          <td>${customerLabel(s)}</td>
+          <td>${formatNpr(s.netTotal)}</td>
+          <td>${payPill(s)}</td>
+          <td>${salePill(s)}</td>
+          <td class="actions"><button type="button" class="pd-view-btn" data-view="${s.id}">${EYE} View</button></td>
+        </tr>`)
+      .join('');
+    $('pd-count')!.textContent = `Showing ${start + 1}–${start + slice.length} of ${sorted.length} sales`;
+    renderPager(sorted.length);
+    tbody.querySelectorAll<HTMLElement>('[data-view]').forEach((b) =>
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDetail(Number(b.dataset.view));
+      }),
+    );
+    tbody.querySelectorAll<HTMLTableRowElement>('.pd-row').forEach((row) =>
+      row.addEventListener('click', () => openDetail(Number(row.dataset.id))),
+    );
+  }
+
+  function renderOverview(): void {
+    renderKpis();
+    renderChart();
+    renderCategories();
+    renderTopProducts();
+    renderRecentSales();
+  }
+
+  $('pd-range')?.addEventListener('change', () => {
+    renderChart();
+    renderCategories();
+    renderTopProducts();
+  });
+
+  /** Downloads every sale as a CSV file. */
+  function exportCsv(): void {
+    const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = [
+      ['Invoice', 'Sale no', 'Date', 'Customer', 'Kind', 'Status', 'Payment', 'Net total', 'Paid', 'Due'],
+      ...allSales.map((s) => [
+        s.invoiceNo, s.saleNo, s.saleDate,
+        s.customerId ? s.customerName : s.walkInName || 'Walk-in',
+        TYPE_LABEL[s.saleType], STATUS_LABEL[s.status],
+        s.status === 'cancelled' ? '' : PAYMENT_LABEL[s.paymentStatus],
+        s.netTotal, s.paid, s.status === 'cancelled' ? '' : s.remaining,
+      ]),
+    ];
+    const blob = new Blob([rows.map((r) => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sales-${today()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  $('sa-export')?.addEventListener('click', exportCsv);
+  $('qa-export')?.addEventListener('click', exportCsv);
+
+  // ---- All sales list --------------------------------------------------
 
   function filters() {
     return {
@@ -505,19 +847,11 @@ const navItems = getNavItemsForRole(defaultRole);
     };
   }
 
-  function renderKpis(): void {
-    const s = summarize(sales);
-    $('kpi-count')!.textContent = String(s.count);
-    $('kpi-drafts')!.textContent = String(s.drafts);
-    $('kpi-value')!.textContent = formatNpr(s.totalValue);
-    $('kpi-receive')!.textContent = formatNpr(s.toReceive);
-  }
-
   function renderList(): void {
     const tbody = $('sa-tbody')!;
     tbody.innerHTML = sales.length === 0
       ? `<tr><td colspan="9" class="sa-empty">No sales found.</td></tr>`
-      : sales.map((s) => `<tr class="sa-row ${selected?.id === s.id ? 'is-selected' : ''}" data-id="${s.id}">
+      : sales.map((s) => `<tr class="sa-row" data-id="${s.id}">
           <td class="mono">${esc(s.invoiceNo || s.saleNo)}</td>
           <td>${esc(s.saleDate)}</td>
           <td>${customerLabel(s)}</td>
@@ -530,447 +864,57 @@ const navItems = getNavItemsForRole(defaultRole);
         </tr>`).join('');
     $('sa-count')!.textContent = `${sales.length} sale${sales.length === 1 ? '' : 's'}`;
     tbody.querySelectorAll<HTMLTableRowElement>('.sa-row').forEach((row) =>
-      row.addEventListener('click', () => void openDetail(Number(row.dataset.id))),
+      row.addEventListener('click', () => openDetail(Number(row.dataset.id))),
     );
   }
 
   async function loadList(): Promise<void> {
+    const f = filters();
+    const unfiltered = !f.search && !f.status && !f.saleType && !f.paymentStatus && !f.dateFrom && !f.dateTo;
     try {
-      sales = await listSales(filters());
-      notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+      sales = unfiltered ? allSales : await listSales(f);
     } catch (error) {
       sales = [];
       notice(describe(error), true);
     }
-    renderKpis();
     renderList();
   }
 
-  // ---- Detail --------------------------------------------------------
-
-  async function openDetail(id: number): Promise<void> {
+  /** Loads every sale for the overview, then the list panel. */
+  async function loadAll(): Promise<void> {
     try {
-      selected = await getSale(id);
+      allSales = await listSales();
+      notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
     } catch (error) {
-      notice(describe(error), true);
-      return;
-    }
-    renderList();
-    renderDetail();
-  }
-
-  function renderDetail(): void {
-    const el = $('sa-detail')!;
-    const s = selected;
-    if (!s) {
-      el.innerHTML = `<p class="sa-empty-detail">Select a sale to see its lines, payments and instalments.</p>`;
-      return;
-    }
-    const acts: string[] = [];
-    if (canWrite) {
-      if (s.status === 'draft') {
-        acts.push(`<button class="btn-primary-sm" data-act="confirm">Confirm sale</button>`);
-        acts.push(`<button class="btn-ghost-sm" data-act="edit">Edit</button>`);
-      }
-      if (s.status !== 'cancelled' && s.remaining > 0) acts.push(`<button class="btn-ghost-sm" data-act="pay">Record payment</button>`);
-      if (s.status === 'confirmed' && s.lines.some((l) => l.returnableQuantity > 0)) acts.push(`<button class="btn-ghost-sm" data-act="return">Return goods</button>`);
-      if (s.status === 'draft') acts.push(`<button class="btn-ghost-sm is-danger" data-act="cancel">Cancel</button>`);
-    }
-
-    el.innerHTML = `
-      <div class="sa-detail-head">
-        <p class="mono muted">${esc(s.invoiceNo || s.saleNo)}${s.invoiceNo ? ` <span class="muted">(${esc(s.saleNo)})</span>` : ''}</p>
-        <h3>${customerLabel(s)}</h3>
-        <p>${badge(s.status, STATUS_LABEL[s.status])} ${s.status === 'cancelled' ? '' : badge('pay-' + s.paymentStatus, PAYMENT_LABEL[s.paymentStatus])} <span class="muted small">${esc(TYPE_LABEL[s.saleType])}${s.paymentMode === 'emi' ? ' · EMI' : ''}</span></p>
-      </div>
-      <div class="sa-detail-actions">${acts.join('')}</div>
-      <p class="muted small">Date ${esc(s.saleDate)}${s.dueDate ? ` · Pay by ${esc(s.dueDate)}` : ''}${s.vehicleChassisNo ? ` · Chassis ${esc(s.vehicleChassisNo)}` : ''}${s.vehicleRegNo ? ` · Reg ${esc(s.vehicleRegNo)}` : ''}${s.notes ? ` · ${esc(s.notes)}` : ''}</p>
-      ${s.status === 'cancelled' && s.cancelReason ? `<p class="small">Cancelled: ${esc(s.cancelReason)}</p>` : ''}
-
-      <table class="sa-table sa-mini">
-        <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr></thead>
-        <tbody>
-          ${s.lines.map((l) => `<tr>
-            <td>${esc(l.name)}${l.chassisNo ? `<br /><span class="muted mono">${esc(l.chassisNo)} / ${esc(l.engineNo)}</span>` : l.stockNo ? `<br /><span class="muted mono">${esc(l.stockNo)}</span>` : ''}</td>
-            <td class="num">${formatQty(l.quantity)}${l.returnedQuantity > 0 ? `<br /><span class="muted">returned ${formatQty(l.returnedQuantity)}</span>` : ''}</td>
-            <td class="num">${formatNpr(l.unitPrice)}</td>
-            <td class="num">${formatNpr(l.lineTotal)}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-
-      <dl class="sa-totals">
-        <div><dt>Subtotal</dt><dd>${formatNpr(s.subtotal)}</dd></div>
-        <div><dt>Discount</dt><dd>− ${formatNpr(s.discount)}</dd></div>
-        <div><dt>VAT ${formatQty(s.vatRate)}%</dt><dd>${formatNpr(s.vatAmount)}</dd></div>
-        <div class="strong"><dt>Net total</dt><dd>${formatNpr(s.netTotal)}</dd></div>
-        ${s.paymentMode === 'emi' ? `<div><dt>Finance charge</dt><dd>${formatNpr(s.financeCharge)}</dd></div>
-        <div class="strong"><dt>Amount due (with finance)</dt><dd>${formatNpr(s.amountDue)}</dd></div>` : ''}
-        ${s.returnedAmount > 0 ? `<div><dt>Returned goods</dt><dd>− ${formatNpr(s.returnedAmount)}</dd></div>` : ''}
-        ${s.creditApplied > 0 ? `<div><dt>Credit applied</dt><dd>− ${formatNpr(s.creditApplied)}</dd></div>` : ''}
-        <div><dt>Paid</dt><dd>${formatNpr(s.paid)}</dd></div>
-        <div class="strong"><dt>Still to receive</dt><dd>${formatNpr(s.remaining)}</dd></div>
-      </dl>
-
-      ${s.paymentMode === 'emi' ? `
-      <h4>EMI · down payment ${formatNpr(s.downPayment)}, ${s.emiMonths} × ${formatNpr(s.emiAmount)}</h4>
-      ${s.installments.length === 0 ? `<p class="muted small">Instalments are created when the sale is confirmed.</p>` : `
-      <table class="sa-table sa-mini">
-        <thead><tr><th>#</th><th>Due</th><th class="num">Amount</th><th class="num">Paid</th><th>Status</th></tr></thead>
-        <tbody>${s.installments.map((i) => `<tr>
-          <td>${i.number}</td><td>${esc(i.dueDate)}</td><td class="num">${formatNpr(i.amount)}</td>
-          <td class="num">${formatNpr(i.paidAmount)}</td><td>${badge('inst-' + i.status, i.status)}</td></tr>`).join('')}
-        </tbody>
-      </table>`}` : ''}
-
-      <h4>Payments</h4>
-      ${s.payments.length === 0 ? `<p class="muted small">No payments yet.</p>` : `
-      <ul class="sa-list">
-        ${s.payments.map((x) => `<li class="${x.status === 'void' ? 'is-void' : ''}">
-          <span>${esc(x.paidOn)} · ${esc(METHOD_LABEL[x.method])}${x.reference ? ` · ${esc(x.reference)}` : ''}</span>
-          <strong>${formatNpr(x.amount)}</strong>
-          ${x.status === 'void'
-            ? `<em class="muted">void: ${esc(x.voidReason)}</em>`
-            : canWrite ? `<button class="btn-link" data-void-pay="${x.id}">Void</button>` : ''}
-        </li>`).join('')}
-      </ul>`}
-    `;
-
-    el.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) =>
-      b.addEventListener('click', () => {
-        const act = b.dataset.act;
-        if (act === 'edit') openForm(s);
-        else if (act === 'pay') openPay(s);
-        else if (act === 'return') openReturn(s);
-        else if (act === 'confirm') void doConfirm(s);
-        else if (act === 'cancel') openReason(`Cancel ${s.saleNo}`, 'A cancelled draft has no effect on stock.', async (reason) => {
-          await cancelSale(s.id, reason);
-        }, s.id);
-      }),
-    );
-    el.querySelectorAll<HTMLButtonElement>('[data-void-pay]').forEach((b) =>
-      b.addEventListener('click', () =>
-        openReason('Void payment', 'The amount goes back onto the sale.', async (reason) => {
-          await voidPayment(Number(b.dataset.voidPay), reason);
-        }, s.id),
-      ),
-    );
-  }
-
-  async function doConfirm(s: Sale): Promise<void> {
-    if (!confirm(`Confirm ${s.saleNo}? Stock goes down and an invoice number is given. It cannot be edited afterwards.`)) return;
-    try {
-      await confirmSale(s.id);
-      await refreshAfterChange(s.id);
-    } catch (error) {
+      allSales = [];
       notice(describe(error), true);
     }
-  }
-
-  async function refreshAfterChange(id?: number): Promise<void> {
+    renderOverview();
     await loadList();
-    if (id) {
-      try { selected = await getSale(id); } catch { selected = null; }
-      renderList();
-      renderDetail();
-    }
+  }
+
+  /** A sale opens on its own page. */
+  function openDetail(id: number): void {
+    window.location.href = `/dashboard/sales/detail?id=${id}`;
+  }
+
+  async function refreshAfterChange(_id?: number): Promise<void> {
+    await loadAll();
     loaded = {};
-    void loadTab(activeTab);
+    void loadTab(activePanel);
     void Promise.all([listStock(), listBikes('in_stock')]).then(([p, b]) => { products = p; bikesInStock = b; }).catch(() => {});
   }
 
-  // ---- Reason dialog -------------------------------------------------
-
-  let reasonHandler: ((reason: string) => Promise<void>) | null = null;
-  let reasonAfter: number | undefined;
-
-  function openReason(title: string, sub: string, handler: (reason: string) => Promise<void>, afterId?: number): void {
-    $('rs-title')!.textContent = title;
-    $('rs-sub')!.textContent = sub;
-    $<HTMLInputElement>('rs-text')!.value = '';
-    showError('rs-error', null);
-    reasonHandler = handler;
-    reasonAfter = afterId;
-    dlg('dlg-reason').showModal();
-  }
-
-  $('form-reason')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const reason = val('rs-text').trim();
-    if (!reason || !reasonHandler) return;
-    void submit('rs-save', 'rs-error', 'dlg-reason', async () => {
-      await reasonHandler!(reason);
-      await refreshAfterChange(reasonAfter);
-    });
+  configureSalesDialogs({
+    getProducts: () => products,
+    getCustomers: () => customers,
+    getBikes: () => bikesInStock,
+    getLocalProducts: () => localProducts,
+    onChanged: refreshAfterChange,
   });
-
-  // ---- Line editor ---------------------------------------------------
-
-  type Kind = 'product' | 'local' | 'service' | 'bike';
-  const KIND_LABEL: Record<Kind, string> = { product: 'Product', local: 'Local product', service: 'Service charge', bike: 'Bike' };
-
-  function kindsFor(type: SaleType): Kind[] {
-    if (type === 'bike') return ['bike'];
-    if (type === 'maintenance') return ['product', 'local', 'service'];
-    return ['product', 'local'];
-  }
-
-  function itemOptions(kind: Kind, selectedId?: number): string {
-    const pick = (id: number) => (id === selectedId ? 'selected' : '');
-    if (kind === 'product') {
-      return `<option value="">Choose product…</option>` + products
-        .map((p) => `<option value="${p.productId}" ${pick(p.productId)}>${esc(p.stockNo)} · ${esc(p.name)} (${formatQty(p.quantity)} in stock)</option>`).join('');
-    }
-    if (kind === 'local') {
-      return `<option value="">Choose local product…</option>` + localProducts.filter((p) => p.isActive)
-        .map((p) => `<option value="${p.id}" ${pick(p.id)}>${esc(p.name)}</option>`).join('');
-    }
-    return `<option value="">Choose bike…</option>` + bikesInStock
-      .map((b) => `<option value="${b.id}" ${pick(b.id)}>${esc(b.productName)} · ${esc(b.chassisNo)}${b.color ? ` · ${esc(b.color)}` : ''}</option>`).join('');
-  }
-
-  function defaultPrice(kind: Kind, id: number): number {
-    if (kind === 'product') return products.find((p) => p.productId === id)?.salePrice ?? 0;
-    if (kind === 'local') return localProducts.find((p) => p.id === id)?.salePrice ?? 0;
-    if (kind === 'bike') {
-      const bike = bikesInStock.find((b) => b.id === id);
-      return bike ? products.find((p) => p.productId === bike.productId)?.salePrice ?? 0 : 0;
-    }
-    return 0;
-  }
-
-  function addSaleLine(container: HTMLElement, type: SaleType, preset: { kind?: Kind; id?: number; description?: string; quantity?: number; unitPrice?: number } = {}, onChange?: () => void): void {
-    const kinds = kindsFor(type);
-    const kind = preset.kind && kinds.includes(preset.kind) ? preset.kind : kinds[0];
-    const row = document.createElement('div');
-    row.className = 'sa-line sa-line-sale';
-    row.dataset.kind = kind;
-    row.innerHTML = `
-      <select class="ln-kind" aria-label="Kind" ${kinds.length === 1 ? 'hidden' : ''}>
-        ${kinds.map((k) => `<option value="${k}" ${k === kind ? 'selected' : ''}>${KIND_LABEL[k]}</option>`).join('')}
-      </select>
-      <span class="ln-item-wrap"></span>
-      <input class="ln-qty" type="number" min="0.001" step="0.001" value="${preset.quantity ?? 1}" aria-label="Quantity" />
-      <input class="ln-price" type="number" min="0" step="0.01" value="${preset.unitPrice ?? 0}" aria-label="Unit price" />
-      <button type="button" class="btn-link is-danger ln-remove" aria-label="Remove">✕</button>`;
-    container.appendChild(row);
-
-    const renderItem = (k: Kind, id?: number, description?: string) => {
-      row.dataset.kind = k;
-      const wrap = row.querySelector<HTMLElement>('.ln-item-wrap')!;
-      wrap.innerHTML = k === 'service'
-        ? `<input class="ln-desc" type="text" maxlength="200" placeholder="Service charge, e.g. Labour" value="${esc(description ?? '')}" />`
-        : `<select class="ln-item" aria-label="Item">${itemOptions(k, id)}</select>`;
-      row.querySelector<HTMLInputElement>('.ln-qty')!.hidden = k === 'bike';
-      wrap.querySelector('.ln-item')?.addEventListener('change', (ev) => {
-        const v = Number((ev.target as HTMLSelectElement).value);
-        if (v) row.querySelector<HTMLInputElement>('.ln-price')!.value = String(defaultPrice(k, v));
-        onChange?.();
-      });
-      wrap.querySelector('.ln-desc')?.addEventListener('input', () => onChange?.());
-    };
-    renderItem(kind, preset.id, preset.description);
-
-    row.querySelector('.ln-kind')!.addEventListener('change', (ev) => {
-      renderItem((ev.target as HTMLSelectElement).value as Kind);
-      onChange?.();
-    });
-    row.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => onChange?.()));
-    row.querySelector('.ln-remove')!.addEventListener('click', () => { row.remove(); onChange?.(); });
-  }
-
-  function readSaleLines(container: HTMLElement): SaleLineInput[] {
-    const out: SaleLineInput[] = [];
-    container.querySelectorAll<HTMLElement>('.sa-line').forEach((row) => {
-      const kind = row.dataset.kind as Kind;
-      const id = Number(row.querySelector<HTMLSelectElement>('.ln-item')?.value) || 0;
-      const quantity = Number(row.querySelector<HTMLInputElement>('.ln-qty')!.value);
-      const unitPrice = Number(row.querySelector<HTMLInputElement>('.ln-price')!.value);
-      if (kind === 'service') {
-        const description = row.querySelector<HTMLInputElement>('.ln-desc')!.value.trim();
-        if (description) out.push({ description, quantity, unitPrice });
-      } else if (id) {
-        if (kind === 'bike') out.push({ bikeUnitId: id, unitPrice });
-        else if (kind === 'local') out.push({ localProductId: id, quantity, unitPrice });
-        else out.push({ productId: id, quantity, unitPrice });
-      }
-    });
-    return out;
-  }
-
-  // ---- Sale form -----------------------------------------------------
-
-  const formType = () => val('sf-type') as SaleType;
-
-  function updateTotals(): void {
-    const lines = readSaleLines($('sf-lines')!).map((l) => ({ quantity: l.quantity ?? 1, unitPrice: l.unitPrice ?? 0 }));
-    const t = previewTotals(lines, Number(val('sf-discount')) || 0, Number(val('sf-vat')) || 0);
-    let html = `
-      <div><dt>Subtotal</dt><dd>${formatNpr(t.subtotal)}</dd></div>
-      <div><dt>VAT</dt><dd>${formatNpr(t.vat)}</dd></div>
-      <div class="strong"><dt>Net total (preview)</dt><dd>${formatNpr(t.net)}</dd></div>`;
-    if (formType() === 'bike' && val('sf-mode') === 'emi') {
-      const fc = previewFinance(t.net, Number(val('sf-down')) || 0, Number(val('sf-months')) || 0, Number(val('sf-emi')) || 0);
-      html += `<div><dt>Finance charge (preview)</dt><dd>${formatNpr(fc)}</dd></div>
-               <div class="strong"><dt>Amount due (preview)</dt><dd>${formatNpr(t.net + fc)}</dd></div>`;
-    }
-    $('sf-totals')!.innerHTML = html;
-  }
-
-  function syncFormType(resetLines: boolean): void {
-    const type = formType();
-    $('sf-due-wrap')!.hidden = type === 'bike';
-    $('sf-chassis-wrap')!.hidden = type !== 'maintenance';
-    $('sf-reg-wrap')!.hidden = type !== 'maintenance';
-    $('sf-emi-box')!.hidden = type !== 'bike';
-    $('sf-add-line')!.hidden = type === 'bike';
-    $('sf-emi-fields')!.hidden = !(type === 'bike' && val('sf-mode') === 'emi');
-    if (resetLines) {
-      const box = $('sf-lines')!;
-      box.innerHTML = '';
-      addSaleLine(box, type, {}, updateTotals);
-    }
-    updateTotals();
-  }
-
-  function syncWalkIn(): void {
-    $('sf-walkin-wrap')!.hidden = Boolean(val('sf-customer'));
-  }
-
-  function openForm(s?: Sale): void {
-    $('sf-title')!.textContent = s ? `Edit ${s.saleNo}` : 'New sale';
-    $<HTMLInputElement>('sf-id')!.value = s ? String(s.id) : '';
-    $<HTMLSelectElement>('sf-type')!.value = s?.saleType ?? 'stock';
-    $<HTMLSelectElement>('sf-type')!.disabled = Boolean(s);
-    $<HTMLInputElement>('sf-date')!.value = s?.saleDate ?? today();
-    $<HTMLSelectElement>('sf-customer')!.innerHTML =
-      `<option value="">Walk-in customer</option>` +
-      customers.filter((c) => c.isActive || c.id === s?.customerId).map((c) => `<option value="${c.id}">${esc(c.name)}${c.phone ? ` · ${esc(c.phone)}` : ''}</option>`).join('');
-    $<HTMLSelectElement>('sf-customer')!.value = s?.customerId ? String(s.customerId) : '';
-    $<HTMLInputElement>('sf-walkin')!.value = s?.walkInName ?? '';
-    $<HTMLInputElement>('sf-due')!.value = s?.dueDate ?? '';
-    $<HTMLInputElement>('sf-chassis')!.value = s?.vehicleChassisNo ?? '';
-    $<HTMLInputElement>('sf-reg')!.value = s?.vehicleRegNo ?? '';
-    $<HTMLInputElement>('sf-discount')!.value = String(s?.discount ?? 0);
-    $<HTMLInputElement>('sf-vat')!.value = String(s?.vatRate ?? 0);
-    $<HTMLSelectElement>('sf-mode')!.value = s?.paymentMode ?? 'full';
-    $<HTMLInputElement>('sf-down')!.value = String(s?.downPayment ?? 0);
-    $<HTMLInputElement>('sf-months')!.value = String(s?.emiMonths || 12);
-    $<HTMLInputElement>('sf-emi')!.value = String(s?.emiAmount ?? 0);
-    $<HTMLInputElement>('sf-first')!.value = s?.firstEmiDue ?? '';
-    $<HTMLInputElement>('sf-notes')!.value = s?.notes ?? '';
-
-    const box = $('sf-lines')!;
-    box.innerHTML = '';
-    if (s) {
-      s.lines.forEach((l) => {
-        const kind: Kind = l.bikeUnitId ? 'bike' : l.localProductId ? 'local' : l.productId ? 'product' : 'service';
-        addSaleLine(box, s.saleType, { kind, id: l.bikeUnitId ?? l.localProductId ?? l.productId ?? undefined, description: kind === 'service' ? l.name : '', quantity: l.quantity, unitPrice: l.unitPrice }, updateTotals);
-      });
-    }
-    syncFormType(!s);
-    syncWalkIn();
-    showError('sf-error', null);
-    dlg('dlg-form').showModal();
-  }
 
   $('sa-new')?.addEventListener('click', () => openForm());
-  $('sf-type')?.addEventListener('change', () => syncFormType(true));
-  $('sf-mode')?.addEventListener('change', () => syncFormType(false));
-  $('sf-customer')?.addEventListener('change', syncWalkIn);
-  $('sf-add-line')?.addEventListener('click', () => addSaleLine($('sf-lines')!, formType(), {}, updateTotals));
-  for (const id of ['sf-discount', 'sf-vat', 'sf-down', 'sf-months', 'sf-emi']) $(id)?.addEventListener('input', updateTotals);
-
-  $('form-sale')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const lines = readSaleLines($('sf-lines')!);
-    if (lines.length === 0) {
-      showError('sf-error', 'Add at least one item.');
-      return;
-    }
-    const id = Number(val('sf-id')) || 0;
-    const type = formType();
-    const customerId = Number(val('sf-customer')) || null;
-    const input = {
-      saleType: type,
-      customerId,
-      walkInName: customerId ? '' : val('sf-walkin'),
-      saleDate: val('sf-date'),
-      discount: Number(val('sf-discount')) || 0,
-      vatRate: Number(val('sf-vat')) || 0,
-      paymentMode: (val('sf-mode') || 'full') as 'full' | 'emi',
-      downPayment: Number(val('sf-down')) || 0,
-      emiMonths: Number(val('sf-months')) || undefined,
-      emiAmount: Number(val('sf-emi')) || 0,
-      firstEmiDue: val('sf-first'),
-      dueDate: val('sf-due'),
-      vehicleChassisNo: val('sf-chassis'),
-      vehicleRegNo: val('sf-reg'),
-      notes: val('sf-notes'),
-      lines,
-    };
-    void submit('sf-save', 'sf-error', 'dlg-form', async () => {
-      const saved = id ? await updateSale(id, input) : await createSale(input);
-      await refreshAfterChange(saved.id);
-    });
-  });
-
-  // ---- Payment -------------------------------------------------------
-
-  function openPay(s: Sale): void {
-    $('py-sub')!.textContent = `${s.invoiceNo || s.saleNo} · ${customerLabel(s)} · still to receive ${formatNpr(s.remaining)}${s.status === 'draft' ? ' (advance on a draft)' : ''}`;
-    $<HTMLInputElement>('py-amount')!.value = String(s.remaining);
-    $<HTMLSelectElement>('py-method')!.value = 'cash';
-    $<HTMLInputElement>('py-date')!.value = today();
-    $<HTMLInputElement>('py-ref')!.value = '';
-    showError('py-error', null);
-    $('form-pay')!.dataset.id = String(s.id);
-    dlg('dlg-pay').showModal();
-  }
-
-  $('form-pay')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = Number($('form-pay')!.dataset.id);
-    void submit('py-save', 'py-error', 'dlg-pay', async () => {
-      await addPayment({ saleId: id, amount: Number(val('py-amount')), method: val('py-method') as PayMethod, paidOn: val('py-date'), reference: val('py-ref') });
-      await refreshAfterChange(id);
-    });
-  });
-
-  // ---- Return --------------------------------------------------------
-
-  function openReturn(s: Sale): void {
-    $('rt-sub')!.textContent = `${s.invoiceNo} · ${customerLabel(s)}. Goods go back into good stock.`;
-    $('rt-lines')!.innerHTML = s.lines
-      .filter((l) => l.returnableQuantity > 0)
-      .map((l) => `<div class="sa-line sa-line-rt" data-line="${l.id}">
-          <span>${esc(l.name)} <span class="muted">(can return ${formatQty(l.returnableQuantity)})</span></span>
-          <input type="number" class="rt-qty" min="0" max="${l.returnableQuantity}" step="0.001" value="0" />
-        </div>`).join('');
-    $<HTMLInputElement>('rt-reason')!.value = '';
-    $('rt-refund-wrap')!.hidden = Boolean(s.customerId);
-    showError('rt-error', null);
-    $('form-return')!.dataset.id = String(s.id);
-    $('form-return')!.dataset.walkin = s.customerId ? '' : '1';
-    dlg('dlg-return').showModal();
-  }
-
-  $('form-return')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const form = $('form-return')!;
-    const id = Number(form.dataset.id);
-    const lines = Array.from(document.querySelectorAll<HTMLElement>('#rt-lines .sa-line-rt'))
-      .map((r) => ({ lineId: Number(r.dataset.line), quantity: Number(r.querySelector<HTMLInputElement>('.rt-qty')!.value) || 0 }))
-      .filter((l) => l.quantity > 0);
-    if (lines.length === 0) {
-      showError('rt-error', 'Enter a quantity to return.');
-      return;
-    }
-    void submit('rt-save', 'rt-error', 'dlg-return', async () => {
-      await createReturn({ saleId: id, reason: val('rt-reason'), lines, refundMethod: form.dataset.walkin ? (val('rt-refund') as PayMethod) : undefined });
-      await refreshAfterChange(id);
-    });
-  });
+  $('qa-new')?.addEventListener('click', () => openForm());
 
   // ---- Returns tab ---------------------------------------------------
 
@@ -999,7 +943,7 @@ const navItems = getNavItemsForRole(defaultRole);
       b.addEventListener('click', () =>
         openReason('Void return', 'The goods go out of stock again and the effect on the sale and credit is removed.', async (reason) => {
           await voidReturn(Number(b.dataset.voidRet), reason);
-        }, selected?.id),
+        }),
       ),
     );
   }
@@ -1037,7 +981,7 @@ const navItems = getNavItemsForRole(defaultRole);
       b.addEventListener('click', async () => {
         try {
           await deliverReplacement(Number(b.dataset.deliver));
-          await refreshAfterChange(selected?.id);
+          await refreshAfterChange();
         } catch (error) {
           notice(describe(error), true);
         }
@@ -1047,7 +991,7 @@ const navItems = getNavItemsForRole(defaultRole);
       b.addEventListener('click', () =>
         openReason('Void credit use', 'The credit goes back to the customer balance.', async (reason) => {
           await voidCredit(Number(b.dataset.voidCr), reason);
-        }, selected?.id),
+        }),
       ),
     );
   }
@@ -1062,7 +1006,7 @@ const navItems = getNavItemsForRole(defaultRole);
     }
     if (kind === 'adjustment') {
       const cid = Number(val('cr-customer'));
-      const open = sales.filter((s) => s.customerId === cid && s.status === 'confirmed' && s.remaining > 0 && s.paymentMode !== 'emi');
+      const open = allSales.filter((s) => s.customerId === cid && s.status === 'confirmed' && s.remaining > 0 && s.paymentMode !== 'emi');
       $('cr-sale')!.innerHTML = open.length
         ? open.map((s) => `<option value="${s.id}">${esc(s.invoiceNo)} · owes ${esc(formatNpr(s.remaining))}</option>`).join('')
         : `<option value="">No unpaid sale for this customer</option>`;
@@ -1107,7 +1051,7 @@ const navItems = getNavItemsForRole(defaultRole);
         customerId: Number(val('cr-customer')), kind, amount: Number(val('cr-amount')),
         method: val('cr-method') as PayMethod, saleId: Number(val('cr-sale')) || undefined, items, notes: val('cr-notes'),
       });
-      await refreshAfterChange(selected?.id);
+      await refreshAfterChange();
     });
   });
 
@@ -1164,8 +1108,7 @@ const navItems = getNavItemsForRole(defaultRole);
       }),
     ));
     tbody.querySelectorAll<HTMLButtonElement>('[data-open-sale]').forEach((b) => b.addEventListener('click', () => {
-      activateTab('list');
-      void openDetail(Number(b.dataset.openSale));
+      openDetail(Number(b.dataset.openSale));
     }));
   }
 
@@ -1231,8 +1174,7 @@ const navItems = getNavItemsForRole(defaultRole);
       await loadBikes();
     });
   });
-
-  // ---- Tabs, filters, load -------------------------------------------
+  // ---- Panels, filters, load -----------------------------------------
 
   function loadTab(tab: string): Promise<void> | void {
     if (loaded[tab]) return;
@@ -1242,13 +1184,13 @@ const navItems = getNavItemsForRole(defaultRole);
     if (tab === 'bikes') return loadBikes();
   }
 
-  function activateTab(tab: string): void {
-    activeTab = tab;
-    document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('is-active', (b as HTMLElement).dataset.tab === tab));
-    document.querySelectorAll('[data-panel]').forEach((p) => p.classList.toggle('is-active', (p as HTMLElement).dataset.panel === tab));
-    void loadTab(tab);
+  function showPanel(name: string): void {
+    activePanel = name;
+    document.querySelectorAll<HTMLElement>('[data-panel]').forEach((p) => p.classList.toggle('is-active', p.dataset.panel === name));
+    void loadTab(name);
+    window.scrollTo({ top: 0 });
   }
-  document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((btn) => btn.addEventListener('click', () => activateTab(btn.dataset.tab!)));
+  document.querySelectorAll<HTMLElement>('[data-goto]').forEach((btn) => btn.addEventListener('click', () => showPanel(btn.dataset.goto!)));
 
   let timer: number | undefined;
   $('f-search')?.addEventListener('input', () => {
@@ -1256,168 +1198,35 @@ const navItems = getNavItemsForRole(defaultRole);
     timer = window.setTimeout(() => void loadList(), 300);
   });
   for (const id of ['f-status', 'f-type', 'f-pay', 'f-from', 'f-to']) $(id)?.addEventListener('change', () => void loadList());
-  $('sa-refresh')?.addEventListener('click', () => void init());
   document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => void init(), 300));
 
   async function init(): Promise<void> {
     const s = getSession();
-    if (s) $('sa-scope')!.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
+    const scope = $('sa-scope');
+    if (scope && s) {
+      scope.hidden = false;
+      scope.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
+    }
     canWrite = s?.accessMode !== 'read_only';
-    for (const id of ['sa-new', 'cr-new', 'bk-new', 'lp-new']) $(id)!.hidden = !canWrite;
-    selected = null;
-    renderDetail();
+    for (const id of ['sa-new', 'qa-new', 'cr-new', 'bk-new', 'lp-new']) {
+      const el = $(id);
+      if (el) el.hidden = !canWrite;
+    }
     loaded = {};
 
-    try {
-      [customers, products, bikesInStock, localProducts] = await Promise.all([listCustomers(), listStock(), listBikes('in_stock'), listLocalProducts()]);
-    } catch (error) {
-      notice(describe(error), true);
-    }
-    await loadList();
-    void loadTab(activeTab);
+    // Overview first: everything else (dialog choices) loads beside it.
+    const lookups = Promise.all([listCustomers(), listStock(), listBikes('in_stock'), listLocalProducts()])
+      .then(([c, p, b, l]) => { customers = c; products = p; bikesInStock = b; localProducts = l; })
+      .catch((error) => notice(describe(error), true));
+    const sold = loadAll();
+    await lookups;
+    // Category names need the products, so draw those cards again once they are in.
+    renderCategories();
+    renderTopProducts();
+    await sold;
+    renderKpis();
+    void loadTab(activePanel);
   }
 
   void init();
 </script>
-
-<style is:global>
-  .sa-page { display: flex; flex-direction: column; gap: 14px; }
-  .sa-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .sa-toolbar-right { display: flex; gap: 8px; }
-  .sa-scope { margin: 0 0 6px; font-size: 0.78rem; color: var(--text-muted); }
-  .sa-tabs { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
-  .sa-tab {
-    border: none; background: transparent; padding: 6px 12px; border-radius: 7px; font-family: inherit;
-    font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
-  }
-  .sa-tab.is-active { background: var(--panel-bg); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
-
-  .btn-primary-sm, .btn-ghost-sm {
-    height: 34px; padding: 0 12px; border-radius: 8px; font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer;
-  }
-  .btn-primary-sm { border: none; background: var(--accent); color: #fff; }
-  .btn-primary-sm.is-danger { background: #ef334e; }
-  .btn-primary-sm:disabled { opacity: 0.6; cursor: default; }
-  .btn-ghost-sm { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); }
-  .btn-ghost-sm:hover { background: var(--surface-hover); color: var(--text-primary); }
-  .btn-ghost-sm.is-danger { color: #ef334e; border-color: color-mix(in srgb, #ef334e 35%, var(--border)); }
-  .btn-link { border: none; background: transparent; color: var(--accent); font-family: inherit; font-size: 0.78rem; font-weight: 650; cursor: pointer; padding: 0; }
-  .btn-link.is-danger { color: #ef334e; }
-
-  .sa-notice {
-    margin: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px;
-    background: var(--surface); color: var(--text-secondary); font-size: 0.8rem;
-  }
-  .sa-notice.is-error { color: #ef334e; border-color: rgba(239, 51, 78, 0.4); }
-
-  .sa-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-  @media (max-width: 700px) { .sa-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .sa-kpi { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); }
-  .sa-kpi span { display: block; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
-  .sa-kpi strong { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
-  .sa-kpi.is-danger strong { color: #ef334e; }
-
-  .sa-panel { display: none; }
-  .sa-panel.is-active { display: block; }
-  .sa-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 12px; align-items: start; }
-  @media (max-width: 1000px) { .sa-layout { grid-template-columns: 1fr; } }
-  .sa-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 12px; }
-  .sa-credit-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-
-  .sa-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .sa-filters input, .sa-filters select {
-    height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
-    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem;
-  }
-  .sa-filters input[type='search'] { flex: 1; min-width: 160px; }
-
-  .sa-table-wrap { overflow-x: auto; }
-  .sa-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-  .sa-table th, .sa-table td { padding: 8px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
-  .sa-table th { font-size: 0.66rem; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
-  .sa-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .sa-table .mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.74rem; }
-  .sa-table .actions { white-space: nowrap; }
-  .sa-row { cursor: pointer; }
-  .sa-row:hover td { background: var(--surface-hover); }
-  .sa-row.is-selected td { background: var(--accent-soft); }
-  .sa-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
-  .sa-foot { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
-  .sa-mini { margin-top: 10px; }
-  .muted { color: var(--text-muted); }
-  .small { font-size: 0.75rem; }
-
-  .sa-badge { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 650; white-space: nowrap; }
-  .sa-badge-draft { background: rgba(148, 163, 184, 0.18); color: #64748b; }
-  .sa-badge-partial, .sa-badge-pay-partial { background: rgba(217, 119, 6, 0.12); color: #d97706; }
-  .sa-badge-received, .sa-badge-pay-paid { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
-  .sa-badge-cancelled, .sa-badge-pay-unpaid { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
-
-  .sa-empty-detail { margin: 0; padding: 24px 8px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
-  .sa-detail-head h3 { margin: 2px 0 6px; font-size: 1rem; font-weight: 650; }
-  .sa-detail-head p { margin: 0; }
-  .sa-detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-  #sa-detail h4 { margin: 14px 0 6px; font-size: 0.78rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
-  .sa-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; }
-  .sa-list li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
-  .sa-list li.is-void span, .sa-list li.is-void strong { text-decoration: line-through; color: var(--text-muted); }
-
-  .sa-totals { margin: 12px 0 0; display: grid; gap: 4px; font-size: 0.8rem; }
-  .sa-totals div { display: flex; justify-content: space-between; gap: 10px; }
-  .sa-totals dt { color: var(--text-secondary); }
-  .sa-totals dd { margin: 0; font-variant-numeric: tabular-nums; }
-  .sa-totals .strong dt, .sa-totals .strong dd { font-weight: 700; color: var(--text-primary); }
-
-  .sa-dialog {
-    border: none; border-radius: 14px; padding: 0; background: var(--panel-bg); color: var(--text-primary);
-    box-shadow: 0 24px 60px rgba(0,0,0,0.28); max-width: 440px; width: calc(100% - 32px);
-  }
-  .sa-dialog.sa-wide { max-width: 680px; }
-  .sa-dialog::backdrop { background: rgba(8,15,29,0.55); backdrop-filter: blur(4px); }
-  .sa-dialog-inner { padding: 20px; max-height: 88vh; overflow-y: auto; }
-  .sa-dialog-title { margin: 0 0 6px; font-size: 1rem; font-weight: 650; }
-  .sa-sub { margin: 0 0 12px; font-size: 0.8rem; color: var(--text-muted); }
-  .sa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 10px 0; }
-  .sa-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  @media (max-width: 560px) { .sa-grid, .sa-grid-3 { grid-template-columns: 1fr; } }
-  .sa-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
-  .sa-grid .sa-field { margin-bottom: 0; }
-  .sa-field input, .sa-field select {
-    height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
-    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
-  }
-  .sa-lines-head { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 6px; font-size: 0.85rem; }
-  .sa-lines { display: flex; flex-direction: column; gap: 6px; }
-  .sa-line { display: grid; grid-template-columns: minmax(0, 2fr) 90px 110px auto; gap: 6px; align-items: center; font-size: 0.8rem; }
-  .sa-line select, .sa-line input {
-    height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px;
-    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; min-width: 0;
-  }
-  .sa-line-rc, .sa-line-rt { grid-template-columns: minmax(0, 2fr) 100px 150px; }
-  .sa-line-rc { grid-template-columns: minmax(0, 2fr) 110px; }
-  @media (max-width: 560px) { .sa-line, .sa-line-rt { grid-template-columns: 1fr 1fr; } }
-  .sa-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
-  .sa-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-
-  .sa-layout-even { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  @media (max-width: 1000px) { .sa-layout-even { grid-template-columns: 1fr; } }
-  .sa-tabs { flex-wrap: wrap; }
-  .sa-badge-confirmed { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
-  .sa-badge-inst-paid { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
-  .sa-badge-inst-partial { background: rgba(217, 119, 6, 0.12); color: #d97706; }
-  .sa-badge-inst-overdue { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
-  .sa-badge-inst-upcoming { background: rgba(148, 163, 184, 0.18); color: #64748b; }
-  .sa-check { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
-  .is-overdue { color: #ef334e; font-weight: 650; }
-  .sa-line-sale { grid-template-columns: 120px minmax(0, 2fr) 80px 100px auto; }
-  .sa-line-sale .ln-kind[hidden] { display: none; }
-  .sa-line-sale:has(.ln-kind[hidden]) { grid-template-columns: minmax(0, 2fr) 80px 100px auto; }
-  .sa-line-sale .ln-item-wrap select, .sa-line-sale .ln-item-wrap input {
-    width: 100%; height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px;
-    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; min-width: 0;
-  }
-  .sa-line-cr { grid-template-columns: minmax(0, 2fr) 90px auto; }
-  .sa-line-rt { grid-template-columns: minmax(0, 2fr) 110px; }
-  .sa-line [hidden] { display: none; }
-  @media (max-width: 600px) { .sa-line-sale, .sa-line-sale:has(.ln-kind[hidden]) { grid-template-columns: 1fr 1fr; } }
-</style>
