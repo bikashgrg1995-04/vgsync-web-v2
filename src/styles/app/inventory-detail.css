@@ -308,3 +308,4 @@
   .invd-stat strong { font-size: 1.05rem; }
   .invd-actions { grid-template-columns: 1fr; }
 }
+.invd-actions[hidden] { display: none; }
