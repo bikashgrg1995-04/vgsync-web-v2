@@ -163,6 +163,7 @@ function applySessionUI(): void {
     if (!id || id === 'settings' || id === 'help' || id === 'logout') return;
     const li = el.closest('li');
     const target = (li ?? el) as HTMLElement;
+
     target.style.display = allowed.has(id) ? '' : 'none';
   });
 

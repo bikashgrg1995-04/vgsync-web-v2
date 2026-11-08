@@ -81,7 +81,18 @@ const initials = displayName
     </ul>
   </nav>
 
-  <div class="sidebar-bottom">
+ 
+
+    <div class="sidebar-profile-card" id="sidebar-profile">
+      <span class="sidebar-profile-avatar" aria-hidden="true" id="sidebar-profile-initials">{initials}</span>
+      <div class="sidebar-profile-meta">
+        <span class="sidebar-profile-name" id="sidebar-profile-name">{displayName}</span>
+        <span class="sidebar-profile-role" id="sidebar-profile-role">{roleLabel}</span>
+        <span class="sidebar-branch-name">{branchName}</span>
+      </div>
+    </div>
+
+     <div class="sidebar-bottom">
     <div class="sidebar-footer-links">
       {settingsItem && (
         <a
@@ -104,15 +115,6 @@ const initials = displayName
           <span class="sidebar-label">Help & Support</span>
         </a>
       )}
-    </div>
-
-    <div class="sidebar-profile-card" id="sidebar-profile">
-      <span class="sidebar-profile-avatar" aria-hidden="true" id="sidebar-profile-initials">{initials}</span>
-      <div class="sidebar-profile-meta">
-        <span class="sidebar-profile-name" id="sidebar-profile-name">{displayName}</span>
-        <span class="sidebar-profile-role" id="sidebar-profile-role">{roleLabel}</span>
-        <span class="sidebar-branch-name">{branchName}</span>
-      </div>
     </div>
 
     {logoutItem && (
