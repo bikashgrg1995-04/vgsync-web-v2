@@ -1,0 +1,107 @@
+---
+/** Add / edit product dialog, shared by the inventory list and detail pages. */
+---
+
+<dialog class="inv-dialog inv-dialog-wide" id="inv-product-dialog">
+  <form method="dialog" class="inv-dialog-inner" id="inv-product-form">
+    <h2 class="inv-dialog-title" id="prd-title">Add product</h2>
+
+    <p class="inv-dialog-sub">
+      Products are shared by Head Office and every branch. Each branch keeps
+      its own stock.
+    </p>
+
+    <input type="hidden" id="prd-id" />
+
+    <div class="prd-image-row">
+      <div class="prd-image-preview" id="prd-image-preview">
+        <span id="prd-image-placeholder">No image</span>
+        <img id="prd-image-img" alt="Product preview" hidden />
+      </div>
+
+      <div class="prd-image-controls">
+        <label class="btn-ghost-sm prd-upload">
+          <input type="file" id="prd-image" accept="image/*" hidden />
+          <span id="prd-image-label">Upload image</span>
+        </label>
+
+        <label class="prd-remove" id="prd-remove-wrap" hidden>
+          <input type="checkbox" id="prd-image-remove" />
+          Remove current image
+        </label>
+
+        <small class="prd-hint">JPG, PNG or WebP, up to 5 MB.</small>
+      </div>
+    </div>
+
+    <div class="inv-grid">
+      <label class="inv-field">
+        <span>Stock no *</span>
+        <input type="text" id="prd-stock-no" required maxlength="100" />
+      </label>
+
+      <label class="inv-field">
+        <span>Name *</span>
+        <input type="text" id="prd-name" required maxlength="200" />
+      </label>
+
+      <label class="inv-field">
+        <span>Brand</span>
+        <input type="text" id="prd-brand" maxlength="100" />
+      </label>
+
+      <label class="inv-field">
+        <span>Model</span>
+        <input type="text" id="prd-model" maxlength="100" />
+      </label>
+
+      <label class="inv-field">
+        <span>Category</span>
+        <input type="text" id="prd-category" maxlength="100" list="prd-category-list" />
+        <datalist id="prd-category-list"></datalist>
+      </label>
+
+      <label class="inv-field">
+        <span>Group</span>
+        <input type="text" id="prd-group" maxlength="100" />
+      </label>
+
+      <label class="inv-field">
+        <span>Unit</span>
+        <input type="text" id="prd-unit" maxlength="20" value="pcs" />
+      </label>
+
+      <label class="inv-field">
+        <span>Reorder at (0 = no alert)</span>
+        <input type="number" id="prd-reorder" min="0" step="0.001" value="0" />
+      </label>
+
+      <label class="inv-field">
+        <span>Purchase price</span>
+        <input type="number" id="prd-cost" min="0" step="0.01" value="0" />
+      </label>
+
+      <label class="inv-field">
+        <span>Sale price</span>
+        <input type="number" id="prd-sale" min="0" step="0.01" value="0" />
+      </label>
+
+      <label class="inv-field">
+        <span>MRP</span>
+        <input type="number" id="prd-mrp" min="0" step="0.01" value="0" />
+      </label>
+    </div>
+
+    <label class="inv-field prd-desc">
+      <span>Description</span>
+      <textarea id="prd-description" rows="3" maxlength="1000"></textarea>
+    </label>
+
+    <p class="inv-dialog-error" id="prd-error" hidden></p>
+
+    <div class="inv-dialog-actions">
+      <button type="button" class="btn-ghost-sm" id="prd-cancel">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="prd-submit">Save</button>
+    </div>
+  </form>
+</dialog>
