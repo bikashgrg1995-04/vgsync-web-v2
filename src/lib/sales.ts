@@ -88,6 +88,9 @@ export interface Sale {
   cancelReason: string;
   payments: SalePayment[];
   installments: Installment[];
+  createdAt: string | null;
+  confirmedAt: string | null;
+  cancelledAt: string | null;
 }
 
 export interface SaleLineInput {
@@ -312,6 +315,9 @@ interface ApiSale {
   cancel_reason: string;
   payments?: ApiPayment[];
   installments?: ApiInstallment[];
+  created_at?: string | null;
+  confirmed_at?: string | null;
+  cancelled_at?: string | null;
 }
 
 interface Page<T> {
@@ -370,6 +376,9 @@ function saleFromApi(s: ApiSale): Sale {
     paymentStatus: s.payment_status,
     notes: s.notes,
     cancelReason: s.cancel_reason,
+    createdAt: s.created_at ?? null,
+    confirmedAt: s.confirmed_at ?? null,
+    cancelledAt: s.cancelled_at ?? null,
     payments: (s.payments ?? []).map((p) => ({
       id: p.id,
       amount: num(p.amount),
@@ -789,12 +798,10 @@ export function summarize(list: Sale[]) {
 }
 
 export function formatNpr(n: number): string {
-  return new Intl.NumberFormat('en-NP', {
-    style: 'currency',
-    currency: 'NPR',
+  return `Rs. ${new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
-  }).format(n);
+  }).format(n)}`;
 }
 
 export function formatQty(n: number): string {
