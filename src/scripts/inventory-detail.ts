@@ -1,9 +1,11 @@
 import { getSession } from "../lib/auth";
 import { ApiError } from "../lib/api";
+import { openProductDialog } from "./product-dialog";
 import {
   getStock,
   listMovements,
   addStockAdjustment,
+  getInventoryPermissions,
   formatNpr,
   formatQty,
   STATUS_LABEL,
@@ -44,6 +46,7 @@ const OUT_TYPES: MovementType[] = [
 ];
 
 let item: StockItem | null = null;
+const perms = getInventoryPermissions();
 const loadedTabs = new Set<string>();
 
 const $ = <T extends HTMLElement>(id: string) =>
@@ -76,13 +79,13 @@ function describe(error: unknown): string {
   return error.message;
 }
 
-function showNotice(message: string | null): void {
+function showNotice(message: string | null, kind: "info" | "error" = "error"): void {
   const el = $("invd-notice");
   if (!el) return;
 
   el.hidden = !message;
   el.textContent = message ?? "";
-  el.classList.add("is-error");
+  el.classList.toggle("is-error", kind === "error");
 }
 
 // ==================================================
@@ -755,11 +758,23 @@ async function load(): Promise<void> {
   const edit = $<HTMLButtonElement>("invd-edit");
 
   if (edit) {
-    edit.hidden = false;
+    edit.hidden = !perms.canEditCatalog;
     edit.onclick = () => {
-      window.location.href = `/dashboard/inventory?edit=${productId}`;
+      if (!item) return;
+
+      openProductDialog({
+        item,
+        onSaved: load,
+      });
     };
   }
+
+  // Read-only branch view: no stock changes either.
+  document
+    .querySelectorAll<HTMLElement>(".invd-actions")
+    .forEach((el) => (el.hidden = !perms.canAdjust));
+
+  if (perms.readOnlyNotice) showNotice(perms.readOnlyNotice, "info");
 
   void renderChart();
   void loadRecent();

@@ -9,6 +9,7 @@
  */
 
 import { api } from './api';
+import { getSession } from './auth';
 
 // ==================================================
 // TYPES
@@ -53,6 +54,13 @@ export interface ProductInput {
   salePrice?: number;
   mrp?: number;
   reorderLevel?: number;
+  description?: string;
+
+  /** A new picture to upload. */
+  image?: File | null;
+
+  /** Remove the current picture (ignored when a new one is given). */
+  removeImage?: boolean;
 }
 
 export type MovementType =
@@ -374,23 +382,67 @@ function movementFromApi(m: ApiMovement): StockMovement {
   };
 }
 
-function productBody(input: ProductInput): Record<string, unknown> {
+/** Multipart, so a picture can travel with the fields. */
+function productBody(input: ProductInput): FormData {
   const text = (v?: string) => (v ?? '').trim();
   const money = (v?: number) => String(v ?? 0);
 
-  return {
-    stock_no: input.stockNo.trim(),
-    name: input.name.trim(),
-    brand: text(input.brand),
-    model: text(input.model),
-    category: text(input.category),
-    group: text(input.group),
-    unit: text(input.unit) || 'pcs',
-    purchase_price: money(input.purchasePrice),
-    sale_price: money(input.salePrice),
-    mrp: money(input.mrp),
-    reorder_level: money(input.reorderLevel),
-  };
+  const form = new FormData();
+
+  form.set('stock_no', input.stockNo.trim());
+  form.set('name', input.name.trim());
+  form.set('brand', text(input.brand));
+  form.set('model', text(input.model));
+  form.set('category', text(input.category));
+  form.set('group', text(input.group));
+  form.set('unit', text(input.unit) || 'pcs');
+  form.set('purchase_price', money(input.purchasePrice));
+  form.set('sale_price', money(input.salePrice));
+  form.set('mrp', money(input.mrp));
+  form.set('reorder_level', money(input.reorderLevel));
+
+  if (input.description !== undefined) {
+    form.set('description', input.description.trim());
+  }
+
+  if (input.image) {
+    form.set('image', input.image);
+  } else if (input.removeImage) {
+    // An empty value clears the stored picture.
+    form.set('image', '');
+  }
+
+  return form;
+}
+
+/** Largest picture the form accepts. */
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+/** What the signed-in user may do on the inventory screens. */
+export function getInventoryPermissions(): {
+  canAdjust: boolean;
+  canEditCatalog: boolean;
+  readOnlyNotice: string | null;
+} {
+  const session = getSession();
+  const role = session?.role;
+
+  let canAdjust = true;
+  let canEditCatalog = role === 'owner' || role === 'headoffice';
+  let readOnlyNotice: string | null = null;
+
+  const viewingBranchAsHO =
+    role === 'owner' &&
+    session?.businessType === 'branch' &&
+    session?.accessMode === 'read_only';
+
+  if (viewingBranchAsHO) {
+    canAdjust = false;
+    canEditCatalog = false;
+    readOnlyNotice = 'Read-only: you are viewing this branch from Head Office.';
+  }
+
+  return { canAdjust, canEditCatalog, readOnlyNotice };
 }
 
 // ==================================================

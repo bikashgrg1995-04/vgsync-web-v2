@@ -74,9 +74,15 @@ async function readBody(res: Response): Promise<unknown> {
 
 function jsonInit(method: string, body: unknown, token?: string): RequestInit {
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  // FormData (file uploads) sets its own multipart boundary header.
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
-  return { method, headers, body: body === undefined ? undefined : JSON.stringify(body) };
+  return {
+    method,
+    headers,
+    body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
+  };
 }
 
 let refreshing: Promise<boolean> | null = null;

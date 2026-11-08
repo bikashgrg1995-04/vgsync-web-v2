@@ -1,11 +1,10 @@
 
 import { getSession } from "../lib/auth";
 import { ApiError } from "../lib/api";
+import { openProductDialog } from "./product-dialog";
 import {
   listStock,
   listMovements,
-  createProduct,
-  updateProduct,
   deactivateProduct,
   addStockAdjustment,
   formatNpr,
@@ -746,45 +745,13 @@ function openProduct(productId?: number): void {
     ? items.find((i) => i.productId === productId)
     : null;
 
-  ($("prd-id") as HTMLInputElement).value = item
-    ? String(item.productId)
-    : "";
-
-  const title = $("prd-title");
-
-  if (title) {
-    title.textContent = item ? "Edit product" : "Add product";
-  }
-
-  ($("prd-stock-no") as HTMLInputElement).value = item?.stockNo ?? "";
-  ($("prd-name") as HTMLInputElement).value = item?.name ?? "";
-  ($("prd-brand") as HTMLInputElement).value = item?.brand ?? "";
-  ($("prd-model") as HTMLInputElement).value = item?.model ?? "";
-  ($("prd-category") as HTMLInputElement).value = item?.category ?? "";
-  ($("prd-group") as HTMLInputElement).value = item?.group ?? "";
-  ($("prd-unit") as HTMLInputElement).value = item?.unit || "pcs";
-
-  ($("prd-reorder") as HTMLInputElement).value = String(
-    item?.reorderLevel ?? 0,
-  );
-
-  ($("prd-cost") as HTMLInputElement).value = String(
-    item?.purchasePrice ?? 0,
-  );
-
-  ($("prd-sale") as HTMLInputElement).value = String(
-    item?.salePrice ?? 0,
-  );
-
-  ($("prd-mrp") as HTMLInputElement).value = String(
-    item?.mrp ?? 0,
-  );
-
-  const err = $("prd-error");
-
-  if (err) err.hidden = true;
-
-  ($("inv-product-dialog") as HTMLDialogElement | null)?.showModal();
+  openProductDialog({
+    item,
+    categories: Array.from(
+      new Set(items.map((i) => i.category).filter(Boolean)),
+    ).sort(),
+    onSaved: reload,
+  });
 }
 
 async function hideProduct(productId: number): Promise<void> {
@@ -1008,59 +975,6 @@ $("inv-adjust-form")?.addEventListener("submit", async (e) => {
 });
 
 // Product dialog
-
-$("prd-cancel")?.addEventListener("click", () =>
-  ($("inv-product-dialog") as HTMLDialogElement)?.close(),
-);
-
-$("inv-product-form")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const err = $("prd-error");
-
-  if (err) err.hidden = true;
-
-  const id = ($("prd-id") as HTMLInputElement).value;
-
-  const body = {
-    stockNo: ($("prd-stock-no") as HTMLInputElement).value,
-    name: ($("prd-name") as HTMLInputElement).value,
-    brand: ($("prd-brand") as HTMLInputElement).value,
-    model: ($("prd-model") as HTMLInputElement).value,
-    category: ($("prd-category") as HTMLInputElement).value,
-    group: ($("prd-group") as HTMLInputElement).value,
-    unit: ($("prd-unit") as HTMLInputElement).value,
-    reorderLevel: Number(
-      ($("prd-reorder") as HTMLInputElement).value,
-    ),
-    purchasePrice: Number(
-      ($("prd-cost") as HTMLInputElement).value,
-    ),
-    salePrice: Number(
-      ($("prd-sale") as HTMLInputElement).value,
-    ),
-    mrp: Number(
-      ($("prd-mrp") as HTMLInputElement).value,
-    ),
-  };
-
-  try {
-    if (id) {
-      await updateProduct(Number(id), body);
-    } else {
-      await createProduct(body);
-    }
-
-    ($("inv-product-dialog") as HTMLDialogElement)?.close();
-
-    await reload();
-  } catch (error) {
-    if (err) {
-      err.hidden = false;
-      err.textContent = describe(error);
-    }
-  }
-});
 
 // ==================================================
 // ROLE / PERMISSION INITIALIZATION
