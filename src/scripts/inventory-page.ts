@@ -21,7 +21,6 @@ import {
 if (!getSession()) window.location.replace("/");
 
 const PAGE_SIZE = 25;
-const CATEGORY_PAGE_SIZE = 5;
 const ACTIVITY_PAGE_SIZE = 5;
 
 let items: StockItem[] = [];
@@ -32,7 +31,6 @@ let mvPage = 1;
 let mvHasNext = false;
 let mvLoaded = false;
 
-let categoryPage = 1;
 let activityPage = 1;
 let activityHasNext = false;
 let activityCount = 0;
@@ -408,50 +406,19 @@ function renderCategoryChart(): void {
     `<circle cx="21" cy="21" r="${r}" fill="transparent" stroke="var(--border)" stroke-width="3.5" />` +
     circles;
 
-  // Paginated category legend.
-  const totalPages = Math.max(
-    1,
-    Math.ceil(entries.length / CATEGORY_PAGE_SIZE),
-  );
-
-  categoryPage = Math.min(categoryPage, totalPages);
-
-  const start = (categoryPage - 1) * CATEGORY_PAGE_SIZE;
-
-  const visibleEntries = entries.slice(
-    start,
-    start + CATEGORY_PAGE_SIZE,
-  );
-
+  // Every category is listed.
   legend.innerHTML =
-    visibleEntries
+    entries
       .map(([name, qty], idx) => {
-        const actualIndex = start + idx;
         const pct = ((qty / total) * 100).toFixed(1);
 
         return `<li>
-          <span class="dot" style="background:${CAT_COLORS[actualIndex % CAT_COLORS.length]}"></span>
+          <span class="dot" style="background:${CAT_COLORS[idx % CAT_COLORS.length]}"></span>
           <span class="name">${esc(name)}</span>
           <span class="pct">${pct}%</span>
         </li>`;
       })
       .join("") || '<li class="inv-activity-empty">No categories</li>';
-
-  const pager = $("inv-cat-pager");
-  const pageInfo = $("inv-cat-page-info");
-  const prev = $<HTMLButtonElement>("inv-cat-prev");
-  const next = $<HTMLButtonElement>("inv-cat-next");
-
-  if (pager) {
-    pager.hidden = entries.length <= CATEGORY_PAGE_SIZE;
-  }
-
-  if (pageInfo) {
-    pageInfo.textContent = `Page ${categoryPage} of ${totalPages}`;
-  }
-
-  if (prev) prev.disabled = categoryPage <= 1;
-  if (next) next.disabled = categoryPage >= totalPages;
 }
 
 // ==================================================
@@ -840,20 +807,6 @@ $("inv-back-stock")?.addEventListener("click", () =>
 );
 
 // Category pagination
-
-$("inv-cat-prev")?.addEventListener("click", () => {
-  if (categoryPage <= 1) return;
-
-  categoryPage -= 1;
-  renderCategoryChart();
-});
-
-$("inv-cat-next")?.addEventListener("click", () => {
-  categoryPage += 1;
-  renderCategoryChart();
-});
-
-// Recent activity pagination
 
 $("inv-act-prev")?.addEventListener("click", () => {
   if (activityPage <= 1) return;
