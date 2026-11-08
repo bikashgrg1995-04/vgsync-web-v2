@@ -69,6 +69,9 @@ export interface Purchase {
   paymentStatus: PaymentStatus;
   notes: string;
   cancelReason: string;
+  createdAt: string | null;
+  receivedAt: string | null;
+  cancelledAt: string | null;
   payments: PurchasePayment[];
   receipts: PurchaseReceipt[];
 }
@@ -209,6 +212,9 @@ interface ApiPurchase {
   payment_status: PaymentStatus;
   notes: string;
   cancel_reason: string;
+  created_at?: string | null;
+  received_at?: string | null;
+  cancelled_at?: string | null;
   payments?: ApiPayment[];
   receipts?: ApiReceipt[];
 }
@@ -303,6 +309,9 @@ function purchaseFromApi(p: ApiPurchase): Purchase {
     paymentStatus: p.payment_status,
     notes: p.notes,
     cancelReason: p.cancel_reason,
+    createdAt: p.created_at ?? null,
+    receivedAt: p.received_at ?? null,
+    cancelledAt: p.cancelled_at ?? null,
     payments: (p.payments ?? []).map(paymentFromApi),
     receipts: (p.receipts ?? []).map((r) => ({
       id: r.id,
@@ -550,12 +559,10 @@ export function summarize(list: Purchase[]) {
 }
 
 export function formatNpr(n: number): string {
-  return new Intl.NumberFormat('en-NP', {
-    style: 'currency',
-    currency: 'NPR',
+  return `Rs. ${new Intl.NumberFormat('en-IN', {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
-  }).format(n);
+  }).format(n)}`;
 }
 
 export function formatQty(n: number): string {

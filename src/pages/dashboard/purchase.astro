@@ -3,6 +3,9 @@ import AppLayout from '../../layouts/AppLayout.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import { PAGE_META } from '../../lib/page-meta';
 import type { UserRole } from '../../lib/auth';
+import PurchaseDialogs from '../../components/purchase/PurchaseDialogs.astro';
+import '../../styles/app/purchase-shared.css';
+import '../../styles/app/purchase-page.css';
 
 const meta = PAGE_META.purchase;
 const defaultRole: UserRole = 'owner';
@@ -21,76 +24,200 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <div class="pu-page">
-    <div class="pu-toolbar">
-      <div>
-        <p class="pu-scope" id="pu-scope">Purchases</p>
-        <div class="pu-tabs" role="tablist">
-          <button type="button" class="pu-tab is-active" data-tab="list">Purchases</button>
-          <button type="button" class="pu-tab" data-tab="returns">Returns</button>
-          <button type="button" class="pu-tab" data-tab="credits">Supplier credit</button>
+  <div class="pu-page pd-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div class="pd-hero-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg>
+        </div>
+        <div>
+          <h2 class="pd-hero-title">Purchase</h2>
+          <p class="pd-hero-sub">Manage your purchases, suppliers and purchase orders.</p>
+          <p class="pu-scope" id="pu-scope" hidden></p>
         </div>
       </div>
-      <div class="pu-toolbar-right">
-        <button type="button" class="btn-ghost-sm" id="pu-refresh">Refresh</button>
-        <button type="button" class="btn-primary-sm" id="pu-new" hidden>+ New purchase</button>
+
+      <div class="pd-hero-actions">
+        <button type="button" class="btn-primary-sm" id="pu-new" hidden>+ New Purchase</button>
+        <button type="button" class="btn-ghost-sm" id="pu-import" disabled title="Coming soon">Import PO</button>
+        <button type="button" class="btn-ghost-sm" id="pu-export">Export</button>
+        <a class="btn-ghost-sm pd-link-btn" href="/dashboard/reports">Reports</a>
       </div>
-    </div>
+    </header>
 
     <p class="pu-notice" id="pu-notice" hidden></p>
 
-    <div class="pu-kpis">
-      <article class="pu-kpi"><span>Purchases</span><strong id="kpi-count">—</strong></article>
-      <article class="pu-kpi"><span>To receive</span><strong id="kpi-receive">—</strong></article>
-      <article class="pu-kpi"><span>Total value</span><strong id="kpi-value">—</strong></article>
-      <article class="pu-kpi is-danger"><span>Still to pay</span><strong id="kpi-unpaid">—</strong></article>
-    </div>
-
-    <!-- Purchases -->
-    <section class="pu-panel is-active" data-panel="list">
-      <div class="pu-layout">
-        <div class="pu-card">
-          <div class="pu-filters">
-            <input type="search" id="f-search" placeholder="Search bill no or supplier…" autocomplete="off" />
-            <select id="f-status" aria-label="Status">
-              <option value="">All status</option>
-              <option value="draft">Draft</option>
-              <option value="partial">Part received</option>
-              <option value="received">Received</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-            <select id="f-pay" aria-label="Payment">
-              <option value="">All payments</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="partial">Part paid</option>
-              <option value="paid">Paid</option>
-            </select>
-            <select id="f-supplier" aria-label="Supplier"><option value="">All suppliers</option></select>
-            <input type="date" id="f-from" aria-label="From" />
-            <input type="date" id="f-to" aria-label="To" />
+    <!-- OVERVIEW -->
+    <section class="pu-panel is-active" data-panel="overview">
+      <div class="pd-kpis">
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-blue" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Total Purchases</span>
+            <div class="pd-kpi-row"><strong id="kpi-total">—</strong><span class="pd-trend" id="kpi-total-trend"></span></div>
+            <span class="pd-kpi-sub">vs previous 30 days</span>
           </div>
-          <div class="pu-table-wrap">
-            <table class="pu-table">
+        </article>
+
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-purple" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Total Orders</span>
+            <div class="pd-kpi-row"><strong id="kpi-orders">—</strong><span class="pd-trend" id="kpi-orders-trend"></span></div>
+            <span class="pd-kpi-sub">vs previous 30 days</span>
+          </div>
+        </article>
+
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-green" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"></path><path d="M14 8h4l4 4v5h-3"></path><circle cx="7.5" cy="17.5" r="2"></circle><circle cx="17.5" cy="17.5" r="2"></circle></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Active Suppliers</span>
+            <div class="pd-kpi-row"><strong id="kpi-suppliers">—</strong></div>
+            <span class="pd-kpi-sub" id="kpi-suppliers-sub">&nbsp;</span>
+          </div>
+        </article>
+
+        <article class="pd-kpi">
+          <span class="pd-kpi-icon is-orange" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+          <div class="pd-kpi-body">
+            <span class="pd-kpi-label">Pending Orders</span>
+            <div class="pd-kpi-row"><strong id="kpi-pending">—</strong></div>
+            <span class="pd-kpi-sub" id="kpi-pending-sub">&nbsp;</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="pd-grid">
+        <!-- PURCHASE OVERVIEW -->
+        <section class="pd-card pd-area-chart">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="11" width="4" height="9" rx="1"></rect><rect x="10" y="5" width="4" height="15" rx="1"></rect><rect x="16" y="8" width="4" height="12" rx="1"></rect></svg></span>Purchase Overview</h3>
+            <select id="pd-range" class="pd-select" aria-label="Range">
+              <option value="7">Last 7 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+            </select>
+          </div>
+          <div class="pd-chart" id="pd-chart"></div>
+          <div class="pd-legend">
+            <span><i class="is-this"></i>This Period</span>
+            <span><i class="is-last"></i>Last Period</span>
+          </div>
+        </section>
+
+        <!-- TOP SUPPLIERS -->
+        <section class="pd-card pd-area-suppliers">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"></path><path d="M14 8h4l4 4v5h-3"></path><circle cx="7.5" cy="17.5" r="2"></circle><circle cx="17.5" cy="17.5" r="2"></circle></svg></span>Top Suppliers</h3>
+            <a class="btn-link" href="/dashboard/suppliers">View All →</a>
+          </div>
+          <ol class="pd-suppliers" id="pd-suppliers"></ol>
+        </section>
+
+        <!-- QUICK ACTIONS + RECENT ACTIVITY -->
+        <aside class="pd-area-side">
+          <section class="pd-card pd-card-soft">
+            <div class="pd-card-head">
+              <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6z"></path></svg></span>Quick Actions</h3>
+            </div>
+            <div class="pd-quick">
+              <button type="button" class="pd-quick-btn" id="qa-new" hidden>
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span>New Purchase Order
+              </button>
+              <button type="button" class="pd-quick-btn" id="qa-import" disabled title="Coming soon">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M4 21h16"></path></svg></span>Import from Excel
+              </button>
+              <button type="button" class="pd-quick-btn" data-goto="list">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg></span>View All Purchases
+              </button>
+              <button type="button" class="pd-quick-btn" data-goto="returns">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10a6 6 0 0 1 0 12h-3"></path></svg></span>Purchase Returns
+              </button>
+              <button type="button" class="pd-quick-btn" data-goto="credits">
+                <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg></span>Supplier Credit
+              </button>
+            </div>
+          </section>
+
+          <section class="pd-card">
+            <div class="pd-card-head">
+              <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>Recent Activity</h3>
+              <button type="button" class="btn-link" data-goto="list">View All →</button>
+            </div>
+            <ul class="pd-activity" id="pd-activity"></ul>
+          </section>
+        </aside>
+
+        <!-- RECENT PURCHASE ORDERS -->
+        <section class="pd-card pd-area-table">
+          <div class="pd-card-head">
+            <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg></span>Recent Purchase Orders</h3>
+            <button type="button" class="btn-link" data-goto="list">View All →</button>
+          </div>
+          <div class="pd-table-wrap">
+            <table class="pd-table">
               <thead>
                 <tr>
-                  <th>No</th><th>Date</th><th>Supplier</th><th>Bill</th><th>Status</th>
-                  <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Payment</th>
+                  <th>PO #</th>
+                  <th>Supplier</th>
+                  <th>Date</th>
+                  <th>Total Amount</th>
+                  <th>Status</th>
+                  <th class="actions">Actions</th>
                 </tr>
               </thead>
-              <tbody id="pu-tbody"><tr><td colspan="9" class="pu-empty">Loading…</td></tr></tbody>
+              <tbody id="pd-tbody"><tr><td colspan="6" class="pu-empty">Loading…</td></tr></tbody>
             </table>
           </div>
-          <p class="pu-foot" id="pu-count"></p>
-        </div>
+          <div class="pd-table-foot">
+            <p class="pd-foot" id="pd-count"></p>
+            <nav class="pd-pages" id="pd-pages" aria-label="Order pages"></nav>
+          </div>
+        </section>
+      </div>
+    </section>
 
-        <aside class="pu-card" id="pu-detail">
-          <p class="pu-empty-detail">Select a purchase to see its lines, payments and deliveries.</p>
-        </aside>
+    <!-- ALL PURCHASES -->
+    <section class="pu-panel" data-panel="list">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Purchase</button>
+      <div class="pu-card">
+        <div class="pu-filters">
+          <input type="search" id="f-search" placeholder="Search bill no or supplier…" autocomplete="off" />
+          <select id="f-status" aria-label="Status">
+            <option value="">All status</option>
+            <option value="draft">Draft</option>
+            <option value="partial">Part received</option>
+            <option value="received">Received</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <select id="f-pay" aria-label="Payment">
+            <option value="">All payments</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="partial">Part paid</option>
+            <option value="paid">Paid</option>
+          </select>
+          <select id="f-supplier" aria-label="Supplier"><option value="">All suppliers</option></select>
+          <input type="date" id="f-from" aria-label="From" />
+          <input type="date" id="f-to" aria-label="To" />
+        </div>
+        <div class="pu-table-wrap">
+          <table class="pu-table">
+            <thead>
+              <tr>
+                <th>No</th><th>Date</th><th>Supplier</th><th>Bill</th><th>Status</th>
+                <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Payment</th>
+              </tr>
+            </thead>
+            <tbody id="pu-tbody"><tr><td colspan="9" class="pu-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="pu-foot" id="pu-count"></p>
       </div>
     </section>
 
     <!-- Returns -->
     <section class="pu-panel" data-panel="returns">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Purchase</button>
       <div class="pu-card">
         <div class="pu-table-wrap">
           <table class="pu-table">
@@ -109,6 +236,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
     <!-- Credit -->
     <section class="pu-panel" data-panel="credits">
+      <button type="button" class="pd-back" data-goto="overview">← Back to Purchase</button>
       <div class="pu-card">
         <div class="pu-credit-head">
           <p class="pu-foot" style="margin:0">Use credit from returned goods: take a refund, ask for replacement goods, or set it against a purchase.</p>
@@ -128,103 +256,7 @@ const navItems = getNavItemsForRole(defaultRole);
     </section>
   </div>
 
-  <!-- Purchase form -->
-  <dialog class="pu-dialog pu-wide" id="dlg-form">
-    <form method="dialog" class="pu-dialog-inner" id="form-purchase">
-      <h2 class="pu-dialog-title" id="pf-title">New purchase</h2>
-      <input type="hidden" id="pf-id" />
-      <div class="pu-grid">
-        <label class="pu-field"><span>Supplier *</span><select id="pf-supplier" required></select></label>
-        <label class="pu-field"><span>Supplier bill no</span><input type="text" id="pf-bill" maxlength="60" /></label>
-        <label class="pu-field"><span>Date</span><input type="date" id="pf-date" /></label>
-        <label class="pu-field"><span>Notes</span><input type="text" id="pf-notes" /></label>
-      </div>
-      <div class="pu-lines-head"><strong>Items</strong><button type="button" class="btn-ghost-sm" id="pf-add-line">+ Add item</button></div>
-      <div id="pf-lines" class="pu-lines"></div>
-      <div class="pu-grid pu-grid-3">
-        <label class="pu-field"><span>Discount</span><input type="number" id="pf-discount" min="0" step="0.01" value="0" /></label>
-        <label class="pu-field"><span>VAT % (on discounted amount)</span><input type="number" id="pf-vat" min="0" max="100" step="0.01" value="0" /></label>
-        <label class="pu-field"><span>Freight (not taxed)</span><input type="number" id="pf-freight" min="0" step="0.01" value="0" /></label>
-      </div>
-      <dl class="pu-totals" id="pf-totals"></dl>
-      <p class="pu-error" id="pf-error" hidden></p>
-      <div class="pu-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-form">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="pf-save">Save draft</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- Receive -->
-  <dialog class="pu-dialog pu-wide" id="dlg-receive">
-    <form method="dialog" class="pu-dialog-inner" id="form-receive">
-      <h2 class="pu-dialog-title">Receive goods</h2>
-      <p class="pu-sub" id="rc-sub"></p>
-      <div id="rc-lines" class="pu-lines"></div>
-      <div class="pu-grid">
-        <label class="pu-field"><span>Received on</span><input type="date" id="rc-date" /></label>
-        <label class="pu-field"><span>Notes</span><input type="text" id="rc-notes" placeholder="e.g. First truck" /></label>
-      </div>
-      <p class="pu-error" id="rc-error" hidden></p>
-      <div class="pu-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-receive">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="rc-save">Add to stock</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- Payment -->
-  <dialog class="pu-dialog" id="dlg-pay">
-    <form method="dialog" class="pu-dialog-inner" id="form-pay">
-      <h2 class="pu-dialog-title">Record payment</h2>
-      <p class="pu-sub" id="py-sub"></p>
-      <div class="pu-grid">
-        <label class="pu-field"><span>Amount *</span><input type="number" id="py-amount" required min="0.01" step="0.01" /></label>
-        <label class="pu-field"><span>Method *</span>
-          <select id="py-method">
-            <option value="cash">Cash</option><option value="bank">Bank</option>
-            <option value="online">Online</option><option value="cheque">Cheque</option>
-          </select>
-        </label>
-        <label class="pu-field"><span>Paid on</span><input type="date" id="py-date" /></label>
-        <label class="pu-field"><span>Reference</span><input type="text" id="py-ref" maxlength="100" /></label>
-      </div>
-      <p class="pu-error" id="py-error" hidden></p>
-      <div class="pu-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="py-save">Save payment</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- Return -->
-  <dialog class="pu-dialog pu-wide" id="dlg-return">
-    <form method="dialog" class="pu-dialog-inner" id="form-return">
-      <h2 class="pu-dialog-title">Return goods to supplier</h2>
-      <p class="pu-sub" id="rt-sub"></p>
-      <div id="rt-lines" class="pu-lines"></div>
-      <label class="pu-field"><span>Reason *</span><input type="text" id="rt-reason" required /></label>
-      <p class="pu-error" id="rt-error" hidden></p>
-      <div class="pu-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-return">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="rt-save">Return goods</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- Reason (cancel / void) -->
-  <dialog class="pu-dialog" id="dlg-reason">
-    <form method="dialog" class="pu-dialog-inner" id="form-reason">
-      <h2 class="pu-dialog-title" id="rs-title">Reason</h2>
-      <p class="pu-sub" id="rs-sub"></p>
-      <label class="pu-field"><span>Reason *</span><input type="text" id="rs-text" required /></label>
-      <p class="pu-error" id="rs-error" hidden></p>
-      <div class="pu-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-reason">Back</button>
-        <button type="submit" class="btn-primary-sm is-danger" id="rs-save">Confirm</button>
-      </div>
-    </form>
-  </dialog>
+  <PurchaseDialogs />
 
   <!-- Use credit -->
   <dialog class="pu-dialog pu-wide" id="dlg-credit">
@@ -264,26 +296,31 @@ const navItems = getNavItemsForRole(defaultRole);
 
 <script>
   import { getSession } from '../../lib/auth';
-  import { ApiError } from '../../lib/api';
+  import {
+    $,
+    val,
+    today,
+    esc,
+    describe,
+    showError,
+    dlg,
+    submit,
+    configurePurchaseDialogs,
+    openForm,
+    openReason,
+    addLineRow,
+    readLines,
+  } from '../../scripts/purchase-dialogs';
   import { listSuppliers, type Supplier } from '../../lib/suppliers';
   import { listStock, type StockItem } from '../../lib/inventory';
   import {
     listPurchases,
-    getPurchase,
-    createPurchase,
-    updatePurchase,
-    cancelPurchase,
-    receivePurchase,
-    addPayment,
-    voidPayment,
     listReturns,
-    createReturn,
     voidReturn,
     listCredits,
     useCredit,
     receiveReplacement,
     voidCredit,
-    previewTotals,
     summarize,
     formatNpr,
     formatQty,
@@ -301,60 +338,13 @@ const navItems = getNavItemsForRole(defaultRole);
   if (!getSession()) window.location.replace('/');
 
   let purchases: Purchase[] = [];
+  let allPurchases: Purchase[] = [];
   let returns: PurchaseReturn[] = [];
   let credits: CreditSettlement[] = [];
   let suppliers: Supplier[] = [];
   let products: StockItem[] = [];
-  let selected: Purchase | null = null;
   let canWrite = true;
   let loaded = { returns: false, credits: false };
-
-  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
-  const val = (id: string) => $<HTMLInputElement>(id)?.value ?? '';
-  const today = () => new Date().toLocaleDateString('en-CA');
-
-  function esc(s: string): string {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  const FIELD_LABELS: Record<string, string> = {
-    supplier: 'Supplier',
-    bill_no: 'Bill no',
-    purchase_date: 'Date',
-    discount_amount: 'Discount',
-    vat_rate: 'VAT',
-    freight_amount: 'Freight',
-    amount: 'Amount',
-    method: 'Method',
-    reason: 'Reason',
-    paid_on: 'Paid on',
-    received_on: 'Received on',
-  };
-
-  function flatten(value: unknown): string {
-    if (typeof value === 'string') return value;
-    if (Array.isArray(value)) return value.map(flatten).filter(Boolean).join(' ');
-    if (value && typeof value === 'object') return Object.values(value).map(flatten).filter(Boolean).join(' ');
-    return '';
-  }
-
-  function describe(error: unknown): string {
-    if (!(error instanceof ApiError)) return 'Something went wrong. Please try again.';
-    const entries = Object.entries(error.fields);
-    if (entries.length > 0 && error.status === 400) {
-      return entries
-        .map(([k, v]) => (FIELD_LABELS[k] ? `${FIELD_LABELS[k]}: ${flatten(v)}` : flatten(v)))
-        .join(' ');
-    }
-    return error.message;
-  }
-
-  function showError(id: string, message: string | null): void {
-    const el = $(id);
-    if (!el) return;
-    el.hidden = !message;
-    el.textContent = message ?? '';
-  }
 
   function notice(message: string | null, error = false): void {
     const el = $('pu-notice');
@@ -362,26 +352,6 @@ const navItems = getNavItemsForRole(defaultRole);
     el.hidden = !message;
     el.textContent = message ?? '';
     el.classList.toggle('is-error', error);
-  }
-
-  const dlg = (id: string) => $<HTMLDialogElement>(id)!;
-  document.querySelectorAll<HTMLButtonElement>('[data-close]').forEach((b) =>
-    b.addEventListener('click', () => dlg(b.dataset.close!).close()),
-  );
-
-  /** Runs a save: disables the button, shows errors in the dialog, closes on success. */
-  async function submit(btnId: string, errId: string, dialogId: string, work: () => Promise<void>): Promise<void> {
-    const btn = $<HTMLButtonElement>(btnId)!;
-    btn.disabled = true;
-    showError(errId, null);
-    try {
-      await work();
-      dlg(dialogId).close();
-    } catch (error) {
-      showError(errId, describe(error));
-    } finally {
-      btn.disabled = false;
-    }
   }
 
   const badge = (cls: string, text: string) => `<span class="pu-badge pu-badge-${cls}">${esc(text)}</span>`;
@@ -399,13 +369,393 @@ const navItems = getNavItemsForRole(defaultRole);
     };
   }
 
-  function renderKpis(): void {
-    const s = summarize(purchases);
-    $('kpi-count')!.textContent = String(s.count);
-    $('kpi-receive')!.textContent = String(s.toReceive);
-    $('kpi-value')!.textContent = formatNpr(s.totalValue);
-    $('kpi-unpaid')!.textContent = formatNpr(s.unpaid);
+  // ---- Overview ------------------------------------------------------
+
+  const PO_PAGE_SIZE = 4;
+  let poPage = 1;
+
+  const DAY_MS = 86_400_000;
+
+  function parseDay(s: string): Date {
+    return new Date(`${s}T00:00:00`);
   }
+
+  function fmtDate(s: string): string {
+    const d = parseDay(s);
+    if (Number.isNaN(d.getTime())) return s;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function fmtWhen(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `${date} • ${time}`;
+  }
+
+  function dayStart(d = new Date()): number {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  }
+
+  /** Whole days between today and a purchase date (0 = today). */
+  function daysAgo(s: string): number {
+    return Math.round((dayStart() - parseDay(s).getTime()) / DAY_MS);
+  }
+
+  const live = () => allPurchases.filter((p) => p.status !== 'cancelled');
+
+  /** Purchases dated within [from, to] days ago, cancelled ones left out. */
+  function inWindow(fromDaysAgo: number, toDaysAgo: number): Purchase[] {
+    return live().filter((p) => {
+      const n = daysAgo(p.purchaseDate);
+      return n >= toDaysAgo && n <= fromDaysAgo;
+    });
+  }
+
+  function compact(n: number): string {
+    if (n >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${+(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
+    return String(Math.round(n));
+  }
+
+  function setTrend(id: string, current: number, previous: number): void {
+    const el = $(id);
+    if (!el) return;
+
+    el.className = 'pd-trend';
+
+    if (previous <= 0) {
+      el.textContent = current > 0 ? 'New' : '';
+      if (current > 0) el.classList.add('is-up');
+      return;
+    }
+
+    const pct = ((current - previous) / previous) * 100;
+    const flat = Math.abs(pct) < 0.05;
+
+    el.textContent = `${flat ? '' : pct > 0 ? '↑ ' : '↓ '}${Math.abs(pct).toFixed(1)}%`;
+    el.classList.add(flat ? 'is-flat' : pct > 0 ? 'is-up' : 'is-down');
+  }
+
+  function renderKpis(): void {
+    const now = inWindow(29, 0);
+    const before = inWindow(59, 30);
+
+    const sum = (list: Purchase[]) => list.reduce((t, p) => t + p.netTotal, 0);
+
+    $('kpi-total')!.textContent = formatNpr(sum(now));
+    setTrend('kpi-total-trend', sum(now), sum(before));
+
+    $('kpi-orders')!.textContent = String(now.length);
+    setTrend('kpi-orders-trend', now.length, before.length);
+
+    const active = suppliers.filter((x) => x.isActive).length;
+    const ordered = new Set(now.map((p) => p.supplierId)).size;
+
+    $('kpi-suppliers')!.textContent = String(active);
+    $('kpi-suppliers-sub')!.textContent = `${ordered} ordered from in last 30 days`;
+
+    const pending = summarize(allPurchases).toReceive;
+    const sub = $('kpi-pending-sub')!;
+
+    $('kpi-pending')!.textContent = String(pending);
+    sub.textContent = pending > 0 ? 'Requires attention' : 'Nothing waiting';
+    sub.classList.toggle('is-warn', pending > 0);
+  }
+
+  function smoothPath(pts: [number, number][]): string {
+    if (pts.length < 2) return '';
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i];
+      const [x1, y1] = pts[i + 1];
+      const cx = (x0 + x1) / 2;
+      d += ` C${cx},${y0} ${cx},${y1} ${x1},${y1}`;
+    }
+    return d;
+  }
+
+  function niceMax(v: number): number {
+    if (v <= 0) return 1000;
+    const pow = Math.pow(10, Math.floor(Math.log10(v)));
+    const step = pow / 2;
+    return Math.ceil(v / step) * step;
+  }
+
+  function rangeDays(): number {
+    return Number($<HTMLSelectElement>('pd-range')?.value ?? 30);
+  }
+
+  function renderChart(): void {
+    const host = $('pd-chart');
+    if (!host) return;
+
+    const days = rangeDays();
+
+    // Group days into buckets so sparse purchase dates still draw a readable line.
+    const size = days <= 7 ? 1 : days <= 30 ? 3 : 7;
+    const count = Math.ceil(days / size);
+    const thisP = new Array<number>(count).fill(0);
+    const lastP = new Array<number>(count).fill(0);
+
+    for (const p of live()) {
+      const n = daysAgo(p.purchaseDate);
+      if (n >= 0 && n < days) thisP[count - 1 - Math.floor(n / size)] += p.netTotal;
+      else if (n >= days && n < days * 2) lastP[count - 1 - Math.floor((n - days) / size)] += p.netTotal;
+    }
+
+    const W = 560, H = 230, padL = 44, padR = 14, padT = 14, padB = 28;
+    const yMax = niceMax(Math.max(...thisP, ...lastP));
+    const x = (i: number) => padL + (count <= 1 ? 0 : (i / (count - 1)) * (W - padL - padR));
+    const y = (v: number) => padT + (1 - v / yMax) * (H - padT - padB);
+
+    const thisPts = thisP.map((v, i): [number, number] => [x(i), y(v)]);
+    const lastPts = lastP.map((v, i): [number, number] => [x(i), y(v)]);
+
+    const grid = [0, 1 / 3, 2 / 3, 1]
+      .map((f) => `<line x1="${padL}" x2="${W - padR}" y1="${y(yMax * f)}" y2="${y(yMax * f)}" class="pd-grid-line" />
+        <text x="${padL - 8}" y="${y(yMax * f) + 3}" text-anchor="end" class="pd-axis">${compact(yMax * f)}</text>`)
+      .join('');
+
+    const every = Math.max(1, Math.ceil(count / 4));
+    const ticks = thisP
+      .map((_, i) => {
+        if (i % every !== 0 && i !== count - 1) return '';
+        // Label each bucket by its last day.
+        const ago = (count - 1 - i) * size;
+        const d = new Date(dayStart() - ago * DAY_MS);
+        const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" class="pd-axis">${label}</text>`;
+      })
+      .join('');
+
+    const dots = (pts: [number, number][], cls: string) =>
+      pts.map(([px, py]) => `<circle cx="${px}" cy="${py}" r="3.2" class="${cls}" />`).join('');
+
+    const empty = thisP.every((v) => v === 0) && lastP.every((v) => v === 0);
+
+    host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Purchases per day, this period and last period" preserveAspectRatio="xMidYMid meet">
+      ${grid}
+      <path d="${smoothPath(lastPts)}" class="pd-line-last" />
+      <path d="${smoothPath(thisPts)}" class="pd-line-this" />
+      ${dots(lastPts, 'pd-dot-last')}
+      ${dots(thisPts, 'pd-dot-this')}
+      ${ticks}
+    </svg>${empty ? '<p class="pd-chart-empty">No purchases in this period</p>' : ''}`;
+  }
+
+  function renderSuppliers(): void {
+    const el = $('pd-suppliers');
+    if (!el) return;
+
+    const days = rangeDays();
+    const totals = new Map<string, number>();
+
+    for (const p of inWindow(days - 1, 0)) {
+      totals.set(p.supplierName, (totals.get(p.supplierName) ?? 0) + p.netTotal);
+    }
+
+    const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
+    const grand = sorted.reduce((t, [, v]) => t + v, 0);
+
+    if (sorted.length === 0 || grand <= 0) {
+      el.innerHTML = '<li class="pd-empty-note">No supplier purchases in this period.</li>';
+      return;
+    }
+
+    let rows = sorted;
+    if (sorted.length > 5) {
+      const others = sorted.slice(4).reduce((t, [, v]) => t + v, 0);
+      rows = [...sorted.slice(0, 4), ['Others', others]];
+    }
+
+    el.innerHTML = rows
+      .map(([name, amount], i) => {
+        const pct = (amount / grand) * 100;
+        return `<li class="pd-supplier">
+          <span class="pd-rank">${i + 1}</span>
+          <span class="pd-supplier-name">${esc(name)}</span>
+          <span class="pd-supplier-amount">${formatNpr(amount)}</span>
+          <span class="pd-supplier-pct">${pct.toFixed(1)}%</span>
+          <span class="pd-bar"><i style="width:${Math.max(2, pct).toFixed(1)}%"></i></span>
+        </li>`;
+      })
+      .join('');
+  }
+
+  const ACT_ICONS = {
+    received: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg>',
+    new: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg>',
+    cancelled: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>',
+  };
+
+  function renderActivity(): void {
+    const el = $('pd-activity');
+    if (!el) return;
+
+    type Event = { when: string; kind: 'received' | 'new' | 'cancelled'; title: string; no: string };
+    const events: Event[] = [];
+
+    for (const p of allPurchases) {
+      events.push({ when: p.createdAt ?? `${p.purchaseDate}T00:00:00`, kind: 'new', title: 'New purchase order', no: p.purchaseNo });
+      if (p.receivedAt) events.push({ when: p.receivedAt, kind: 'received', title: 'Purchase received', no: p.purchaseNo });
+      if (p.cancelledAt) events.push({ when: p.cancelledAt, kind: 'cancelled', title: 'Purchase cancelled', no: p.purchaseNo });
+    }
+
+    events.sort((a, b) => b.when.localeCompare(a.when));
+
+    if (events.length === 0) {
+      el.innerHTML = '<li class="pd-empty-note">No activity yet.</li>';
+      return;
+    }
+
+    el.innerHTML = events
+      .slice(0, 3)
+      .map(
+        (e) => `<li>
+          <span class="pd-act-icon is-${e.kind}">${ACT_ICONS[e.kind]}</span>
+          <div class="pd-act-body">
+            <strong>${esc(e.title)}</strong>
+            <span>${esc(e.no)}</span>
+            <time>${esc(fmtWhen(e.when))}</time>
+          </div>
+        </li>`,
+      )
+      .join('');
+  }
+
+  function poPill(p: Purchase): string {
+    if (p.status === 'cancelled') return `<span class="pd-pill pd-pill-cancelled">Cancelled</span>`;
+    if (p.status === 'draft') return `<span class="pd-pill pd-pill-draft">Draft</span>`;
+    if (p.status === 'partial') return `<span class="pd-pill pd-pill-partial">Part received</span>`;
+    if (p.paymentStatus === 'paid') return `<span class="pd-pill pd-pill-received">Completed</span>`;
+    return `<span class="pd-pill pd-pill-delivered">Received</span>`;
+  }
+
+  const EYE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+
+  function renderPager(total: number): void {
+    const el = $('pd-pages');
+    if (!el) return;
+
+    const pages = Math.max(1, Math.ceil(total / PO_PAGE_SIZE));
+    poPage = Math.min(poPage, pages);
+
+    if (pages <= 1) {
+      el.innerHTML = '';
+      return;
+    }
+
+    const items: (number | '…')[] = [];
+    for (let n = 1; n <= pages; n++) {
+      if (n === 1 || n === pages || Math.abs(n - poPage) <= 1) items.push(n);
+      else if (items[items.length - 1] !== '…') items.push('…');
+    }
+
+    el.innerHTML =
+      `<button type="button" class="pd-pg" data-pg="${poPage - 1}" aria-label="Previous page" ${poPage <= 1 ? 'disabled' : ''}>‹</button>` +
+      items
+        .map((n) =>
+          n === '…'
+            ? '<span class="pd-pg-gap">…</span>'
+            : `<button type="button" class="pd-pg${n === poPage ? ' is-active' : ''}" data-pg="${n}">${n}</button>`,
+        )
+        .join('') +
+      `<button type="button" class="pd-pg" data-pg="${poPage + 1}" aria-label="Next page" ${poPage >= pages ? 'disabled' : ''}>›</button>`;
+
+    el.querySelectorAll<HTMLButtonElement>('[data-pg]').forEach((b) =>
+      b.addEventListener('click', () => {
+        poPage = Number(b.dataset.pg);
+        renderRecentOrders();
+      }),
+    );
+  }
+
+  function renderRecentOrders(): void {
+    const tbody = $('pd-tbody');
+    if (!tbody) return;
+
+    const sorted = [...allPurchases].sort(
+      (a, b) => b.purchaseDate.localeCompare(a.purchaseDate) || b.id - a.id,
+    );
+
+    if (sorted.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="pu-empty">No purchase orders yet.</td></tr>';
+      $('pd-count')!.textContent = 'Showing 0 of 0 orders';
+      renderPager(0);
+      return;
+    }
+
+    const pages = Math.max(1, Math.ceil(sorted.length / PO_PAGE_SIZE));
+    poPage = Math.min(poPage, pages);
+
+    const start = (poPage - 1) * PO_PAGE_SIZE;
+    const slice = sorted.slice(start, start + PO_PAGE_SIZE);
+
+    tbody.innerHTML = slice
+      .map(
+        (p) => `<tr>
+          <td class="pd-po">${esc(p.purchaseNo)}</td>
+          <td>${esc(p.supplierName)}</td>
+          <td>${esc(fmtDate(p.purchaseDate))}</td>
+          <td>${formatNpr(p.netTotal)}</td>
+          <td>${poPill(p)}</td>
+          <td class="actions"><button type="button" class="pd-view-btn" data-view="${p.id}">${EYE} View</button></td>
+        </tr>`,
+      )
+      .join('');
+
+    $('pd-count')!.textContent = `Showing ${start + 1}–${start + slice.length} of ${sorted.length} orders`;
+    renderPager(sorted.length);
+
+    tbody.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) =>
+      b.addEventListener('click', () => openDetail(Number(b.dataset.view))),
+    );
+  }
+
+  function renderOverview(): void {
+    renderKpis();
+    renderChart();
+    renderSuppliers();
+    renderActivity();
+    renderRecentOrders();
+  }
+
+  $('pd-range')?.addEventListener('change', () => {
+    renderChart();
+    renderSuppliers();
+  });
+
+  /** Downloads every purchase as a CSV file. */
+  function exportCsv(): void {
+    const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const rows = [
+      ['PO no', 'Date', 'Supplier', 'Bill no', 'Status', 'Payment', 'Net total', 'Paid', 'Due'],
+      ...allPurchases.map((p) => [
+        p.purchaseNo,
+        p.purchaseDate,
+        p.supplierName,
+        p.billNo,
+        STATUS_LABEL[p.status],
+        p.status === 'cancelled' ? '' : PAYMENT_LABEL[p.paymentStatus],
+        p.netTotal,
+        p.paid,
+        p.status === 'cancelled' ? '' : p.remaining,
+      ]),
+    ];
+
+    const blob = new Blob([rows.map((r) => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    a.href = url;
+    a.download = `purchases-${today()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  $('pu-export')?.addEventListener('click', exportCsv);
 
   function renderList(): void {
     const tbody = $('pu-tbody')!;
@@ -414,7 +764,7 @@ const navItems = getNavItemsForRole(defaultRole);
     } else {
       tbody.innerHTML = purchases
         .map(
-          (p) => `<tr class="pu-row ${selected?.id === p.id ? 'is-selected' : ''}" data-id="${p.id}">
+          (p) => `<tr class="pu-row" data-id="${p.id}">
             <td class="mono">${esc(p.purchaseNo)}</td>
             <td>${esc(p.purchaseDate)}</td>
             <td>${esc(p.supplierName)}</td>
@@ -430,137 +780,45 @@ const navItems = getNavItemsForRole(defaultRole);
     }
     $('pu-count')!.textContent = `${purchases.length} purchase${purchases.length === 1 ? '' : 's'}`;
     tbody.querySelectorAll<HTMLTableRowElement>('.pu-row').forEach((row) =>
-      row.addEventListener('click', () => void openDetail(Number(row.dataset.id))),
+      row.addEventListener('click', () => openDetail(Number(row.dataset.id))),
     );
   }
 
   async function loadList(): Promise<void> {
+    const f = filters();
+    const unfiltered = !f.search && !f.status && !f.paymentStatus && !f.supplierId && !f.dateFrom && !f.dateTo;
+
     try {
-      purchases = await listPurchases(filters());
-      notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+      purchases = unfiltered ? allPurchases : await listPurchases(f);
     } catch (error) {
       purchases = [];
       notice(describe(error), true);
     }
-    renderKpis();
     renderList();
+  }
+
+  /** Loads every purchase for the overview, then the list panel. */
+  async function loadAll(): Promise<void> {
+    try {
+      allPurchases = await listPurchases();
+      notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+    } catch (error) {
+      allPurchases = [];
+      notice(describe(error), true);
+    }
+    renderOverview();
+    await loadList();
   }
 
   // ---- Detail --------------------------------------------------------
 
-  async function openDetail(id: number): Promise<void> {
-    try {
-      selected = await getPurchase(id);
-    } catch (error) {
-      notice(describe(error), true);
-      return;
-    }
-    renderList();
-    renderDetail();
+  /** A purchase opens on its own page. */
+  function openDetail(id: number): void {
+    window.location.href = `/dashboard/purchase/detail?id=${id}`;
   }
 
-  function renderDetail(): void {
-    const el = $('pu-detail')!;
-    const p = selected;
-    if (!p) {
-      el.innerHTML = `<p class="pu-empty-detail">Select a purchase to see its lines, payments and deliveries.</p>`;
-      return;
-    }
-    const open = p.status === 'draft' || p.status === 'partial';
-    const received = p.status === 'received' || p.status === 'partial';
-    const acts: string[] = [];
-    if (canWrite) {
-      if (p.status === 'draft') acts.push(`<button class="btn-ghost-sm" data-act="edit">Edit</button>`);
-      if (open) acts.push(`<button class="btn-primary-sm" data-act="receive">Receive goods</button>`);
-      if (p.status !== 'cancelled' && p.remaining > 0) acts.push(`<button class="btn-ghost-sm" data-act="pay">Record payment</button>`);
-      if (received && p.lines.some((l) => l.returnableQuantity > 0)) acts.push(`<button class="btn-ghost-sm" data-act="return">Return goods</button>`);
-      if (p.status === 'draft') acts.push(`<button class="btn-ghost-sm is-danger" data-act="cancel">Cancel</button>`);
-    }
-
-    el.innerHTML = `
-      <div class="pu-detail-head">
-        <div>
-          <p class="mono muted">${esc(p.purchaseNo)}</p>
-          <h3>${esc(p.supplierName)}</h3>
-          <p>${badge(p.status, STATUS_LABEL[p.status])} ${p.status === 'cancelled' ? '' : badge('pay-' + p.paymentStatus, PAYMENT_LABEL[p.paymentStatus])}</p>
-        </div>
-      </div>
-      <div class="pu-detail-actions">${acts.join('')}</div>
-      <p class="muted small">Date ${esc(p.purchaseDate)}${p.billNo ? ` · Bill ${esc(p.billNo)}` : ''}${p.notes ? ` · ${esc(p.notes)}` : ''}</p>
-      ${p.status === 'cancelled' && p.cancelReason ? `<p class="small">Cancelled: ${esc(p.cancelReason)}</p>` : ''}
-
-      <table class="pu-table pu-mini">
-        <thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th><th class="num">Received</th></tr></thead>
-        <tbody>
-          ${p.lines.map((l) => `<tr>
-            <td>${esc(l.productName)}<br /><span class="muted mono">${esc(l.stockNo)}</span></td>
-            <td class="num">${formatQty(l.quantity)} ${esc(l.unit)}</td>
-            <td class="num">${formatNpr(l.unitPrice)}</td>
-            <td class="num">${formatNpr(l.lineTotal)}</td>
-            <td class="num">${formatQty(l.receivedQuantity)}${l.returnedQuantity > 0 ? `<br /><span class="muted">returned ${formatQty(l.returnedQuantity)}</span>` : ''}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-
-      <dl class="pu-totals">
-        <div><dt>Subtotal</dt><dd>${formatNpr(p.subtotal)}</dd></div>
-        <div><dt>Discount</dt><dd>− ${formatNpr(p.discount)}</dd></div>
-        <div><dt>VAT ${formatQty(p.vatRate)}%</dt><dd>${formatNpr(p.vatAmount)}</dd></div>
-        <div><dt>Freight</dt><dd>${formatNpr(p.freight)}</dd></div>
-        <div class="strong"><dt>Net total</dt><dd>${formatNpr(p.netTotal)}</dd></div>
-        <div><dt>Paid</dt><dd>${formatNpr(p.paid)}</dd></div>
-        ${p.creditApplied > 0 ? `<div><dt>Credit applied</dt><dd>${formatNpr(p.creditApplied)}</dd></div>` : ''}
-        <div class="strong"><dt>Due</dt><dd>${formatNpr(p.remaining)}</dd></div>
-      </dl>
-
-      <h4>Payments</h4>
-      ${p.payments.length === 0 ? `<p class="muted small">No payments yet.</p>` : `
-      <ul class="pu-list">
-        ${p.payments.map((x) => `<li class="${x.status === 'void' ? 'is-void' : ''}">
-          <span>${esc(x.paidOn)} · ${esc(METHOD_LABEL[x.method])}${x.reference ? ` · ${esc(x.reference)}` : ''}</span>
-          <strong>${formatNpr(x.amount)}</strong>
-          ${x.status === 'void'
-            ? `<em class="muted">voided: ${esc(x.voidReason)}</em>`
-            : canWrite ? `<button class="btn-link" data-void-pay="${x.id}">Void</button>` : ''}
-        </li>`).join('')}
-      </ul>`}
-
-      <h4>Deliveries</h4>
-      ${p.receipts.length === 0 ? `<p class="muted small">Nothing received yet.</p>` : `
-      <ul class="pu-list">
-        ${p.receipts.map((r) => `<li><span>${esc(r.receivedOn)}${r.notes ? ` · ${esc(r.notes)}` : ''}</span>
-          <em class="muted">${r.items.map((i) => `${esc(i.productName)} ×${formatQty(i.quantity)}`).join(', ')}</em></li>`).join('')}
-      </ul>`}
-    `;
-
-    el.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) =>
-      b.addEventListener('click', () => {
-        const act = b.dataset.act;
-        if (act === 'edit') openForm(p);
-        else if (act === 'receive') openReceive(p);
-        else if (act === 'pay') openPay(p);
-        else if (act === 'return') openReturn(p);
-        else if (act === 'cancel') openReason(`Cancel ${p.purchaseNo}`, 'A cancelled draft has no effect on stock.', async (reason) => {
-          await cancelPurchase(p.id, reason);
-        }, p.id);
-      }),
-    );
-    el.querySelectorAll<HTMLButtonElement>('[data-void-pay]').forEach((b) =>
-      b.addEventListener('click', () =>
-        openReason('Void payment', 'The amount goes back onto the purchase.', async (reason) => {
-          await voidPayment(Number(b.dataset.voidPay), reason);
-        }, p.id),
-      ),
-    );
-  }
-
-  async function refreshAfterChange(id?: number): Promise<void> {
-    await loadList();
-    if (id) {
-      try { selected = await getPurchase(id); } catch { selected = null; }
-      renderList();
-      renderDetail();
-    }
+  async function refreshAfterChange(_id?: number): Promise<void> {
+    await loadAll();
     loaded = { returns: false, credits: false };
     if (activeTab === 'returns') void loadReturns();
     if (activeTab === 'credits') void loadCredits();
@@ -568,252 +826,13 @@ const navItems = getNavItemsForRole(defaultRole);
     void listStock().then((s) => (products = s)).catch(() => {});
   }
 
-  // ---- Reason dialog -------------------------------------------------
-
-  let reasonHandler: ((reason: string) => Promise<void>) | null = null;
-  let reasonAfter: number | undefined;
-
-  function openReason(title: string, sub: string, handler: (reason: string) => Promise<void>, afterId?: number): void {
-    $('rs-title')!.textContent = title;
-    $('rs-sub')!.textContent = sub;
-    $<HTMLInputElement>('rs-text')!.value = '';
-    showError('rs-error', null);
-    reasonHandler = handler;
-    reasonAfter = afterId;
-    dlg('dlg-reason').showModal();
-  }
-
-  $('form-reason')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const reason = val('rs-text').trim();
-    if (!reason || !reasonHandler) return;
-    void submit('rs-save', 'rs-error', 'dlg-reason', async () => {
-      await reasonHandler!(reason);
-      await refreshAfterChange(reasonAfter);
-    });
+  configurePurchaseDialogs({
+    getProducts: () => products,
+    getSuppliers: () => suppliers,
+    onChanged: refreshAfterChange,
   });
 
-  // ---- Line editor (shared by purchase form and replacement goods) ---
-
-  function productOptions(selectedId?: number): string {
-    return (
-      `<option value="">Choose product…</option>` +
-      products
-        .map((p) => `<option value="${p.productId}" ${p.productId === selectedId ? 'selected' : ''}>${esc(p.stockNo)} · ${esc(p.name)}</option>`)
-        .join('')
-    );
-  }
-
-  function addLineRow(
-    container: HTMLElement,
-    opts: { price: boolean; productId?: number; quantity?: number; unitPrice?: number; onChange?: () => void },
-  ): void {
-    const row = document.createElement('div');
-    row.className = 'pu-line';
-    row.innerHTML = `
-      <select class="ln-product" aria-label="Product">${productOptions(opts.productId)}</select>
-      <input class="ln-qty" type="number" min="0.001" step="0.001" value="${opts.quantity ?? 1}" aria-label="Quantity" />
-      ${opts.price ? `<input class="ln-price" type="number" min="0" step="0.01" value="${opts.unitPrice ?? 0}" aria-label="Unit price" />` : ''}
-      <button type="button" class="btn-link is-danger ln-remove" aria-label="Remove">✕</button>`;
-    container.appendChild(row);
-    const sel = row.querySelector<HTMLSelectElement>('.ln-product')!;
-    sel.addEventListener('change', () => {
-      const prod = products.find((p) => p.productId === Number(sel.value));
-      const price = row.querySelector<HTMLInputElement>('.ln-price');
-      if (prod && price) price.value = String(prod.purchasePrice);
-      opts.onChange?.();
-    });
-    row.querySelectorAll('input').forEach((i) => i.addEventListener('input', () => opts.onChange?.()));
-    row.querySelector('.ln-remove')!.addEventListener('click', () => {
-      row.remove();
-      opts.onChange?.();
-    });
-  }
-
-  function readLines(container: HTMLElement) {
-    return Array.from(container.querySelectorAll<HTMLElement>('.pu-line'))
-      .map((row) => ({
-        productId: Number(row.querySelector<HTMLSelectElement>('.ln-product')!.value),
-        quantity: Number(row.querySelector<HTMLInputElement>('.ln-qty')!.value),
-        unitPrice: Number(row.querySelector<HTMLInputElement>('.ln-price')?.value ?? 0),
-      }))
-      .filter((l) => l.productId);
-  }
-
-  // ---- Purchase form -------------------------------------------------
-
-  function updateTotals(): void {
-    const t = previewTotals(readLines($('pf-lines')!), Number(val('pf-discount')) || 0, Number(val('pf-vat')) || 0, Number(val('pf-freight')) || 0);
-    $('pf-totals')!.innerHTML = `
-      <div><dt>Subtotal</dt><dd>${formatNpr(t.subtotal)}</dd></div>
-      <div><dt>VAT</dt><dd>${formatNpr(t.vat)}</dd></div>
-      <div class="strong"><dt>Net total (preview)</dt><dd>${formatNpr(t.net)}</dd></div>`;
-  }
-
-  function openForm(p?: Purchase): void {
-    $('pf-title')!.textContent = p ? `Edit ${p.purchaseNo}` : 'New purchase';
-    $<HTMLInputElement>('pf-id')!.value = p ? String(p.id) : '';
-    const sup = $<HTMLSelectElement>('pf-supplier')!;
-    sup.innerHTML =
-      `<option value="">Choose supplier…</option>` +
-      suppliers.filter((s) => s.isActive || s.id === p?.supplierId)
-        .map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
-    sup.value = p ? String(p.supplierId) : '';
-    $<HTMLInputElement>('pf-bill')!.value = p?.billNo ?? '';
-    $<HTMLInputElement>('pf-date')!.value = p?.purchaseDate ?? today();
-    $<HTMLInputElement>('pf-notes')!.value = p?.notes ?? '';
-    $<HTMLInputElement>('pf-discount')!.value = String(p?.discount ?? 0);
-    $<HTMLInputElement>('pf-vat')!.value = String(p?.vatRate ?? 0);
-    $<HTMLInputElement>('pf-freight')!.value = String(p?.freight ?? 0);
-    const box = $('pf-lines')!;
-    box.innerHTML = '';
-    if (p) p.lines.forEach((l) => addLineRow(box, { price: true, productId: l.productId, quantity: l.quantity, unitPrice: l.unitPrice, onChange: updateTotals }));
-    else addLineRow(box, { price: true, onChange: updateTotals });
-    updateTotals();
-    showError('pf-error', null);
-    dlg('dlg-form').showModal();
-  }
-
-  $('pf-add-line')?.addEventListener('click', () => addLineRow($('pf-lines')!, { price: true, onChange: updateTotals }));
-  for (const id of ['pf-discount', 'pf-vat', 'pf-freight']) $(id)?.addEventListener('input', updateTotals);
   $('pu-new')?.addEventListener('click', () => openForm());
-
-  $('form-purchase')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const lines = readLines($('pf-lines')!);
-    if (lines.length === 0) {
-      showError('pf-error', 'Add at least one item.');
-      return;
-    }
-    if (lines.some((l) => !(l.quantity > 0))) {
-      showError('pf-error', 'Every item needs a quantity above zero.');
-      return;
-    }
-    const id = Number(val('pf-id')) || 0;
-    const input = {
-      supplierId: Number(val('pf-supplier')),
-      billNo: val('pf-bill'),
-      purchaseDate: val('pf-date'),
-      discount: Number(val('pf-discount')) || 0,
-      vatRate: Number(val('pf-vat')) || 0,
-      freight: Number(val('pf-freight')) || 0,
-      notes: val('pf-notes'),
-      lines,
-    };
-    void submit('pf-save', 'pf-error', 'dlg-form', async () => {
-      const saved = id ? await updatePurchase(id, input) : await createPurchase(input);
-      await refreshAfterChange(saved.id);
-    });
-  });
-
-  // ---- Receive -------------------------------------------------------
-
-  function openReceive(p: Purchase): void {
-    $('rc-sub')!.textContent = `${p.purchaseNo} · ${p.supplierName}. Change a quantity for a part delivery; stock goes up once for what you enter.`;
-    $('rc-lines')!.innerHTML = p.lines
-      .filter((l) => l.remainingQuantity > 0)
-      .map((l) => `<div class="pu-line pu-line-rc" data-line="${l.id}" data-max="${l.remainingQuantity}">
-          <span>${esc(l.productName)} <span class="muted">(still to come ${formatQty(l.remainingQuantity)} ${esc(l.unit)})</span></span>
-          <input type="number" class="rc-qty" min="0" max="${l.remainingQuantity}" step="0.001" value="${l.remainingQuantity}" />
-        </div>`).join('');
-    $<HTMLInputElement>('rc-date')!.value = today();
-    $<HTMLInputElement>('rc-notes')!.value = '';
-    showError('rc-error', null);
-    $('form-receive')!.dataset.id = String(p.id);
-    dlg('dlg-receive').showModal();
-  }
-
-  $('form-receive')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = Number($('form-receive')!.dataset.id);
-    const rows = Array.from(document.querySelectorAll<HTMLElement>('#rc-lines .pu-line-rc'));
-    const lines = rows
-      .map((r) => ({
-        lineId: Number(r.dataset.line),
-        quantity: Number(r.querySelector<HTMLInputElement>('.rc-qty')!.value) || 0,
-        max: Number(r.dataset.max),
-      }))
-      .filter((l) => l.quantity > 0);
-    if (lines.length === 0) {
-      showError('rc-error', 'Enter a quantity for at least one item.');
-      return;
-    }
-    const everything = lines.length === rows.length && lines.every((l) => l.quantity === l.max);
-    void submit('rc-save', 'rc-error', 'dlg-receive', async () => {
-      await receivePurchase(id, {
-        lines: everything ? undefined : lines.map((l) => ({ lineId: l.lineId, quantity: l.quantity })),
-        receivedOn: val('rc-date'),
-        notes: val('rc-notes').trim(),
-      });
-      await refreshAfterChange(id);
-    });
-  });
-
-  // ---- Payment -------------------------------------------------------
-
-  function openPay(p: Purchase): void {
-    $('py-sub')!.textContent = `${p.purchaseNo} · ${p.supplierName} · due ${formatNpr(p.remaining)}`;
-    $<HTMLInputElement>('py-amount')!.value = String(p.remaining);
-    $<HTMLInputElement>('py-amount')!.max = String(p.remaining);
-    $<HTMLSelectElement>('py-method')!.value = 'cash';
-    $<HTMLInputElement>('py-date')!.value = today();
-    $<HTMLInputElement>('py-ref')!.value = '';
-    showError('py-error', null);
-    $('form-pay')!.dataset.id = String(p.id);
-    dlg('dlg-pay').showModal();
-  }
-
-  $('form-pay')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = Number($('form-pay')!.dataset.id);
-    void submit('py-save', 'py-error', 'dlg-pay', async () => {
-      await addPayment({
-        purchaseId: id,
-        amount: Number(val('py-amount')),
-        method: val('py-method') as PayMethod,
-        paidOn: val('py-date'),
-        reference: val('py-ref'),
-      });
-      await refreshAfterChange(id);
-    });
-  });
-
-  // ---- Return --------------------------------------------------------
-
-  function openReturn(p: Purchase): void {
-    $('rt-sub')!.textContent = `${p.purchaseNo} · ${p.supplierName}. Only goods that arrived can be sent back.`;
-    $('rt-lines')!.innerHTML = p.lines
-      .filter((l) => l.returnableQuantity > 0)
-      .map((l) => `<div class="pu-line pu-line-rt" data-line="${l.id}">
-          <span>${esc(l.productName)} <span class="muted">(can return ${formatQty(l.returnableQuantity)} ${esc(l.unit)})</span></span>
-          <input type="number" class="rt-qty" min="0" max="${l.returnableQuantity}" step="0.001" value="0" />
-          <select class="rt-cond"><option value="good">From good stock</option><option value="damaged">From damaged stock</option></select>
-        </div>`).join('');
-    $<HTMLInputElement>('rt-reason')!.value = '';
-    showError('rt-error', null);
-    $('form-return')!.dataset.id = String(p.id);
-    dlg('dlg-return').showModal();
-  }
-
-  $('form-return')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = Number($('form-return')!.dataset.id);
-    const lines = Array.from(document.querySelectorAll<HTMLElement>('#rt-lines .pu-line-rt'))
-      .map((r) => ({
-        lineId: Number(r.dataset.line),
-        quantity: Number(r.querySelector<HTMLInputElement>('.rt-qty')!.value) || 0,
-        condition: r.querySelector<HTMLSelectElement>('.rt-cond')!.value as 'good' | 'damaged',
-      }))
-      .filter((l) => l.quantity > 0);
-    if (lines.length === 0) {
-      showError('rt-error', 'Enter a quantity to return.');
-      return;
-    }
-    void submit('rt-save', 'rt-error', 'dlg-return', async () => {
-      await createReturn({ purchaseId: id, reason: val('rt-reason'), lines });
-      await refreshAfterChange(id);
-    });
-  });
 
   // ---- Returns tab ---------------------------------------------------
 
@@ -847,7 +866,7 @@ const navItems = getNavItemsForRole(defaultRole);
       b.addEventListener('click', () =>
         openReason('Void return', 'The goods go back into stock and the credit is removed.', async (reason) => {
           await voidReturn(Number(b.dataset.voidRet), reason);
-        }, selected?.id),
+        }),
       ),
     );
   }
@@ -899,7 +918,7 @@ const navItems = getNavItemsForRole(defaultRole);
       b.addEventListener('click', async () => {
         try {
           await receiveReplacement(Number(b.dataset.recvCr));
-          await refreshAfterChange(selected?.id);
+          await refreshAfterChange();
         } catch (error) {
           notice(describe(error), true);
         }
@@ -909,7 +928,7 @@ const navItems = getNavItemsForRole(defaultRole);
       b.addEventListener('click', () =>
         openReason('Void credit use', 'The credit goes back to the supplier balance.', async (reason) => {
           await voidCredit(Number(b.dataset.voidCr), reason);
-        }, selected?.id),
+        }),
       ),
     );
   }
@@ -968,24 +987,27 @@ const navItems = getNavItemsForRole(defaultRole);
         items,
         notes: val('cr-notes'),
       });
-      await refreshAfterChange(selected?.id);
+      await refreshAfterChange();
     });
   });
 
   // ---- Tabs, filters, load -------------------------------------------
 
-  let activeTab = 'list';
-  document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((btn) =>
-    btn.addEventListener('click', () => {
-      activeTab = btn.dataset.tab!;
-      document.querySelectorAll('[data-tab]').forEach((b) => b.classList.remove('is-active'));
-      document.querySelectorAll('[data-panel]').forEach((p) => p.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      document.querySelector(`[data-panel="${activeTab}"]`)?.classList.add('is-active');
-      if (activeTab === 'returns' && !loaded.returns) void loadReturns();
-      if (activeTab === 'credits' && !loaded.credits) void loadCredits();
-    }),
+  let activeTab = 'overview';
+
+  function showPanel(name: string): void {
+    activeTab = name;
+    document.querySelectorAll('.pu-panel').forEach((p) => p.classList.toggle('is-active', (p as HTMLElement).dataset.panel === name));
+    if (name === 'returns' && !loaded.returns) void loadReturns();
+    if (name === 'credits' && !loaded.credits) void loadCredits();
+    window.scrollTo({ top: 0 });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-goto]').forEach((btn) =>
+    btn.addEventListener('click', () => showPanel(btn.dataset.goto!)),
   );
+
+  $('qa-new')?.addEventListener('click', () => openForm());
 
   let timer: number | undefined;
   $('f-search')?.addEventListener('input', () => {
@@ -995,7 +1017,6 @@ const navItems = getNavItemsForRole(defaultRole);
   for (const id of ['f-status', 'f-pay', 'f-supplier', 'f-from', 'f-to']) {
     $(id)?.addEventListener('change', () => void loadList());
   }
-  $('pu-refresh')?.addEventListener('click', () => void init());
   document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => void init(), 300));
 
   async function init(): Promise<void> {
@@ -1003,9 +1024,8 @@ const navItems = getNavItemsForRole(defaultRole);
     if (s) $('pu-scope')!.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
     canWrite = s?.accessMode !== 'read_only';
     $('pu-new')!.hidden = !canWrite;
+    $('qa-new')!.hidden = !canWrite;
     $('cr-new')!.hidden = !canWrite;
-    selected = null;
-    renderDetail();
     loaded = { returns: false, credits: false };
 
     try {
@@ -1019,130 +1039,10 @@ const navItems = getNavItemsForRole(defaultRole);
       `<option value="">All suppliers</option>` + suppliers.map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('');
     filt.value = current;
 
-    await loadList();
+    await loadAll();
     if (activeTab === 'returns') void loadReturns();
     if (activeTab === 'credits') void loadCredits();
   }
 
   void init();
 </script>
-
-<style is:global>
-  .pu-page { display: flex; flex-direction: column; gap: 14px; }
-  .pu-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  .pu-toolbar-right { display: flex; gap: 8px; }
-  .pu-scope { margin: 0 0 6px; font-size: 0.78rem; color: var(--text-muted); }
-  .pu-tabs { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
-  .pu-tab {
-    border: none; background: transparent; padding: 6px 12px; border-radius: 7px; font-family: inherit;
-    font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
-  }
-  .pu-tab.is-active { background: var(--panel-bg); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
-
-  .btn-primary-sm, .btn-ghost-sm {
-    height: 34px; padding: 0 12px; border-radius: 8px; font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer;
-  }
-  .btn-primary-sm { border: none; background: var(--accent); color: #fff; }
-  .btn-primary-sm.is-danger { background: #ef334e; }
-  .btn-primary-sm:disabled { opacity: 0.6; cursor: default; }
-  .btn-ghost-sm { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); }
-  .btn-ghost-sm:hover { background: var(--surface-hover); color: var(--text-primary); }
-  .btn-ghost-sm.is-danger { color: #ef334e; border-color: color-mix(in srgb, #ef334e 35%, var(--border)); }
-  .btn-link { border: none; background: transparent; color: var(--accent); font-family: inherit; font-size: 0.78rem; font-weight: 650; cursor: pointer; padding: 0; }
-  .btn-link.is-danger { color: #ef334e; }
-
-  .pu-notice {
-    margin: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px;
-    background: var(--surface); color: var(--text-secondary); font-size: 0.8rem;
-  }
-  .pu-notice.is-error { color: #ef334e; border-color: rgba(239, 51, 78, 0.4); }
-
-  .pu-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-  @media (max-width: 700px) { .pu-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .pu-kpi { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); }
-  .pu-kpi span { display: block; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
-  .pu-kpi strong { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
-  .pu-kpi.is-danger strong { color: #ef334e; }
-
-  .pu-panel { display: none; }
-  .pu-panel.is-active { display: block; }
-  .pu-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr); gap: 12px; align-items: start; }
-  @media (max-width: 1000px) { .pu-layout { grid-template-columns: 1fr; } }
-  .pu-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 12px; }
-  .pu-credit-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-
-  .pu-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .pu-filters input, .pu-filters select {
-    height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
-    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem;
-  }
-  .pu-filters input[type='search'] { flex: 1; min-width: 160px; }
-
-  .pu-table-wrap { overflow-x: auto; }
-  .pu-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-  .pu-table th, .pu-table td { padding: 8px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
-  .pu-table th { font-size: 0.66rem; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
-  .pu-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .pu-table .mono, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.74rem; }
-  .pu-table .actions { white-space: nowrap; }
-  .pu-row { cursor: pointer; }
-  .pu-row:hover td { background: var(--surface-hover); }
-  .pu-row.is-selected td { background: var(--accent-soft); }
-  .pu-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
-  .pu-foot { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
-  .pu-mini { margin-top: 10px; }
-  .muted { color: var(--text-muted); }
-  .small { font-size: 0.75rem; }
-
-  .pu-badge { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 650; white-space: nowrap; }
-  .pu-badge-draft { background: rgba(148, 163, 184, 0.18); color: #64748b; }
-  .pu-badge-partial, .pu-badge-pay-partial { background: rgba(217, 119, 6, 0.12); color: #d97706; }
-  .pu-badge-received, .pu-badge-pay-paid { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
-  .pu-badge-cancelled, .pu-badge-pay-unpaid { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
-
-  .pu-empty-detail { margin: 0; padding: 24px 8px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
-  .pu-detail-head h3 { margin: 2px 0 6px; font-size: 1rem; font-weight: 650; }
-  .pu-detail-head p { margin: 0; }
-  .pu-detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-  #pu-detail h4 { margin: 14px 0 6px; font-size: 0.78rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
-  .pu-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; }
-  .pu-list li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); }
-  .pu-list li.is-void span, .pu-list li.is-void strong { text-decoration: line-through; color: var(--text-muted); }
-
-  .pu-totals { margin: 12px 0 0; display: grid; gap: 4px; font-size: 0.8rem; }
-  .pu-totals div { display: flex; justify-content: space-between; gap: 10px; }
-  .pu-totals dt { color: var(--text-secondary); }
-  .pu-totals dd { margin: 0; font-variant-numeric: tabular-nums; }
-  .pu-totals .strong dt, .pu-totals .strong dd { font-weight: 700; color: var(--text-primary); }
-
-  .pu-dialog {
-    border: none; border-radius: 14px; padding: 0; background: var(--panel-bg); color: var(--text-primary);
-    box-shadow: 0 24px 60px rgba(0,0,0,0.28); max-width: 440px; width: calc(100% - 32px);
-  }
-  .pu-dialog.pu-wide { max-width: 680px; }
-  .pu-dialog::backdrop { background: rgba(8,15,29,0.55); backdrop-filter: blur(4px); }
-  .pu-dialog-inner { padding: 20px; max-height: 88vh; overflow-y: auto; }
-  .pu-dialog-title { margin: 0 0 6px; font-size: 1rem; font-weight: 650; }
-  .pu-sub { margin: 0 0 12px; font-size: 0.8rem; color: var(--text-muted); }
-  .pu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 10px 0; }
-  .pu-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  @media (max-width: 560px) { .pu-grid, .pu-grid-3 { grid-template-columns: 1fr; } }
-  .pu-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
-  .pu-grid .pu-field { margin-bottom: 0; }
-  .pu-field input, .pu-field select {
-    height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
-    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
-  }
-  .pu-lines-head { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 6px; font-size: 0.85rem; }
-  .pu-lines { display: flex; flex-direction: column; gap: 6px; }
-  .pu-line { display: grid; grid-template-columns: minmax(0, 2fr) 90px 110px auto; gap: 6px; align-items: center; font-size: 0.8rem; }
-  .pu-line select, .pu-line input {
-    height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px;
-    background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; min-width: 0;
-  }
-  .pu-line-rc, .pu-line-rt { grid-template-columns: minmax(0, 2fr) 100px 150px; }
-  .pu-line-rc { grid-template-columns: minmax(0, 2fr) 110px; }
-  @media (max-width: 560px) { .pu-line, .pu-line-rt { grid-template-columns: 1fr 1fr; } }
-  .pu-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
-  .pu-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-</style>
