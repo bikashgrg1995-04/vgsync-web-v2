@@ -244,13 +244,41 @@ $('form-purchase')?.addEventListener('submit', (e) => {
 // ---- Receive -------------------------------------------------------
 
 export function openReceive(p: Purchase): void {
-  $('rc-sub')!.textContent = `${p.purchaseNo} · ${p.supplierName}. Change a quantity for a part delivery; stock goes up once for what you enter.`;
+  $('rc-sub')!.textContent = `${p.purchaseNo} · ${p.supplierName}. Change a quantity for a part delivery. If some arrived damaged, tick the box and say how many: those go to damaged stock, the rest to good stock.`;
   $('rc-lines')!.innerHTML = p.lines
     .filter((l) => l.remainingQuantity > 0)
-    .map((l) => `<div class="pu-line pu-line-rc" data-line="${l.id}" data-max="${l.remainingQuantity}">
-        <span>${esc(l.productName)} <span class="muted">(still to come ${formatQty(l.remainingQuantity)} ${esc(l.unit)})</span></span>
-        <input type="number" class="rc-qty" min="0" max="${l.remainingQuantity}" step="0.001" value="${l.remainingQuantity}" />
+    .map((l) => `<div class="pu-rc-item" data-line="${l.id}" data-max="${l.remainingQuantity}">
+        <div class="pu-line pu-line-rc">
+          <span>${esc(l.productName)} <span class="muted">(still to come ${formatQty(l.remainingQuantity)} ${esc(l.unit)})</span></span>
+          <input type="number" class="rc-qty" min="0" max="${l.remainingQuantity}" step="0.001" value="${l.remainingQuantity}" aria-label="Quantity received" />
+        </div>
+        <label class="pu-check"><input type="checkbox" class="rc-dmg-on" /> Some arrived damaged</label>
+        <div class="pu-rc-dmg" hidden>
+          <label class="pu-field"><span>How many are damaged?</span>
+            <input type="number" class="rc-dmg-qty" min="0.001" step="0.001" value="1" />
+          </label>
+          <small class="rc-dmg-hint muted"></small>
+        </div>
       </div>`).join('');
+
+  const hint = (item: HTMLElement) => {
+    const qty = Number(item.querySelector<HTMLInputElement>('.rc-qty')!.value) || 0;
+    const dmg = Number(item.querySelector<HTMLInputElement>('.rc-dmg-qty')!.value) || 0;
+    const good = Math.max(0, qty - dmg);
+    item.querySelector('.rc-dmg-hint')!.textContent = `${formatQty(good)} to good stock, ${formatQty(Math.min(dmg, qty))} to damaged stock`;
+  };
+
+  document.querySelectorAll<HTMLElement>('#rc-lines .pu-rc-item').forEach((item) => {
+    const on = item.querySelector<HTMLInputElement>('.rc-dmg-on')!;
+    const box = item.querySelector<HTMLElement>('.pu-rc-dmg')!;
+    on.addEventListener('change', () => {
+      box.hidden = !on.checked;
+      hint(item);
+    });
+    item.querySelectorAll('.rc-qty, .rc-dmg-qty').forEach((i) => i.addEventListener('input', () => hint(item)));
+    hint(item);
+  });
+
   $<HTMLInputElement>('rc-date')!.value = today();
   $<HTMLInputElement>('rc-notes')!.value = '';
   showError('rc-error', null);
@@ -261,22 +289,33 @@ export function openReceive(p: Purchase): void {
 $('form-receive')?.addEventListener('submit', (e) => {
   e.preventDefault();
   const id = Number($('form-receive')!.dataset.id);
-  const rows = Array.from(document.querySelectorAll<HTMLElement>('#rc-lines .pu-line-rc'));
+  const rows = Array.from(document.querySelectorAll<HTMLElement>('#rc-lines .pu-rc-item'));
   const lines = rows
-    .map((r) => ({
-      lineId: Number(r.dataset.line),
-      quantity: Number(r.querySelector<HTMLInputElement>('.rc-qty')!.value) || 0,
-      max: Number(r.dataset.max),
-    }))
+    .map((r) => {
+      const quantity = Number(r.querySelector<HTMLInputElement>('.rc-qty')!.value) || 0;
+      const marked = r.querySelector<HTMLInputElement>('.rc-dmg-on')!.checked;
+      const damaged = marked ? Number(r.querySelector<HTMLInputElement>('.rc-dmg-qty')!.value) || 0 : 0;
+      return { lineId: Number(r.dataset.line), quantity, damaged, marked, max: Number(r.dataset.max) };
+    })
     .filter((l) => l.quantity > 0);
   if (lines.length === 0) {
     showError('rc-error', 'Enter a quantity for at least one item.');
     return;
   }
-  const everything = lines.length === rows.length && lines.every((l) => l.quantity === l.max);
+  for (const l of lines) {
+    if (l.marked && l.damaged <= 0) {
+      showError('rc-error', 'Enter how many are damaged, or untick "Some arrived damaged".');
+      return;
+    }
+    if (l.damaged > l.quantity) {
+      showError('rc-error', 'Damaged cannot be more than the quantity received.');
+      return;
+    }
+  }
+  const everything = lines.length === rows.length && lines.every((l) => l.quantity === l.max && l.damaged === 0);
   void submit('rc-save', 'rc-error', 'dlg-receive', async () => {
     await receivePurchase(id, {
-      lines: everything ? undefined : lines.map((l) => ({ lineId: l.lineId, quantity: l.quantity })),
+      lines: everything ? undefined : lines.map((l) => ({ lineId: l.lineId, quantity: l.quantity, damagedQuantity: l.damaged })),
       receivedOn: val('rc-date'),
       notes: val('rc-notes').trim(),
     });

@@ -337,7 +337,14 @@ function renderDeliveries(p: Purchase): void {
       (r) => `<tr>
         <td class="pud-nowrap">${esc(fmtDate(r.receivedOn))}</td>
         <td>${r.items
-          .map((i) => `${esc(i.productName)} <strong>×${formatQty(i.quantity)}</strong>`)
+          .map(
+            (i) =>
+              `${esc(i.productName)} <strong>×${formatQty(i.quantity)}</strong>${
+                i.damagedQuantity > 0
+                  ? ` <span class="pd-pill pd-pill-cancelled">${formatQty(i.damagedQuantity)} damaged</span>`
+                  : ""
+              }`,
+          )
           .join("<br />")}</td>
         <td class="hide-sm">${esc(r.notes || "—")}</td>
       </tr>`,
@@ -372,7 +379,14 @@ function renderActivity(p: Purchase): void {
       when: `${r.receivedOn}T12:00:00`,
       shown: fmtDate(r.receivedOn),
       title: "Goods received",
-      sub: r.items.map((i) => `${i.productName} ×${formatQty(i.quantity)}`).join(", "),
+      sub: r.items
+        .map(
+          (i) =>
+            `${i.productName} ×${formatQty(i.quantity)}${
+              i.damagedQuantity > 0 ? ` (${formatQty(i.damagedQuantity)} damaged)` : ""
+            }`,
+        )
+        .join(", "),
       cls: "is-in",
     });
   }

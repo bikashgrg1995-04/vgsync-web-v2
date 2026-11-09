@@ -45,7 +45,7 @@ export interface PurchaseReceipt {
   id: number;
   receivedOn: string;
   notes: string;
-  items: { productName: string; quantity: number }[];
+  items: { productName: string; quantity: number; damagedQuantity: number }[];
 }
 
 export interface Purchase {
@@ -188,7 +188,7 @@ interface ApiReceipt {
   id: number;
   received_on: string;
   notes: string;
-  items: { product_name: string; quantity: string }[];
+  items: { product_name: string; quantity: string; damaged_quantity?: string }[];
 }
 
 interface ApiPurchase {
@@ -317,7 +317,11 @@ function purchaseFromApi(p: ApiPurchase): Purchase {
       id: r.id,
       receivedOn: r.received_on,
       notes: r.notes,
-      items: r.items.map((i) => ({ productName: i.product_name, quantity: num(i.quantity) })),
+      items: r.items.map((i) => ({
+        productName: i.product_name,
+        quantity: num(i.quantity),
+        damagedQuantity: num(i.damaged_quantity),
+      })),
     })),
   };
 }
@@ -426,14 +430,19 @@ export async function cancelPurchase(id: number, reason: string): Promise<Purcha
   );
 }
 
-/** No lines = everything still to come. Otherwise a part delivery. */
+/** No lines = everything still to come, all in good condition. Otherwise a part delivery; damagedQuantity is the part of quantity that arrived damaged. */
 export async function receivePurchase(
   id: number,
-  options: { lines?: { lineId: number; quantity: number }[]; receivedOn?: string; notes?: string } = {},
+  options: { lines?: { lineId: number; quantity: number; damagedQuantity?: number }[]; receivedOn?: string; notes?: string } = {},
 ): Promise<Purchase> {
   const body: Record<string, unknown> = {};
   if (options.lines && options.lines.length > 0) {
-    body.items = options.lines.map((l) => ({ purchase_item: l.lineId, quantity: l.quantity.toFixed(3) }));
+    body.items = options.lines.map((l) => ({
+      purchase_item: l.lineId,
+      // quantity is everything that arrived; damaged is the part of it that is damaged.
+      quantity: l.quantity.toFixed(3),
+      ...(l.damagedQuantity && l.damagedQuantity > 0 ? { damaged_quantity: l.damagedQuantity.toFixed(3) } : {}),
+    }));
   }
   if (options.receivedOn) body.received_on = options.receivedOn;
   if (options.notes) body.notes = options.notes;

@@ -116,3 +116,11 @@
   @media (max-width: 560px) { .pu-line, .pu-line-rt { grid-template-columns: 1fr 1fr; } }
   .pu-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
   .pu-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+  .pu-rc-item { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .pu-rc-item:last-child { border-bottom: none; }
+  .pu-check { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-secondary); cursor: pointer; width: fit-content; }
+  .pu-rc-dmg { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 12px; padding: 8px 10px; border-radius: 10px; background: rgba(239, 51, 78, 0.06); border: 1px solid rgba(239, 51, 78, 0.2); }
+  .pu-rc-dmg[hidden] { display: none; }
+  .pu-rc-dmg .pu-field { margin: 0; min-width: 160px; }
+  .pu-rc-dmg small { font-size: 0.74rem; padding-bottom: 8px; }
