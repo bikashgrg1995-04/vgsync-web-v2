@@ -175,6 +175,10 @@ export async function listStaff(): Promise<StaffMember[]> {
   return (await all<ApiStaff>('/staff/')).map(staffFromApi);
 }
 
+export async function getStaff(id: number): Promise<StaffMember> {
+  return staffFromApi(await api<ApiStaff>(`/staff/${id}/`));
+}
+
 export async function createStaff(
   input: StaffInput,
 ): Promise<{ member: StaffMember; temporaryPassword: string | null }> {
