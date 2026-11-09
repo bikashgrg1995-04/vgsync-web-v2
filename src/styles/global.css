@@ -27,10 +27,10 @@
     --border: rgba(148, 163, 184, 0.15);
     --panel-divider: rgba(148, 163, 184, 0.14);
 
-    /* Automotive red accent */
-    --accent: #ef334e;
-    --accent-hover: #d92340;
-    --accent-soft: rgba(239, 51, 78, 0.12);
+    /* Brand blue accent */
+    --accent: #4c8dff;
+    --accent-hover: #3b7bf0;
+    --accent-soft: rgba(76, 141, 255, 0.14);
 
     /* Status */
     --success: #22c55e;
@@ -42,7 +42,7 @@
         0 30px 90px rgba(0, 0, 0, 0.42);
 
     --input-shadow:
-        0 0 0 3px rgba(239, 51, 78, 0.13);
+        0 0 0 3px rgba(76, 141, 255, 0.18);
 
     /* Radius */
     --radius-sm: 8px;
@@ -69,10 +69,10 @@
     --border: rgba(51, 65, 85, 0.14);
     --panel-divider: rgba(51, 65, 85, 0.12);
 
-    /* Automotive red accent */
-    --accent: #dc2945;
-    --accent-hover: #bd1f38;
-    --accent-soft: rgba(220, 41, 69, 0.09);
+    /* Brand blue accent */
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-soft: rgba(37, 99, 235, 0.1);
 
     /* Status */
     --success: #16a34a;
@@ -84,7 +84,7 @@
         0 25px 75px rgba(15, 23, 42, 0.14);
 
     --input-shadow:
-        0 0 0 3px rgba(220, 41, 69, 0.11);
+        0 0 0 3px rgba(37, 99, 235, 0.14);
 }
 
 /* =========================================================
