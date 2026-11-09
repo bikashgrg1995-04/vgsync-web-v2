@@ -51,12 +51,12 @@
 
 .theme-toggle:hover {
     background: rgba(18, 31, 52, 0.92);
-    border-color: rgba(239, 51, 78, 0.7);
+    border-color: rgba(76, 141, 255, 0.7);
     color: #ffffff;
 
     box-shadow:
         0 4px 14px rgba(0, 0, 0, 0.2),
-        0 0 0 3px rgba(239, 51, 78, 0.08);
+        0 0 0 3px rgba(76, 141, 255, 0.08);
 
     transform: translateY(-2px);
 }
@@ -70,7 +70,7 @@
 /* Keyboard focus */
 
 .theme-toggle:focus-visible {
-    outline: 2px solid #ef334e;
+    outline: 2px solid #4c8dff;
     outline-offset: 4px;
 }
 
@@ -116,12 +116,12 @@
 
 [data-theme="light"] .theme-toggle:hover {
     background: #ffffff;
-    border-color: #ef334e;
+    border-color: #4c8dff;
     color: #dc263f;
 
     box-shadow:
         0 4px 14px rgba(15, 23, 42, 0.09),
-        0 0 0 3px rgba(239, 51, 78, 0.07);
+        0 0 0 3px rgba(76, 141, 255, 0.07);
 }
 
 /* =========================================================
@@ -136,7 +136,7 @@
 
 [data-theme="dark"] .theme-toggle:hover {
     background: rgba(18, 31, 52, 0.92);
-    border-color: rgba(239, 51, 78, 0.7);
+    border-color: rgba(76, 141, 255, 0.7);
     color: #ffffff;
 }
 
