@@ -1,0 +1,100 @@
+/* Staff detail page */
+.sd-page { display: flex; flex-direction: column; gap: var(--gap, 12px); }
+.sd-crumb { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); }
+.sd-crumb a { display: inline-flex; align-items: center; color: var(--text-secondary); text-decoration: none; }
+.sd-crumb a:hover { color: var(--accent); }
+.sd-crumb strong { color: var(--text-primary); }
+.sd-layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: var(--gap, 12px); align-items: start; }
+.sd-side { display: flex; flex-direction: column; gap: var(--gap, 12px); min-width: 0; }
+.sd-main { min-width: 0; }
+
+.sd-card { padding: var(--card-pad, 14px); border: 1px solid var(--border); border-radius: 14px; background: var(--panel-bg); min-width: 0; }
+.sd-card + .sd-card { margin-top: var(--gap, 12px); }
+.sd-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.sd-card-head h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+.sd-card-head h3 small { margin-left: 6px; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
+
+/* profile */
+.sd-profile { display: flex; flex-direction: column; gap: 14px; }
+.sd-profile-top { display: flex; align-items: center; gap: 14px; }
+.sd-avatar { display: grid; place-items: center; flex-shrink: 0; width: 76px; height: 76px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 1.3rem; font-weight: 700; background-size: cover; background-position: center; }
+.sd-avatar.has-photo { color: transparent; }
+.sd-name { margin: 0; font-size: 1.15rem; font-weight: 750; line-height: 1.2; overflow-wrap: anywhere; }
+.sd-code { display: block; margin: 2px 0 6px; font-size: 0.82rem; color: var(--text-muted); }
+.sd-facts { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--border); list-style: none; font-size: 0.84rem; color: var(--text-secondary); }
+.sd-facts li { display: flex; align-items: center; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
+.sd-facts svg { flex-shrink: 0; color: var(--text-muted); }
+
+/* section nav */
+.sd-nav { display: flex; flex-direction: column; gap: 2px; padding: 8px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel-bg); }
+.sd-nav button { position: relative; display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border: none; border-radius: 10px; background: transparent; color: var(--text-primary); font-family: inherit; font-size: 0.85rem; font-weight: 560; text-align: left; cursor: pointer; }
+.sd-nav button svg { flex-shrink: 0; color: var(--accent); }
+.sd-nav button:hover:not(:disabled) { background: var(--surface-hover); }
+.sd-nav button.is-active { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+.sd-nav button:disabled { opacity: 0.55; cursor: not-allowed; }
+.sd-nav em { margin-left: auto; padding: 1px 7px; border-radius: 999px; background: var(--surface); color: var(--text-muted); font-size: 0.62rem; font-style: normal; font-weight: 650; }
+
+/* panels */
+.sd-panel { display: none; }
+.sd-panel.is-active { display: block; }
+.sd-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: var(--gap, 12px); }
+.sd-tile { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); min-width: 0; }
+.sd-tile-ico { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+.sd-tile small { display: block; font-size: 0.7rem; color: var(--text-muted); }
+.sd-tile strong { display: block; font-size: 0.88rem; overflow-wrap: anywhere; }
+.sd-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap, 12px); margin-bottom: var(--gap, 12px); }
+.sd-two > .sd-card + .sd-card { margin-top: 0; }
+
+.sd-kv { margin: 0; display: flex; flex-direction: column; }
+.sd-kv > div { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.84rem; }
+.sd-kv > div:last-child { border-bottom: none; }
+.sd-kv dt { color: var(--text-muted); }
+.sd-kv dd { margin: 0; font-weight: 560; overflow-wrap: anywhere; }
+
+.sd-pay { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.sd-pay-hero { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 12px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); text-align: center; }
+.sd-pay-hero strong { font-size: 1.05rem; }
+.sd-pay-hero small { font-size: 0.72rem; color: var(--text-secondary); }
+.sd-net { display: flex; justify-content: space-between; margin-top: 6px; padding: 8px 10px; border-radius: 8px; background: rgba(34, 197, 94, 0.12); color: #16a34a; font-weight: 700; font-size: 0.86rem; }
+
+.sd-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; position: relative; }
+.sd-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.sd-table th, .sd-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.sd-table th { background: var(--surface); font-size: 0.7rem; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.sd-table tr:last-child td { border-bottom: none; }
+.sd-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.sd-empty { padding: 22px 12px !important; text-align: center !important; color: var(--text-muted); white-space: normal !important; }
+.sd-pill { display: inline-flex; padding: 2px 9px; border-radius: 999px; font-size: 0.7rem; font-weight: 650; }
+.sd-pill.is-paid { background: rgba(34, 197, 94, 0.14); color: #16a34a; }
+.sd-pill.is-earned { background: var(--accent-soft); color: var(--accent); }
+.sd-pill.is-deducted { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+.sd-pill.is-active { background: rgba(34, 197, 94, 0.14); color: #16a34a; }
+.sd-pill.is-inactive { background: rgba(148, 163, 184, 0.18); color: #64748b; }
+.sd-pill.is-pending { background: rgba(245, 158, 11, 0.14); color: #d97706; }
+.sd-link { font-size: 0.78rem; font-weight: 650; color: var(--accent); background: none; border: none; cursor: pointer; font-family: inherit; text-decoration: none; padding: 0; }
+.sd-hint { margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
+.sd-error { margin: 0 0 10px; font-size: 0.82rem; color: #ef334e; }
+.sd-error[hidden], .sd-tile[hidden] { display: none; }
+.sd-perm-on { color: #16a34a; font-weight: 700; }
+.sd-perm-off { color: var(--text-muted); }
+.sd-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: var(--gap, 12px); }
+.sd-kpi { padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.sd-kpi small { display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.sd-kpi strong { font-size: 1rem; font-variant-numeric: tabular-nums; }
+.sd-btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; background: transparent; color: var(--accent); font-family: inherit; font-size: 0.8rem; font-weight: 650; text-decoration: none; cursor: pointer; }
+.sd-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+@media (max-width: 1100px) { .sd-tiles, .sd-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sd-two { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 860px) {
+  .sd-layout { grid-template-columns: minmax(0, 1fr); }
+  .sd-nav { flex-direction: row; overflow-x: auto; }
+  .sd-nav button { width: auto; flex-shrink: 0; white-space: nowrap; }
+  .sd-nav em { display: none; }
+}
+@media (max-width: 560px) {
+  .sd-pay { grid-template-columns: minmax(0, 1fr); }
+  .sd-kv > div { grid-template-columns: 110px minmax(0, 1fr); }
+}
+.sd-pay .sd-kv > div { grid-template-columns: 92px minmax(0, 1fr); }
+.sd-pay .sd-kv dd { white-space: nowrap; }
+.sd-pay { grid-template-columns: 130px minmax(0, 1fr); }

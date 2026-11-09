@@ -1,0 +1,413 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../../lib/navigation';
+import type { UserRole } from '../../../lib/auth';
+import '../../../styles/app/staff-detail.css';
+
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+const I = (d: string, w = 16) =>
+  `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ic = {
+  user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  coin: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+  cal: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+  history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+  home: '<path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  brief: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  badge: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/>',
+  build: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
+  phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+  mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+};
+---
+
+<AppLayout
+  title="VGSync | Staff Detail"
+  pageTitle="Staff"
+  breadcrumb="Staff / Detail"
+  activeId="staff"
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Owner"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="sd-page" id="sd-page">
+    <nav class="sd-crumb" aria-label="Breadcrumb">
+      <a href="/dashboard/staff" aria-label="Back to staff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg></a>
+      <a href="/dashboard/staff">Staff</a><span>/</span><strong>Staff Detail</strong>
+    </nav>
+
+    <p class="sd-error" id="sd-error" role="alert" hidden></p>
+
+    <div class="sd-layout">
+      <aside class="sd-side">
+        <section class="sd-card sd-profile">
+          <div class="sd-profile-top">
+            <span class="sd-avatar" id="sd-avatar">?</span>
+            <div>
+              <h2 class="sd-name" id="sd-name">Loading…</h2>
+              <span class="sd-code" id="sd-username">—</span>
+              <span class="sd-pill is-active" id="sd-status">—</span>
+            </div>
+          </div>
+          <ul class="sd-facts">
+            <li><Fragment set:html={I(ic.brief)} /><span id="sd-f-position">—</span></li>
+            <li><Fragment set:html={I(ic.build)} /><span id="sd-f-branch">—</span></li>
+            <li><Fragment set:html={I(ic.phone)} /><span id="sd-f-phone">—</span></li>
+            <li><Fragment set:html={I(ic.mail)} /><span id="sd-f-email">—</span></li>
+          </ul>
+        </section>
+
+        <nav class="sd-nav" aria-label="Staff sections" id="sd-nav">
+          <button type="button" class="is-active" data-tab="overview"><Fragment set:html={I(ic.home)} />Overview</button>
+          <button type="button" data-tab="salary"><Fragment set:html={I(ic.coin)} />Salary Records</button>
+          <button type="button" disabled title="Not available yet"><Fragment set:html={I(ic.cal)} />Attendance<em>Soon</em></button>
+          <button type="button" data-tab="access"><Fragment set:html={I(ic.shield)} />Access &amp; Permissions</button>
+          <button type="button" disabled title="Not available yet"><Fragment set:html={I(ic.folder)} />Documents<em>Soon</em></button>
+          <button type="button" data-tab="activity"><Fragment set:html={I(ic.history)} />Activity Logs</button>
+        </nav>
+      </aside>
+
+      <div class="sd-main">
+        <!-- OVERVIEW -->
+        <section class="sd-panel is-active" data-panel="overview">
+          <div class="sd-card">
+            <div class="sd-card-head">
+              <h3>Staff Overview</h3>
+              <a class="sd-btn" id="sd-edit" href="/dashboard/staff" hidden><Fragment set:html={I(ic.edit, 14)} />Edit Staff</a>
+            </div>
+            <div class="sd-tiles">
+              <div class="sd-tile"><span class="sd-tile-ico"><Fragment set:html={I(ic.cal, 18)} /></span><div><small>Join Date</small><strong id="sd-t-joined">—</strong></div></div>
+              <div class="sd-tile"><span class="sd-tile-ico"><Fragment set:html={I(ic.badge, 18)} /></span><div><small>Role</small><strong id="sd-t-role">—</strong></div></div>
+              <div class="sd-tile"><span class="sd-tile-ico"><Fragment set:html={I(ic.brief, 18)} /></span><div><small>Position</small><strong id="sd-t-position">—</strong></div></div>
+              <div class="sd-tile"><span class="sd-tile-ico"><Fragment set:html={I(ic.build, 18)} /></span><div><small>Branch</small><strong id="sd-t-branch">—</strong></div></div>
+            </div>
+
+            <div class="sd-two">
+              <section class="sd-card">
+                <div class="sd-card-head"><h3>Account Information</h3></div>
+                <dl class="sd-kv">
+                  <div><dt>Full Name</dt><dd id="sd-k-name">—</dd></div>
+                  <div><dt>Username</dt><dd id="sd-k-username">—</dd></div>
+                  <div><dt>Email</dt><dd id="sd-k-email">—</dd></div>
+                  <div><dt>Phone</dt><dd id="sd-k-phone">—</dd></div>
+                  <div><dt>Last Sign-in</dt><dd id="sd-k-login">—</dd></div>
+                  <div><dt>Password</dt><dd id="sd-k-password">—</dd></div>
+                </dl>
+              </section>
+
+              <section class="sd-card">
+                <div class="sd-card-head"><h3>Salary</h3><span class="sd-pill is-earned" id="sd-pay-type" hidden></span></div>
+                <div id="sd-salary-box"><p class="sd-hint">Loading…</p></div>
+              </section>
+            </div>
+
+            <div class="sd-card-head"><h3>Recent Salary Records</h3><button type="button" class="sd-link" data-goto="salary">View All Records →</button></div>
+            <div class="sd-table-wrap">
+              <table class="sd-table">
+                <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Status</th><th class="num">Amount</th></tr></thead>
+                <tbody id="sd-recent"><tr><td colspan="5" class="sd-empty">Loading…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SALARY -->
+        <section class="sd-panel" data-panel="salary">
+          <div class="sd-card">
+            <div class="sd-card-head"><h3>Salary Records</h3><a class="sd-btn" href="/dashboard/payments">Manage in Payments</a></div>
+            <div class="sd-kpis" id="sd-pay-kpis"></div>
+            <div class="sd-table-wrap">
+              <table class="sd-table">
+                <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Method</th><th class="num">Amount</th><th class="num">Owed after</th></tr></thead>
+                <tbody id="sd-statement"><tr><td colspan="6" class="sd-empty">Loading…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ACCESS -->
+        <section class="sd-panel" data-panel="access">
+          <div class="sd-card">
+            <div class="sd-card-head"><h3>Access &amp; Permissions</h3></div>
+            <p class="sd-hint" id="sd-access-note" style="margin-bottom:10px"></p>
+            <div class="sd-table-wrap" id="sd-access-wrap">
+              <table class="sd-table">
+                <thead><tr><th>Module</th><th>View</th><th>Create</th><th>Update</th><th>Delete</th></tr></thead>
+                <tbody id="sd-access"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ACTIVITY -->
+        <section class="sd-panel" data-panel="activity">
+          <div class="sd-card">
+            <div class="sd-card-head"><h3>Activity Logs</h3></div>
+            <div class="sd-table-wrap">
+              <table class="sd-table">
+                <thead><tr><th>When</th><th>By</th><th>Action</th><th>Change</th></tr></thead>
+                <tbody id="sd-activity"><tr><td colspan="4" class="sd-empty">Loading…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  import { getSession, canManageStaff, refreshProfile } from '../../../lib/auth';
+  import { api, ApiError } from '../../../lib/api';
+  import { paintAvatar } from '../../../lib/avatar';
+  import { getStaff, listPositions, MODULES, ROLE_LABEL, type StaffMember, type Position } from '../../../lib/staff';
+  import {
+    getBalance,
+    listSalaries,
+    listStatement,
+    formatNpr,
+    type PayBalance,
+    type SalaryProfile,
+    type StatementRow,
+  } from '../../../lib/payments';
+
+  const session = getSession();
+  if (!session) window.location.replace('/');
+  else if (!canManageStaff(session)) window.location.replace('/dashboard');
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+  const text = (id: string, v: string) => {
+    const el = $(id);
+    if (el) el.textContent = v || '—';
+  };
+  const esc = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const date = (iso: string | null | undefined) =>
+    iso ? new Date(iso).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  const dateTime = (iso: string | null | undefined) =>
+    iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Never';
+
+  const staffId = Number(new URLSearchParams(window.location.search).get('id'));
+
+  // ---------- tabs ----------
+  function showTab(name: string): void {
+    document.querySelectorAll<HTMLElement>('.sd-panel').forEach((p) => p.classList.toggle('is-active', p.dataset.panel === name));
+    document.querySelectorAll<HTMLButtonElement>('#sd-nav button[data-tab]').forEach((b) => b.classList.toggle('is-active', b.dataset.tab === name));
+  }
+  document.querySelectorAll<HTMLButtonElement>('#sd-nav button[data-tab]').forEach((b) =>
+    b.addEventListener('click', () => showTab(b.dataset.tab!)),
+  );
+  document.querySelectorAll<HTMLElement>('[data-goto]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.goto!)));
+
+  function fail(message: string): void {
+    const el = $('sd-error');
+    if (!el) return;
+    el.hidden = false;
+    el.textContent = message;
+  }
+
+  // ---------- profile ----------
+  function renderStaff(m: StaffMember): void {
+    const s = getSession();
+    const branch = s?.activeBranchName ?? '';
+    paintAvatar($('sd-avatar'), String(m.id), m.name);
+    text('sd-name', m.name);
+    text('sd-username', m.username);
+    const status = $('sd-status');
+    if (status) {
+      status.textContent = m.isActive ? (m.mustChangePassword ? 'Password pending' : 'Active') : 'Inactive';
+      status.className = `sd-pill ${m.isActive ? (m.mustChangePassword ? 'is-pending' : 'is-active') : 'is-inactive'}`;
+    }
+    text('sd-f-position', m.positionName || ROLE_LABEL[m.role]);
+    text('sd-f-branch', branch);
+    text('sd-f-phone', m.phone);
+    text('sd-f-email', m.email);
+    text('sd-t-joined', date(m.dateJoined));
+    text('sd-t-role', ROLE_LABEL[m.role] ?? m.role);
+    text('sd-t-position', m.positionName || '—');
+    text('sd-t-branch', branch);
+    text('sd-k-name', m.name);
+    text('sd-k-username', m.username);
+    text('sd-k-email', m.email);
+    text('sd-k-phone', m.phone);
+    text('sd-k-login', dateTime(m.lastLogin));
+    text('sd-k-password', m.mustChangePassword ? 'Must be changed at next sign-in' : 'Set by the user');
+    document.title = `VGSync | ${m.name}`;
+    const edit = $<HTMLAnchorElement>('sd-edit');
+    if (edit && getSession()?.accessMode !== 'read_only') {
+      edit.href = `/dashboard/staff?edit=${m.id}`;
+      edit.hidden = false;
+    }
+  }
+
+  // ---------- salary ----------
+  function renderSalary(profile: SalaryProfile | null, bal: PayBalance | null): void {
+    const box = $('sd-salary-box');
+    const type = $('sd-pay-type');
+    if (!box) return;
+    if (!profile) {
+      box.innerHTML = '<p class="sd-hint">No salary has been set up for this person yet. Set it in Payments.</p>';
+      if (type) type.hidden = true;
+      return;
+    }
+    if (type) {
+      type.hidden = false;
+      type.textContent = profile.payType === 'monthly' ? 'Monthly' : 'Daily wage';
+    }
+    const remaining = bal ? formatNpr(bal.remaining) : '—';
+    if (profile.payType === 'monthly') {
+      box.innerHTML = `<div class="sd-pay">
+        <div class="sd-pay-hero"><strong>${esc(formatNpr(profile.rate + profile.allowances))}</strong><small>Monthly salary</small></div>
+        <dl class="sd-kv">
+          <div><dt>Basic Salary</dt><dd>${esc(formatNpr(profile.rate))}</dd></div>
+          <div><dt>Allowances</dt><dd>${esc(formatNpr(profile.allowances))}</dd></div>
+          <div><dt>Salary day</dt><dd>${profile.salaryDay}</dd></div>
+          <div><dt>Next salary</dt><dd>${esc(date(bal?.nextSalaryDate))}</dd></div>
+        </dl></div>
+        <div class="sd-net"><span>Still to pay</span><span>${esc(remaining)}</span></div>`;
+    } else {
+      box.innerHTML = `<p class="sd-hint" style="margin-bottom:8px">Paid per day worked. Each day's amount is entered as it happens.</p>
+        <div class="sd-net"><span>Still to pay</span><span>${esc(remaining)}</span></div>`;
+    }
+  }
+
+  function rowPill(r: StatementRow): string {
+    if (r.direction === 'paid') return '<span class="sd-pill is-paid">Paid</span>';
+    if (r.direction === 'deducted') return '<span class="sd-pill is-deducted">Deducted</span>';
+    return '<span class="sd-pill is-earned">Earned</span>';
+  }
+  const typeLabel = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+  function renderStatement(rows: StatementRow[], bal: PayBalance | null): void {
+    const sorted = [...rows].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id));
+    const recent = $('sd-recent');
+    if (recent) {
+      recent.innerHTML = sorted.length
+        ? sorted
+            .slice(0, 5)
+            .map(
+              (r) => `<tr><td>${esc(date(r.date))}</td><td>${esc(typeLabel(r.type))}</td><td>${esc(r.description) || '—'}</td><td>${rowPill(r)}</td><td class="num">${esc(formatNpr(r.amount))}</td></tr>`,
+            )
+            .join('')
+        : '<tr><td colspan="5" class="sd-empty">No salary records yet.</td></tr>';
+    }
+    const full = $('sd-statement');
+    if (full) {
+      full.innerHTML = sorted.length
+        ? sorted
+            .map(
+              (r) => `<tr><td>${esc(date(r.date))}</td><td>${esc(typeLabel(r.type))}</td><td>${esc(r.description) || '—'}</td><td>${esc(r.method) || '—'}</td><td class="num">${esc(formatNpr(r.amount))}</td><td class="num">${esc(formatNpr(r.owedAfter))}</td></tr>`,
+            )
+            .join('')
+        : '<tr><td colspan="6" class="sd-empty">No salary records yet.</td></tr>';
+    }
+    const k = $('sd-pay-kpis');
+    if (k) {
+      k.innerHTML = bal
+        ? [
+            ['Total earned', bal.totalEarned],
+            ['Deducted', bal.totalDeducted],
+            ['Paid', bal.totalPaid],
+            ['Still to pay', bal.remaining],
+          ]
+            .map(([l, v]) => `<div class="sd-kpi"><small>${l}</small><strong>${esc(formatNpr(v as number))}</strong></div>`)
+            .join('')
+        : '';
+    }
+  }
+
+  // ---------- access ----------
+  function renderAccess(m: StaffMember, positions: Position[]): void {
+    const note = $('sd-access-note');
+    const body = $('sd-access');
+    const wrap = $('sd-access-wrap');
+    if (!note || !body || !wrap) return;
+    if (m.role !== 'staff') {
+      note.textContent = `${ROLE_LABEL[m.role]} accounts get access from their role, not from a position.`;
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    const position = positions.find((p) => p.id === m.positionId);
+    if (!position) {
+      note.textContent = 'No position is assigned, so this person cannot open any module.';
+      body.innerHTML = '';
+      wrap.hidden = true;
+      return;
+    }
+    note.textContent = `Access comes from the "${position.name}" position.`;
+    const mark = (on: boolean) => (on ? '<span class="sd-perm-on">✓</span>' : '<span class="sd-perm-off">—</span>');
+    body.innerHTML = MODULES.map((mod) => {
+      const p = position.permissions.find((x) => x.module === mod.id);
+      return `<tr><td>${esc(mod.label)}</td><td>${mark(!!p?.canView)}</td><td>${mark(!!p?.canCreate)}</td><td>${mark(!!p?.canUpdate)}</td><td>${mark(!!p?.canDelete)}</td></tr>`;
+    }).join('');
+  }
+
+  // ---------- activity ----------
+  interface AuditRow {
+    id: number;
+    created_at: string;
+    actor_name: string;
+    action: string;
+    summary: string;
+  }
+  async function loadActivity(): Promise<void> {
+    const body = $('sd-activity');
+    if (!body) return;
+    try {
+      const data = await api<{ results: AuditRow[] }>(`/audit/?model=accounts.user&object_id=${staffId}&page_size=50`);
+      body.innerHTML = data.results.length
+        ? data.results
+            .map(
+              (r) => `<tr><td>${esc(dateTime(r.created_at))}</td><td>${esc(r.actor_name) || 'System'}</td><td>${esc(typeLabel(r.action))}</td><td style="white-space:normal">${esc(r.summary)}</td></tr>`,
+            )
+            .join('')
+        : '<tr><td colspan="4" class="sd-empty">No changes recorded for this account.</td></tr>';
+    } catch (error) {
+      body.innerHTML = `<tr><td colspan="4" class="sd-empty">${esc(error instanceof ApiError ? error.message : 'Could not load activity.')}</td></tr>`;
+    }
+  }
+
+  async function load(): Promise<void> {
+    if (!staffId) {
+      fail('No staff member selected.');
+      text('sd-name', 'Not found');
+      return;
+    }
+    let member: StaffMember;
+    try {
+      member = await getStaff(staffId);
+    } catch (error) {
+      text('sd-name', 'Not found');
+      fail(error instanceof ApiError ? error.message : 'Could not load this staff member.');
+      return;
+    }
+    renderStaff(member);
+
+    const [positions, salaries, balance, statement] = await Promise.all([
+      listPositions().catch(() => [] as Position[]),
+      listSalaries().catch(() => [] as SalaryProfile[]),
+      getBalance(staffId).catch(() => null),
+      listStatement(staffId).catch(() => [] as StatementRow[]),
+    ]);
+    renderAccess(member, positions);
+    const profile = salaries.find((p) => p.staffId === staffId) ?? null;
+    const bal = balance?.balance ?? null;
+    renderSalary(profile, bal);
+    renderStatement(statement, bal);
+    void loadActivity();
+  }
+
+  if (session && canManageStaff(session)) {
+    void load();
+    refreshProfile().catch(() => {});
+  }
+</script>
