@@ -3,6 +3,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import { PAGE_META } from '../../lib/page-meta';
 import type { UserRole } from '../../lib/auth';
+import '../../styles/app/purchase-page.css';
 
 const meta = PAGE_META.customers;
 const defaultRole: UserRole = 'owner';
@@ -21,38 +22,64 @@ const navItems = getNavItemsForRole(defaultRole);
   branchName="Branch"
   showBranchSwitcher={true}
 >
-  <div class="cus-page" id="cus-page">
-    <div class="cus-toolbar">
-      <div>
-        <p class="cus-scope" id="cus-scope">Branch customers</p>
-        <h2 class="cus-heading">Customer directory</h2>
+  <div class="cus-page pd-page" id="cus-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div class="pd-hero-icon" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg>
+        </div>
+        <div>
+          <h2 class="pd-hero-title">Customers</h2>
+          <p class="pd-hero-sub">Manage your customer directory, dues and statements.</p>
+          <p class="cus-scope" id="cus-scope">Branch customers</p>
+        </div>
       </div>
-      <button type="button" class="btn-primary-sm" id="cus-add">+ New customer</button>
-    </div>
+      <div class="pd-hero-actions">
+        <button type="button" class="btn-primary-sm" id="cus-add">+ New customer</button>
+        <a class="btn-ghost-sm pd-link-btn" href="/dashboard/sales">Sales</a>
+        <a class="btn-ghost-sm pd-link-btn" href="/dashboard/payments">Payments</a>
+      </div>
+    </header>
 
     <p class="cus-form-error" id="cus-load-error" role="alert" hidden></p>
 
-    <div class="cus-kpis">
-      <article class="cus-kpi">
-        <span class="cus-kpi-label">Total</span>
-        <strong id="kpi-total">—</strong>
+    <div class="pd-kpis cus-kpis">
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-blue" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label">Total Customers</span>
+          <div class="pd-kpi-row"><strong id="kpi-total">—</strong></div>
+          <span class="pd-kpi-sub">In this branch</span>
+        </div>
       </article>
-      <article class="cus-kpi">
-        <span class="cus-kpi-label">Active</span>
-        <strong id="kpi-active">—</strong>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-green" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label">Active</span>
+          <div class="pd-kpi-row"><strong id="kpi-active">—</strong></div>
+          <span class="pd-kpi-sub">Can be billed</span>
+        </div>
       </article>
-      <article class="cus-kpi">
-        <span class="cus-kpi-label">Receivable</span>
-        <strong id="kpi-recv">—</strong>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-purple" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.6 7 6.5 9 9.5 12 10s5 1.6 5 3.5-2.2 3-5 3-5-1.1-5-3"></path></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label">Receivable</span>
+          <div class="pd-kpi-row"><strong id="kpi-recv">—</strong></div>
+          <span class="pd-kpi-sub">Owed to you</span>
+        </div>
       </article>
-      <article class="cus-kpi is-danger">
-        <span class="cus-kpi-label">With dues</span>
-        <strong id="kpi-dues">—</strong>
+      <article class="pd-kpi is-danger">
+        <span class="pd-kpi-icon is-red" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label">With dues</span>
+          <div class="pd-kpi-row"><strong id="kpi-dues">—</strong></div>
+          <span class="pd-kpi-sub">Customers owing money</span>
+        </div>
       </article>
     </div>
 
     <div class="cus-layout">
-      <section class="cus-list-panel">
+      <section class="cus-list-panel pd-card">
         <div class="cus-filters">
           <div class="cus-search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -94,7 +121,7 @@ const navItems = getNavItemsForRole(defaultRole);
         <p class="cus-footnote" id="cus-count"></p>
       </section>
 
-      <aside class="cus-detail" id="cus-detail">
+      <aside class="cus-detail pd-card" id="cus-detail">
         <div class="cus-detail-empty" id="cus-detail-empty">
           <p>Select a customer to view details</p>
           <p class="muted">Used in Sales, receipts and ledgers</p>
@@ -819,4 +846,13 @@ const navItems = getNavItemsForRole(defaultRole);
   .cus-stmt-table th, .cus-stmt-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
   .cus-stmt-table th { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
   .cus-stmt-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .cus-detail-empty[hidden], .cus-detail-body[hidden] { display: none; }
+  .pd-kpi-icon.is-red { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+  .cus-page .cus-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .cus-page .pd-kpi.is-danger strong { color: #ef334e; }
+  .cus-page .cus-scope { margin: 2px 0 0; }
+  .cus-page .cus-table th { background: var(--surface); }
+  .cus-page .cus-table-wrap { border: 1px solid var(--border); border-radius: 10px; }
+  .cus-page .cus-table tr:last-child td { border-bottom: none; }
+  @media (max-width: 900px) { .cus-page .cus-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
