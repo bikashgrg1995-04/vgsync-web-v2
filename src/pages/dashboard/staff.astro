@@ -2,6 +2,7 @@
 import AppLayout from '../../layouts/AppLayout.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import type { UserRole } from '../../lib/auth';
+import '../../styles/app/purchase-page.css';
 
 const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
@@ -20,56 +21,112 @@ const navItems = getNavItemsForRole(defaultRole);
   showBranchSwitcher={true}
 >
   <div class="st-page">
-    <div class="st-toolbar">
-      <div>
-        <p class="st-scope" id="st-scope">Team</p>
-        <h2 class="st-heading">Team and positions</h2>
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div class="pd-hero-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></div>
+        <div>
+          <h2 class="pd-hero-title">Staff Management</h2>
+          <p class="pd-hero-sub">Manage your team, positions, salary and access.</p>
+          <p class="st-scope" id="st-scope">Team</p>
+        </div>
       </div>
-      <div class="st-tabs" role="tablist" aria-label="Staff sections">
-        <button type="button" role="tab" id="tab-team" aria-selected="true" aria-controls="panel-team">Team</button>
-        <button type="button" role="tab" id="tab-positions" aria-selected="false" aria-controls="panel-positions">Positions</button>
+      <div class="pd-hero-actions">
+        <div class="st-tabs" role="tablist" aria-label="Staff sections">
+          <button type="button" role="tab" id="tab-team" aria-selected="true" aria-controls="panel-team">Team</button>
+          <button type="button" role="tab" id="tab-positions" aria-selected="false" aria-controls="panel-positions">Positions</button>
+        </div>
+        <button type="button" class="btn-primary-sm" id="member-add">+ Add Staff</button>
       </div>
+    </header>
+
+    <div class="pd-kpis st-kpis" id="st-kpis">
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label">Total Staff</span>
+          <div class="pd-kpi-row"><strong id="kpi-total">—</strong></div>
+          <span class="pd-kpi-sub">Team members</span>
+        </div>
+      </article>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label">Active Staff</span>
+          <div class="pd-kpi-row"><strong id="kpi-active">—</strong></div>
+          <span class="pd-kpi-sub">Can sign in</span>
+        </div>
+      </article>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-red"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M10 15V9"></path><path d="M14 15V9"></path></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label">Inactive Staff</span>
+          <div class="pd-kpi-row"><strong id="kpi-inactive">—</strong></div>
+          <span class="pd-kpi-sub">Deactivated accounts</span>
+        </div>
+      </article>
     </div>
 
     <p class="st-banner" id="st-banner" role="alert" hidden></p>
 
     <!-- TEAM -->
-    <section class="st-panel" id="panel-team" role="tabpanel" aria-labelledby="tab-team">
-      <div class="st-panel-head">
-        <div class="st-filters">
-          <input type="search" id="st-search" placeholder="Search name, username, phone…" autocomplete="off" aria-label="Search team" />
-          <select id="st-role-filter" aria-label="Filter by role">
-            <option value="">All roles</option>
-            <option value="admin">Admin</option>
-            <option value="accountant">Accountant</option>
-            <option value="staff">Staff</option>
-          </select>
-          <select id="st-status-filter" aria-label="Filter by status">
-            <option value="">All status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
+    <section class="st-panel pd-card" id="panel-team" role="tabpanel" aria-labelledby="tab-team">
+      <div class="st-dir-head">
+        <h3 class="st-dir-title">Staff Directory <span class="st-pill" id="st-pill">0 members</span></h3>
+        <div class="st-view" role="group" aria-label="View">
+          <button type="button" class="st-view-btn" data-view="grid" aria-label="Card view" aria-pressed="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </button>
+          <button type="button" class="st-view-btn is-active" data-view="list" aria-label="List view" aria-pressed="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+          </button>
         </div>
-        <button type="button" class="btn-primary-sm" id="member-add">+ Add team member</button>
       </div>
 
-      <div class="st-table-wrap">
-        <table class="st-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Username</th>
-              <th>Role</th>
-              <th>Position</th>
-              <th>Status</th>
-              <th>Last sign-in</th>
-              <th><span class="visually-hidden">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody id="member-tbody"><tr><td colspan="7">Loading…</td></tr></tbody>
-        </table>
+      <div class="st-filters">
+        <div class="st-search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="search" id="st-search" placeholder="Search by name, username or contact…" autocomplete="off" aria-label="Search team" />
+        </div>
+        <select id="st-status-filter" aria-label="Filter by status">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <select id="st-position-filter" aria-label="Filter by position">
+          <option value="">All Positions</option>
+        </select>
+        <select id="st-role-filter" aria-label="Filter by role">
+          <option value="">All Roles</option>
+          <option value="admin">Admin</option>
+          <option value="accountant">Accountant</option>
+          <option value="staff">Staff</option>
+        </select>
       </div>
-      <p class="st-footnote" id="member-count"></p>
+
+      <div id="st-directory">
+        <div class="st-table-wrap" id="st-list-view">
+          <table class="st-table">
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th>Position</th>
+                <th>Role</th>
+                <th>Contact</th>
+                <th>Join Date</th>
+                <th>Status</th>
+                <th class="st-th-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="member-tbody"><tr><td colspan="7">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="st-grid" id="st-grid-view" hidden></div>
+      </div>
+
+      <div class="st-foot">
+        <p class="st-footnote" id="member-count"></p>
+        <div class="st-pages" id="st-pages"></div>
+      </div>
     </section>
 
     <!-- POSITIONS -->
@@ -176,6 +233,7 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
+  import { paintAvatar } from '../../lib/avatar';
   import { getSession, canManageStaff, canEditPositions, refreshProfile } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
   import {
@@ -249,10 +307,6 @@ const navItems = getNavItemsForRole(defaultRole);
     el.textContent = message ?? '';
   }
 
-  function fmtDate(iso: string | null): string {
-    return iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Never';
-  }
-
   // ---------- tabs ----------
 
   function selectTab(name: 'team' | 'positions'): void {
@@ -271,8 +325,10 @@ const navItems = getNavItemsForRole(defaultRole);
     const q = val('st-search').toLowerCase();
     const role = $<HTMLSelectElement>('st-role-filter')?.value ?? '';
     const status = $<HTMLSelectElement>('st-status-filter')?.value ?? '';
+    const pos = $<HTMLSelectElement>('st-position-filter')?.value ?? '';
     return members.filter((m) => {
       if (role && m.role !== role) return false;
+      if (pos && String(m.positionId ?? '') !== pos) return false;
       if (status === 'active' && !m.isActive) return false;
       if (status === 'inactive' && m.isActive) return false;
       if (!q) return true;
@@ -287,44 +343,159 @@ const navItems = getNavItemsForRole(defaultRole);
 
   function statusOf(m: StaffMember): { label: string; cls: string } {
     if (!m.isActive) return { label: 'Inactive', cls: 'inactive' };
-    if (m.mustChangePassword) return { label: 'Must change password', cls: 'pending' };
+    if (m.mustChangePassword) return { label: 'Password pending', cls: 'pending' };
     return { label: 'Active', cls: 'active' };
+  }
+
+  const PAGE_SIZE = 8;
+  let page = 1;
+  let view: 'list' | 'grid' = 'list';
+  try {
+    if (localStorage.getItem('vgsync-staff-view') === 'grid') view = 'grid';
+  } catch { /* ignore */ }
+
+  const I = (d: string) =>
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const ICON_EYE = I('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>');
+  const ICON_EDIT = I('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>');
+  const ICON_MORE = I('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>');
+  const ICON_PHONE = I('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>');
+  const ICON_MAIL = I('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>');
+
+  function fmtJoin(iso: string): string {
+    return iso ? new Date(iso).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  }
+
+  function contactHtml(m: StaffMember): string {
+    const phone = m.phone ? `<span>${ICON_PHONE}${esc(m.phone)}</span>` : '';
+    const mail = m.email ? `<span>${ICON_MAIL}${esc(m.email)}</span>` : '';
+    return phone || mail ? `<div class="st-contact">${phone}${mail}</div>` : '<span class="st-sub">—</span>';
+  }
+
+  function actionsHtml(m: StaffMember): string {
+    const more = canWrite
+      ? `<div class="st-more">
+          <button type="button" class="st-icon-btn" data-act="more" data-id="${m.id}" aria-label="More actions" aria-haspopup="menu">${ICON_MORE}</button>
+          <div class="st-menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-act="reset" data-id="${m.id}">Reset password</button>
+            <button type="button" role="menuitem" class="${m.isActive ? 'is-danger' : ''}" data-act="${m.isActive ? 'deactivate' : 'reactivate'}" data-id="${m.id}">${m.isActive ? 'Deactivate' : 'Reactivate'}</button>
+          </div>
+        </div>`
+      : '';
+    const edit = canWrite
+      ? `<button type="button" class="st-icon-btn is-edit" data-act="edit" data-id="${m.id}" aria-label="Edit ${esc(m.name)}" title="Edit">${ICON_EDIT}</button>`
+      : '';
+    return `<div class="st-actions"><a class="st-icon-btn" href="/dashboard/staff/detail?id=${m.id}" aria-label="View ${esc(m.name)}" title="View">${ICON_EYE}</a>${edit}${more}</div>`;
+  }
+
+  function avatarHtml(m: StaffMember, cls = ''): string {
+    return `<span class="st-avatar ${cls}" data-avatar="${m.id}" data-name="${esc(m.name)}"></span>`;
+  }
+
+  function paintAvatars(root: ParentNode): void {
+    root.querySelectorAll<HTMLElement>('[data-avatar]').forEach((el) =>
+      paintAvatar(el, el.dataset.avatar ?? '', el.dataset.name ?? ''),
+    );
+  }
+
+  function renderKpis(): void {
+    const active = members.filter((m) => m.isActive).length;
+    $('kpi-total')!.textContent = String(members.length);
+    $('kpi-active')!.textContent = String(active);
+    $('kpi-inactive')!.textContent = String(members.length - active);
+  }
+
+  function renderPager(totalPages: number): void {
+    const el = $('st-pages');
+    if (!el) return;
+    if (totalPages <= 1) {
+      el.innerHTML = '';
+      return;
+    }
+    const nums: Array<number | '…'> = [];
+    for (let n = 1; n <= totalPages; n++) {
+      if (n === 1 || n === totalPages || Math.abs(n - page) <= 1) nums.push(n);
+      else if (nums[nums.length - 1] !== '…') nums.push('…');
+    }
+    el.innerHTML =
+      `<button type="button" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''} aria-label="Previous page">‹</button>` +
+      nums
+        .map((n) =>
+          n === '…'
+            ? '<span>…</span>'
+            : `<button type="button" data-page="${n}" class="${n === page ? 'is-active' : ''}">${n}</button>`,
+        )
+        .join('') +
+      `<button type="button" data-page="${page + 1}" ${page === totalPages ? 'disabled' : ''} aria-label="Next page">›</button>`;
   }
 
   function renderMembers(): void {
     const tbody = $('member-tbody');
+    const grid = $('st-grid-view');
     const count = $('member-count');
-    if (!tbody) return;
-    const rows = filteredMembers();
+    if (!tbody || !grid) return;
+    renderKpis();
+    const all = filteredMembers();
+    const pill = $('st-pill');
+    if (pill) pill.textContent = `${members.length} member${members.length === 1 ? '' : 's'}`;
 
-    if (rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="st-empty">${members.length ? 'No one matches.' : 'No team members yet.'}</td></tr>`;
+    $('st-list-view')!.hidden = view !== 'list';
+    grid.hidden = view !== 'grid';
+    document.querySelectorAll<HTMLButtonElement>('.st-view-btn').forEach((b) => {
+      const on = b.dataset.view === view;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+
+    const totalPages = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+    if (page > totalPages) page = totalPages;
+    const rows = all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    if (all.length === 0) {
+      const msg = members.length ? 'No one matches.' : 'No team members yet.';
+      tbody.innerHTML = `<tr><td colspan="7" class="st-empty">${msg}</td></tr>`;
+      grid.innerHTML = `<p class="st-empty">${msg}</p>`;
       if (count) count.textContent = '';
+      renderPager(1);
       return;
     }
 
     tbody.innerHTML = rows
       .map((m) => {
         const st = statusOf(m);
-        const actions = canWrite
-          ? `<div class="st-actions">
-              <button type="button" class="btn-ghost-sm" data-act="edit" data-id="${m.id}">Edit</button>
-              <button type="button" class="btn-ghost-sm" data-act="reset" data-id="${m.id}">Reset password</button>
-              <button type="button" class="btn-ghost-sm ${m.isActive ? 'is-danger' : ''}" data-act="${m.isActive ? 'deactivate' : 'reactivate'}" data-id="${m.id}">${m.isActive ? 'Deactivate' : 'Reactivate'}</button>
-            </div>`
-          : '';
         return `<tr>
-          <td><strong>${esc(m.name)}</strong>${m.email ? `<br /><span class="st-sub">${esc(m.email)}</span>` : ''}</td>
-          <td class="mono">${esc(m.username)}</td>
-          <td>${esc(ROLE_LABEL[m.role] ?? m.role)}</td>
+          <td><a class="st-person" href="/dashboard/staff/detail?id=${m.id}">${avatarHtml(m)}<span><strong>${esc(m.name)}</strong><span class="st-sub">${esc(m.username)}</span></span></a></td>
           <td>${esc(m.positionName) || '—'}</td>
+          <td>${esc(ROLE_LABEL[m.role] ?? m.role)}</td>
+          <td>${contactHtml(m)}</td>
+          <td>${esc(fmtJoin(m.dateJoined))}</td>
           <td><span class="st-badge st-badge-${st.cls}">${st.label}</span></td>
-          <td>${esc(fmtDate(m.lastLogin))}</td>
-          <td>${actions}</td>
+          <td>${actionsHtml(m)}</td>
         </tr>`;
       })
       .join('');
-    if (count) count.textContent = `${rows.length} of ${members.length} team member${members.length === 1 ? '' : 's'}`;
+
+    grid.innerHTML = rows
+      .map((m) => {
+        const st = statusOf(m);
+        return `<article class="st-card">
+          <div class="st-card-top">${avatarHtml(m, 'is-lg')}<span class="st-badge st-badge-${st.cls}">${st.label}</span></div>
+          <a class="st-card-name" href="/dashboard/staff/detail?id=${m.id}">${esc(m.name)}</a>
+          <span class="st-sub">${esc(m.username)} · ${esc(ROLE_LABEL[m.role] ?? m.role)}</span>
+          <span class="st-card-pos">${esc(m.positionName) || '—'}</span>
+          ${contactHtml(m)}
+          <div class="st-card-foot"><span class="st-sub">Joined ${esc(fmtJoin(m.dateJoined))}</span>${actionsHtml(m)}</div>
+        </article>`;
+      })
+      .join('');
+
+    paintAvatars(tbody);
+    paintAvatars(grid);
+    if (count) {
+      const from = (page - 1) * PAGE_SIZE + 1;
+      count.textContent = `Showing ${from}–${from + rows.length - 1} of ${all.length} staff`;
+    }
+    renderPager(totalPages);
   }
 
   // ---------- positions table ----------
@@ -410,8 +581,29 @@ const navItems = getNavItemsForRole(defaultRole);
       positions = [];
       banner(describe(error));
     }
+    fillPositionFilter();
     renderMembers();
     renderPositions();
+    openEditFromUrl();
+  }
+
+  function fillPositionFilter(): void {
+    const select = $<HTMLSelectElement>('st-position-filter');
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML =
+      '<option value="">All Positions</option>' +
+      positions.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    select.value = current;
+  }
+
+  let editHandled = false;
+  function openEditFromUrl(): void {
+    if (editHandled) return;
+    editHandled = true;
+    const id = Number(new URLSearchParams(window.location.search).get('edit'));
+    const target = id ? members.find((m) => m.id === id) : null;
+    if (target && canWrite) openMember(target);
   }
 
   // ---------- member dialog ----------
@@ -540,9 +732,24 @@ const navItems = getNavItemsForRole(defaultRole);
 
   // ---------- team row actions ----------
 
-  $('member-tbody')?.addEventListener('click', async (event) => {
+  function closeMenus(): void {
+    document.querySelectorAll<HTMLElement>('.st-menu').forEach((m) => (m.hidden = true));
+  }
+  document.addEventListener('click', (e) => {
+    if (!(e.target as HTMLElement).closest('.st-more')) closeMenus();
+  });
+
+  $('st-directory')?.addEventListener('click', async (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-act]');
     if (!button) return;
+    if (button.dataset.act === 'more') {
+      const menu = button.parentElement?.querySelector<HTMLElement>('.st-menu');
+      const wasHidden = menu?.hidden ?? true;
+      closeMenus();
+      if (menu) menu.hidden = !wasHidden;
+      return;
+    }
+    closeMenus();
     const member = members.find((m) => m.id === Number(button.dataset.id));
     if (!member) return;
 
@@ -570,8 +777,29 @@ const navItems = getNavItemsForRole(defaultRole);
     }
   });
 
-  ['st-search'].forEach((id) => $(id)?.addEventListener('input', renderMembers));
-  ['st-role-filter', 'st-status-filter'].forEach((id) => $(id)?.addEventListener('change', renderMembers));
+  const refilter = (): void => {
+    page = 1;
+    renderMembers();
+  };
+  $('st-search')?.addEventListener('input', refilter);
+  ['st-role-filter', 'st-status-filter', 'st-position-filter'].forEach((id) =>
+    $(id)?.addEventListener('change', refilter),
+  );
+  $('st-pages')?.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-page]');
+    if (!b || b.disabled) return;
+    page = Number(b.dataset.page) || 1;
+    renderMembers();
+  });
+  document.querySelectorAll<HTMLButtonElement>('.st-view-btn').forEach((b) =>
+    b.addEventListener('click', () => {
+      view = b.dataset.view === 'grid' ? 'grid' : 'list';
+      try {
+        localStorage.setItem('vgsync-staff-view', view);
+      } catch { /* ignore */ }
+      renderMembers();
+    }),
+  );
 
   // ---------- position dialog ----------
 
@@ -797,4 +1025,60 @@ const navItems = getNavItemsForRole(defaultRole);
     .st-form-grid { grid-template-columns: 1fr; }
     .st-field.span2 { grid-column: auto; }
   }
+  /* ---------- Staff Management (mockup layout) ---------- */
+  .st-page .st-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pd-kpi-icon.is-red { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+  .st-page .pd-hero-actions { align-items: center; }
+  .st-page .st-scope { margin: 2px 0 0; }
+  .st-page .st-panel.pd-card { padding: var(--card-pad, 14px); }
+  .st-dir-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .st-dir-title { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 700; }
+  .st-pill { padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 0.72rem; font-weight: 650; }
+  .st-view { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  .st-view-btn { display: grid; place-items: center; width: 32px; height: 28px; border: none; border-radius: 8px; background: transparent; color: var(--text-muted); cursor: pointer; }
+  .st-view-btn.is-active { background: var(--accent); color: #fff; }
+  .st-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .st-filters .st-search { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 0; height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-muted); }
+  .st-filters .st-search input { flex: 1; min-width: 0; border: none; outline: none; background: transparent; color: var(--text-primary); font-family: inherit; font-size: 0.84rem; padding: 0; height: auto; }
+  .st-filters select { height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.82rem; }
+  .st-table-wrap { border: 1px solid var(--border); border-radius: 12px; }
+  .st-table th { background: var(--surface); }
+  .st-th-actions { text-align: center; }
+  .st-person { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+  .st-person strong { display: block; font-size: 0.86rem; }
+  .st-person:hover strong { color: var(--accent); }
+  .st-sub { display: block; font-size: 0.72rem; color: var(--text-muted); }
+  .st-avatar { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 0.72rem; font-weight: 700; background-size: cover; background-position: center; }
+  .st-avatar.has-photo { color: transparent; }
+  .st-avatar.is-lg { width: 52px; height: 52px; font-size: 0.9rem; }
+  .st-contact { display: flex; flex-direction: column; gap: 2px; font-size: 0.76rem; color: var(--text-secondary); }
+  .st-contact span { display: flex; align-items: center; gap: 6px; }
+  .st-contact svg { color: var(--text-muted); flex-shrink: 0; }
+  .st-actions { display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .st-icon-btn { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-secondary); cursor: pointer; text-decoration: none; }
+  .st-icon-btn:hover { background: var(--surface-hover); color: var(--accent); border-color: var(--accent); }
+  .st-icon-btn.is-edit { color: var(--accent); }
+  .st-more { position: relative; }
+  .st-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; min-width: 158px; padding: 5px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel-bg); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25); }
+  .st-menu[hidden] { display: none; }
+  .st-menu button { display: block; width: 100%; padding: 8px 10px; border: none; border-radius: 7px; background: transparent; color: var(--text-primary); font-family: inherit; font-size: 0.8rem; text-align: left; cursor: pointer; }
+  .st-menu button:hover { background: var(--surface-hover); }
+  .st-menu button.is-danger { color: #ef334e; }
+  .st-badge-pending { background: rgba(245, 158, 11, 0.14); color: #d97706; }
+  .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--gap, 12px); }
+  .st-grid[hidden] { display: none; }
+  .st-card { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  .st-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .st-card-name { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); text-decoration: none; }
+  .st-card-name:hover { color: var(--accent); }
+  .st-card-pos { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); }
+  .st-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .st-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .st-foot .st-footnote { margin: 0; }
+  .st-pages { display: flex; align-items: center; gap: 4px; color: var(--text-muted); }
+  .st-pages button { min-width: 30px; height: 30px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 0.8rem; cursor: pointer; }
+  .st-pages button.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .st-pages button:disabled { opacity: 0.4; cursor: default; }
+  @media (max-width: 640px) { .st-page .st-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .st-page .pd-kpi-sub { display: none; } }
+  .st-page .st-table td { vertical-align: middle; }
 </style>
