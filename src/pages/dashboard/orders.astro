@@ -3,6 +3,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
 import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
 import { PAGE_META } from '../../lib/page-meta';
 import type { UserRole } from '../../lib/auth';
+import '../../styles/app/purchase-page.css';
 
 const meta = PAGE_META.orders;
 const defaultRole: UserRole = 'owner';
@@ -22,30 +23,65 @@ const navItems = getNavItemsForRole(defaultRole);
   showBranchSwitcher={true}
 >
   <div class="or-page">
-    <div class="or-toolbar">
-      <div>
-        <p class="or-scope" id="or-scope">Orders</p>
-        <h2 class="or-heading" id="or-heading">Stock orders</h2>
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div class="pd-hero-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg></div>
+        <div>
+          <h2 class="pd-hero-title" id="or-heading">Orders</h2>
+          <p class="pd-hero-sub">Manage stock orders between branches and Head Office.</p>
+          <p class="or-scope" id="or-scope">Orders</p>
+        </div>
       </div>
-      <div class="or-toolbar-right">
+      <div class="pd-hero-actions">
         <button type="button" class="btn-ghost-sm" id="or-refresh">Refresh</button>
-        <button type="button" class="btn-primary-sm" id="or-new" hidden>+ New order</button>
+        <button type="button" class="btn-primary-sm" id="or-new" hidden>+ New Order</button>
       </div>
-    </div>
+    </header>
 
     <p class="or-notice" id="or-notice" hidden></p>
 
-    <div class="or-kpis">
-      <article class="or-kpi"><span>Orders</span><strong id="kpi-total">—</strong></article>
-      <article class="or-kpi"><span id="kpi-a-label">Open</span><strong id="kpi-a">—</strong></article>
-      <article class="or-kpi"><span id="kpi-b-label">In transit</span><strong id="kpi-b">—</strong></article>
-      <article class="or-kpi is-warn"><span>Damaged to return</span><strong id="kpi-dmg">—</strong></article>
+    <div class="pd-kpis or-kpis">
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label">Total Orders</span>
+          <div class="pd-kpi-row"><strong id="kpi-total">—</strong></div>
+          <span class="pd-kpi-sub">All stock orders</span>
+        </div>
+      </article>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-orange"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label" id="kpi-a-label">Open</span>
+          <div class="pd-kpi-row"><strong id="kpi-a">—</strong></div>
+          <span class="pd-kpi-sub">Not finished yet</span>
+        </div>
+      </article>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-purple"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label" id="kpi-b-label">In transit</span>
+          <div class="pd-kpi-row"><strong id="kpi-b">—</strong></div>
+          <span class="pd-kpi-sub">On the way</span>
+        </div>
+      </article>
+      <article class="pd-kpi is-danger">
+        <span class="pd-kpi-icon is-red"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+        <div class="pd-kpi-body">
+          <span class="pd-kpi-label">Damaged to return</span>
+          <div class="pd-kpi-row"><strong id="kpi-dmg">—</strong></div>
+          <span class="pd-kpi-sub">Waiting to go back</span>
+        </div>
+      </article>
     </div>
 
     <div class="or-layout">
       <div class="or-card">
         <div class="or-filters">
-          <input type="search" id="f-search" placeholder="Search reference or product…" autocomplete="off" />
+          <div class="or-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="f-search" placeholder="Search reference or product…" autocomplete="off" />
+          </div>
           <select id="f-status" aria-label="Status">
             <option value="">All status</option>
             <option value="ordered">Ordered</option>
@@ -55,22 +91,28 @@ const navItems = getNavItemsForRole(defaultRole);
             <option value="received">Delivered</option>
             <option value="cancelled">Cancelled</option>
           </select>
+          <select id="f-range" aria-label="Date range">
+            <option value="">All time</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
         </div>
         <div class="or-table-wrap">
           <table class="or-table">
             <thead>
               <tr>
                 <th>Order</th><th id="th-who">Branch</th><th>Date</th><th>Status</th>
-                <th class="num">Ordered</th><th class="num">Sent</th><th class="num">Good</th><th class="num">Damaged</th>
+                <th class="num">Ordered</th><th class="num">Sent</th><th class="num">Good</th><th class="num">Damaged</th><th class="or-th-act">Actions</th>
               </tr>
             </thead>
-            <tbody id="or-tbody"><tr><td colspan="8" class="or-empty">Loading…</td></tr></tbody>
+            <tbody id="or-tbody"><tr><td colspan="9" class="or-empty">Loading…</td></tr></tbody>
           </table>
         </div>
-        <p class="or-foot" id="or-count"></p>
+        <div class="or-footrow"><p class="or-foot" id="or-count"></p><div class="or-pages" id="or-pages"></div></div>
       </div>
 
-      <aside class="or-card" id="or-detail">
+      <aside class="or-card or-detail-card" id="or-detail">
         <p class="or-empty-detail">Select an order to see its items and history.</p>
       </aside>
     </div>
@@ -152,6 +194,7 @@ const navItems = getNavItemsForRole(defaultRole);
   let isBranch = false;
   let isHeadOffice = false;
   let canWrite = true;
+  let detailTab: 'overview' | 'items' | 'activity' = 'overview';
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
   const val = (id: string) => $<HTMLInputElement>(id)?.value ?? '';
@@ -227,30 +270,71 @@ const navItems = getNavItemsForRole(defaultRole);
     $('kpi-dmg')!.textContent = formatQty(orders.reduce((s, o) => s + o.damagedToReturn, 0));
   }
 
+  const PAGE_SIZE = 8;
+  let page = 1;
+
+  function inRange(o: OrderSummary): boolean {
+    const days = Number(val('f-range')) || 0;
+    if (!days) return true;
+    return Date.now() - new Date(o.createdAt).getTime() <= days * 86_400_000;
+  }
+
+  const initials = (name: string) => {
+    const p = name.trim().split(/\s+/).filter(Boolean);
+    return ((p[0]?.[0] ?? '?') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
+  };
+
+  const EYE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+
+  function renderPager(totalPages: number): void {
+    const el = $('or-pages');
+    if (!el) return;
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+    const nums: Array<number | '…'> = [];
+    for (let n = 1; n <= totalPages; n++) {
+      if (n === 1 || n === totalPages || Math.abs(n - page) <= 1) nums.push(n);
+      else if (nums[nums.length - 1] !== '…') nums.push('…');
+    }
+    el.innerHTML =
+      `<button type="button" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''} aria-label="Previous page">‹</button>` +
+      nums.map((n) => (n === '…' ? '<span>…</span>' : `<button type="button" data-page="${n}" class="${n === page ? 'is-active' : ''}">${n}</button>`)).join('') +
+      `<button type="button" data-page="${page + 1}" ${page === totalPages ? 'disabled' : ''} aria-label="Next page">›</button>`;
+  }
+
   function renderList(): void {
     const tbody = $('or-tbody')!;
     $('th-who')!.textContent = isHeadOffice ? 'Branch' : 'Head Office';
-    if (orders.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="8" class="or-empty">${
-        isBranch ? 'No orders yet. Place one with “New order”.' : isHeadOffice ? 'No orders from your branches.' : 'No orders.'
+    const all = orders.filter(inRange);
+    const totalPages = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+    if (page > totalPages) page = totalPages;
+    const rows = all.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    if (all.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="or-empty">${
+        orders.length ? 'No orders in this period.' : isBranch ? 'No orders yet. Place one with “New Order”.' : isHeadOffice ? 'No orders from your branches.' : 'No orders.'
       }</td></tr>`;
     } else {
-      tbody.innerHTML = orders
-        .map(
-          (o) => `<tr class="or-row ${selected?.id === o.id ? 'is-selected' : ''}" data-id="${o.id}">
+      tbody.innerHTML = rows
+        .map((o) => {
+          const who = isHeadOffice ? o.branchName : o.headOfficeName;
+          return `<tr class="or-row ${selected?.id === o.id ? 'is-selected' : ''}" data-id="${o.id}">
             <td class="mono">${esc(o.reference)}</td>
-            <td>${esc(isHeadOffice ? o.branchName : o.headOfficeName)}</td>
+            <td><span class="or-who"><span class="or-ava">${esc(initials(who))}</span>${esc(who)}</span></td>
             <td>${esc(o.createdAt.slice(0, 10))}</td>
             <td>${badge(o.status)}</td>
             <td class="num">${formatQty(o.ordered)}</td>
             <td class="num">${formatQty(o.dispatched)}</td>
             <td class="num">${formatQty(o.receivedGood)}</td>
             <td class="num ${o.receivedDamaged > 0 ? 'warn' : ''}">${formatQty(o.receivedDamaged)}</td>
-          </tr>`,
-        )
+            <td class="or-act"><button type="button" class="or-eye" aria-label="View ${esc(o.reference)}" title="View">${EYE}</button></td>
+          </tr>`;
+        })
         .join('');
     }
-    $('or-count')!.textContent = `${orders.length} order${orders.length === 1 ? '' : 's'}`;
+    const from = (page - 1) * PAGE_SIZE + 1;
+    $('or-count')!.textContent = all.length
+      ? `Showing ${from}–${from + rows.length - 1} of ${all.length} order${all.length === 1 ? '' : 's'}`
+      : '';
+    renderPager(totalPages);
     tbody.querySelectorAll<HTMLTableRowElement>('.or-row').forEach((row) =>
       row.addEventListener('click', () => void openDetail(Number(row.dataset.id))),
     );
@@ -283,6 +367,7 @@ const navItems = getNavItemsForRole(defaultRole);
       notice(describe(error), true);
       return;
     }
+    detailTab = 'overview';
     renderList();
     renderDetail();
   }
@@ -329,14 +414,8 @@ const navItems = getNavItemsForRole(defaultRole);
     if (canWrite && isBranch && canReturn) acts.push(`<button class="btn-ghost-sm" data-act="return">Return damaged</button>`);
     if (canWrite && o.status === 'ordered') acts.push(`<button class="btn-ghost-sm is-danger" data-act="cancel">${isHeadOffice ? 'Reject order' : 'Cancel order'}</button>`);
 
-    el.innerHTML = `
-      <p class="mono muted">${esc(o.reference)}</p>
-      <h3>${esc(isHeadOffice ? o.branchName : o.headOfficeName)}</h3>
-      <p>${badge(o.status)} <span class="muted small">ordered ${esc(o.createdAt.slice(0, 10))} by ${esc(o.createdByName || '—')}</span></p>
-      ${o.notes ? `<p class="small notes">${esc(o.notes)}</p>` : ''}
-      <div class="or-detail-actions">${acts.join('')}</div>
-
-      <div class="or-table-wrap">
+    const who = isHeadOffice ? o.branchName : o.headOfficeName;
+    const itemsTable = `<div class="or-table-wrap">
       <table class="or-table or-mini">
         <thead><tr><th>Item</th><th class="num">Ordered</th><th class="num">Sent</th><th class="num">Good</th><th class="num">Damaged</th><th class="num">On the way</th></tr></thead>
         <tbody>${o.items.map((i) => `<tr>
@@ -347,18 +426,50 @@ const navItems = getNavItemsForRole(defaultRole);
           <td class="num ${i.receivedDamaged > 0 ? 'warn' : ''}">${formatQty(i.receivedDamaged)}${i.returned > 0 ? `<br /><span class="muted">${formatQty(i.returned)} sent back</span>` : ''}</td>
           <td class="num">${formatQty(i.toReceive)}</td>
         </tr>`).join('')}</tbody>
-      </table></div>
-
-      <h4>History</h4>
-      ${o.dispatches.length + o.receipts.length + o.returns.length === 0 ? `<p class="muted small">Nothing has moved yet.</p>` : `
+      </table></div>`;
+    const history = o.dispatches.length + o.receipts.length + o.returns.length === 0 ? `<p class="muted small">Nothing has moved yet.</p>` : `
       <ul class="or-history">
         ${o.dispatches.map((d) => `<li><p><strong>Dispatched by Head Office</strong> <span class="muted">${esc(when(d.at))} · ${esc(d.by)}</span></p>
           <p>${d.items.map((i) => `${esc(i.productName)} ×${formatQty(i.quantity)}`).join(', ')}</p>${d.notes ? `<p class="muted">${esc(d.notes)}</p>` : ''}</li>`).join('')}
         ${o.receipts.map((r) => `<li><p><strong>Received by branch</strong> <span class="muted">${esc(when(r.at))} · ${esc(r.by)}</span></p>
           <p>${r.items.map((i) => `${esc(i.productName)}: ${formatQty(i.goodQuantity)} good${i.damagedQuantity > 0 ? `, <span class="warn">${formatQty(i.damagedQuantity)} damaged</span>` : ''}`).join('; ')}</p>${r.notes ? `<p class="muted">${esc(r.notes)}</p>` : ''}</li>`).join('')}
         ${o.returns.map((r) => returnBlock(r)).join('')}
-      </ul>`}
+      </ul>`;
+    const sum = (f: (i: Order['items'][number]) => number) => formatQty(o.items.reduce((t, i) => t + f(i), 0));
+    const overview = `
+      <h4>${isHeadOffice ? 'Branch' : 'Head Office'}</h4>
+      <div class="or-who or-who-lg"><span class="or-ava">${esc(initials(who))}</span><div><strong>${esc(who)}</strong><span class="muted small">Ordered by ${esc(o.createdByName || '—')}</span></div></div>
+      ${o.notes ? `<p class="small notes">${esc(o.notes)}</p>` : ''}
+      <h4>Order Summary</h4>
+      <dl class="or-sum">
+        <div><dt>Products</dt><dd>${o.items.length}</dd></div>
+        <div><dt>Ordered</dt><dd>${sum((i) => i.ordered)}</dd></div>
+        <div><dt>Dispatched</dt><dd>${sum((i) => i.dispatched)}</dd></div>
+        <div><dt>Received (good)</dt><dd>${sum((i) => i.receivedGood)}</dd></div>
+        <div class="${o.receivedDamaged > 0 ? 'warn' : ''}"><dt>Received (damaged)</dt><dd>${formatQty(o.receivedDamaged)}</dd></div>
+        <div class="or-sum-total"><dt>Still on the way</dt><dd>${sum((i) => i.toReceive)}</dd></div>
+      </dl>
+      ${acts.length ? `<h4>Quick Actions</h4><div class="or-detail-actions">${acts.join('')}</div>` : ''}`;
+    const body = detailTab === 'items' ? itemsTable : detailTab === 'activity' ? history : overview;
+
+    el.innerHTML = `
+      <div class="or-dhead">
+        <h3>Order Details</h3>
+        <button type="button" class="or-x" id="or-close" aria-label="Close details">×</button>
+      </div>
+      <div class="or-dtop">
+        <span class="or-dicon">${'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg>'}</span>
+        <div><p class="mono or-dref">${esc(o.reference)} ${badge(o.status)}</p><p class="muted small">${esc(when(o.createdAt))}</p></div>
+      </div>
+      <div class="or-tabs" role="tablist">
+        ${(['overview', 'items', 'activity'] as const).map((t) => `<button type="button" role="tab" data-dtab="${t}" class="${t === detailTab ? 'is-active' : ''}" aria-selected="${t === detailTab}">${t === 'overview' ? 'Overview' : t === 'items' ? 'Items' : 'Activity'}</button>`).join('')}
+      </div>
+      <div class="or-dbody">${body}</div>
     `;
+    el.querySelectorAll<HTMLButtonElement>('[data-dtab]').forEach((b) =>
+      b.addEventListener('click', () => { detailTab = b.dataset.dtab as typeof detailTab; renderDetail(); }),
+    );
+    $('or-close')?.addEventListener('click', () => { selected = null; renderList(); renderDetail(); });
 
     el.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((b) =>
       b.addEventListener('click', () => {
@@ -625,9 +736,16 @@ const navItems = getNavItemsForRole(defaultRole);
   let timer: number | undefined;
   $('f-search')?.addEventListener('input', () => {
     window.clearTimeout(timer);
-    timer = window.setTimeout(() => void loadList(), 300);
+    timer = window.setTimeout(() => { page = 1; void loadList(); }, 300);
   });
-  $('f-status')?.addEventListener('change', () => void loadList());
+  $('f-status')?.addEventListener('change', () => { page = 1; void loadList(); });
+  $('f-range')?.addEventListener('change', () => { page = 1; renderList(); });
+  $('or-pages')?.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-page]');
+    if (!b || b.disabled) return;
+    page = Number(b.dataset.page) || 1;
+    renderList();
+  });
   $('or-refresh')?.addEventListener('click', () => void init());
   document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => void init(), 300));
 
@@ -637,7 +755,7 @@ const navItems = getNavItemsForRole(defaultRole);
     isBranch = s?.businessType === 'branch';
     isHeadOffice = s?.businessType === 'head_office';
     canWrite = s?.accessMode !== 'read_only';
-    $('or-heading')!.textContent = isHeadOffice ? 'Orders from branches' : 'Stock orders';
+    $('or-heading')!.textContent = isHeadOffice ? 'Orders from Branches' : 'Orders';
     $('or-new')!.hidden = !(isBranch && canWrite);
     selected = null;
     renderDetail();
@@ -732,4 +850,53 @@ const navItems = getNavItemsForRole(defaultRole);
   .or-qrow input { width: 96px; height: 32px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-bg); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; }
   .or-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
   .or-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  /* ---------- Orders (mockup layout) ---------- */
+  .pd-kpi-icon.is-red { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+  .or-page .pd-kpi.is-danger strong { color: #d97706; }
+  .or-page .or-scope { margin: 2px 0 0; }
+  .or-page .or-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (max-width: 900px) { .or-page .or-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .or-search { display: flex; align-items: center; gap: 8px; flex: 1 1 220px; min-width: 0; height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-muted); }
+  .or-filters .or-search input[type='search'] { flex: 1; min-width: 0; height: auto; padding: 0; border: none; outline: none; background: transparent; font-size: 0.84rem; }
+  .or-filters select { height: 36px; border-radius: 10px; }
+  .or-table-wrap { border: 1px solid var(--border); border-radius: 12px; position: relative; }
+  .or-card .or-table th { background: var(--surface); }
+  .or-table td { vertical-align: middle; }
+  .or-table tr:last-child td { border-bottom: none; }
+  .or-th-act, .or-act { text-align: center !important; }
+  .or-who { display: inline-flex; align-items: center; gap: 8px; }
+  .or-who-lg { display: flex; padding: 8px 0; }
+  .or-who-lg strong { display: block; font-size: 0.9rem; }
+  .or-ava { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 0.66rem; font-weight: 700; }
+  .or-who-lg .or-ava { width: 40px; height: 40px; font-size: 0.8rem; }
+  .or-eye { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+  .or-eye:hover { color: var(--accent); border-color: var(--accent); background: var(--surface-hover); }
+  .or-footrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .or-footrow .or-foot { margin: 0; }
+  .or-pages { display: flex; align-items: center; gap: 4px; color: var(--text-muted); }
+  .or-pages button { min-width: 30px; height: 30px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 0.8rem; cursor: pointer; }
+  .or-pages button.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .or-pages button:disabled { opacity: 0.4; cursor: default; }
+  .or-badge { padding: 3px 10px; font-size: 0.7rem; }
+  .or-badge::before { content: ''; width: 6px; height: 6px; margin: auto 6px auto 0; border-radius: 50%; background: currentColor; }
+  .or-detail-card { padding: var(--card-pad, 14px); }
+  .or-dhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  #or-detail .or-dhead h3 { margin: 0; font-size: 1.05rem; }
+  .or-x { width: 30px; height: 30px; border: none; border-radius: 8px; background: transparent; color: var(--text-muted); font-size: 1.4rem; line-height: 1; cursor: pointer; }
+  .or-x:hover { background: var(--surface-hover); color: var(--text-primary); }
+  .or-dtop { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .or-dicon { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: #fff; }
+  #or-detail .or-dref { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 2px; font-size: 0.95rem; font-weight: 700; }
+  .or-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .or-tabs button { padding: 8px 12px; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; }
+  .or-tabs button.is-active { color: var(--accent); border-bottom-color: var(--accent); }
+  .or-sum { margin: 0; display: flex; flex-direction: column; font-size: 0.82rem; }
+  .or-sum > div { display: flex; justify-content: space-between; gap: 10px; padding: 6px 2px; }
+  .or-sum dt { color: var(--text-secondary); }
+  .or-sum dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .or-sum .or-sum-total { margin-top: 4px; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .or-sum .or-sum-total dt { color: inherit; }
+  .or-sum .warn { color: #d97706; }
+  @media (min-width: 1001px) { .or-layout { grid-template-columns: minmax(0, 2.1fr) minmax(290px, 0.9fr); } }
+  .or-table td.mono, .or-who, .or-row td:nth-child(3) { white-space: nowrap; }
 </style>
