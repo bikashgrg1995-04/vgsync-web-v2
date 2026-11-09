@@ -321,3 +321,29 @@
 .sidebar-footer-links .sidebar-link {
   min-height: 38px;
 }
+/* Settings and Help & Support: plain menu rows, not filled buttons.
+   The active one is marked by colour and a thin bar instead of a blue block. */
+.sidebar-footer-links .sidebar-link {
+  position: relative;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+}
+.sidebar-footer-links .sidebar-link:hover { background: rgba(255, 255, 255, 0.05); }
+.sidebar-footer-links .sidebar-link.is-active {
+  background: transparent;
+  box-shadow: none;
+  color: #6ea3ff;
+  font-weight: 600;
+}
+.sidebar-footer-links .sidebar-link.is-active .sidebar-icon { color: #6ea3ff; }
+.sidebar-footer-links .sidebar-link.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #4c8dff;
+}
