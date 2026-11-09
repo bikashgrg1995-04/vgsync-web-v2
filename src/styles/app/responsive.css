@@ -1,0 +1,173 @@
+/* =========================================================
+   RESPONSIVE + COMPACT LAYER
+   Loaded last by AppLayout, so it tunes every dashboard screen
+   in one place:
+     1. fluid spacing tokens
+     2. compact density (smaller type, tighter cards and controls)
+     3. topbar that fits phones
+     4. utility classes pages can use instead of one-off media queries
+
+   Breakpoints used everywhere:  md ≤ 900px · sm ≤ 640px · xs ≤ 420px
+   ========================================================= */
+
+:root {
+  --page-pad: clamp(10px, 1.5vw, 16px);
+  --gap: clamp(8px, 1vw, 12px);
+  --card-pad: clamp(10px, 1.2vw, 14px);
+  --ctl-h: 32px;
+}
+
+/* ---------- 1. Compact density ---------- */
+
+/* Every rem in the app shrinks a little: one switch for the whole UI. */
+html:has(.app-shell) { font-size: 15px; }
+
+.app-content { padding: var(--page-pad); }
+.app-content-inner > * { min-width: 0; }
+/* Grid/flex children may shrink below their content, so a wide table or long
+   word scrolls or wraps inside its card instead of stretching the page. */
+.app-content [class*='-layout'] > *,
+.app-content [class*='-grid'] > *,
+.app-content [class$='-page'] > * { min-width: 0; }
+
+/* Page rhythm */
+.app-content .pd-page,
+.app-content .inv-page { gap: var(--gap); }
+
+/* Cards */
+.app-content .pd-card,
+.app-content .inv-card,
+.app-content .sa-card { padding: var(--card-pad); }
+.app-content .pd-card-head,
+.app-content .inv-card-head { margin-bottom: 8px; }
+
+/* KPI tiles */
+.app-content .pd-kpis { gap: var(--gap); }
+.app-content .pd-kpi { padding: 10px 12px; gap: 10px; }
+.app-content .pd-kpi-icon { width: 44px; height: 44px; border-radius: 12px; }
+.app-content .pd-kpi-icon svg { width: 22px; height: 22px; }
+.app-content .pd-kpi-row strong { font-size: 1.3rem; }
+
+/* Hero */
+.app-content .pd-hero-icon { width: 46px; height: 46px; }
+.app-content .pd-hero-icon svg { width: 24px; height: 24px; }
+.app-content .pd-hero-title { font-size: 1.35rem; }
+
+/* Tables */
+.app-content .pd-table th { padding: 7px 10px; }
+.app-content .pd-table td { padding: 8px 10px; }
+.app-content .pd-grid { gap: var(--gap); }
+
+/* Scroll containers contain their own absolutely-positioned bits (e.g. the
+   visually-hidden header labels), so those cannot widen the page. */
+.app-content [class*='table-wrap'],
+.u-scroll-x { position: relative; }
+
+/* Controls */
+.app-content .btn-primary-sm,
+.app-content .btn-ghost-sm { height: var(--ctl-h); }
+.app-content input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.app-content select { max-width: 100%; }
+
+/* Dialogs: never wider than the screen, scroll instead of overflowing it */
+dialog { max-width: calc(100vw - 20px); max-height: calc(100dvh - 20px); }
+
+/* ---------- 2. Tablet and down (md) ---------- */
+@media (max-width: 900px) {
+  .app-content .pd-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- 3. Phone (sm) ---------- */
+@media (max-width: 640px) {
+  :root { --ctl-h: 34px; }
+
+  /* KPI tiles two per row, icon above the numbers */
+  .app-content .pd-kpi { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px; }
+  .app-content .pd-kpi-icon { width: 34px; height: 34px; border-radius: 10px; }
+  .app-content .pd-kpi-icon svg { width: 18px; height: 18px; }
+  .app-content .pd-kpi-row strong { font-size: 1.05rem; }
+  .app-content .pd-kpi-label { font-size: 0.78rem; }
+  .app-content .pd-kpi-sub { font-size: 0.68rem; }
+
+  /* Hero: title first, actions in a tidy wrap */
+  .app-content .pd-hero { flex-direction: column; align-items: stretch; }
+  .app-content .pd-hero-text { gap: 10px; }
+  .app-content .pd-hero-sub { font-size: 0.8rem; }
+  .app-content .pd-hero-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .app-content .pd-hero-actions > * { flex: 1 1 auto; justify-content: center; text-align: center; }
+
+  .app-content .inv-hero { flex-direction: column; align-items: stretch; }
+  .app-content .inv-hero-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .app-content .inv-hero-actions > * { flex: 1 1 auto; justify-content: center; }
+
+  /* Wide tables scroll inside their card, the page never does */
+  .app-content .pd-table-wrap,
+  .app-content .inv-table-wrap,
+  .app-content .sa-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Dialog forms collapse to one column */
+  dialog .pu-grid,
+  dialog .sa-grid,
+  dialog .inv-grid { grid-template-columns: 1fr; }
+  dialog { width: calc(100vw - 20px); }
+}
+
+/* ---------- 4. Small phone (xs) ---------- */
+@media (max-width: 420px) {
+  .app-content { padding: 8px; }
+  .app-content .pd-card,
+  .app-content .inv-card,
+  .app-content .sa-card { padding: 10px; }
+}
+
+/* ---------- Topbar fits any width ---------- */
+.header-left { min-width: 0; }
+.header-titles { min-width: 0; }
+.header-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-right { min-width: 0; }
+
+@media (max-width: 760px) {
+  .header-right { gap: 6px; }
+  .header-search { width: 140px; }
+}
+
+@media (max-width: 560px) {
+  .header-search { display: none; }
+  .header-breadcrumb { display: none; }
+  .branch-select { min-width: 0; max-width: 112px; }
+  .header-avatar-img { width: 32px; height: 32px; }
+}
+
+@media (max-width: 420px) {
+  .app-header { padding: 6px 8px; gap: 6px; }
+  .header-right { gap: 4px; }
+  .branch-select { max-width: 92px; }
+  .theme-toggle { transform: scale(0.88); transform-origin: right center; margin-left: -4px; }
+}
+
+/* ---------- Utilities ---------- */
+.u-hide-md { }
+.u-show-sm { display: none !important; }
+.u-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.u-nowrap { white-space: nowrap; }
+.u-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.u-stack { display: flex; flex-direction: column; gap: var(--gap); }
+.u-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap); }
+.u-grow { flex: 1 1 0; min-width: 0; }
+.u-grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--gap); }
+.u-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
+.u-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
+
+@media (max-width: 900px) {
+  .u-hide-md { display: none !important; }
+  .u-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .u-hide-sm { display: none !important; }
+  .u-show-sm { display: revert !important; }
+  .u-grid-2,
+  .u-grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .u-stack-sm { display: flex; flex-direction: column; align-items: stretch; }
+  .u-full-sm { width: 100%; }
+}
