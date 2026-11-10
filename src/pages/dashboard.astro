@@ -32,9 +32,34 @@ const navItems = getNavItemsForRole(defaultRole);
 
     <div class="ov-kpis" id="ov-kpis"></div>
 
-    <section class="ov-card" id="ov-money" hidden>
-      <h3>This month's money <span class="ov-hint" id="ov-month"></span></h3>
-      <div class="ov-kpis" id="ov-money-kpis"></div>
+    <section class="ov-owner" id="ov-owner" hidden>
+      <div class="ov-alerts" id="ov-alerts"></div>
+      <div class="ov-kpis" id="ov-owner-kpis"></div>
+      <div class="ov-grid">
+        <section class="ov-card">
+          <h3>Sales, last 30 days <span class="ov-hint">confirmed, less returns</span></h3>
+          <div id="ov-trend"></div>
+        </section>
+        <section class="ov-card">
+          <h3>Top products <span class="ov-hint">this month, by value</span> <a href="/dashboard/reports" class="ov-more">Reports</a></h3>
+          <div id="ov-top"></div>
+        </section>
+        <section class="ov-card">
+          <h3>Low stock <a href="/dashboard/inventory" class="ov-more">Open</a></h3>
+          <div id="ov-low"></div>
+        </section>
+        <section class="ov-card">
+          <h3>Team and approvals</h3>
+          <div id="ov-team"></div>
+        </section>
+      </div>
+      <section class="ov-card" id="ov-branches" hidden>
+        <h3>Branch overview <span class="ov-hint">read-only · this month</span></h3>
+        <div class="ov-table-wrap"><table class="ov-table">
+          <thead><tr><th>Branch</th><th>Sales today</th><th>Sales (month)</th><th>Purchases (month)</th><th>Profit (month)</th><th>Owed by customers</th><th>Low stock</th></tr></thead>
+          <tbody id="ov-branches-body"></tbody>
+        </table></div>
+      </section>
     </section>
 
     <div class="ov-grid">
@@ -59,12 +84,12 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession } from '../lib/auth';
+  import { can, getSession } from '../lib/auth';
   import { listSales, type Sale } from '../lib/sales';
   import { listFollowups, type Followup } from '../lib/sales';
   import { listStock, getInventorySummary, type StockItem } from '../lib/inventory';
   import { listOrders, type OrderSummary } from '../lib/orders';
-  import { loadReport, formatNpr, type ProfitLoss, type Ageing } from '../lib/reports';
+  import { loadDashboard, formatNpr, type Dashboard } from '../lib/reports';
 
   const session = getSession();
   if (!session) window.location.replace('/');
@@ -102,7 +127,6 @@ const navItems = getNavItemsForRole(defaultRole);
     if (!s) return;
     $('ov-scope').textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
     $('ov-title').textContent = `Hello, ${s.displayName.split(' ')[0]}`;
-    const isOwner = s.role === 'owner' || s.role === 'branch_owner';
     const month = iso(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const from14 = iso(daysAgo(13));
     const from = month < from14 ? month : from14;
@@ -159,28 +183,80 @@ const navItems = getNavItemsForRole(defaultRole);
         })()
       : empty('Not available.');
 
-    // Owner only: money panel.
-    const money = $('ov-money');
-    money.hidden = !isOwner;
-    if (isOwner) {
-      $('ov-month').textContent = new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-      const [pl, rec, pay] = await Promise.all([
-        loadReport('profit-loss', { dateFrom: month, dateTo: today }).catch(() => null),
-        loadReport('receivables', {}).catch(() => null),
-        loadReport('payables', {}).catch(() => null),
-      ]);
-      if (mine !== run) return;
-      const out: string[] = [];
-      if (pl) {
-        const d = pl.data as ProfitLoss;
-        out.push(kpi('Money in', formatNpr(d.income.net)));
-        out.push(kpi('Money out', formatNpr(d.expenses.net)));
-        out.push(kpi('Profit (cash)', formatNpr(d.profit), '', d.profit < 0 ? 'danger' : 'strong', '/dashboard/reports'));
-      }
-      if (rec) out.push(kpi('Customers owe you', formatNpr((rec.data as Ageing).total), '', '', '/dashboard/reports'));
-      if (pay) out.push(kpi('You owe suppliers', formatNpr((pay.data as Ageing).total), '', '', '/dashboard/reports'));
-      $('ov-money-kpis').innerHTML = out.join('') || empty('Money figures are not available.');
+    await loadOwner(mine, s);
+  }
+
+  // The owner dashboard: real numbers from one API call (needs dashboard.view).
+  async function loadOwner(mine: number, s: NonNullable<ReturnType<typeof getSession>>): Promise<void> {
+    const block = $('ov-owner');
+    if (!can(s, 'dashboard.view')) {
+      block.hidden = true;
+      return;
     }
+    let d: Dashboard;
+    try {
+      d = await loadDashboard();
+    } catch {
+      block.hidden = false;
+      $('ov-alerts').innerHTML = '';
+      $('ov-owner-kpis').innerHTML = empty('Dashboard figures are not available right now.');
+      return;
+    }
+    if (mine !== run) return;
+    block.hidden = false;
+
+    $('ov-alerts').innerHTML = d.alerts
+      .map((a) => `<p class="ov-alert is-${a.severity}">${esc(a.message)}</p>`)
+      .join('');
+
+    const n = (v: string) => Number(v);
+    $('ov-owner-kpis').innerHTML = [
+      kpi('Sales today', formatNpr(n(d.sales_today))),
+      kpi('Sales this month', formatNpr(n(d.sales_month)), '', 'strong', '/dashboard/sales'),
+      kpi('Purchases this month', formatNpr(n(d.purchases_month)), '', '', '/dashboard/purchase'),
+      kpi('Money in', formatNpr(n(d.income_month)), 'this month'),
+      kpi('Money out', formatNpr(n(d.expenses_month)), 'this month'),
+      kpi('Profit (cash)', formatNpr(n(d.profit_month)), 'this month', n(d.profit_month) < 0 ? 'danger' : 'strong', '/dashboard/reports'),
+      kpi('Customers owe you', formatNpr(n(d.receivables)), '', '', '/dashboard/reports'),
+      kpi('You owe suppliers', formatNpr(n(d.payables)), '', '', '/dashboard/reports'),
+      kpi('Cash in hand', formatNpr(n(d.cash.cash))),
+      kpi('In the bank', formatNpr(n(d.cash.bank)), d.cash.other !== '0.00' ? `+ ${formatNpr(n(d.cash.other))} other` : ''),
+      kpi('Stock value', formatNpr(n(d.stock.value)), d.stock.damaged_value !== '0.00' ? `${formatNpr(n(d.stock.damaged_value))} damaged` : '', '', '/dashboard/inventory'),
+    ].join('');
+
+    // Thirty days, empty days shown as zero.
+    const byDay = new Map(d.sales_trend.map((r) => [r.date, n(r.total)]));
+    const days = Array.from({ length: 30 }, (_, i) => {
+      const day = daysAgo(29 - i);
+      return { key: iso(day), label: day.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), total: byDay.get(iso(day)) ?? 0 };
+    });
+    const max = Math.max(...days.map((x) => x.total), 1);
+    $('ov-trend').innerHTML = days.every((x) => x.total === 0)
+      ? empty('No confirmed sales in the last 30 days.')
+      : `<div class="ov-bars">${days
+          .map((x, i) => `<div class="ov-bar" title="${esc(x.label)}: ${esc(formatNpr(x.total))}"><i style="height:${Math.max((x.total / max) * 100, x.total ? 3 : 0)}%"></i><span>${i % 5 === 0 ? x.label.split(' ')[0] : ''}</span></div>`)
+          .join('')}</div>`;
+
+    $('ov-top').innerHTML = d.top_products.length
+      ? `<ul class="ov-list">${d.top_products.map((p) => `<li><span>${esc(p.name)}<em>${esc(String(Number(p.quantity)))} sold</em></span><strong>${esc(formatNpr(n(p.revenue)))}</strong></li>`).join('')}</ul>`
+      : empty('No sales this month yet.');
+
+    $('ov-low').innerHTML = d.low_stock.items.length
+      ? `<ul class="ov-list">${d.low_stock.items.map((p) => `<li><span>${esc(p.name)}<em>reorder at ${esc(String(Number(p.reorder_level)))}</em></span><span class="ov-tag">${esc(String(Number(p.quantity)))} left</span></li>`).join('')}</ul>`
+      : empty('Nothing is below its reorder level.');
+
+    const team = [`<li><span>Active staff</span><strong>${d.staff.active} of ${d.staff.total}</strong></li>`];
+    if (d.staff.without_position) team.push(`<li><span>Active staff without a position</span><strong>${d.staff.without_position}</strong></li>`);
+    team.push(`<li><span><a href="/dashboard/approvals">Approvals waiting</a></span><strong>${d.approvals_pending}</strong></li>`);
+    $('ov-team').innerHTML = `<ul class="ov-list">${team.join('')}</ul>`;
+
+    const branches = d.branches ?? [];
+    $('ov-branches').hidden = branches.length === 0;
+    $('ov-branches-body').innerHTML = branches
+      .map(
+        (b) => `<tr><td>${esc(b.name)}<em>${esc(b.business_code)}</em></td><td>${esc(formatNpr(n(b.sales_today)))}</td><td>${esc(formatNpr(n(b.sales_month)))}</td><td>${esc(formatNpr(n(b.purchases_month)))}</td><td class="${n(b.profit_month) < 0 ? 'neg' : ''}">${esc(formatNpr(n(b.profit_month)))}</td><td>${esc(formatNpr(n(b.receivables)))}</td><td>${b.low_stock}</td></tr>`,
+      )
+      .join('');
   }
 
   $('ov-refresh').addEventListener('click', () => void load());
@@ -221,4 +297,19 @@ const navItems = getNavItemsForRole(defaultRole);
   .ov-bar { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; gap: 4px; min-width: 0; }
   .ov-bar i { display: block; width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 0; }
   .ov-bar span { font-size: 0.62rem; color: var(--text-muted); }
+
+  .ov-owner { display: flex; flex-direction: column; gap: 14px; }
+  .ov-owner[hidden], .ov-card[hidden] { display: none; }
+  .ov-alerts { display: grid; gap: 8px; }
+  .ov-alerts:empty { display: none; }
+  .ov-alert { margin: 0; padding: 10px 14px; border-radius: 10px; font-size: 0.82rem; border: 1px solid var(--border); background: var(--panel-bg); color: var(--text-secondary); }
+  .ov-alert.is-warning { border-color: rgba(245, 158, 11, .5); background: rgba(245, 158, 11, .08); }
+  .ov-alert.is-danger { border-color: rgba(239, 51, 78, .5); background: rgba(239, 51, 78, .08); }
+  .ov-alert.is-info { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: var(--accent-soft); }
+  .ov-table-wrap { overflow-x: auto; }
+  .ov-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .ov-table th { text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: .03em; color: var(--text-muted); padding: 6px 10px; white-space: nowrap; }
+  .ov-table td { padding: 9px 10px; border-top: 1px solid var(--border); white-space: nowrap; }
+  .ov-table td em { display: block; font-style: normal; font-size: 0.72rem; color: var(--text-muted); }
+  .ov-table .neg { color: #ef334e; }
 </style>

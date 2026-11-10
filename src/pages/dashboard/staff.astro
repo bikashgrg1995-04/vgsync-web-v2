@@ -167,8 +167,6 @@ const navItems = getNavItemsForRole(defaultRole);
           <span>Role *</span>
           <select id="m-role">
             <option value="staff">Staff</option>
-            <option value="accountant">Accountant</option>
-            <option value="admin">Admin</option>
           </select>
         </label>
         <label class="st-field" id="m-position-wrap">
@@ -213,16 +211,13 @@ const navItems = getNavItemsForRole(defaultRole);
       <div class="st-form-grid">
         <label class="st-field"><span>Name *</span><input type="text" id="p-name" autocomplete="off" placeholder="e.g. Sales counter" /></label>
         <label class="st-field"><span>Description</span><input type="text" id="p-desc" autocomplete="off" /></label>
+        <label class="st-field"><span>Department</span><input type="text" id="p-dept" autocomplete="off" placeholder="e.g. Finance" /></label>
+        <label class="st-field" id="p-preset-wrap"><span>Start from a preset</span>
+          <select id="p-preset"><option value="">Blank</option></select>
+        </label>
       </div>
-      <div class="st-table-wrap st-perm-wrap">
-        <table class="st-table st-perm">
-          <thead>
-            <tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr>
-          </thead>
-          <tbody id="perm-tbody"></tbody>
-        </table>
-      </div>
-      <p class="st-hint">Create, edit and delete need View as well.</p>
+      <div class="st-perm-groups" id="perm-groups"></div>
+      <p class="st-hint">Create, edit and delete need View as well. A preset only fills the boxes; later changes to it never change this position. Managing permissions stays with the owner.</p>
       <p class="st-error" id="p-error" role="alert" hidden></p>
       <div class="st-dialog-actions">
         <button type="button" class="btn-ghost-sm" id="p-cancel">Cancel</button>
@@ -253,7 +248,10 @@ const navItems = getNavItemsForRole(defaultRole);
     type StaffMember,
     type StaffRole,
     type Position,
-    type PositionPermission,
+    type CatalogueModule,
+    type Preset,
+    loadCatalogue,
+    loadPresets,
   } from '../../lib/staff';
 
   const session = getSession();
@@ -501,11 +499,11 @@ const navItems = getNavItemsForRole(defaultRole);
   // ---------- positions table ----------
 
   function accessSummary(p: Position): string {
-    const modules = p.permissions.filter((x) => x.canView);
-    if (modules.length === 0) return 'No access';
-    return modules
-      .map((x) => MODULES.find((m) => m.id === x.module)?.label ?? x.module)
-      .join(', ');
+    const viewable = p.granted.filter((c) => c.endsWith('.view')).map((c) => c.split('.')[0]);
+    if (viewable.length === 0) return 'No access';
+    const extra = p.granted.length - viewable.length;
+    const names = viewable.map((id) => MODULES.find((m) => m.id === id)?.label ?? id).join(', ');
+    return extra > 0 ? `${names} · ${p.granted.length} permissions` : names;
   }
 
   function renderPositions(): void {
@@ -805,57 +803,90 @@ const navItems = getNavItemsForRole(defaultRole);
 
   const positionDialog = $<HTMLDialogElement>('position-dialog');
 
-  function permRow(module: { id: string; label: string }, perm?: PositionPermission): string {
-    const box = (key: string, on: boolean, label: string) =>
-      `<td><input type="checkbox" data-module="${module.id}" data-key="${key}" aria-label="${label} ${esc(module.label)}" ${on ? 'checked' : ''} /></td>`;
-    return `<tr>
-      <th scope="row">${esc(module.label)}</th>
-      ${box('canView', !!perm?.canView, 'View')}
-      ${box('canCreate', !!perm?.canCreate, 'Create')}
-      ${box('canUpdate', !!perm?.canUpdate, 'Edit')}
-      ${box('canDelete', !!perm?.canDelete, 'Delete')}
-    </tr>`;
+  let catalogue: CatalogueModule[] = [];
+  let presets: Preset[] = [];
+
+  async function ensureCatalogue(): Promise<void> {
+    if (catalogue.length) return;
+    [catalogue, presets] = await Promise.all([loadCatalogue(), loadPresets()]);
+    const sel = $<HTMLSelectElement>('p-preset')!;
+    sel.innerHTML =
+      '<option value="">Blank</option>' +
+      presets.map((p) => `<option value="${esc(p.key)}">${esc(p.label)}</option>`).join('');
   }
 
-  function openPosition(edit?: Position): void {
+  function renderPermGroups(granted: Set<string>): void {
+    $('perm-groups')!.innerHTML = catalogue
+      .map((mod) => {
+        const boxes = mod.actions
+          .filter((a) => !a.reserved)
+          .map(
+            (a) => `<label class="st-perm-box">
+              <input type="checkbox" data-code="${a.code}" ${granted.has(a.code) ? 'checked' : ''} />
+              <span>${esc(a.label)}</span></label>`,
+          )
+          .join('');
+        return boxes ? `<fieldset class="st-perm-group"><legend>${esc(mod.label)}</legend>${boxes}</fieldset>` : '';
+      })
+      .join('');
+  }
+
+  function readCodes(): string[] {
+    return Array.from(document.querySelectorAll<HTMLInputElement>('#perm-groups input[data-code]'))
+      .filter((b) => b.checked)
+      .map((b) => b.dataset.code!);
+  }
+
+  async function openPosition(edit?: Position): Promise<void> {
     $('position-title')!.textContent = edit ? 'Edit position' : 'New position';
     $<HTMLInputElement>('p-id')!.value = edit ? String(edit.id) : '';
     $<HTMLInputElement>('p-name')!.value = edit?.name ?? '';
     $<HTMLInputElement>('p-desc')!.value = edit?.description ?? '';
-    $('perm-tbody')!.innerHTML = MODULES.map((m) =>
-      permRow(m, edit?.permissions.find((p) => p.module === m.id)),
-    ).join('');
+    $<HTMLInputElement>('p-dept')!.value = edit?.department ?? '';
     $('p-error')!.hidden = true;
+    try {
+      await ensureCatalogue();
+    } catch (error) {
+      $('p-error')!.hidden = false;
+      $('p-error')!.textContent = describe(error);
+    }
+    $<HTMLSelectElement>('p-preset')!.value = '';
+    $('p-preset-wrap')!.hidden = !!edit;
+    renderPermGroups(new Set(edit?.granted ?? []));
     positionDialog?.showModal();
   }
 
+  // A preset only fills the boxes (you can change them before saving).
+  $('p-preset')?.addEventListener('change', (event) => {
+    const preset = presets.find((p) => p.key === (event.target as HTMLSelectElement).value);
+    if (!preset) return;
+    renderPermGroups(new Set(preset.permissions));
+    const dept = $<HTMLInputElement>('p-dept')!;
+    if (!dept.value) dept.value = preset.department;
+    const name = $<HTMLInputElement>('p-name')!;
+    if (!name.value) name.value = preset.label;
+  });
+
   // Create/Edit/Delete need View: tick View for them, untick the rest with it.
-  $('perm-tbody')?.addEventListener('change', (event) => {
+  $('perm-groups')?.addEventListener('change', (event) => {
     const box = event.target as HTMLInputElement;
-    const row = box.closest('tr');
-    if (!row) return;
-    const get = (key: string) => row.querySelector<HTMLInputElement>(`input[data-key="${key}"]`)!;
-    if (box.dataset.key !== 'canView' && box.checked) get('canView').checked = true;
-    if (box.dataset.key === 'canView' && !box.checked) {
-      ['canCreate', 'canUpdate', 'canDelete'].forEach((k) => (get(k).checked = false));
+    const code = box.dataset.code;
+    if (!code) return;
+    const [module, action] = code.split('.');
+    const get = (a: string) =>
+      document.querySelector<HTMLInputElement>(`#perm-groups input[data-code="${module}.${a}"]`);
+    if (action !== 'view' && box.checked) {
+      const view = get('view');
+      if (view) view.checked = true;
+    }
+    if (action === 'view' && !box.checked) {
+      document
+        .querySelectorAll<HTMLInputElement>(`#perm-groups input[data-code^="${module}."]`)
+        .forEach((b) => (b.checked = false));
     }
   });
 
-  function readPermissions(): PositionPermission[] {
-    return MODULES.map((m) => {
-      const get = (key: string) =>
-        !!document.querySelector<HTMLInputElement>(`#perm-tbody input[data-module="${m.id}"][data-key="${key}"]`)?.checked;
-      return {
-        module: m.id,
-        canView: get('canView'),
-        canCreate: get('canCreate'),
-        canUpdate: get('canUpdate'),
-        canDelete: get('canDelete'),
-      };
-    });
-  }
-
-  $('position-add')?.addEventListener('click', () => openPosition());
+  $('position-add')?.addEventListener('click', () => void openPosition());
   $('p-cancel')?.addEventListener('click', () => positionDialog?.close());
 
   $<HTMLFormElement>('position-form')?.addEventListener('submit', async (e) => {
@@ -865,7 +896,13 @@ const navItems = getNavItemsForRole(defaultRole);
     err.hidden = true;
 
     const id = Number(val('p-id')) || null;
-    const input = { name: val('p-name'), description: val('p-desc'), permissions: readPermissions() };
+    const input = {
+      name: val('p-name'),
+      description: val('p-desc'),
+      department: val('p-dept'),
+      codes: readCodes(),
+      preset: id ? undefined : val('p-preset') || undefined,
+    };
     if (!input.name) {
       err.hidden = false;
       err.textContent = 'Name is required.';
@@ -894,7 +931,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
     const act = button.dataset.pact;
     if (act === 'edit') {
-      openPosition(position);
+      void openPosition(position);
       return;
     }
     if (act === 'delete' && !confirm(`Delete the position "${position.name}"?`)) return;
@@ -1081,4 +1118,9 @@ const navItems = getNavItemsForRole(defaultRole);
   .st-pages button:disabled { opacity: 0.4; cursor: default; }
   @media (max-width: 640px) { .st-page .st-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } .st-page .pd-kpi-sub { display: none; } }
   .st-page .st-table td { vertical-align: middle; }
+
+  .st-perm-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; margin: 12px 0 6px; max-height: 46vh; overflow: auto; }
+  .st-perm-group { margin: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); min-width: 0; }
+  .st-perm-group legend { padding: 0 6px; font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
+  .st-perm-box { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; }
 </style>

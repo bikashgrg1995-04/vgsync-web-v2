@@ -136,14 +136,13 @@ const ic = {
         <!-- ACCESS -->
         <section class="sd-panel" data-panel="access">
           <div class="sd-card">
-            <div class="sd-card-head"><h3>Access &amp; Permissions</h3></div>
-            <p class="sd-hint" id="sd-access-note" style="margin-bottom:10px"></p>
-            <div class="sd-table-wrap" id="sd-access-wrap">
-              <table class="sd-table">
-                <thead><tr><th>Module</th><th>View</th><th>Create</th><th>Update</th><th>Delete</th></tr></thead>
-                <tbody id="sd-access"></tbody>
-              </table>
+            <div class="sd-card-head">
+              <h3>Access &amp; Permissions</h3>
+              <button type="button" class="btn-primary-sm" id="sd-access-save" hidden>Save changes</button>
             </div>
+            <p class="sd-hint" id="sd-access-note" style="margin-bottom:10px"></p>
+            <p class="sd-hint" id="sd-access-error" role="alert" style="color:#ef4444" hidden></p>
+            <div id="sd-access-wrap" class="sd-access-groups"><div id="sd-access"></div></div>
           </div>
         </section>
 
@@ -168,7 +167,19 @@ const ic = {
   import { getSession, canManageStaff, refreshProfile } from '../../../lib/auth';
   import { api, ApiError } from '../../../lib/api';
   import { paintAvatar } from '../../../lib/avatar';
-  import { getStaff, listPositions, MODULES, ROLE_LABEL, type StaffMember, type Position } from '../../../lib/staff';
+  import {
+    getAccess,
+    getStaff,
+    listPositions,
+    loadCatalogue,
+    ROLE_LABEL,
+    saveOverrides,
+    type CatalogueModule,
+    type OverrideEffect,
+    type Position,
+    type StaffAccess,
+    type StaffMember,
+  } from '../../../lib/staff';
   import {
     getBalance,
     listSalaries,
@@ -195,6 +206,7 @@ const ic = {
   const dateTime = (iso: string | null | undefined) =>
     iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : 'Never';
 
+  let currentMember: StaffMember | null = null;
   const staffId = Number(new URLSearchParams(window.location.search).get('id'));
 
   // ---------- tabs ----------
@@ -325,31 +337,127 @@ const ic = {
   }
 
   // ---------- access ----------
-  function renderAccess(m: StaffMember, positions: Position[]): void {
+  // Position -> person: the position gives a base; the owner can allow or
+  // deny single permissions for this one person. The API decides for real.
+  let catalogue: CatalogueModule[] = [];
+  let access: StaffAccess | null = null;
+  const pending = new Map<string, OverrideEffect>();
+
+  function accessState(code: string): OverrideEffect {
+    if (pending.has(code)) return pending.get(code)!;
+    return access?.overrides[code] ?? 'inherit';
+  }
+
+  function holds(code: string): boolean {
+    const state = accessState(code);
+    if (state === 'allow') return true;
+    if (state === 'deny') return false;
+    return !!access?.inherited.includes(code);
+  }
+
+  function renderAccess(m: StaffMember, _positions: Position[]): void {
     const note = $('sd-access-note');
     const body = $('sd-access');
     const wrap = $('sd-access-wrap');
-    if (!note || !body || !wrap) return;
+    const save = $('sd-access-save');
+    if (!note || !body || !wrap || !save) return;
+
     if (m.role !== 'staff') {
-      note.textContent = `${ROLE_LABEL[m.role]} accounts get access from their role, not from a position.`;
+      note.textContent = 'This account predates positions. Assign a position to give it access.';
+      wrap.hidden = true;
+      return;
+    }
+    if (!m.positionId) {
+      note.textContent = 'No position is assigned, so this person cannot open any module.';
       wrap.hidden = true;
       return;
     }
     wrap.hidden = false;
-    const position = positions.find((p) => p.id === m.positionId);
-    if (!position) {
-      note.textContent = 'No position is assigned, so this person cannot open any module.';
-      body.innerHTML = '';
-      wrap.hidden = true;
-      return;
-    }
-    note.textContent = `Access comes from the "${position.name}" position.`;
+
+    const owner = !!getSession()?.isOwner && getSession()?.accessMode !== 'read_only';
+    save.hidden = !owner;
+    note.textContent = owner
+      ? `Access comes from the "${m.positionName}" position. Allow or deny single permissions for this person only. Changing the position clears these exceptions.`
+      : `Access comes from the "${m.positionName}" position.`;
+
     const mark = (on: boolean) => (on ? '<span class="sd-perm-on">✓</span>' : '<span class="sd-perm-off">—</span>');
-    body.innerHTML = MODULES.map((mod) => {
-      const p = position.permissions.find((x) => x.module === mod.id);
-      return `<tr><td>${esc(mod.label)}</td><td>${mark(!!p?.canView)}</td><td>${mark(!!p?.canCreate)}</td><td>${mark(!!p?.canUpdate)}</td><td>${mark(!!p?.canDelete)}</td></tr>`;
-    }).join('');
+
+    body.innerHTML = catalogue
+      .map((mod) => {
+        const rows = mod.actions
+          .filter((a) => !a.reserved)
+          .map((a) => {
+            const inherited = !!access?.inherited.includes(a.code);
+            const state = accessState(a.code);
+            const control = owner
+              ? `<select class="sd-override" data-code="${a.code}" aria-label="${esc(a.label)}">
+                   <option value="inherit"${state === 'inherit' ? ' selected' : ''}>Inherited</option>
+                   <option value="allow"${state === 'allow' ? ' selected' : ''}>Allowed</option>
+                   <option value="deny"${state === 'deny' ? ' selected' : ''}>Denied</option>
+                 </select>`
+              : state === 'inherit'
+                ? '<span class="sd-perm-off">Inherited</span>'
+                : `<span>${state === 'allow' ? 'Allowed' : 'Denied'}</span>`;
+            return `<div class="sd-perm-row">
+              <span class="sd-perm-name">${esc(a.label)}</span>
+              <span class="sd-perm-base" title="From the position">${mark(inherited)}</span>
+              <span class="sd-perm-now" title="Result">${mark(holds(a.code))}</span>
+              <span class="sd-perm-ctl">${control}</span>
+            </div>`;
+          })
+          .join('');
+        return rows
+          ? `<div class="sd-perm-group"><h4>${esc(mod.label)}</h4>
+              <div class="sd-perm-head"><span>Permission</span><span>Position</span><span>Result</span><span>This person</span></div>
+              ${rows}</div>`
+          : '';
+      })
+      .join('');
   }
+
+  async function loadAccess(m: StaffMember, positions: Position[]): Promise<void> {
+    if (m.role === 'staff' && m.positionId) {
+      try {
+        [catalogue, access] = await Promise.all([loadCatalogue(), getAccess(m.id)]);
+        pending.clear();
+      } catch (error) {
+        const err = $('sd-access-error')!;
+        err.textContent = error instanceof ApiError ? error.message : 'Could not load permissions.';
+        err.hidden = false;
+      }
+    }
+    renderAccess(m, positions);
+  }
+
+  $('sd-access')?.addEventListener('change', (ev) => {
+    const sel = (ev.target as HTMLElement).closest<HTMLSelectElement>('select[data-code]');
+    if (!sel) return;
+    const code = sel.dataset.code!;
+    const value = sel.value as OverrideEffect;
+    if (value === (access?.overrides[code] ?? 'inherit')) pending.delete(code);
+    else pending.set(code, value);
+    // Update the "Result" tick of this row straight away.
+    const row = sel.closest('.sd-perm-row');
+    const now = row?.querySelector('.sd-perm-now');
+    if (now) now.innerHTML = holds(code) ? '<span class="sd-perm-on">✓</span>' : '<span class="sd-perm-off">—</span>';
+  });
+
+  $('sd-access-save')?.addEventListener('click', async () => {
+    const err = $('sd-access-error')!;
+    err.hidden = true;
+    if (!pending.size) return;
+    try {
+      access = await saveOverrides(
+        staffId,
+        [...pending].map(([permission, effect]) => ({ permission, effect })),
+      );
+      pending.clear();
+      if (currentMember) renderAccess(currentMember, []);
+    } catch (error) {
+      err.textContent = error instanceof ApiError ? error.message : 'Could not save.';
+      err.hidden = false;
+    }
+  });
 
   // ---------- activity ----------
   interface AuditRow {
@@ -398,7 +506,8 @@ const ic = {
       getBalance(staffId).catch(() => null),
       listStatement(staffId).catch(() => [] as StatementRow[]),
     ]);
-    renderAccess(member, positions);
+    currentMember = member;
+    await loadAccess(member, positions);
     const profile = salaries.find((p) => p.staffId === staffId) ?? null;
     const bal = balance?.balance ?? null;
     renderSalary(profile, bal);

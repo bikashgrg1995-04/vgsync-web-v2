@@ -98,3 +98,25 @@
 .sd-pay .sd-kv > div { grid-template-columns: 92px minmax(0, 1fr); }
 .sd-pay .sd-kv dd { white-space: nowrap; }
 .sd-pay { grid-template-columns: 130px minmax(0, 1fr); }
+
+/* Access & permissions: position base + per-person override */
+.sd-access-groups { display: grid; gap: 16px; }
+.sd-perm-group h4 { margin: 0 0 6px; font-size: 14px; color: var(--text-primary); }
+.sd-perm-head,
+.sd-perm-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 70px 70px minmax(120px, 150px);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 4px;
+}
+.sd-perm-head { font-size: 11.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+.sd-perm-row { border-bottom: 1px solid var(--border); font-size: 13.5px; color: var(--text-secondary); }
+.sd-perm-row:last-child { border-bottom: 0; }
+.sd-perm-base, .sd-perm-now { text-align: center; }
+.sd-override { width: 100%; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); padding: 0 8px; }
+@media (max-width: 640px) {
+  .sd-perm-head { display: none; }
+  .sd-perm-row { grid-template-columns: minmax(0, 1fr) 44px 44px; }
+  .sd-perm-ctl { grid-column: 1 / -1; }
+}

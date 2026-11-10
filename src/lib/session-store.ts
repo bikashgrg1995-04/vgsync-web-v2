@@ -32,6 +32,8 @@ export interface ApiUser {
   }>;
   /** Owner, or staff whose position grants the staff module ("Administration"). */
   can_manage_team?: boolean;
+  /** Every `module.action` code the person holds right now (e.g. `sales.cancel`). */
+  effective_permissions?: string[];
 }
 
 export interface ApiBusiness {

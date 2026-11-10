@@ -1,0 +1,268 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import '../../styles/app/purchase-page.css';
+import '../../styles/app/approvals-page.css';
+
+const meta = PAGE_META.approvals;
+const navItems = getNavItemsForRole();
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="pd-page" id="ap-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div class="pd-hero-icon" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+        </div>
+        <div>
+          <h2 class="pd-hero-title">Approvals</h2>
+          <p class="pd-hero-sub">Large purchases, expenses and stock changes wait here for a decision.</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="pd-kpis">
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-orange" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
+        <div class="pd-kpi-body"><span class="pd-kpi-label">Waiting</span><div class="pd-kpi-row"><strong id="kpi-pending">—</strong></div><span class="pd-kpi-sub">Need a decision</span></div>
+      </article>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-green" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+        <div class="pd-kpi-body"><span class="pd-kpi-label">Approved</span><div class="pd-kpi-row"><strong id="kpi-approved">—</strong></div><span class="pd-kpi-sub">Ready to be used</span></div>
+      </article>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-red" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></span>
+        <div class="pd-kpi-body"><span class="pd-kpi-label">Rejected</span><div class="pd-kpi-row"><strong id="kpi-rejected">—</strong></div><span class="pd-kpi-sub">Not allowed</span></div>
+      </article>
+    </div>
+
+    <div class="ap-tabs" id="ap-tabs" role="tablist">
+      <button type="button" data-tab="pending" class="is-active">Waiting</button>
+      <button type="button" data-tab="approved">Approved</button>
+      <button type="button" data-tab="rejected">Rejected</button>
+      <button type="button" data-tab="rules" id="ap-rules-tab" hidden>Approval rules</button>
+    </div>
+
+    <p class="ap-error" id="ap-error" role="alert" hidden></p>
+
+    <section id="ap-requests"><div class="ap-list" id="ap-list"></div></section>
+
+    <section id="ap-rules" hidden>
+      <p class="ap-note">An operation worth the threshold or more is held until someone with the approve permission decides. No rule means no approval. The owner is never held.</p>
+      <div class="ap-rules" id="ap-rules-list"></div>
+    </section>
+
+    <dialog class="ap-dialog" id="ap-reject-dialog">
+      <h3 style="margin:0 0 4px">Reject request</h3>
+      <p class="ap-note" style="margin:0">Say why, so the person knows what to change.</p>
+      <textarea id="ap-reject-reason" maxlength="300" placeholder="Reason"></textarea>
+      <p class="ap-error" id="ap-reject-error" hidden></p>
+      <div class="ap-actions">
+        <button type="button" class="btn-ghost-sm" id="ap-reject-cancel">Cancel</button>
+        <button type="button" class="btn-primary-sm" id="ap-reject-confirm">Reject</button>
+      </div>
+    </dialog>
+  </div>
+</AppLayout>
+
+<script>
+  import { ApiError } from '../../lib/api';
+  import { can, getSession } from '../../lib/auth';
+  import { APPROVER_CODES } from '../../lib/navigation';
+  import {
+    KIND_LABEL,
+    approve,
+    listApprovals,
+    listRules,
+    reject,
+    saveRule,
+    type ApprovalRequest,
+    type ApprovalRule,
+  } from '../../lib/approvals';
+  import { formatNpr } from '../../lib/reports';
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const esc = (v: string) =>
+    v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+  const session = getSession();
+  const isOwner = !!session?.isOwner;
+  const readOnly = session?.accessMode === 'read_only';
+  const mayDecide = !readOnly && (isOwner || APPROVER_CODES.some((c) => can(session, c)));
+
+  let requests: ApprovalRequest[] = [];
+  let tab = 'pending';
+  let rejecting: number | null = null;
+
+  const message = (e: unknown) =>
+    e instanceof ApiError ? e.message : 'Something went wrong. Please try again.';
+
+  function showError(text: string | null) {
+    const el = $('ap-error');
+    el.textContent = text ?? '';
+    el.hidden = !text;
+  }
+
+  function when(iso: string | null) {
+    return iso ? new Date(iso).toLocaleString() : '';
+  }
+
+  function render() {
+    for (const s of ['pending', 'approved', 'rejected'] as const) {
+      $(`kpi-${s}`).textContent = String(requests.filter((r) => r.status === s).length);
+    }
+
+    $('ap-requests').hidden = tab === 'rules';
+    $('ap-rules').hidden = tab !== 'rules';
+    document
+      .querySelectorAll<HTMLElement>('#ap-tabs button')
+      .forEach((b) => b.classList.toggle('is-active', b.dataset.tab === tab));
+
+    if (tab === 'rules') return;
+
+    const rows = requests.filter((r) => r.status === tab);
+    $('ap-list').innerHTML = rows.length
+      ? rows
+          .map((r) => {
+            const note =
+              r.status === 'rejected' && r.rejectionReason
+                ? ` · “${esc(r.rejectionReason)}”`
+                : r.status === 'approved'
+                  ? r.usedAt
+                    ? ' · used'
+                    : ' · not used yet'
+                  : '';
+            const actions =
+              r.status === 'pending' && mayDecide
+                ? `<div class="ap-actions">
+                     <button type="button" class="btn-ghost-sm" data-reject="${r.id}">Reject</button>
+                     <button type="button" class="btn-primary-sm" data-approve="${r.id}">Approve</button>
+                   </div>`
+                : `<span class="ap-badge is-${r.status}">${r.status}</span>`;
+            return `<article class="ap-item">
+              <div>
+                <h4>${esc(r.kindLabel)} · <span class="ap-amount">${esc(formatNpr(r.amount))}</span></h4>
+                <div class="ap-meta">${esc(r.summary) || '—'}</div>
+                <div class="ap-meta">Asked by ${esc(r.createdByName)} · ${esc(when(r.createdAt))}${
+                  r.decidedByName ? ` · decided by ${esc(r.decidedByName)}` : ''
+                }${note}</div>
+              </div>${actions}</article>`;
+          })
+          .join('')
+      : `<div class="ap-empty">Nothing here.</div>`;
+  }
+
+  async function load() {
+    try {
+      requests = await listApprovals();
+      showError(null);
+    } catch (e) {
+      showError(message(e));
+    }
+    render();
+  }
+
+  async function decide(fn: () => Promise<unknown>) {
+    try {
+      await fn();
+      showError(null);
+      await load();
+    } catch (e) {
+      showError(message(e));
+      await load();
+    }
+  }
+
+  $('ap-tabs').addEventListener('click', (ev) => {
+    const b = (ev.target as HTMLElement).closest<HTMLElement>('button[data-tab]');
+    if (!b) return;
+    tab = b.dataset.tab!;
+    render();
+  });
+
+  $('ap-list').addEventListener('click', (ev) => {
+    const el = ev.target as HTMLElement;
+    const yes = el.closest<HTMLElement>('[data-approve]');
+    const no = el.closest<HTMLElement>('[data-reject]');
+    if (yes) void decide(() => approve(Number(yes.dataset.approve)));
+    if (no) {
+      rejecting = Number(no.dataset.reject);
+      ($('ap-reject-reason') as unknown as HTMLTextAreaElement).value = '';
+      $('ap-reject-error').hidden = true;
+      ($('ap-reject-dialog') as unknown as HTMLDialogElement).showModal();
+    }
+  });
+
+  $('ap-reject-cancel').addEventListener('click', () =>
+    ($('ap-reject-dialog') as unknown as HTMLDialogElement).close(),
+  );
+  $('ap-reject-confirm').addEventListener('click', async () => {
+    const reason = ($('ap-reject-reason') as unknown as HTMLTextAreaElement).value.trim();
+    if (!reason) {
+      $('ap-reject-error').textContent = 'Say why it is rejected.';
+      $('ap-reject-error').hidden = false;
+      return;
+    }
+    ($('ap-reject-dialog') as unknown as HTMLDialogElement).close();
+    if (rejecting != null) await decide(() => reject(rejecting!, reason));
+  });
+
+  // ---------- rules (owner) ----------
+  async function loadRules() {
+    const list = $('ap-rules-list');
+    try {
+      const rules = await listRules();
+      list.innerHTML = rules
+        .map(
+          (r) => `<div class="ap-rule" data-kind="${r.kind}">
+            <div><strong>${esc(KIND_LABEL[r.kind])}</strong>
+              <div class="ap-meta">${r.isActive ? 'Needs approval from' : 'Off — no approval needed'}</div></div>
+            <input type="number" min="0" step="0.01" value="${r.threshold}" aria-label="Threshold" data-field="threshold" ${readOnly ? 'disabled' : ''}>
+            <label><input type="checkbox" data-field="active" ${r.isActive ? 'checked' : ''} ${readOnly ? 'disabled' : ''}> On</label>
+            <label><input type="checkbox" data-field="self" ${r.allowSelfApproval ? 'checked' : ''} ${readOnly ? 'disabled' : ''}> Self-approval</label>
+          </div>`,
+        )
+        .join('');
+    } catch (e) {
+      showError(message(e));
+    }
+  }
+
+  $('ap-rules-list').addEventListener('change', async (ev) => {
+    const row = (ev.target as HTMLElement).closest<HTMLElement>('.ap-rule');
+    if (!row || readOnly) return;
+    const rule: ApprovalRule = {
+      id: null,
+      kind: row.dataset.kind as ApprovalRule['kind'],
+      threshold: Number((row.querySelector('[data-field=threshold]') as HTMLInputElement).value || 0),
+      isActive: (row.querySelector('[data-field=active]') as HTMLInputElement).checked,
+      allowSelfApproval: (row.querySelector('[data-field=self]') as HTMLInputElement).checked,
+    };
+    try {
+      await saveRule(rule);
+      showError(null);
+    } catch (e) {
+      showError(message(e));
+    }
+    await loadRules();
+  });
+
+  if (isOwner) {
+    $('ap-rules-tab').hidden = false;
+    void loadRules();
+  }
+  void load();
+</script>
