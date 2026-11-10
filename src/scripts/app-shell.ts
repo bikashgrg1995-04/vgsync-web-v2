@@ -3,14 +3,12 @@ import {
   refreshProfile,
   logout,
   canSwitchBranch,
-  canManageStaff,
   loadBranches,
   switchBranch,
-  type UserRole,
 } from '../lib/auth';
 import { AUTH_STORAGE_KEY } from '../lib/session-store';
 import { redirectToLogin } from '../lib/api';
-import { getNavItemsForRole } from '../lib/navigation';
+import { getNavItemsForRole, navItemVisible, type NavViewer } from '../lib/navigation';
 import { paintAvatar } from '../lib/avatar';
 
 const root = document.documentElement;
@@ -155,8 +153,15 @@ function applySessionUI(): void {
     branchInfo.textContent = `Branch: ${session.activeBranchCode} — ${session.activeBranchName}`;
   }
 
+  const viewer: NavViewer = {
+    isOwner: session.isOwner,
+    permissions: session.permissions,
+    companyOwner: session.isOwner && session.role === 'owner',
+  };
   const allowed = new Set(
-    getNavItemsForRole(session.role as UserRole, canManageStaff(session)).map((i) => i.id),
+    getNavItemsForRole()
+      .filter((item) => navItemVisible(item, viewer))
+      .map((i) => i.id),
   );
   document.querySelectorAll<HTMLElement>('[data-nav-id]').forEach((el) => {
     const id = el.dataset.navId;
@@ -166,6 +171,16 @@ function applySessionUI(): void {
     const target = (li ?? el) as HTMLElement;
 
     target.style.display = allowed.has(id) ? '' : 'none';
+  });
+
+  // A section heading with nothing under it is hidden too.
+  document.querySelectorAll<HTMLElement>('[data-nav-group]').forEach((label) => {
+    const group = label.dataset.navGroup;
+    const visible = Array.from(
+      document.querySelectorAll<HTMLElement>(`[data-nav-group-item="${group}"]`),
+    ).some((li) => li.style.display !== 'none');
+
+    label.style.display = visible ? '' : 'none';
   });
 
   if (branchSelect) {

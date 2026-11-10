@@ -319,3 +319,47 @@ export function formatNpr(n: number): string {
 export function formatQty(n: number): string {
   return new Intl.NumberFormat('en-NP', { maximumFractionDigits: 3 }).format(n);
 }
+
+// ---------- owner dashboard ----------
+
+export interface DashboardBranch {
+  id: number;
+  name: string;
+  business_code: string;
+  sales_today: string;
+  sales_month: string;
+  purchases_month: string;
+  profit_month: string;
+  receivables: string;
+  low_stock: number;
+}
+
+export interface Dashboard {
+  as_of: string;
+  business: { id: number; name: string; business_type: string };
+  access_mode: 'full' | 'read_only';
+  sales_today: string;
+  sales_month: string;
+  purchases_month: string;
+  profit_month: string;
+  income_month: string;
+  expenses_month: string;
+  receivables: string;
+  payables: string;
+  cash: { cash: string; bank: string; other: string; total: string };
+  stock: { value: string; damaged_value: string };
+  sales_trend: Array<{ date: string; total: string }>;
+  income_expense_by_month: Array<{ month: string; income: string; expenses: string; profit: string }>;
+  top_products: Array<{ name: string; quantity: string; revenue: string }>;
+  low_stock: { count: number; items: Array<{ product: number; name: string; quantity: string; reorder_level: string }> };
+  approvals_pending: number;
+  staff: { total: number; active: number; without_position: number };
+  alerts: Array<{ kind: string; severity: 'info' | 'warning' | 'danger'; message: string }>;
+  /** Head Office only: its branches, read-only. */
+  branches?: DashboardBranch[];
+}
+
+/** One call, real numbers from the API (needs the dashboard.view permission). */
+export function loadDashboard(): Promise<Dashboard> {
+  return api<Dashboard>('/reports/dashboard/');
+}

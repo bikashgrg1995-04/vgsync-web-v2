@@ -50,6 +50,9 @@ export interface AuthSession {
   accessMode: 'full' | 'read_only';
   companyName: string | null;
   mustChangePassword: boolean;
+  /** Every permission code the person holds (owners hold all). */
+  permissions: string[];
+  isOwner: boolean;
   remember: boolean;
   loggedInAt: string;
 }
@@ -101,6 +104,8 @@ function toSession(auth: StoredAuth): AuthSession {
     accessMode: active.access_mode,
     companyName: active.company_name,
     mustChangePassword: user.must_change_password,
+    permissions: user.effective_permissions ?? [],
+    isOwner: user.role === 'owner',
     remember: auth.remember,
     loggedInAt: auth.logged_in_at,
   };
@@ -262,6 +267,15 @@ export function canEditPositions(session: AuthSession | null): boolean {
   const auth = readAuth();
   if (!session || !auth) return false;
   return auth.user.role === 'owner';
+}
+
+/**
+ * Whether the signed-in person holds a permission such as `sales.cancel`.
+ * The API decides for real; this only decides what is shown. Owners hold all.
+ */
+export function can(session: AuthSession | null, code: string): boolean {
+  if (!session) return false;
+  return session.isOwner || session.permissions.includes(code);
 }
 
 /** Head Office (the business signed in with) plus every active branch. */

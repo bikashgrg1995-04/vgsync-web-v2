@@ -26,6 +26,7 @@ export const MODULES: Array<{ id: string; label: string }> = [
   { id: 'orders', label: 'Orders' },
   { id: 'finance', label: 'Finance' },
   { id: 'staff', label: 'Staff & payroll' },
+  { id: 'reports', label: 'Reports' },
   { id: 'reminders', label: 'Reminders' },
 ];
 
@@ -70,16 +71,56 @@ export interface Position {
   id: number;
   name: string;
   description: string;
+  department: string;
   isActive: boolean;
   staffCount: number;
   permissions: PositionPermission[];
+  /** Every `module.action` code the position grants. */
+  granted: string[];
 }
 
 export interface PositionInput {
   name: string;
   description: string;
+  department?: string;
   isActive?: boolean;
-  permissions: PositionPermission[];
+  /** The full list of `module.action` codes the position grants. */
+  codes: string[];
+  /** On create only: the preset this position started from. */
+  preset?: string;
+}
+
+export interface CatalogueAction {
+  action: string;
+  code: string;
+  label: string;
+  /** Reserved codes belong to the owner and can never be handed out. */
+  reserved: boolean;
+}
+
+export interface CatalogueModule {
+  module: string;
+  label: string;
+  actions: CatalogueAction[];
+}
+
+export interface Preset {
+  key: string;
+  label: string;
+  department: string;
+  permissions: string[];
+}
+
+export type OverrideEffect = 'inherit' | 'allow' | 'deny';
+
+export interface StaffAccess {
+  /** What the position gives. */
+  inherited: string[];
+  /** The person's own exceptions, by code. */
+  overrides: Record<string, 'allow' | 'deny'>;
+  /** The result. */
+  effective: string[];
+  positionId: number | null;
 }
 
 interface ApiStaff {
@@ -103,6 +144,8 @@ interface ApiPosition {
   id: number;
   name: string;
   description: string;
+  department?: string;
+  granted?: string[];
   is_active: boolean;
   staff_count: number;
   permissions: Array<{
@@ -144,6 +187,8 @@ function positionFromApi(p: ApiPosition): Position {
     id: p.id,
     name: p.name,
     description: p.description,
+    department: p.department ?? '',
+    granted: p.granted ?? [],
     isActive: p.is_active,
     staffCount: p.staff_count,
     permissions: p.permissions.map((x) => ({
@@ -239,15 +284,11 @@ function positionBody(input: PositionInput): Record<string, unknown> {
   const body: Record<string, unknown> = {
     name: input.name.trim(),
     description: input.description.trim(),
-    // Send every module so unticked boxes are really switched off.
-    permissions: input.permissions.map((p) => ({
-      module: p.module,
-      can_view: p.canView,
-      can_create: p.canCreate,
-      can_update: p.canUpdate,
-      can_delete: p.canDelete,
-    })),
+    // The full list, so unticked boxes are really switched off.
+    codes: input.codes,
   };
+  if (input.department !== undefined) body.department = input.department.trim();
+  if (input.preset) body.preset = input.preset;
   if (input.isActive !== undefined) body.is_active = input.isActive;
   return body;
 }
@@ -271,4 +312,46 @@ export async function setPositionActive(id: number, isActive: boolean): Promise<
 /** A position in use cannot be deleted; the API answers 409 with the reason. */
 export async function deletePosition(id: number): Promise<void> {
   await api(`/positions/${id}/`, { method: 'DELETE' });
+}
+
+// ---------- permissions ----------
+
+/** Every module and action a position can grant (what the API understands). */
+export async function loadCatalogue(): Promise<CatalogueModule[]> {
+  return api<CatalogueModule[]>('/positions/catalogue/');
+}
+
+/** Starting templates for a new position. Picking one only copies its grants. */
+export async function loadPresets(): Promise<Preset[]> {
+  return api<Preset[]>('/positions/presets/');
+}
+
+interface ApiAccess {
+  inherited: string[];
+  overrides: Record<string, 'allow' | 'deny'>;
+  effective: string[];
+  position: number | null;
+}
+
+function accessFromApi(a: ApiAccess): StaffAccess {
+  return {
+    inherited: a.inherited,
+    overrides: a.overrides,
+    effective: a.effective,
+    positionId: a.position,
+  };
+}
+
+export async function getAccess(id: number): Promise<StaffAccess> {
+  return accessFromApi(await api<ApiAccess>(`/staff/${id}/access/`));
+}
+
+/** Owner only. Sets, changes or clears one person's own exceptions. */
+export async function saveOverrides(
+  id: number,
+  changes: Array<{ permission: string; effect: OverrideEffect }>,
+): Promise<StaffAccess> {
+  return accessFromApi(
+    await api<ApiAccess>(`/staff/${id}/access/`, { method: 'PUT', body: { overrides: changes } }),
+  );
 }
