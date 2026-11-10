@@ -43,9 +43,9 @@ const ALL_ITEMS: NavItem[] = [
 
   { id: 'sales', label: 'Sales', href: '/dashboard/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },
   { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'sales', perm: 'orders.view' },
-  { id: 'returns', label: 'Returns', href: '/dashboard/returns', icon: 'returns', group: 'sales', perm: 'sales.view' },
+  { id: 'returns', label: 'Returns', href: '/dashboard/sales#returns', icon: 'returns', group: 'sales', perm: 'sales.view' },
   { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users', group: 'sales', perm: 'sales.view' },
-  { id: 'servicing', label: 'Servicing', href: '/dashboard/servicing', icon: 'wrench', group: 'sales', perm: 'sales.view' },
+  { id: 'servicing', label: 'Follow-ups', href: '/dashboard/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
 
   { id: 'purchase', label: 'Purchase', href: '/dashboard/purchase', icon: 'clipboard', group: 'purchases', perm: 'purchases.view' },
   { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck', group: 'purchases', perm: 'purchases.view' },

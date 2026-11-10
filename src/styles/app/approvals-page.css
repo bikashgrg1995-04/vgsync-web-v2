@@ -47,3 +47,6 @@ dialog.ap-dialog textarea {
   .ap-actions { justify-content: flex-start; }
   .ap-rule { grid-template-columns: 1fr; }
 }
+#ap-page { display: flex; flex-direction: column; }
+#ap-page .pd-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { #ap-page .pd-kpis { grid-template-columns: 1fr; } }

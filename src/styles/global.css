@@ -291,3 +291,6 @@ body {
         transition: none !important;
     }
 }
+/* The hidden attribute must always win over a component's own display value,
+   so a button hidden for a read-only branch stays hidden. */
+[hidden] { display: none !important; }
