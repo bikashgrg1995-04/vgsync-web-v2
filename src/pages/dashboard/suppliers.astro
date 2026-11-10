@@ -98,6 +98,7 @@ const navItems = getNavItemsForRole(defaultRole);
               <span class="sup-badge" id="d-status">—</span>
             </div>
             <div class="sup-detail-actions">
+              <button type="button" class="btn-ghost-sm" id="sup-statement">Statement</button>
               <button type="button" class="btn-ghost-sm" id="sup-edit">Edit</button>
               <button type="button" class="btn-ghost-sm is-danger" id="sup-toggle">Deactivate</button>
             </div>
@@ -187,6 +188,7 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
+  import { statementUrl } from '../../lib/statements';
   import { getSession, refreshProfile } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
   import {
@@ -402,6 +404,10 @@ const navItems = getNavItemsForRole(defaultRole);
   }
 
   $('sup-add')?.addEventListener('click', () => openForm());
+  $('sup-statement')?.addEventListener('click', () => {
+    if (selectedId) window.location.href = statementUrl('supplier', selectedId);
+  });
+
   $('sup-edit')?.addEventListener('click', () => {
     const s = selected();
     if (s) openForm(s);

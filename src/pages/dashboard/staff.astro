@@ -316,6 +316,7 @@ const navItems = getNavItemsForRole(defaultRole);
   }
   $('tab-team')?.addEventListener('click', () => selectTab('team'));
   $('tab-positions')?.addEventListener('click', () => selectTab('positions'));
+  if (window.location.hash === '#positions') selectTab('positions');
 
   // ---------- team table ----------
 

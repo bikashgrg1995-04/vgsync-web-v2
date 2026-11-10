@@ -415,3 +415,35 @@
   .se-profile-row { align-items: flex-start; }
   .se-toggles li { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; }
 }
+
+/* ---- Users & Permissions ---- */
+.se-u-wide { grid-column: 1 / -1; }
+.se-u-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.se-u-btn {
+  display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-primary);
+  font-size: 0.8rem; font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+.se-u-btn:hover { background: var(--surface-hover); }
+.se-u-btn.is-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.se-u-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.se-u-kpis > div { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.se-u-kpis span { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
+.se-u-kpis small { font-size: 0.74rem; color: var(--text-muted); }
+.se-u-scroll { overflow-x: auto; }
+.se-u-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+.se-u-table th { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.se-u-table td { padding: 10px; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: top; }
+.se-u-table tr:last-child td { border-bottom: none; }
+.se-u-table .num { text-align: right; }
+.se-u-table td.wrap { white-space: normal; min-width: 200px; }
+.se-u-table td small { display: block; color: var(--text-muted); font-size: 0.72rem; }
+.se-u-empty { color: var(--text-muted); text-align: center; }
+.se-u-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.se-u-list li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.84rem; color: var(--text-primary); }
+.se-u-list li:last-child { border-bottom: none; }
+.se-u-list li.se-u-empty { justify-content: center; }
+@media (max-width: 640px) {
+  .se-u-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .se-u-actions { margin-left: 0; width: 100%; }
+}
