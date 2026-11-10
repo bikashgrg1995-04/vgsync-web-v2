@@ -51,10 +51,10 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 21V5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v6h5a1 1 0 0 1 1 1v9zM7 8v2h2V8zm0 4v2h2v-2zm0 4v2h2v-2zm6-4v2h2v-2zm0 4v2h2v-2z"></path></svg>
           Branch &amp; Business
         </button>
-        <a class="se-nav-item" href="/dashboard/staff" id="tab-users" hidden>
+        <button type="button" class="se-nav-item" data-settings-tab="users" id="tab-users" hidden>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M2 20a7 7 0 0 1 14 0z"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M17 14a5 5 0 0 1 5 5v1h-5.5a8 8 0 0 0-2-5.2A5 5 0 0 1 17 14z"></path></svg>
           Users &amp; Permissions
-        </a>
+        </button>
         <button type="button" class="se-nav-item" data-settings-tab="security">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"></path></svg>
           Security
@@ -276,6 +276,68 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
           </article>
         </section>
 
+        <!-- ================= USERS & PERMISSIONS ================= -->
+        <section class="se-panel" data-settings-panel="users">
+          <div class="se-grid">
+            <article class="se-card se-u-wide">
+              <header class="se-card-head">
+                <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm8 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4zM8 13c-.3 0-.6 0-1 .1C5.4 13.4 2 14.5 2 17v2h5v-2c0-1.4.7-2.6 1.8-3.5A9 9 0 0 0 8 13z"></path></svg></span>
+                <div><h3>Users &amp; Permissions</h3><p>Who can sign in, and what each position is allowed to do</p></div>
+                <div class="se-u-actions">
+                  <a class="se-u-btn" href="/dashboard/staff#positions">Manage positions</a>
+                  <a class="se-u-btn is-primary" href="/dashboard/staff">Manage staff</a>
+                </div>
+              </header>
+              <div class="se-u-kpis">
+                <div><span id="u-active">—</span><small>Active staff</small></div>
+                <div><span id="u-inactive">—</span><small>Inactive</small></div>
+                <div><span id="u-positions">—</span><small>Positions</small></div>
+                <div><span id="u-rules">—</span><small>Approval rules on</small></div>
+              </div>
+              <p class="se-error" id="u-error" hidden></p>
+            </article>
+
+            <article class="se-card se-u-wide">
+              <header class="se-card-head">
+                <div><h3>Positions</h3><p>A position is a set of allowed actions. Staff get their access from their position, and you can allow or deny single actions on a person.</p></div>
+              </header>
+              <div class="se-u-scroll">
+                <table class="se-u-table">
+                  <thead><tr><th>Position</th><th class="num">People</th><th class="num">Allowed actions</th><th>Status</th></tr></thead>
+                  <tbody id="u-positions-body"><tr><td colspan="4" class="se-u-empty">Loading…</td></tr></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="se-card">
+              <header class="se-card-head">
+                <div><h3>Only the owner can</h3><p>These can never be given to a position or a person.</p></div>
+              </header>
+              <ul class="se-u-list" id="u-reserved"><li class="se-u-empty">Loading…</li></ul>
+            </article>
+
+            <article class="se-card">
+              <header class="se-card-head">
+                <div><h3>Approval rules</h3><p>Amounts above the limit wait for an approver.</p></div>
+                <div class="se-u-actions"><a class="se-u-btn" href="/dashboard/approvals#rules">Edit rules</a></div>
+              </header>
+              <ul class="se-u-list" id="u-rules-list"><li class="se-u-empty">Loading…</li></ul>
+            </article>
+
+            <article class="se-card se-u-wide">
+              <header class="se-card-head">
+                <div><h3>Recent access changes</h3><p>Positions, per-person overrides and approval rules.</p></div>
+              </header>
+              <div class="se-u-scroll">
+                <table class="se-u-table">
+                  <thead><tr><th>When</th><th>By</th><th>Change</th></tr></thead>
+                  <tbody id="u-audit-body"><tr><td colspan="3" class="se-u-empty">Loading…</td></tr></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <!-- ================= SECURITY ================= -->
         <section class="se-panel" data-settings-panel="security">
           <article class="se-card">
@@ -315,6 +377,9 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
   import { getSession, ApiError } from '../../lib/auth';
   import { paintAvatar, setAvatarFromFile, clearAvatar } from '../../lib/avatar';
   import { getMyProfile, saveMyProfile, getBusiness, getCompanyName } from '../../lib/settings';
+  import { api } from '../../lib/api';
+  import { listStaff, listPositions, loadCatalogue } from '../../lib/staff';
+  import { listRules, KIND_LABEL } from '../../lib/approvals';
 
   const THEME_KEY = 'vgsync-theme';
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
@@ -343,6 +408,55 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
     return error.status === 400 && parts.length ? parts.join(' ') : error.message;
   }
 
+
+  // ---- Users & Permissions: a read-only overview; the editing lives in Staff and Approvals.
+  const escHtml = (v: string) => v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  let usersLoaded = false;
+
+  async function loadUsersPanel(): Promise<void> {
+    if (usersLoaded) return;
+    usersLoaded = true;
+    setError('u-error', null);
+    const [staff, positions, rules, catalogue] = await Promise.allSettled([listStaff(), listPositions(), listRules(), loadCatalogue()]);
+
+    if (staff.status === 'fulfilled') {
+      setText('u-active', String(staff.value.filter((m) => m.isActive).length));
+      setText('u-inactive', String(staff.value.filter((m) => !m.isActive).length));
+    }
+    if (positions.status === 'fulfilled') {
+      setText('u-positions', String(positions.value.length));
+      $('u-positions-body')!.innerHTML = positions.value.length
+        ? positions.value
+            .map((p) => `<tr><td><strong>${escHtml(p.name)}</strong>${p.department ? `<small>${escHtml(p.department)}</small>` : ''}</td><td class="num">${p.staffCount}</td><td class="num">${p.granted.length}</td><td>${p.isActive ? 'Active' : 'Off'}</td></tr>`)
+            .join('')
+        : '<tr><td colspan="4" class="se-u-empty">No positions yet. Add one from Manage positions.</td></tr>';
+    } else {
+      setError('u-error', describe(positions.reason));
+    }
+    if (rules.status === 'fulfilled') {
+      const on = rules.value.filter((r) => r.isActive);
+      setText('u-rules', String(on.length));
+      $('u-rules-list')!.innerHTML = rules.value.length
+        ? rules.value.map((r) => `<li><span>${escHtml(KIND_LABEL[r.kind] ?? r.kind)}</span><strong>${r.isActive ? `above NPR ${r.threshold.toLocaleString('en-IN')}` : 'Off'}</strong></li>`).join('')
+        : '<li class="se-u-empty">No approval rules set.</li>';
+    }
+    if (catalogue.status === 'fulfilled') {
+      const reserved = catalogue.value.flatMap((m) => m.actions.filter((a) => a.reserved).map((a) => a.label));
+      $('u-reserved')!.innerHTML = reserved.length ? reserved.map((l) => `<li>${escHtml(l)}</li>`).join('') : '<li class="se-u-empty">None.</li>';
+    }
+
+    try {
+      const models = ['accounts.position', 'accounts.positionpermission', 'accounts.staffpermissionoverride', 'approvals.approvalrule'];
+      const pages = await Promise.all(models.map((m) => api<{ results: Array<{ id: number; created_at: string; actor_name: string; summary: string }> }>(`/audit/?model=${m}&page_size=8`)));
+      const rows = pages.flatMap((p) => p.results).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 10);
+      $('u-audit-body')!.innerHTML = rows.length
+        ? rows.map((r) => `<tr><td>${escHtml(new Date(r.created_at).toLocaleString())}</td><td>${escHtml(r.actor_name || 'System')}</td><td class="wrap">${escHtml(r.summary)}</td></tr>`).join('')
+        : '<tr><td colspan="3" class="se-u-empty">No changes yet.</td></tr>';
+    } catch (error) {
+      $('u-audit-body')!.innerHTML = `<tr><td colspan="3" class="se-u-empty">${escHtml(describe(error))}</td></tr>`;
+    }
+  }
+
   function showTab(id: string): void {
     document.querySelectorAll('[data-settings-tab]').forEach((b) => b.classList.toggle('is-active', (b as HTMLElement).dataset.settingsTab === id));
     document.querySelectorAll('[data-settings-panel]').forEach((p) => p.classList.toggle('is-active', (p as HTMLElement).dataset.settingsPanel === id));
@@ -350,6 +464,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
   document.querySelectorAll<HTMLButtonElement>('[data-settings-tab]').forEach((btn) => {
     btn.addEventListener('click', () => showTab(btn.dataset.settingsTab!));
   });
+  document.querySelector('[data-settings-tab="users"]')?.addEventListener('click', () => void loadUsersPanel());
 
   const session = getSession();
   if (!session) window.location.replace('/');

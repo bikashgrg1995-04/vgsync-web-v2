@@ -24,7 +24,7 @@ export interface NavItem {
   /** Permission code needed to see the item. Missing: everyone. */
   perm?: string;
   /** Special rules the app shell understands. */
-  rule?: 'company_owner' | 'approvals';
+  rule?: 'company_owner' | 'approvals' | 'statements';
 }
 
 export const NAV_GROUPS: NavGroup[] = [
@@ -51,6 +51,7 @@ const ALL_ITEMS: NavItem[] = [
   { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck', group: 'purchases', perm: 'purchases.view' },
 
   { id: 'payments', label: 'Payments', href: '/dashboard/payments', icon: 'wallet', group: 'finance', perm: 'finance.view' },
+  { id: 'statements', label: 'Statements', href: '/dashboard/statements', icon: 'clipboard', group: 'finance', rule: 'statements' },
   { id: 'approvals', label: 'Approvals', href: '/dashboard/approvals', icon: 'shield', group: 'finance', rule: 'approvals' },
 
   { id: 'inventory', label: 'Inventory', href: '/dashboard/inventory', icon: 'box', group: 'inventory', perm: 'inventory.view' },
@@ -81,6 +82,10 @@ export function navItemVisible(item: NavItem, viewer: NavViewer): boolean {
 
   if (item.rule === 'approvals') {
     return viewer.isOwner || APPROVER_CODES.some((c) => viewer.permissions.includes(c));
+  }
+
+  if (item.rule === 'statements') {
+    return viewer.isOwner || viewer.permissions.includes('sales.view') || viewer.permissions.includes('purchases.view');
   }
 
   if (!item.perm) return true;

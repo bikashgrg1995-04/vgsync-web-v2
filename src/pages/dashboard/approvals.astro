@@ -263,6 +263,7 @@ const navItems = getNavItemsForRole();
   if (isOwner) {
     $('ap-rules-tab').hidden = false;
     void loadRules();
+    if (window.location.hash === '#rules') tab = 'rules';
   }
   void load();
 </script>

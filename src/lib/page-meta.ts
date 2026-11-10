@@ -64,6 +64,13 @@ export const PAGE_META: Record<string, PageMeta> = {
     skeletonHint:
       'Receipts, payments and outstanding balances will appear here.<br />Scoped to the active branch.',
   },
+  statements: {
+    id: 'statements',
+    title: 'Statements',
+    breadcrumb: 'Finance /',
+    skeletonTitle: 'Statements',
+    skeletonHint: 'Customer and supplier statements.',
+  },
   approvals: {
     id: 'approvals',
     title: 'Approvals',

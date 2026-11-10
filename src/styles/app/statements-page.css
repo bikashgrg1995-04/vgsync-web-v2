@@ -1,0 +1,68 @@
+#sm-page { display: flex; flex-direction: column; }
+#sm-page .pd-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { #sm-page .pd-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 420px) { #sm-page .pd-kpis { grid-template-columns: 1fr; } }
+
+.sm-kinds { display: inline-flex; gap: 6px; margin-bottom: 12px; }
+.sm-kinds button {
+  height: var(--ctl-h, 38px); padding: 0 18px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-secondary); font: inherit; font-weight: 600; cursor: pointer;
+}
+.sm-kinds button.is-active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+.sm-filters {
+  display: grid; grid-template-columns: minmax(220px, 2fr) repeat(3, minmax(130px, 1fr)); gap: 12px;
+  align-items: end; margin-bottom: 12px;
+}
+.sm-filters label { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.sm-filters select, .sm-filters input {
+  box-sizing: border-box; width: 100%; height: var(--ctl-h, 38px); padding: 0 12px;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-primary); font: inherit; font-weight: 500;
+}
+@media (max-width: 900px) { .sm-filters { grid-template-columns: 1fr 1fr; } .sm-filters .sm-party { grid-column: 1 / -1; } }
+@media (max-width: 420px) { .sm-filters { grid-template-columns: 1fr; } }
+
+.sm-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.sm-chips button {
+  height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-secondary); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.sm-chips button:hover { background: var(--surface-hover); color: var(--text-primary); }
+.sm-chips button.is-active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+.sm-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.sm-head h3 { margin: 0; font-size: 16px; color: var(--text-primary); }
+.sm-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.sm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sm-btn {
+  height: var(--ctl-h, 38px); padding: 0 16px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-primary); font: inherit; font-weight: 600; cursor: pointer;
+}
+.sm-btn:hover:not(:disabled) { background: var(--surface-hover); }
+.sm-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.sm-wrap { overflow-x: auto; }
+.sm-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.sm-table th, .sm-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.sm-table th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); font-weight: 600; }
+.sm-table td.desc { white-space: normal; min-width: 180px; color: var(--text-secondary); }
+.sm-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.sm-table tr.sm-open td { color: var(--text-muted); font-style: italic; }
+.sm-type { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent); }
+.sm-type.is-pay { background: rgba(34, 197, 94, .16); color: #22c55e; }
+.sm-type.is-ret { background: rgba(245, 158, 11, .16); color: #f59e0b; }
+.sm-type.is-adj { background: var(--surface-hover); color: var(--text-secondary); }
+.sm-more { display: flex; justify-content: center; margin-top: 12px; }
+.sm-note { margin: 12px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.sm-error { margin: 0 0 12px; color: #ef4444; font-size: 13.5px; }
+.sm-empty { padding: 40px 12px; text-align: center; color: var(--text-muted); }
+.sm-pos { color: #f59e0b; }
+.sm-neg { color: #22c55e; }
+
+@media print {
+  .app-sidebar, .app-header, .sm-kinds, .sm-filters, .sm-chips, .sm-actions, .sm-more, .pd-hero, .bottom-nav { display: none !important; }
+  #sm-page { padding: 0; }
+  .pd-card { border: none; box-shadow: none; }
+}

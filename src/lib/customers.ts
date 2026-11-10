@@ -6,7 +6,13 @@
  * on the server from sales, payments, returns and credit use.
  */
 
-import { api, apiDownload } from './api';
+import { api } from './api';
+import {
+  STATEMENT_TYPES as SHARED_TYPES,
+  downloadPartyStatement,
+  getPartyStatement,
+  type StatementFilters,
+} from './statements';
 
 export type CustomerType = 'individual' | 'business' | 'fleet';
 
@@ -164,102 +170,17 @@ export function getCustomerSummary(list: Customer[]) {
 
 export type StatementType = 'sale' | 'payment' | 'return' | 'refund' | 'replacement' | 'adjustment';
 
-export const STATEMENT_TYPES: Record<StatementType, string> = {
-  sale: 'Sale',
-  payment: 'Payment',
-  return: 'Return',
-  refund: 'Refund',
-  replacement: 'Replacement',
-  adjustment: 'Credit adjustment',
-};
+export const STATEMENT_TYPES = SHARED_TYPES.customer as Record<StatementType, string>;
 
-export interface StatementRow {
-  date: string;
-  type: string;
-  reference: string;
-  description: string;
-  debit: number;
-  credit: number;
-  balance: number;
-}
+export type { StatementRow, Statement, StatementFilters } from './statements';
 
-export interface Statement {
-  openingBalance: number;
-  totalDebit: number;
-  totalCredit: number;
-  closingBalance: number;
-  balanceMeans: string;
-  rows: StatementRow[];
-  hasMore: boolean;
-}
-
-export interface StatementFilters {
-  dateFrom?: string;
-  dateTo?: string;
-  type?: StatementType | '';
-}
-
-function statementQuery(filters: StatementFilters, extra: Record<string, string> = {}): string {
-  const params = new URLSearchParams(extra);
-  if (filters.dateFrom) params.set('date_from', filters.dateFrom);
-  if (filters.dateTo) params.set('date_to', filters.dateTo);
-  if (filters.type) params.set('type', filters.type);
-  const query = params.toString();
-  return query ? `?${query}` : '';
-}
-
-export async function getStatement(
-  id: number,
-  filters: StatementFilters = {},
-  page = 1,
-): Promise<Statement> {
-  const data = await api<{
-    opening_balance: string;
-    total_debit: string;
-    total_credit: string;
-    closing_balance: string;
-    balance_means: string;
-    next: string | null;
-    results: Array<{
-      date: string;
-      type: string;
-      reference: string;
-      description: string;
-      debit: string;
-      credit: string;
-      balance: string;
-    }>;
-  }>(`/customers/${id}/statement/${statementQuery(filters, { page: String(page) })}`);
-
-  return {
-    openingBalance: num(data.opening_balance),
-    totalDebit: num(data.total_debit),
-    totalCredit: num(data.total_credit),
-    closingBalance: num(data.closing_balance),
-    balanceMeans: data.balance_means,
-    hasMore: !!data.next,
-    rows: data.results.map((r) => ({
-      date: r.date,
-      type: r.type,
-      reference: r.reference,
-      description: r.description,
-      debit: num(r.debit),
-      credit: num(r.credit),
-      balance: num(r.balance),
-    })),
-  };
+export function getStatement(id: number, filters: StatementFilters = {}, page = 1) {
+  return getPartyStatement('customer', id, filters, page);
 }
 
 /** Download every statement row (not one page) as Excel or PDF. */
-export function downloadStatement(
-  id: number,
-  file: 'xlsx' | 'pdf',
-  filters: StatementFilters = {},
-): Promise<void> {
-  return apiDownload(
-    `/customers/${id}/statement/${statementQuery(filters, { export: file })}`,
-    `customer-statement.${file}`,
-  );
+export function downloadStatement(id: number, file: 'xlsx' | 'pdf', filters: StatementFilters = {}) {
+  return downloadPartyStatement('customer', id, file, filters);
 }
 
 export function formatNpr(n: number): string {
