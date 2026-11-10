@@ -1192,6 +1192,14 @@ const navItems = getNavItemsForRole(defaultRole);
   }
   document.querySelectorAll<HTMLElement>('[data-goto]').forEach((btn) => btn.addEventListener('click', () => showPanel(btn.dataset.goto!)));
 
+  // The sidebar links straight to a panel (for example /dashboard/sales#returns).
+  const panelNames = new Set(Array.from(document.querySelectorAll<HTMLElement>('[data-panel]')).map((p) => p.dataset.panel!));
+  function panelFromHash(): void {
+    const name = window.location.hash.slice(1);
+    if (name && panelNames.has(name) && name !== activePanel) showPanel(name);
+  }
+  window.addEventListener('hashchange', panelFromHash);
+
   let timer: number | undefined;
   $('f-search')?.addEventListener('input', () => {
     window.clearTimeout(timer);
@@ -1228,5 +1236,5 @@ const navItems = getNavItemsForRole(defaultRole);
     void loadTab(activePanel);
   }
 
-  void init();
+  void init().then(panelFromHash);
 </script>

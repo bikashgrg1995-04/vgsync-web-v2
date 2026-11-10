@@ -141,7 +141,8 @@ const navItems = getNavItemsForRole(defaultRole);
     if (mine !== run) return;
 
     const kpis: string[] = [];
-    if (sales) {
+    // People with the full dashboard get these two in its own cards below.
+    if (sales && !can(s, 'dashboard.view')) {
       const t = sales.filter((x) => x.saleDate === today);
       const m = sales.filter((x) => x.saleDate >= month);
       kpis.push(kpi("Today's sales", formatNpr(t.reduce((a, x) => a + x.netTotal, 0)), `${t.length} sale${t.length === 1 ? '' : 's'}`, 'strong', '/dashboard/sales'));
