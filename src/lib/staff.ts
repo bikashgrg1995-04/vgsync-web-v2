@@ -28,6 +28,7 @@ export const MODULES: Array<{ id: string; label: string }> = [
   { id: 'staff', label: 'Staff & payroll' },
   { id: 'reports', label: 'Reports' },
   { id: 'reminders', label: 'Reminders' },
+  { id: 'backup', label: 'Backup & restore' },
 ];
 
 export interface StaffMember {
