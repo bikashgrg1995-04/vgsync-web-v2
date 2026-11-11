@@ -24,7 +24,7 @@ export interface NavItem {
   /** Permission code needed to see the item. Missing: everyone. */
   perm?: string;
   /** Special rules the app shell understands. */
-  rule?: 'company_owner' | 'approvals' | 'statements';
+  rule?: 'company_owner' | 'approvals' | 'statements' | 'has_head_office';
 }
 
 export const NAV_GROUPS: NavGroup[] = [
@@ -42,7 +42,7 @@ const ALL_ITEMS: NavItem[] = [
   { id: 'branches', label: 'Branches', href: '/dashboard/branches', icon: 'building', group: 'main', rule: 'company_owner' },
 
   { id: 'sales', label: 'Sales', href: '/dashboard/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },
-  { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'sales', perm: 'orders.view' },
+  { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'sales', perm: 'orders.view', rule: 'has_head_office' },
   { id: 'returns', label: 'Returns', href: '/dashboard/sales#returns', icon: 'returns', group: 'sales', perm: 'sales.view' },
   { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users', group: 'sales', perm: 'sales.view' },
   { id: 'servicing', label: 'Follow-ups', href: '/dashboard/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
@@ -74,11 +74,14 @@ export interface NavViewer {
   permissions: string[];
   /** Company owner working in Head Office. */
   companyOwner: boolean;
+  /** Independent businesses have no Head Office, so no stock orders. */
+  independent?: boolean;
 }
 
 /** Whether `viewer` should see `item`. */
 export function navItemVisible(item: NavItem, viewer: NavViewer): boolean {
   if (item.rule === 'company_owner') return viewer.companyOwner;
+  if (item.rule === 'has_head_office' && viewer.independent) return false;
 
   if (item.rule === 'approvals') {
     return viewer.isOwner || APPROVER_CODES.some((c) => viewer.permissions.includes(c));
