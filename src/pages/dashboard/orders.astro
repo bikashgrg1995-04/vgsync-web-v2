@@ -186,7 +186,10 @@ const navItems = getNavItemsForRole(defaultRole);
     type OrderReturn,
   } from '../../lib/orders';
 
-  if (!getSession()) window.location.replace('/');
+  const _s = getSession();
+  if (!_s) window.location.replace('/');
+  // Independent businesses order from suppliers, not from a Head Office.
+  else if (_s.businessType === 'independent') window.location.replace('/dashboard/supplier-orders');
 
   let orders: OrderSummary[] = [];
   let selected: Order | null = null;

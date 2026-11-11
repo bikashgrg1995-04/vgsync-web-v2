@@ -1,0 +1,193 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+import PurchaseDialogs from '../../components/purchase/PurchaseDialogs.astro';
+import '../../styles/app/purchase-shared.css';
+import '../../styles/app/purchase-page.css';
+
+const meta = PAGE_META.orders;
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="pu-page pd-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div>
+          <h2 class="pd-hero-title">Orders</h2>
+          <p class="pd-hero-sub">Orders you placed with suppliers. When the goods arrive, receive them here: good stock and damaged stock are kept apart.</p>
+          <p class="pu-scope" id="so-scope" hidden></p>
+        </div>
+      </div>
+      <div class="pd-hero-actions">
+        <button type="button" class="btn-primary-sm" id="so-new" hidden>+ New Order</button>
+        <button type="button" class="btn-ghost-sm" id="so-refresh">Refresh</button>
+        <a class="btn-ghost-sm pd-link-btn" href="/dashboard/purchase">All purchases</a>
+      </div>
+    </header>
+
+    <p class="pu-notice" id="so-notice" hidden></p>
+
+    <div class="pd-kpis">
+      <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Waiting for goods</span><div class="pd-kpi-row"><strong id="so-k-open">—</strong></div><span class="pd-kpi-sub">Not received yet</span></div></article>
+      <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Part received</span><div class="pd-kpi-row"><strong id="so-k-part">—</strong></div><span class="pd-kpi-sub">Some goods still to come</span></div></article>
+      <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Damaged on arrival</span><div class="pd-kpi-row"><strong id="so-k-dmg">—</strong></div><span class="pd-kpi-sub">Units that can go back</span></div></article>
+      <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Received</span><div class="pd-kpi-row"><strong id="so-k-done">—</strong></div><span class="pd-kpi-sub">Now in Purchase</span></div></article>
+    </div>
+
+    <section class="pu-card">
+      <div class="pu-filters">
+        <select id="so-filter" aria-label="Show">
+          <option value="open">Waiting for goods</option>
+          <option value="damaged">Damaged on arrival</option>
+          <option value="received">Received</option>
+          <option value="all">All orders</option>
+        </select>
+        <span class="pu-count" id="so-count"></span>
+      </div>
+      <div class="pu-table-wrap">
+        <table class="pu-table">
+          <thead><tr><th>Order</th><th>Date</th><th>Supplier</th><th>Status</th><th class="num">Ordered</th><th class="num">Good</th><th class="num">Damaged</th><th>Actions</th></tr></thead>
+          <tbody id="so-tbody"><tr><td colspan="8" class="pu-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <PurchaseDialogs />
+</AppLayout>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import {
+    $,
+    esc,
+    describe,
+    configurePurchaseDialogs,
+    openForm,
+    openReceive,
+    openReturn,
+  } from '../../scripts/purchase-dialogs';
+  import { listSuppliers, type Supplier } from '../../lib/suppliers';
+  import { listStock, type StockItem } from '../../lib/inventory';
+  import { listPurchases, formatQty, type Purchase } from '../../lib/purchases';
+
+  const session = getSession();
+  if (!session) window.location.replace('/');
+  // Branches order from Head Office on the stock-order page.
+  else if (session.businessType !== 'independent') window.location.replace('/dashboard/orders');
+
+  let all: Purchase[] = [];
+  let suppliers: Supplier[] = [];
+  let products: StockItem[] = [];
+  let canWrite = true;
+
+  const sum = (p: Purchase, f: (l: Purchase['lines'][number]) => number) => p.lines.reduce((a, l) => a + f(l), 0);
+  /** Units that arrived damaged and are still here (not sent back). */
+  const damagedLeft = (p: Purchase) => sum(p, (l) => l.damagedQuantity);
+
+  function notice(message: string | null, error = false): void {
+    const el = $('so-notice')!;
+    el.textContent = message ?? '';
+    el.hidden = !message;
+    el.classList.toggle('is-error', error);
+  }
+
+  const STATUS: Record<string, string> = { draft: 'Waiting for goods', partial: 'Part received', received: 'Received', cancelled: 'Cancelled' };
+
+  function render(): void {
+    const live = all.filter((p) => p.status !== 'cancelled');
+    $('so-k-open')!.textContent = String(live.filter((p) => p.status === 'draft').length);
+    $('so-k-part')!.textContent = String(live.filter((p) => p.status === 'partial').length);
+    $('so-k-dmg')!.textContent = formatQty(live.reduce((a, p) => a + damagedLeft(p), 0));
+    $('so-k-done')!.textContent = String(live.filter((p) => p.status === 'received').length);
+
+    const mode = ($('so-filter') as unknown as HTMLSelectElement).value;
+    const rows = all.filter((p) => {
+      if (mode === 'open') return p.status === 'draft' || p.status === 'partial';
+      if (mode === 'damaged') return p.status !== 'cancelled' && damagedLeft(p) > 0;
+      if (mode === 'received') return p.status === 'received';
+      return true;
+    });
+    $('so-count')!.textContent = `${rows.length} order${rows.length === 1 ? '' : 's'}`;
+    const tbody = $('so-tbody')!;
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" class="pu-empty">${mode === 'open' ? 'No orders waiting for goods.' : 'Nothing here.'}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows
+      .map((p) => {
+        const good = sum(p, (l) => l.receivedQuantity - l.returnedQuantity) - damagedLeft(p);
+        const open = p.status === 'draft' || p.status === 'partial';
+        const acts = [
+          canWrite && open ? `<button type="button" class="btn-primary-sm" data-act="receive" data-id="${p.id}">Receive</button>` : '',
+          canWrite && damagedLeft(p) > 0 ? `<button type="button" class="btn-ghost-sm" data-act="return" data-id="${p.id}">Return damaged</button>` : '',
+          `<a class="btn-ghost-sm pd-link-btn" href="/dashboard/purchase/detail?id=${p.id}">View</a>`,
+        ].join(' ');
+        return `<tr>
+          <td class="mono">${esc(p.purchaseNo)}</td>
+          <td>${esc(p.purchaseDate)}</td>
+          <td>${esc(p.supplierName)}</td>
+          <td>${esc(STATUS[p.status] ?? p.status)}</td>
+          <td class="num">${formatQty(sum(p, (l) => l.quantity))}</td>
+          <td class="num">${formatQty(good)}</td>
+          <td class="num">${formatQty(damagedLeft(p))}</td>
+          <td>${acts}</td></tr>`;
+      })
+      .join('');
+    tbody.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const p = all.find((x) => x.id === Number(b.dataset.id));
+        if (!p) return;
+        if (b.dataset.act === 'receive') openReceive(p);
+        else openReturn(p);
+      }),
+    );
+  }
+
+  async function load(): Promise<void> {
+    try {
+      all = await listPurchases();
+      notice(canWrite ? null : 'Read-only: you are viewing this business from the company owner account.');
+    } catch (error) {
+      all = [];
+      notice(describe(error), true);
+    }
+    render();
+  }
+
+  configurePurchaseDialogs({
+    getProducts: () => products,
+    getSuppliers: () => suppliers,
+    onChanged: async () => {
+      await load();
+      void listStock().then((s) => (products = s)).catch(() => {});
+    },
+  });
+
+  $('so-filter')?.addEventListener('change', render);
+  $('so-refresh')?.addEventListener('click', () => void load());
+  $('so-new')?.addEventListener('click', () => openForm());
+
+  (async () => {
+    const s = getSession();
+    canWrite = !s || s.accessMode !== 'read_only';
+    ($('so-new') as HTMLElement).hidden = !canWrite;
+    [suppliers, products] = await Promise.all([listSuppliers().catch(() => []), listStock().catch(() => [])]);
+    await load();
+  })();
+</script>

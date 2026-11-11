@@ -157,7 +157,6 @@ function applySessionUI(): void {
     isOwner: session.isOwner,
     permissions: session.permissions,
     companyOwner: session.isOwner && session.role === 'owner',
-    independent: session.businessType === 'independent',
   };
   const allowed = new Set(
     getNavItemsForRole()
