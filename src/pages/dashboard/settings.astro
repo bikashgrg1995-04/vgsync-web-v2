@@ -102,7 +102,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
             <article class="se-card">
               <header class="se-card-head">
                 <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9.5 4.6 4h14.8L21 9.5v1a3 3 0 0 1-5 2.2 3 3 0 0 1-4 0 3 3 0 0 1-4 0 3 3 0 0 1-5-2.2zM5 14.5V21h5v-5h4v5h5v-6.5a5 5 0 0 1-1 .1 5 5 0 0 1-3-1 5 5 0 0 1-3 1 5 5 0 0 1-3-1 5 5 0 0 1-3 1 5 5 0 0 1-1-.1z"></path></svg></span>
-                <div><h3>Branch Information</h3><p>Manage branch details</p></div>
+                <div><h3 id="gen-info-title">Branch Information</h3><p id="gen-info-sub">Manage branch details</p></div>
               </header>
               <div class="se-branch">
                 <div class="se-branch-photo" aria-hidden="true">
@@ -110,7 +110,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
                   <span id="gen-initial">B</span>
                 </div>
                 <dl class="se-kv">
-                  <div><dt>Branch Name</dt><dd id="gen-branch">—</dd></div>
+                  <div><dt id="gen-name-label">Branch Name</dt><dd id="gen-branch">—</dd></div>
                   <div><dt>Code</dt><dd id="gen-code">—</dd></div>
                   <div><dt>Address</dt><dd id="gen-address">—</dd></div>
                   <div><dt>Contact</dt><dd id="gen-contact">—</dd></div>
@@ -487,6 +487,11 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
     setText('gen-name', me.activeBranchName);
     input('gen-name').value = me.activeBranchName;
     setText('gen-branch', me.activeBranchName);
+    if (me.businessType === 'independent') {
+      setText('gen-info-title', 'Business Information');
+      setText('gen-info-sub', 'Manage business details');
+      setText('gen-name-label', 'Business Name');
+    }
     setText('gen-code', me.activeBranchCode);
     setText('gen-initial', (me.activeBranchName || 'B')[0].toUpperCase());
     let loggedIn = me.loggedInAt;
