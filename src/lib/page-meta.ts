@@ -9,6 +9,8 @@ export interface PageMeta {
 }
 
 export const PAGE_META: Record<string, PageMeta> = {
+  tasks: { id: 'tasks', title: 'Tasks', breadcrumb: 'Tasks /', skeletonTitle: 'Tasks', skeletonHint: '' },
+  notifications: { id: 'notifications', title: 'Notifications', breadcrumb: 'Notifications /', skeletonTitle: 'Notifications', skeletonHint: '' },
   overview: {
     id: 'overview',
     title: 'Dashboard',

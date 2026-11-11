@@ -246,3 +246,4 @@ if (getSession()) {
 window.addEventListener('storage', (event) => {
   if (event.key === AUTH_STORAGE_KEY && !getSession()) redirectToLogin('logged-out');
 });
+import './notification-bell';
