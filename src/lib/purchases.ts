@@ -26,6 +26,8 @@ export interface PurchaseLine {
   remainingQuantity: number;
   returnedQuantity: number;
   returnableQuantity: number;
+  /** Arrived damaged and not yet sent back. */
+  damagedQuantity: number;
 }
 
 export interface PurchasePayment {
@@ -169,6 +171,7 @@ interface ApiLine {
   remaining_quantity: string;
   returned_quantity: string;
   returnable_quantity: string;
+  damaged_quantity?: string;
 }
 
 interface ApiPayment {
@@ -296,6 +299,7 @@ function purchaseFromApi(p: ApiPurchase): Purchase {
       remainingQuantity: num(l.remaining_quantity),
       returnedQuantity: num(l.returned_quantity),
       returnableQuantity: num(l.returnable_quantity),
+      damagedQuantity: num(l.damaged_quantity),
     })),
     subtotal: num(p.subtotal),
     discount: num(p.discount_amount),
