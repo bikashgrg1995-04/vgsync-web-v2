@@ -39,6 +39,7 @@ export const NAV_GROUPS: NavGroup[] = [
 
 const ALL_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Dashboard', href: '/dashboard', icon: 'home', group: 'main' },
+  { id: 'tasks', label: 'Tasks', href: '/dashboard/tasks', icon: 'clipboard', group: 'main' },
   { id: 'branches', label: 'Branches', href: '/dashboard/branches', icon: 'building', group: 'main', rule: 'company_owner' },
 
   { id: 'sales', label: 'Sales', href: '/dashboard/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },

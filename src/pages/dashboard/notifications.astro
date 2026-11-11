@@ -1,0 +1,129 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+import '../../styles/app/purchase-shared.css';
+import '../../styles/app/purchase-page.css';
+
+const meta = PAGE_META.notifications;
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="pu-page pd-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div>
+          <h2 class="pd-hero-title">Notifications</h2>
+          <p class="pd-hero-sub">Tasks handed to you, updates on tasks you assigned, and follow-ups that are due.</p>
+        </div>
+      </div>
+      <div class="pd-hero-actions">
+        <button type="button" class="btn-ghost-sm" id="nt-readall">Mark all read</button>
+        <button type="button" class="btn-ghost-sm" id="nt-refresh">Refresh</button>
+      </div>
+    </header>
+
+    <section class="pu-card">
+      <div class="pu-filters">
+        <select id="nt-filter" aria-label="Show">
+          <option value="all">All</option>
+          <option value="unread">Unread</option>
+          <option value="tasks">Tasks</option>
+          <option value="followups">Follow-ups</option>
+        </select>
+        <span class="pu-count" id="nt-count"></span>
+      </div>
+      <ul class="nt-list" id="nt-list"><li class="pu-empty">Loading…</li></ul>
+    </section>
+  </div>
+</AppLayout>
+
+<style is:global>
+  .nt-list { list-style: none; margin: 0; padding: 0; }
+  .nt-item { display: flex; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; align-items: flex-start; }
+  .nt-item:hover { background: var(--surface); }
+  .nt-item.is-unread { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .nt-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex: none; background: transparent; }
+  .nt-item.is-unread .nt-dot { background: var(--accent); }
+  .nt-main { flex: 1; min-width: 0; }
+  .nt-title { font-size: 0.88rem; font-weight: 600; }
+  .nt-body { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+  .nt-when { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+</style>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import { ago, listNotifications, markAllRead, markRead, type AppNotification } from '../../lib/notifications';
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
+  if (!getSession()) window.location.replace('/');
+
+  let all: AppNotification[] = [];
+
+  function render(): void {
+    const mode = ($('nt-filter') as HTMLSelectElement).value;
+    const rows = all.filter((n) => {
+      if (mode === 'unread') return !n.isRead;
+      if (mode === 'tasks') return n.kind.startsWith('task');
+      if (mode === 'followups') return n.kind.startsWith('followup');
+      return true;
+    });
+    $('nt-count').textContent = `${rows.length} notification${rows.length === 1 ? '' : 's'}`;
+    $('nt-list').innerHTML = rows.length
+      ? rows
+          .map(
+            (n) => `<li class="nt-item${n.isRead ? '' : ' is-unread'}" data-id="${n.id}" data-link="${esc(n.link)}">
+              <span class="nt-dot"></span>
+              <div class="nt-main"><div class="nt-title">${esc(n.title)}</div>${n.body ? `<div class="nt-body">${esc(n.body)}</div>` : ''}</div>
+              <span class="nt-when">${esc(ago(n.createdAt))}</span></li>`,
+          )
+          .join('')
+      : '<li class="pu-empty">Nothing here.</li>';
+    document.querySelectorAll<HTMLElement>('.nt-item').forEach((el) =>
+      el.addEventListener('click', async () => {
+        await markRead(Number(el.dataset.id)).catch(() => {});
+        if (el.dataset.link) window.location.href = el.dataset.link;
+        else {
+          const n = all.find((x) => x.id === Number(el.dataset.id));
+          if (n) n.isRead = true;
+          render();
+        }
+      }),
+    );
+  }
+
+  async function load(): Promise<void> {
+    try {
+      all = await listNotifications();
+    } catch {
+      all = [];
+      $('nt-list').innerHTML = '<li class="pu-empty">Could not load notifications.</li>';
+      return;
+    }
+    render();
+  }
+
+  $('nt-filter').addEventListener('change', render);
+  $('nt-refresh').addEventListener('click', () => void load());
+  $('nt-readall').addEventListener('click', async () => {
+    await markAllRead().catch(() => {});
+    await load();
+  });
+  void load();
+</script>
