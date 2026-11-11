@@ -181,8 +181,8 @@ export async function api<T = unknown>(path: string, options: RequestOptions = {
 }
 
 /** Downloads a file (Excel/PDF export) and hands it to the browser as a save. */
-export async function apiDownload(path: string, fallbackName: string): Promise<void> {
-  const res = await authedSend(path, 'GET', undefined);
+export async function apiDownload(path: string, fallbackName: string, method = 'GET'): Promise<void> {
+  const res = await authedSend(path, method, undefined);
 
   if (!res.ok) {
     failIfNeeded(res, await readBody(res));

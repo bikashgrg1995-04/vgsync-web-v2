@@ -74,9 +74,9 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg>
           Sales Settings <em>Soon</em>
         </button>
-        <button type="button" class="se-nav-item is-soon" disabled>
+        <button type="button" class="se-nav-item" data-settings-tab="backup" id="tab-backup" hidden>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.5 12 3.5 3.5 0 0 0 5 19z"></path></svg>
-          Backup &amp; Restore <em>Soon</em>
+          Backup
         </button>
       </nav>
 
@@ -171,17 +171,17 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
             <article class="se-card">
               <header class="se-card-head">
                 <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C7.6 3 4 4.6 4 6.5v11C4 19.4 7.6 21 12 21s8-1.6 8-3.5v-11C20 4.6 16.4 3 12 3zm0 2c3.5 0 6 1 6 1.5S15.5 8 12 8 6 7 6 6.5 8.5 5 12 5zm6 12.5c0 .5-2.5 1.5-6 1.5s-6-1-6-1.5V15c1.5 1 3.7 1.5 6 1.5s4.5-.5 6-1.5zm0-5c0 .5-2.5 1.5-6 1.5s-6-1-6-1.5V10c1.5 1 3.7 1.5 6 1.5s4.5-.5 6-1.5z"></path></svg></span>
-                <div><h3>Data Management <em class="se-soon">Coming soon</em></h3><p>Manage your data and backups</p></div>
+                <div><h3>Data Management</h3><p>Manage your data and backups</p></div>
               </header>
               <ul class="se-toggles">
                 <li>
                   <span class="se-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"></ellipse><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path></svg></span>
                   <div><strong>Backup Database</strong><small>Download a backup of your data</small></div>
-                  <button type="button" class="se-btn is-outline" disabled>Download</button>
+                  <button type="button" class="se-btn is-outline" id="bk-quick" hidden>Download</button>
                 </li>
                 <li>
                   <span class="se-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"></path><path d="m7 8 5-5 5 5"></path><path d="M4 21h16"></path></svg></span>
-                  <div><strong>Restore Database</strong><small>Restore from a backup file</small></div>
+                  <div><strong>Restore Database <em class="se-soon">Not available yet</em></strong><small>Contact VGSync support to restore data</small></div>
                   <button type="button" class="se-btn is-outline" disabled>Upload</button>
                 </li>
               </ul>
@@ -277,6 +277,28 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
         </section>
 
         <!-- ================= USERS & PERMISSIONS ================= -->
+        <section class="se-panel" data-settings-panel="backup">
+          <div class="se-grid">
+            <article class="se-card se-u-wide">
+              <header class="se-card-head">
+                <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.5 12 3.5 3.5 0 0 0 5 19z"></path></svg></span>
+                <div><h3>Backup</h3><p id="bk-scope">A copy of your business data you can keep safe</p></div>
+                <div class="se-u-actions"><button type="button" class="se-btn is-primary" id="bk-download">Download backup</button></div>
+              </header>
+              <p class="se-hint" id="bk-msg" hidden></p>
+              <p class="se-hint">The backup is a ZIP file with one spreadsheet (CSV) for each kind of record: customers, sales, purchases, stock, payroll, staff and positions, approvals and the change history. Passwords are never included. Keep the file somewhere safe: anyone who has it can read your business data.</p>
+              <h4 class="se-sub">Recent backups</h4>
+              <div class="se-u-scroll">
+                <table class="se-u-table">
+                  <thead><tr><th>When</th><th>By</th><th>Covers</th><th class="num">Records</th><th class="num">Size</th></tr></thead>
+                  <tbody id="bk-rows"><tr><td colspan="5" class="se-u-empty">No backups taken yet.</td></tr></tbody>
+                </table>
+              </div>
+              <p class="se-hint">Restoring from a backup file is not available yet. If you ever need data put back, contact VGSync support.</p>
+            </article>
+          </div>
+        </section>
+
         <section class="se-panel" data-settings-panel="users">
           <div class="se-grid">
             <article class="se-card se-u-wide">
@@ -377,7 +399,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
   import { getSession, ApiError } from '../../lib/auth';
   import { paintAvatar, setAvatarFromFile, clearAvatar } from '../../lib/avatar';
   import { getMyProfile, saveMyProfile, getBusiness, getCompanyName } from '../../lib/settings';
-  import { api } from '../../lib/api';
+  import { api, apiDownload } from '../../lib/api';
   import { listStaff, listPositions, loadCatalogue } from '../../lib/staff';
   import { listRules, KIND_LABEL } from '../../lib/approvals';
 
@@ -465,6 +487,49 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
     btn.addEventListener('click', () => showTab(btn.dataset.settingsTab!));
   });
   document.querySelector('[data-settings-tab="users"]')?.addEventListener('click', () => void loadUsersPanel());
+
+
+  // ---- Backup: owners download a ZIP of their data; only a note of it is kept.
+  const fmtSize = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+  let backupLoaded = false;
+
+  async function loadBackups(): Promise<void> {
+    const body = $('bk-rows')!;
+    try {
+      const data = await api<{ results: Array<{ created_at: string; created_by_name: string; scope: string; business_count: number; row_count: number; size_bytes: number }> }>('/backups/');
+      backupLoaded = true;
+      body.innerHTML = data.results.length
+        ? data.results.map((b) => `<tr><td>${escHtml(new Date(b.created_at).toLocaleString())}</td><td>${escHtml(b.created_by_name)}</td><td>${b.scope === 'company' ? `Whole company (${b.business_count} businesses)` : 'This business'}</td><td class="num">${b.row_count.toLocaleString()}</td><td class="num">${fmtSize(b.size_bytes)}</td></tr>`).join('')
+        : '<tr><td colspan="5" class="se-u-empty">No backups taken yet.</td></tr>';
+    } catch {
+      body.innerHTML = '<tr><td colspan="5" class="se-u-empty">Could not load the backup history.</td></tr>';
+    }
+  }
+
+  async function takeBackup(button: HTMLButtonElement): Promise<void> {
+    const msg = $('bk-msg')!;
+    const label = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Preparing…';
+    msg.hidden = true;
+    try {
+      await apiDownload('/backups/', 'vgsync-backup.zip', 'POST');
+      msg.textContent = 'Backup downloaded.';
+      msg.hidden = false;
+      await loadBackups();
+    } catch (error) {
+      msg.textContent = error instanceof ApiError && error.status === 403 ? 'Only the owner can take a backup, and not while viewing a branch from the Head Office.' : 'Could not create the backup. Please try again.';
+      msg.hidden = false;
+      document.querySelector<HTMLButtonElement>('[data-settings-tab="backup"]')?.click();
+    } finally {
+      button.disabled = false;
+      button.textContent = label;
+    }
+  }
+
+  document.querySelector('[data-settings-tab="backup"]')?.addEventListener('click', () => { if (!backupLoaded) void loadBackups(); });
+  $('bk-download')?.addEventListener('click', () => void takeBackup($('bk-download') as HTMLButtonElement));
+  $('bk-quick')?.addEventListener('click', () => void takeBackup($('bk-quick') as HTMLButtonElement));
 
   const session = getSession();
   if (!session) window.location.replace('/');
@@ -566,6 +631,9 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
     if (isOwner) {
       $('tab-business')!.hidden = false;
       $('tab-users')!.hidden = false;
+      $('tab-backup')!.hidden = false;
+      $('bk-quick')!.hidden = false;
+      setText('bk-scope', me.role === 'owner' ? 'Includes every branch and the Head Office' : 'A copy of this business\'s data');
       setText('biz-active', me.activeBranchName);
       setText('biz-code', me.activeBranchCode);
       void (async () => {
