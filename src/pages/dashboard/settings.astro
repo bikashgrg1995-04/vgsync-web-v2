@@ -290,11 +290,36 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
               <h4 class="se-sub">Recent backups</h4>
               <div class="se-u-scroll">
                 <table class="se-u-table">
-                  <thead><tr><th>When</th><th>By</th><th>Covers</th><th class="num">Records</th><th class="num">Size</th></tr></thead>
-                  <tbody id="bk-rows"><tr><td colspan="5" class="se-u-empty">No backups taken yet.</td></tr></tbody>
+                  <thead><tr><th>When</th><th>What</th><th>By</th><th>Covers</th><th class="num">Records</th><th class="num">Size</th><th></th></tr></thead>
+                  <tbody id="bk-rows"><tr><td colspan="7" class="se-u-empty">No backups taken yet.</td></tr></tbody>
                 </table>
               </div>
-              <p class="se-hint">Restoring from a backup file is not available yet. If you ever need data put back, contact VGSync support.</p>
+            </article>
+            <article class="se-card se-u-wide" id="bk-restore-card" hidden>
+              <header class="se-card-head">
+                <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"></path><path d="m7 8 5-5 5 5"></path><path d="M4 21h16"></path></svg></span>
+                <div><h3>Restore</h3><p>Put your business records back the way they were in a backup file</p></div>
+              </header>
+              <p class="se-hint">Restoring replaces this business's records (sales, purchases, stock, customers, payroll, finance) with the ones in the file. Staff accounts, passwords and permissions are not touched. A safety copy of your data from just before is kept, so you can undo a restore.</p>
+              <div class="bk-row">
+                <input type="file" id="bk-file" accept=".zip,application/zip" />
+                <button type="button" class="se-btn is-outline" id="bk-check">Check file</button>
+              </div>
+              <p class="se-hint is-error" id="bk-rerror" hidden></p>
+              <div id="bk-preview" hidden>
+                <p class="se-hint" id="bk-pinfo"></p>
+                <div class="se-u-scroll">
+                  <table class="se-u-table">
+                    <thead><tr><th>Records</th><th class="num">Now</th><th class="num">In the file</th></tr></thead>
+                    <tbody id="bk-ptable"></tbody>
+                  </table>
+                </div>
+                <div class="bk-row">
+                  <input type="text" id="bk-confirm" autocomplete="off" aria-label="Type the business code to confirm" />
+                  <button type="button" class="se-btn is-primary" id="bk-restore" disabled>Restore now</button>
+                </div>
+                <p class="se-hint" id="bk-chint"></p>
+              </div>
             </article>
           </div>
         </section>
@@ -396,7 +421,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
 </AppLayout>
 
 <script>
-  import { getSession, ApiError } from '../../lib/auth';
+  import { getSession, ApiError, can } from '../../lib/auth';
   import { paintAvatar, setAvatarFromFile, clearAvatar } from '../../lib/avatar';
   import { getMyProfile, saveMyProfile, getBusiness, getCompanyName } from '../../lib/settings';
   import { api, apiDownload } from '../../lib/api';
@@ -493,18 +518,87 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
   const fmtSize = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
   let backupLoaded = false;
 
+  const KIND: Record<string, string> = { backup: 'Backup', restore: 'Restore', safety: 'Safety copy before a restore' };
+
   async function loadBackups(): Promise<void> {
     const body = $('bk-rows')!;
     try {
-      const data = await api<{ results: Array<{ created_at: string; created_by_name: string; scope: string; business_count: number; row_count: number; size_bytes: number }> }>('/backups/');
+      const data = await api<{ results: Array<{ id: number; kind: string; has_file: boolean; created_at: string; created_by_name: string; scope: string; business_count: number; row_count: number; size_bytes: number }> }>('/backups/');
       backupLoaded = true;
       body.innerHTML = data.results.length
-        ? data.results.map((b) => `<tr><td>${escHtml(new Date(b.created_at).toLocaleString())}</td><td>${escHtml(b.created_by_name)}</td><td>${b.scope === 'company' ? `Whole company (${b.business_count} businesses)` : 'This business'}</td><td class="num">${b.row_count.toLocaleString()}</td><td class="num">${fmtSize(b.size_bytes)}</td></tr>`).join('')
-        : '<tr><td colspan="5" class="se-u-empty">No backups taken yet.</td></tr>';
+        ? data.results.map((b) => `<tr><td>${escHtml(new Date(b.created_at).toLocaleString())}</td><td>${escHtml(KIND[b.kind] ?? b.kind)}</td><td>${escHtml(b.created_by_name)}</td><td>${b.scope === 'company' ? `Whole company (${b.business_count} businesses)` : 'This business'}</td><td class="num">${b.row_count.toLocaleString()}</td><td class="num">${b.kind === 'restore' ? '' : fmtSize(b.size_bytes)}</td><td>${b.has_file && canRestoreNow ? `<button type="button" class="se-btn is-outline" data-safety="${b.id}">Download</button>` : ''}</td></tr>`).join('')
+        : '<tr><td colspan="7" class="se-u-empty">No backups taken yet.</td></tr>';
+      body.querySelectorAll<HTMLButtonElement>('button[data-safety]').forEach((btn) =>
+        btn.addEventListener('click', () => void apiDownload(`/backups/${btn.dataset.safety}/download/`, 'vgsync-safety-copy.zip')),
+      );
     } catch {
-      body.innerHTML = '<tr><td colspan="5" class="se-u-empty">Could not load the backup history.</td></tr>';
+      body.innerHTML = '<tr><td colspan="7" class="se-u-empty">Could not load the backup history.</td></tr>';
     }
   }
+
+  // ---- Restore: check the file first, then confirm by typing the business code.
+  let canRestoreNow = false;
+  let restoreCode = '';
+
+  const rErr = (text: string | null) => { const el = $('bk-rerror')!; el.textContent = text ?? ''; el.hidden = !text; };
+
+  async function postFile<T>(path: string, extra: Record<string, string> = {}): Promise<T> {
+    const file = ($('bk-file') as HTMLInputElement).files?.[0];
+    if (!file) throw new Error('Choose the backup file first.');
+    const form = new FormData();
+    form.append('file', file);
+    Object.entries(extra).forEach(([k, v]) => form.append(k, v));
+    return api<T>(path, { method: 'POST', body: form });
+  }
+
+  const apiMessage = (error: unknown) => (error instanceof ApiError ? (error.message || 'The file could not be used.') : error instanceof Error ? error.message : 'Something went wrong.');
+
+  async function checkFile(): Promise<void> {
+    rErr(null);
+    $('bk-preview')!.hidden = true;
+    const btn = $('bk-check') as HTMLButtonElement;
+    btn.disabled = true;
+    try {
+      const p = await postFile<{ created_at: string; created_by: string; backup_rows: number; current_rows: number; tables: Array<{ table: string; now: number; backup: number }> }>('/backups/restore-preview/');
+      $('bk-pinfo')!.textContent = `Backup taken ${new Date(p.created_at).toLocaleString()} by ${p.created_by}. ${p.current_rows.toLocaleString()} records now, ${p.backup_rows.toLocaleString()} in the file.`;
+      $('bk-ptable')!.innerHTML = p.tables.map((t) => `<tr><td>${escHtml(t.table.split('.')[1])}</td><td class="num">${t.now}</td><td class="num">${t.backup}${t.now !== t.backup ? ' •' : ''}</td></tr>`).join('');
+      $('bk-chint')!.textContent = `To go ahead, type ${restoreCode} and press Restore now.`;
+      ($('bk-confirm') as HTMLInputElement).value = '';
+      ($('bk-restore') as HTMLButtonElement).disabled = true;
+      $('bk-preview')!.hidden = false;
+    } catch (error) {
+      rErr(apiMessage(error));
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function doRestore(): Promise<void> {
+    rErr(null);
+    const btn = $('bk-restore') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Restoring…';
+    try {
+      const r = await postFile<{ restored: number }>('/backups/restore/', { confirm: ($('bk-confirm') as HTMLInputElement).value.trim() });
+      $('bk-preview')!.hidden = true;
+      ($('bk-file') as HTMLInputElement).value = '';
+      const msg = $('bk-msg')!;
+      msg.textContent = `Restored ${r.restored.toLocaleString()} records. A safety copy of your data from before the restore is in the list below.`;
+      msg.hidden = false;
+      await loadBackups();
+    } catch (error) {
+      rErr(apiMessage(error));
+      btn.disabled = false;
+    } finally {
+      btn.textContent = 'Restore now';
+    }
+  }
+
+  $('bk-check')?.addEventListener('click', () => void checkFile());
+  $('bk-restore')?.addEventListener('click', () => void doRestore());
+  $('bk-confirm')?.addEventListener('input', () => {
+    ($('bk-restore') as HTMLButtonElement).disabled = ($('bk-confirm') as HTMLInputElement).value.trim() !== restoreCode;
+  });
 
   async function takeBackup(button: HTMLButtonElement): Promise<void> {
     const msg = $('bk-msg')!;
@@ -626,14 +720,23 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
       }
     });
 
+    // ---- Backup: the owner and anyone whose position allows it.
+    if (can(session, 'backup.view')) {
+      $('tab-backup')!.hidden = false;
+      const wide = me.role === 'owner';
+      setText('bk-scope', wide ? 'Includes every branch and the Head Office' : "A copy of this business's data");
+      $('bk-download')!.hidden = !can(session, 'backup.create');
+      $('bk-quick')!.hidden = !can(session, 'backup.create');
+      canRestoreNow = can(session, 'backup.restore');
+      restoreCode = me.activeBranchCode;
+      $('bk-restore-card')!.hidden = !canRestoreNow;
+    }
+
     // ---- Business details: owners can look, only VGSync support changes them.
     const isOwner = me.role === 'owner' || me.role === 'branch_owner';
     if (isOwner) {
       $('tab-business')!.hidden = false;
       $('tab-users')!.hidden = false;
-      $('tab-backup')!.hidden = false;
-      $('bk-quick')!.hidden = false;
-      setText('bk-scope', me.role === 'owner' ? 'Includes every branch and the Head Office' : 'A copy of this business\'s data');
       setText('biz-active', me.activeBranchName);
       setText('biz-code', me.activeBranchCode);
       void (async () => {
