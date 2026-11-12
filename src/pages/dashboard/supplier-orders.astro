@@ -72,7 +72,7 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession } from '../../lib/auth';
+  import { can, getSession } from '../../lib/auth';
   import {
     $,
     esc,
@@ -90,6 +90,7 @@ const navItems = getNavItemsForRole(defaultRole);
   if (!session) window.location.replace('/');
   // Branches order from Head Office on the stock-order page.
   else if (session.businessType !== 'independent') window.location.replace('/dashboard/orders');
+  else if (!can(session, 'purchases.view')) window.location.replace('/dashboard');
 
   let all: Purchase[] = [];
   let suppliers: Supplier[] = [];
