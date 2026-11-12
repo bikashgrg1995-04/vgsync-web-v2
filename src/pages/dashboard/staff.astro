@@ -160,7 +160,10 @@ const navItems = getNavItemsForRole(defaultRole);
       <div class="st-form-grid">
         <label class="st-field"><span>First name *</span><input type="text" id="m-first" autocomplete="off" /></label>
         <label class="st-field"><span>Last name</span><input type="text" id="m-last" autocomplete="off" /></label>
-        <label class="st-field span2"><span>Username *</span><input type="text" id="m-username" autocomplete="off" autocapitalize="none" spellcheck="false" /></label>
+        <label class="st-field span2" id="m-signin-wrap"><span><input type="checkbox" id="m-signin" checked /> Can sign in to the system</span>
+          <small class="st-hint">Turn this off for someone who only needs to be in the records, such as a daily worker. They get no login or password; their pay and history are kept.</small>
+        </label>
+        <label class="st-field span2" id="m-username-wrap"><span>Username *</span><input type="text" id="m-username" autocomplete="off" autocapitalize="none" spellcheck="false" /></label>
         <label class="st-field"><span>Email</span><input type="email" id="m-email" autocomplete="off" /></label>
         <label class="st-field"><span>Phone</span><input type="tel" id="m-phone" autocomplete="off" /></label>
         <label class="st-field">
@@ -237,6 +240,7 @@ const navItems = getNavItemsForRole(defaultRole);
     listStaff,
     createStaff,
     updateStaff,
+    setSignIn,
     deactivateStaff,
     reactivateStaff,
     resetStaffPassword,
@@ -342,6 +346,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
   function statusOf(m: StaffMember): { label: string; cls: string } {
     if (!m.isActive) return { label: 'Inactive', cls: 'inactive' };
+    if (!m.canSignIn) return { label: 'No sign-in', cls: 'pending' };
     if (m.mustChangePassword) return { label: 'Password pending', cls: 'pending' };
     return { label: 'Active', cls: 'active' };
   }
@@ -376,7 +381,10 @@ const navItems = getNavItemsForRole(defaultRole);
       ? `<div class="st-more">
           <button type="button" class="st-icon-btn" data-act="more" data-id="${m.id}" aria-label="More actions" aria-haspopup="menu">${ICON_MORE}</button>
           <div class="st-menu" role="menu" hidden>
-            <button type="button" role="menuitem" data-act="reset" data-id="${m.id}">Reset password</button>
+            ${m.canSignIn
+              ? `<button type="button" role="menuitem" data-act="reset" data-id="${m.id}">Reset password</button>
+                 <button type="button" role="menuitem" data-act="stop-signin" data-id="${m.id}">Stop sign-in</button>`
+              : `<button type="button" role="menuitem" data-act="give-signin" data-id="${m.id}">Give sign-in access</button>`}
             <button type="button" role="menuitem" class="${m.isActive ? 'is-danger' : ''}" data-act="${m.isActive ? 'deactivate' : 'reactivate'}" data-id="${m.id}">${m.isActive ? 'Remove from team' : 'Bring back'}</button>
           </div>
         </div>`
@@ -625,7 +633,20 @@ const navItems = getNavItemsForRole(defaultRole);
     const isStaff = $<HTMLSelectElement>('m-role')?.value === 'staff';
     const wrap = $('m-position-wrap');
     if (wrap) wrap.hidden = !isStaff;
+    syncSignIn();
   }
+
+  // Without a login there is no username, password or need for a position.
+  function syncSignIn(): void {
+    const editing = Boolean($<HTMLInputElement>('m-id')?.value);
+    const on = $<HTMLInputElement>('m-signin')!.checked;
+    $('m-signin-wrap')!.hidden = editing;
+    $('m-username-wrap')!.hidden = !on;
+    if (!editing) $('m-password-wrap')!.hidden = !on;
+    const label = $('m-position-wrap')?.querySelector('span');
+    if (label) label.textContent = on ? 'Position *' : 'Position (optional)';
+  }
+  $('m-signin')?.addEventListener('change', syncSignIn);
   $('m-role')?.addEventListener('change', syncRole);
 
   function openMember(edit?: StaffMember): void {
@@ -643,6 +664,7 @@ const navItems = getNavItemsForRole(defaultRole);
     $<HTMLInputElement>('m-password')!.value = '';
     $('m-password-wrap')!.hidden = !!edit;
     $('m-hint')!.hidden = !!edit;
+    $<HTMLInputElement>('m-signin')!.checked = edit ? edit.canSignIn : true;
     fillPositionSelect(edit?.positionId ?? null);
     syncRole();
     $('m-error')!.hidden = true;
@@ -684,7 +706,9 @@ const navItems = getNavItemsForRole(defaultRole);
     const id = Number(val('m-id')) || null;
     const role = $<HTMLSelectElement>('m-role')!.value as StaffRole;
     const positionId = Number($<HTMLSelectElement>('m-position')!.value) || null;
+    const canSignIn = id ? true : $<HTMLInputElement>('m-signin')!.checked;
     const input = {
+      canSignIn,
       firstName: val('m-first'),
       lastName: val('m-last'),
       username: val('m-username'),
@@ -697,9 +721,9 @@ const navItems = getNavItemsForRole(defaultRole);
 
     const problem = !input.firstName
       ? 'First name is required.'
-      : !id && !input.username
+      : !id && canSignIn && !input.username
         ? 'Username is required.'
-        : role === 'staff' && !positionId
+        : role === 'staff' && !positionId && (canSignIn || (id && members.find((m) => m.id === id)?.canSignIn))
           ? 'Choose a position for staff.'
           : null;
     if (problem) {
@@ -765,6 +789,14 @@ const navItems = getNavItemsForRole(defaultRole);
       return;
     }
 
+    if (act === 'give-signin' && member.role === 'staff' && !member.positionId) {
+      alert(`Choose a position for ${member.name} first, save, then give sign-in access.`);
+      openMember(member);
+      return;
+    }
+
+    if (act === 'stop-signin' && !confirm(`Stop ${member.name} from signing in? Their pay and everything they did stays.`)) return;
+
     if (act === 'deactivate' && !confirm(`Remove ${member.name} from the team? They are signed out and cannot sign in again. Everything they created stays, and their position is not changed. You can find them under Former staff.`)) return;
     if (act === 'reset' && !confirm(`Reset the password for ${member.name}? They will be signed out everywhere.`)) return;
 
@@ -772,6 +804,10 @@ const navItems = getNavItemsForRole(defaultRole);
     try {
       if (act === 'deactivate') await deactivateStaff(member.id);
       else if (act === 'reactivate') await reactivateStaff(member.id);
+      else if (act === 'give-signin') {
+        const { temporaryPassword } = await setSignIn(member.id, true);
+        if (temporaryPassword) showSecret(`Username: ${member.username}`, temporaryPassword);
+      } else if (act === 'stop-signin') await setSignIn(member.id, false);
       else if (act === 'reset') {
         const password = await resetStaffPassword(member.id);
         if (password) showSecret(`New password for ${member.username}`, password);
