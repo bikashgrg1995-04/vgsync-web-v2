@@ -226,6 +226,11 @@ function renderInfo(s: Sale): void {
 
   setHidden("inf-finance-row", !emi);
   setHidden("inf-amountdue-row", !emi);
+  setHidden("inf-rate-row", !emi || s.interestRate === null);
+  setText("inf-rate", `${formatQty(s.interestRate ?? 0)}%`);
+  setHidden("inf-monthly-row", !emi);
+  setText("inf-monthly-label", `Monthly Installment (${s.emiMonths} months)`);
+  setText("inf-monthly", formatNpr(s.emiAmount));
   setText("inf-finance", formatNpr(s.financeCharge));
   setText("inf-amountdue", formatNpr(s.amountDue));
 

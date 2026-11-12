@@ -74,6 +74,7 @@ export interface Sale {
   emiMonths: number;
   emiAmount: number;
   firstEmiDue: string;
+  interestRate: number | null;
   financeCharge: number;
   amountDue: number;
   dueDate: string;
@@ -113,7 +114,8 @@ export interface SaleInput {
   paymentMode?: PaymentMode;
   downPayment?: number;
   emiMonths?: number;
-  emiAmount?: number;
+  /** Yearly interest in percent; 0 or empty means none. */
+  interestRate?: number;
   firstEmiDue?: string;
   dueDate?: string;
   vehicleChassisNo?: string;
@@ -301,6 +303,7 @@ interface ApiSale {
   emi_months: number | null;
   emi_amount: string | null;
   first_emi_due: string | null;
+  interest_rate: string | null;
   finance_charge: string;
   amount_due: string;
   due_date: string | null;
@@ -364,6 +367,7 @@ function saleFromApi(s: ApiSale): Sale {
     emiMonths: s.emi_months ?? 0,
     emiAmount: num(s.emi_amount),
     firstEmiDue: s.first_emi_due ?? '',
+    interestRate: s.interest_rate === null || s.interest_rate === undefined ? null : num(s.interest_rate),
     financeCharge: num(s.finance_charge),
     amountDue: num(s.amount_due),
     dueDate: s.due_date ?? '',
@@ -455,7 +459,8 @@ function saleBody(input: SaleInput, isEdit: boolean): Record<string, unknown> {
     if (input.paymentMode === 'emi') {
       body.down_payment = String(input.downPayment ?? 0);
       body.emi_months = input.emiMonths;
-      body.emi_amount = (input.emiAmount ?? 0).toFixed(2);
+      // The monthly amount is worked out by the server from the interest.
+      body.interest_rate = String(input.interestRate ?? 0);
       if (input.firstEmiDue) body.first_emi_due = input.firstEmiDue;
     }
   }
@@ -780,9 +785,18 @@ export function previewTotals(lines: { quantity: number; unitPrice: number }[], 
   return { subtotal, vat, net: taxable + vat };
 }
 
-/** Same rule as the server: finance charge = down + months x EMI - net total (never negative). */
-export function previewFinance(net: number, down: number, months: number, emi: number): number {
-  return Math.max(0, down + months * emi - net);
+/**
+ * Same rule as the server: yearly flat interest on what is left after the
+ * down payment, shared over the months and rounded up to the paisa.
+ */
+export function previewEmi(net: number, down: number, months: number, yearlyRate: number) {
+  const left = Math.max(0, net - down);
+  const m = Math.max(1, months || 1);
+  const interest = (left * (yearlyRate || 0) * m) / 100 / 12;
+  const monthly = Math.ceil(((left + interest) / m) * 100 - 1e-9) / 100;
+  const payable = down + monthly * m;
+
+  return { left, interest, monthly, charge: Math.max(0, payable - net), due: Math.max(net, payable) };
 }
 
 export function summarize(list: Sale[]) {
