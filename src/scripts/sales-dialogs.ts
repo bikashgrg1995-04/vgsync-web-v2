@@ -1,9 +1,10 @@
 import { ApiError } from '../lib/api';
+import { can, getSession } from '../lib/auth';
 import type { Customer } from '../lib/customers';
 import type { StockItem } from '../lib/inventory';
 import {
   createSale, updateSale, addPayment, createReturn,
-  previewTotals, previewFinance, formatNpr, formatQty,
+  previewTotals, previewEmi, formatNpr, formatQty,
   type Sale, type SaleType, type BikeUnit, type LocalProduct, type PayMethod, type SaleLineInput,
 } from '../lib/sales';
 
@@ -45,7 +46,7 @@ export function esc(s: string): string {
 
 const FIELD_LABELS: Record<string, string> = {
   customer: 'Customer', sale_date: 'Date', discount_amount: 'Discount', vat_rate: 'VAT',
-  down_payment: 'Down payment', emi_months: 'Months', emi_amount: 'EMI', first_emi_due: 'First EMI due',
+  down_payment: 'Down payment', emi_months: 'Months', interest_rate: 'Interest', first_emi_due: 'First EMI due',
   due_date: 'Due date', amount: 'Amount', method: 'Method', reason: 'Reason', paid_on: 'Paid on',
   chassis_no: 'Chassis no', engine_no: 'Engine no', name: 'Name', sale: 'Sale', note: 'Note',
   refund_method: 'Refund method',
@@ -220,6 +221,16 @@ export function readSaleLines(container: HTMLElement): SaleLineInput[] {
 
 const formType = () => val('sf-type') as SaleType;
 
+// Bike sales (and EMI) are for the owner and staff given that permission.
+{
+  const bike = document.querySelector<HTMLOptionElement>('#sf-type option[value="bike"]');
+  const session = getSession();
+  if (bike && session && !can(session, 'bike_sales.create')) {
+    bike.hidden = true;
+    bike.disabled = true;
+  }
+}
+
 export function updateTotals(): void {
   const lines = readSaleLines($('sf-lines')!).map((l) => ({ quantity: l.quantity ?? 1, unitPrice: l.unitPrice ?? 0 }));
   const t = previewTotals(lines, Number(val('sf-discount')) || 0, Number(val('sf-vat')) || 0);
@@ -228,9 +239,12 @@ export function updateTotals(): void {
     <div><dt>VAT</dt><dd>${formatNpr(t.vat)}</dd></div>
     <div class="strong"><dt>Net total (preview)</dt><dd>${formatNpr(t.net)}</dd></div>`;
   if (formType() === 'bike' && val('sf-mode') === 'emi') {
-    const fc = previewFinance(t.net, Number(val('sf-down')) || 0, Number(val('sf-months')) || 0, Number(val('sf-emi')) || 0);
-    html += `<div><dt>Finance charge (preview)</dt><dd>${formatNpr(fc)}</dd></div>
-             <div class="strong"><dt>Amount due (preview)</dt><dd>${formatNpr(t.net + fc)}</dd></div>`;
+    const months = Number(val('sf-months')) || 0;
+    const e = previewEmi(t.net, Number(val('sf-down')) || 0, months, Number(val('sf-rate')) || 0);
+    html += `<div><dt>Left after down payment</dt><dd>${formatNpr(e.left)}</dd></div>
+             <div><dt>Interest (preview)</dt><dd>${formatNpr(e.charge)}</dd></div>
+             <div class="strong"><dt>Monthly installment (${months || 0} months)</dt><dd>${formatNpr(e.monthly)}</dd></div>
+             <div class="strong"><dt>Amount due (preview)</dt><dd>${formatNpr(e.due)}</dd></div>`;
   }
   $('sf-totals')!.innerHTML = html;
 }
@@ -274,7 +288,7 @@ export function openForm(s?: Sale): void {
   $<HTMLSelectElement>('sf-mode')!.value = s?.paymentMode ?? 'full';
   $<HTMLInputElement>('sf-down')!.value = String(s?.downPayment ?? 0);
   $<HTMLInputElement>('sf-months')!.value = String(s?.emiMonths || 12);
-  $<HTMLInputElement>('sf-emi')!.value = String(s?.emiAmount ?? 0);
+  $<HTMLInputElement>('sf-rate')!.value = s?.interestRate ? String(s.interestRate) : '';
   $<HTMLInputElement>('sf-first')!.value = s?.firstEmiDue ?? '';
   $<HTMLInputElement>('sf-notes')!.value = s?.notes ?? '';
 
@@ -296,7 +310,7 @@ $('sf-type')?.addEventListener('change', () => syncFormType(true));
 $('sf-mode')?.addEventListener('change', () => syncFormType(false));
 $('sf-customer')?.addEventListener('change', syncWalkIn);
 $('sf-add-line')?.addEventListener('click', () => addSaleLine($('sf-lines')!, formType(), {}, updateTotals));
-for (const id of ['sf-discount', 'sf-vat', 'sf-down', 'sf-months', 'sf-emi']) $(id)?.addEventListener('input', updateTotals);
+for (const id of ['sf-discount', 'sf-vat', 'sf-down', 'sf-months', 'sf-rate']) $(id)?.addEventListener('input', updateTotals);
 
 $('form-sale')?.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -318,7 +332,7 @@ $('form-sale')?.addEventListener('submit', (e) => {
     paymentMode: (val('sf-mode') || 'full') as 'full' | 'emi',
     downPayment: Number(val('sf-down')) || 0,
     emiMonths: Number(val('sf-months')) || undefined,
-    emiAmount: Number(val('sf-emi')) || 0,
+    interestRate: Number(val('sf-rate')) || 0,
     firstEmiDue: val('sf-first'),
     dueDate: val('sf-due'),
     vehicleChassisNo: val('sf-chassis'),
