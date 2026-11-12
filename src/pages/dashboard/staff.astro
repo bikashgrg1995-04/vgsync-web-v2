@@ -59,9 +59,9 @@ const navItems = getNavItemsForRole(defaultRole);
       <article class="pd-kpi">
         <span class="pd-kpi-icon is-red"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M10 15V9"></path><path d="M14 15V9"></path></svg></span>
         <div class="pd-kpi-body">
-          <span class="pd-kpi-label">Inactive Staff</span>
+          <span class="pd-kpi-label">Former Staff</span>
           <div class="pd-kpi-row"><strong id="kpi-inactive">—</strong></div>
-          <span class="pd-kpi-sub">Deactivated accounts</span>
+          <span class="pd-kpi-sub">Former staff</span>
         </div>
       </article>
     </div>
@@ -88,9 +88,9 @@ const navItems = getNavItemsForRole(defaultRole);
           <input type="search" id="st-search" placeholder="Search by name, username or contact…" autocomplete="off" aria-label="Search team" />
         </div>
         <select id="st-status-filter" aria-label="Filter by status">
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="active" selected>Current team</option>
+          <option value="inactive">Former staff</option>
+          <option value="">Everyone</option>
         </select>
         <select id="st-position-filter" aria-label="Filter by position">
           <option value="">All Positions</option>
@@ -377,7 +377,7 @@ const navItems = getNavItemsForRole(defaultRole);
           <button type="button" class="st-icon-btn" data-act="more" data-id="${m.id}" aria-label="More actions" aria-haspopup="menu">${ICON_MORE}</button>
           <div class="st-menu" role="menu" hidden>
             <button type="button" role="menuitem" data-act="reset" data-id="${m.id}">Reset password</button>
-            <button type="button" role="menuitem" class="${m.isActive ? 'is-danger' : ''}" data-act="${m.isActive ? 'deactivate' : 'reactivate'}" data-id="${m.id}">${m.isActive ? 'Deactivate' : 'Reactivate'}</button>
+            <button type="button" role="menuitem" class="${m.isActive ? 'is-danger' : ''}" data-act="${m.isActive ? 'deactivate' : 'reactivate'}" data-id="${m.id}">${m.isActive ? 'Remove from team' : 'Bring back'}</button>
           </div>
         </div>`
       : '';
@@ -765,7 +765,7 @@ const navItems = getNavItemsForRole(defaultRole);
       return;
     }
 
-    if (act === 'deactivate' && !confirm(`Deactivate ${member.name}? They will be signed out and cannot sign in again until reactivated.`)) return;
+    if (act === 'deactivate' && !confirm(`Remove ${member.name} from the team? They are signed out and cannot sign in again. Everything they created stays, and their position is not changed. You can find them under Former staff.`)) return;
     if (act === 'reset' && !confirm(`Reset the password for ${member.name}? They will be signed out everywhere.`)) return;
 
     button.disabled = true;
