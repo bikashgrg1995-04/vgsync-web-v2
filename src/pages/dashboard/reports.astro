@@ -329,8 +329,13 @@ const navItems = getNavItemsForRole(defaultRole);
     }
   }
 
+  // Payroll is the owner's: other positions never see that report.
+  function visibleReports() {
+    return REPORTS.filter((r) => r.id !== 'payroll-summary' || getSession()?.isOwner);
+  }
+
   function renderChips(): void {
-    $('rp-chips')!.innerHTML = REPORTS.map(
+    $('rp-chips')!.innerHTML = visibleReports().map(
       (r) => `<button type="button" class="rp-chip ${r.id === current ? 'is-active' : ''}" data-report="${r.id}">${esc(r.label)}</button>`,
     ).join('');
     document.querySelectorAll<HTMLButtonElement>('[data-report]').forEach((b) =>
