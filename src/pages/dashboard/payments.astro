@@ -29,6 +29,7 @@ const navItems = getNavItemsForRole(defaultRole);
           <button type="button" class="py-tab is-active" data-tab="expenses">Expenses</button>
           <button type="button" class="py-tab" data-tab="income">Income</button>
           <button type="button" class="py-tab" data-tab="payroll">Staff pay</button>
+          <button type="button" class="py-tab" data-tab="daily">Daily sheet</button>
         </div>
       </div>
       <div class="py-toolbar-right">
@@ -62,6 +63,30 @@ const navItems = getNavItemsForRole(defaultRole);
           </table>
         </div>
         <p class="py-foot" id="lg-foot"></p>
+      </div>
+    </section>
+
+    <!-- Daily sheet -->
+    <section class="py-panel" data-panel="daily">
+      <div class="py-card">
+        <div class="py-filters">
+          <button type="button" class="btn-ghost-sm" id="ds-prev" aria-label="Previous day">‹</button>
+          <input type="date" id="ds-date" />
+          <button type="button" class="btn-ghost-sm" id="ds-next" aria-label="Next day">›</button>
+          <button type="button" class="btn-ghost-sm" id="ds-all">Everyone present</button>
+          <span class="py-hint" id="ds-sum"></span>
+          <button type="button" class="btn-primary-sm" id="ds-save">Save day</button>
+        </div>
+        <p class="py-error" id="ds-error" role="alert" hidden></p>
+        <div class="py-table-wrap">
+          <table class="py-table">
+            <thead>
+              <tr><th>Staff</th><th class="num">Daily rate</th><th>Today</th><th class="num">Extra</th><th>Note</th><th class="num">Day's pay</th><th>This month</th></tr>
+            </thead>
+            <tbody id="ds-tbody"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="py-note">Present pays the full daily rate, Half pays half, Absent pays nothing. Marking a day again changes the wage already recorded. Only people on daily pay are listed.</p>
       </div>
     </section>
 
@@ -125,7 +150,7 @@ const navItems = getNavItemsForRole(defaultRole);
         <label class="py-field"><span>Pay type *</span>
           <select id="sl-type"><option value="monthly">Monthly salary</option><option value="daily">Daily wage</option></select>
         </label>
-        <label class="py-field" data-monthly><span>Monthly salary *</span><input type="number" id="sl-rate" min="0" step="0.01" value="0" /></label>
+        <label class="py-field"><span id="sl-rate-label">Monthly salary *</span><input type="number" id="sl-rate" min="0" step="0.01" value="0" /></label>
         <label class="py-field" data-monthly><span>Allowances</span><input type="number" id="sl-allow" min="0" step="0.01" value="0" /></label>
         <label class="py-field" data-monthly><span>Salary day (1–31)</span><input type="number" id="sl-day" min="1" max="31" step="1" value="1" /></label>
         <label class="py-field" id="sl-start-wrap"><span>Starts on</span><input type="date" id="sl-start" /></label>
@@ -210,6 +235,10 @@ const navItems = getNavItemsForRole(defaultRole);
     listStatement,
     listSalaries,
     saveSalary,
+    getWorkSheet,
+    saveWorkSheet,
+    type WorkRow,
+    type WorkStatus,
     addEntry,
     voidEntry,
     addPayrollPayment,
@@ -232,9 +261,11 @@ const navItems = getNavItemsForRole(defaultRole);
   if (!getSession()) window.location.replace('/');
 
   // Everyone's pay is the owner's; others see only their own on the My pay page.
-  if (!getSession()?.isOwner) document.querySelector<HTMLElement>('[data-tab="payroll"]')?.setAttribute('hidden', '');
+  if (!getSession()?.isOwner) {
+    for (const t of ['payroll', 'daily']) document.querySelector<HTMLElement>(`[data-tab="${t}"]`)?.setAttribute('hidden', '');
+  }
 
-  type Tab = 'expenses' | 'income' | 'payroll';
+  type Tab = 'expenses' | 'income' | 'payroll' | 'daily';
   let tab: Tab = 'expenses';
   let canWrite = true;
   let entries: LedgerEntry[] = [];
@@ -630,7 +661,7 @@ const navItems = getNavItemsForRole(defaultRole);
     $('sl-start-wrap')!.hidden = Boolean(profile);
     $('sl-note')!.textContent = profile
       ? 'Changing the pay applies to future months only. Switching between monthly and daily starts the new type from today.'
-      : 'Monthly salary is recorded by the system on the salary day. Daily wages are entered each day.';
+      : 'Monthly salary is recorded by the system on the salary day. For daily wage, mark each day on the Daily sheet; the wage is worked out from the daily rate.';
     syncSalaryType();
     showError('sl-error', null);
     dlg('dlg-salary').showModal();
@@ -639,6 +670,7 @@ const navItems = getNavItemsForRole(defaultRole);
   function syncSalaryType(): void {
     const monthly = val('sl-type') === 'monthly';
     document.querySelectorAll<HTMLElement>('[data-monthly]').forEach((el) => (el.hidden = !monthly));
+    $('sl-rate-label')!.textContent = monthly ? 'Monthly salary *' : 'Daily wage for a full day (optional)';
   }
   $('sl-type')?.addEventListener('change', syncSalaryType);
 
@@ -716,27 +748,146 @@ const navItems = getNavItemsForRole(defaultRole);
     });
   });
 
+  // ---- Daily sheet -----------------------------------------------------
+
+  let sheet: WorkRow[] = [];
+  const todayIso = (): string => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const shiftDay = (iso: string, by: number): string => {
+    const d = new Date(`${iso}T00:00:00`);
+    d.setDate(d.getDate() + by);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  };
+  const STATES: [WorkStatus, string][] = [['present', 'Present'], ['half', 'Half'], ['absent', 'Absent']];
+
+  function dayPay(r: WorkRow, status: WorkStatus | null, extra: number): number {
+    if (!status || status === 'absent') return 0;
+    return r.rate * (status === 'half' ? 0.5 : 1) + extra;
+  }
+
+  function showDaily(): void {
+    const body = $('ds-tbody');
+    if (!sheet.length) {
+      body.innerHTML = '<tr><td colspan="7" class="py-empty">Nobody is on daily pay. Set someone\'s pay to "Daily wage" on the Staff pay tab.</td></tr>';
+      $('ds-sum').textContent = '';
+      return;
+    }
+    body.innerHTML = sheet.map((r) => `<tr data-staff="${r.staffId}">
+      <td><strong>${esc(r.name)}</strong></td>
+      <td class="num">${formatNpr(r.rate)}</td>
+      <td><div class="py-seg" role="group">${STATES.map(([v, l]) => `<button type="button" class="py-seg-btn${r.status === v ? ' is-on' : ''}" data-set="${v}">${l}</button>`).join('')}</div></td>
+      <td class="num"><input type="number" class="ds-extra" min="0" step="0.01" value="${r.extra || ''}" placeholder="0" style="width:84px" /></td>
+      <td><input type="text" class="ds-note" maxlength="150" value="${esc(r.note)}" placeholder="Note" /></td>
+      <td class="num ds-pay">${formatNpr(dayPay(r, r.status, r.extra))}</td>
+      <td class="py-hint">${r.month.present} present · ${r.month.half} half · ${r.month.absent} absent<br />${formatNpr(r.month.earned)} earned</td>
+    </tr>`).join('');
+    updateDailySum();
+  }
+
+  function updateDailySum(): void {
+    const rows = [...document.querySelectorAll<HTMLElement>('#ds-tbody tr[data-staff]')];
+    let total = 0;
+    let marked = 0;
+    for (const tr of rows) {
+      const r = sheet.find((x) => x.staffId === Number(tr.dataset.staff))!;
+      const status = (tr.querySelector<HTMLElement>('.is-on')?.dataset.set ?? null) as WorkStatus | null;
+      const extra = Number(tr.querySelector<HTMLInputElement>('.ds-extra')!.value) || 0;
+      const pay = dayPay(r, status, extra);
+      tr.querySelector('.ds-pay')!.textContent = formatNpr(pay);
+      total += pay;
+      if (status) marked += 1;
+    }
+    $('ds-sum').textContent = `${marked} of ${rows.length} marked · ${formatNpr(total)} for the day`;
+  }
+
+  async function loadDaily(): Promise<void> {
+    const input = $<HTMLInputElement>('ds-date')!;
+    if (!input.value) input.value = todayIso();
+    input.max = todayIso();
+    ($('ds-next') as HTMLButtonElement).disabled = input.value >= todayIso();
+    $('ds-error').hidden = true;
+    try {
+      sheet = await getWorkSheet(input.value);
+      showDaily();
+    } catch (e) {
+      $('ds-tbody').innerHTML = `<tr><td colspan="7" class="py-empty">${esc(e instanceof Error ? e.message : 'Could not load the sheet.')}</td></tr>`;
+    }
+  }
+
+  $('ds-tbody').addEventListener('click', (ev) => {
+    const btn = (ev.target as HTMLElement).closest<HTMLElement>('[data-set]');
+    if (!btn) return;
+    btn.parentElement!.querySelectorAll('.is-on').forEach((b) => b.classList.remove('is-on'));
+    btn.classList.add('is-on');
+    updateDailySum();
+  });
+  $('ds-tbody').addEventListener('input', () => updateDailySum());
+  $('ds-all').addEventListener('click', () => {
+    document.querySelectorAll('#ds-tbody tr[data-staff]').forEach((tr) => {
+      tr.querySelectorAll('.is-on').forEach((b) => b.classList.remove('is-on'));
+      tr.querySelector('[data-set="present"]')?.classList.add('is-on');
+    });
+    updateDailySum();
+  });
+  for (const [id, by] of [['ds-prev', -1], ['ds-next', 1]] as const) {
+    $(id).addEventListener('click', () => {
+      const input = $<HTMLInputElement>('ds-date')!;
+      input.value = shiftDay(input.value || todayIso(), by);
+      void loadDaily();
+    });
+  }
+  $('ds-date').addEventListener('change', () => void loadDaily());
+  $('ds-save').addEventListener('click', async () => {
+    const marks = [...document.querySelectorAll<HTMLElement>('#ds-tbody tr[data-staff]')]
+      .map((tr) => ({
+        staff: Number(tr.dataset.staff),
+        status: tr.querySelector<HTMLElement>('.is-on')?.dataset.set as WorkStatus | undefined,
+        extra: Number(tr.querySelector<HTMLInputElement>('.ds-extra')!.value) || 0,
+        note: tr.querySelector<HTMLInputElement>('.ds-note')!.value.trim(),
+      }))
+      .filter((m): m is { staff: number; status: WorkStatus; extra: number; note: string } => Boolean(m.status));
+    const err = $('ds-error');
+    err.hidden = true;
+    if (!marks.length) {
+      err.textContent = 'Mark at least one person first.';
+      err.hidden = false;
+      return;
+    }
+    const button = $<HTMLButtonElement>('ds-save')!;
+    button.disabled = true;
+    try {
+      sheet = await saveWorkSheet($<HTMLInputElement>('ds-date')!.value, marks);
+      showDaily();
+      notice(`Saved ${marks.length} ${marks.length === 1 ? 'person' : 'people'} for ${$<HTMLInputElement>('ds-date')!.value}.`);
+    } catch (e) {
+      err.textContent = e instanceof Error && e.message ? e.message : 'Could not save. Please try again.';
+      err.hidden = false;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   // ---- Tabs and load ---------------------------------------------------
 
   function syncTab(): void {
     document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('is-active', (b as HTMLElement).dataset.tab === tab));
     document.querySelectorAll('[data-panel]').forEach((p) => p.classList.remove('is-active'));
-    document.querySelector(`[data-panel="${tab === 'payroll' ? 'payroll' : 'ledger'}"]`)?.classList.add('is-active');
+    document.querySelector(`[data-panel="${tab === 'payroll' || tab === 'daily' ? tab : 'ledger'}"]`)?.classList.add('is-active');
     const add = $<HTMLButtonElement>('py-add')!;
-    add.hidden = !canWrite || tab === 'payroll';
+    add.hidden = !canWrite || tab === 'payroll' || tab === 'daily';
     add.textContent = tab === 'income' ? '+ Add income' : '+ Add expense';
   }
 
   async function refresh(): Promise<void> {
     syncTab();
-    if (tab === 'payroll') await loadPayroll();
+    if (tab === 'daily') await loadDaily();
+    else if (tab === 'payroll') await loadPayroll();
     else await loadLedger();
   }
 
   document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) =>
     b.addEventListener('click', () => {
       tab = b.dataset.tab as Tab;
-      if (tab !== 'payroll') fillCategoryFilter();
+      if (tab === 'expenses' || tab === 'income') fillCategoryFilter();
       void refresh();
     }),
   );
@@ -847,6 +998,16 @@ const navItems = getNavItemsForRole(defaultRole);
   #pr-detail h4 { margin: 14px 0 6px; font-size: 0.74rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
   .py-list { list-style: none; margin: 0; padding: 0; font-size: 0.8rem; }
   .py-list li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .py-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+  .py-seg-btn { border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--text-secondary); padding: 6px 11px; font: inherit; font-size: 0.76rem; cursor: pointer; }
+  .py-seg-btn:last-child { border-right: 0; }
+  .py-seg-btn:hover { background: var(--surface-hover); }
+  .py-seg-btn.is-on[data-set="present"] { background: #16a34a; color: #fff; }
+  .py-seg-btn.is-on[data-set="half"] { background: #d97706; color: #fff; }
+  .py-seg-btn.is-on[data-set="absent"] { background: #dc2626; color: #fff; }
+  .py-hint { font-size: 0.74rem; color: var(--text-muted); }
+  .ds-note { width: 100%; min-width: 120px; }
+  #ds-sum { margin-left: auto; }
   .py-note { margin: 10px 0 0; font-size: 0.74rem; color: var(--text-muted); }
   .py-note.is-warn { color: #d97706; }
 
