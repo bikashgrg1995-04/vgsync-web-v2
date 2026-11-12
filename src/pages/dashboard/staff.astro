@@ -758,6 +758,13 @@ const navItems = getNavItemsForRole(defaultRole);
       return;
     }
 
+    if (act === 'reactivate' && member.role === 'staff' && !member.positionId) {
+      // Their old position was removed while they were switched off.
+      alert(`${member.name} has no position now. Choose one, save, then reactivate.`);
+      openMember(member);
+      return;
+    }
+
     if (act === 'deactivate' && !confirm(`Deactivate ${member.name}? They will be signed out and cannot sign in again until reactivated.`)) return;
     if (act === 'reset' && !confirm(`Reset the password for ${member.name}? They will be signed out everywhere.`)) return;
 
