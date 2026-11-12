@@ -135,7 +135,10 @@ const navItems = getNavItemsForRole(defaultRole);
     const [sales, follow, stock, orders] = await Promise.all([
       listSales({ status: 'confirmed', dateFrom: from }).catch(() => null),
       listFollowups({ status: 'pending' }).catch(() => null),
-      listStock().catch(() => null),
+      // Stock is only readable by people who sell, buy or manage it.
+      ['inventory.view', 'sales.create', 'purchases.create'].some((c) => can(s, c))
+        ? listStock().catch(() => null)
+        : Promise.resolve(null),
       s.businessType === 'independent' || s.role === 'staff' ? Promise.resolve(null) : listOrders().catch(() => null),
     ]);
     if (mine !== run) return;
