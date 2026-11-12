@@ -786,17 +786,19 @@ export function previewTotals(lines: { quantity: number; unitPrice: number }[], 
 }
 
 /**
- * Same rule as the server: yearly flat interest on what is left after the
- * down payment, shared over the months and rounded up to the paisa.
+ * Same rule as the server: reducing-balance EMI on what is left after the
+ * down payment, EMI = P r (1+r)^n / ((1+r)^n - 1) with r the yearly rate / 12,
+ * rounded up to the paisa.
  */
 export function previewEmi(net: number, down: number, months: number, yearlyRate: number) {
   const left = Math.max(0, net - down);
-  const m = Math.max(1, months || 1);
-  const interest = (left * (yearlyRate || 0) * m) / 100 / 12;
-  const monthly = Math.ceil(((left + interest) / m) * 100 - 1e-9) / 100;
-  const payable = down + monthly * m;
+  const n = Math.max(1, months || 1);
+  const r = (yearlyRate || 0) / 12 / 100;
+  const each = r === 0 ? left / n : (left * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+  const monthly = Math.ceil(each * 100 - 1e-6) / 100;
+  const payable = down + monthly * n;
 
-  return { left, interest, monthly, charge: Math.max(0, payable - net), due: Math.max(net, payable) };
+  return { left, monthly, charge: Math.max(0, payable - net), due: Math.max(net, payable) };
 }
 
 export function summarize(list: Sale[]) {
