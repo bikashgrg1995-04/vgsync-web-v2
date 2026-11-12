@@ -231,6 +231,9 @@ const navItems = getNavItemsForRole(defaultRole);
 
   if (!getSession()) window.location.replace('/');
 
+  // Everyone's pay is the owner's; others see only their own on the My pay page.
+  if (!getSession()?.isOwner) document.querySelector<HTMLElement>('[data-tab="payroll"]')?.setAttribute('hidden', '');
+
   type Tab = 'expenses' | 'income' | 'payroll';
   let tab: Tab = 'expenses';
   let canWrite = true;

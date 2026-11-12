@@ -1,0 +1,128 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+import '../../styles/app/purchase-shared.css';
+import '../../styles/app/purchase-page.css';
+
+const meta = PAGE_META['my-pay'];
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="pu-page pd-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div>
+          <h2 class="pd-hero-title">My pay</h2>
+          <p class="pd-hero-sub" id="mp-sub">What you have earned, what has been paid to you and what is still to come. Only you and the owner can see this.</p>
+        </div>
+      </div>
+      <div class="pd-hero-actions">
+        <button type="button" class="btn-ghost-sm" id="mp-refresh">Refresh</button>
+      </div>
+    </header>
+
+    <p class="pu-empty" id="mp-none" hidden>Your pay has not been set up yet. Ask the owner to add your salary.</p>
+    <p class="pu-error" id="mp-error" role="alert" hidden></p>
+
+    <div id="mp-body" hidden>
+      <div class="pd-kpis">
+        <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Still to be paid</span><div class="pd-kpi-row"><strong id="mp-owed">—</strong></div><span class="pd-kpi-sub" id="mp-owed-sub">Earned but not paid yet</span></div></article>
+        <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Advance</span><div class="pd-kpi-row"><strong id="mp-adv">—</strong></div><span class="pd-kpi-sub">Paid ahead, used against the next salary</span></div></article>
+        <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Paid so far</span><div class="pd-kpi-row"><strong id="mp-paid">—</strong></div><span class="pd-kpi-sub" id="mp-last">—</span></div></article>
+        <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Next salary</span><div class="pd-kpi-row"><strong id="mp-next">—</strong></div><span class="pd-kpi-sub" id="mp-type">—</span></div></article>
+      </div>
+
+      <section class="pu-card" id="mp-unsettled-card" hidden>
+        <div class="pu-filters"><strong>Waiting to be paid</strong></div>
+        <div class="pu-table-wrap">
+          <table class="pu-table">
+            <thead><tr><th>Date</th><th>What for</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Left</th></tr></thead>
+            <tbody id="mp-unsettled"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="pu-card">
+        <div class="pu-filters"><strong>Statement</strong><span class="pu-count" id="mp-count"></span></div>
+        <div class="pu-table-wrap">
+          <table class="pu-table">
+            <thead><tr><th>Date</th><th>What</th><th>How</th><th class="num">Earned</th><th class="num">Deducted</th><th class="num">Paid</th><th class="num">Still owed</th></tr></thead>
+            <tbody id="mp-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import { getMyPay, listMyStatement, formatNpr } from '../../lib/payments';
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const session = getSession();
+  if (!session) window.location.replace('/');
+  // The owner manages everyone's pay on the Payments screen.
+  else if (session.isOwner) window.location.replace('/dashboard/payments');
+
+  const KIND: Record<string, string> = { salary: 'Salary', wage: 'Daily wage', bonus: 'Bonus', deduction: 'Deduction', payment: 'Payment' };
+  const METHOD: Record<string, string> = { cash: 'Cash', bank: 'Bank', esewa: 'eSewa', khalti: 'Khalti', cheque: 'Cheque', other: 'Other' };
+
+  async function load(): Promise<void> {
+    $('mp-error').hidden = true;
+    try {
+      const pay = await getMyPay();
+      const statement = pay ? await listMyStatement().catch(() => []) : [];
+      $('mp-none').hidden = pay !== null;
+      $('mp-body').hidden = pay === null;
+      if (!pay) return;
+      const b = pay.balance;
+      $('mp-owed').textContent = formatNpr(b.remaining);
+      $('mp-owed-sub').textContent = b.previousRemaining > 0
+        ? `${formatNpr(b.previousRemaining)} from earlier, ${formatNpr(b.currentRemaining)} this month` : 'Earned but not paid yet';
+      $('mp-adv').textContent = formatNpr(b.advance);
+      $('mp-paid').textContent = formatNpr(b.totalPaid);
+      $('mp-last').textContent = b.lastPaymentDate ? `Last paid ${b.lastPaymentDate}` : 'Nothing paid yet';
+      $('mp-next').textContent = b.nextSalaryDate ?? '—';
+      $('mp-type').textContent = pay.payType === 'monthly' ? 'Monthly salary' : 'Daily wage';
+
+      $('mp-unsettled-card').hidden = pay.unsettled.length === 0;
+      $('mp-unsettled').innerHTML = pay.unsettled.map((u) => `<tr>
+        <td>${esc(u.date)}</td><td>${esc(u.description || KIND[u.kind] || u.kind)}${u.carriedOver ? ' <span class="pu-count">(carried over)</span>' : ''}</td>
+        <td class="num">${formatNpr(u.amount)}</td><td class="num">${formatNpr(u.paid)}</td><td class="num">${formatNpr(u.remaining)}</td></tr>`).join('');
+
+      $('mp-count').textContent = `${statement.length} entries`;
+      $('mp-rows').innerHTML = statement.length
+        ? statement.map((r) => `<tr>
+            <td>${esc(r.date)}</td><td>${esc(r.description || KIND[r.type] || r.type)}</td><td>${esc(METHOD[r.method] ?? r.method ?? '')}</td>
+            <td class="num">${r.direction === 'earned' ? formatNpr(r.amount) : ''}</td>
+            <td class="num">${r.direction === 'deducted' ? formatNpr(r.amount) : ''}</td>
+            <td class="num">${r.direction === 'paid' ? formatNpr(r.amount) : ''}</td>
+            <td class="num">${formatNpr(r.owedAfter)}</td></tr>`).join('')
+        : '<tr><td colspan="7" class="pu-empty">Nothing yet.</td></tr>';
+    } catch (e) {
+      const box = $('mp-error');
+      box.textContent = e instanceof Error && e.message ? e.message : 'Could not load your pay. Please try again.';
+      box.hidden = false;
+    }
+  }
+
+  $('mp-refresh').addEventListener('click', () => void load());
+  if (session && !session.isOwner) void load();
+</script>

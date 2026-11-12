@@ -7,7 +7,7 @@
  * payment instead.
  */
 
-import { api } from './api';
+import { api, ApiError } from './api';
 
 export type PayMethod = 'cash' | 'bank' | 'online' | 'cheque';
 export type LedgerStatus = 'active' | 'void';
@@ -312,6 +312,46 @@ export async function listStatement(staffId: number, dateFrom = '', dateTo = '')
   if (dateTo) q.set('date_to', dateTo);
   const qs = q.toString();
   return allPages<Raw, StatementRow>(`/payroll/balances/${staffId}/statement/${qs ? `?${qs}` : ''}`, (s) => ({
+    id: s.id,
+    date: s.date,
+    type: s.type,
+    direction: s.direction,
+    description: s.description,
+    amount: num(s.amount),
+    method: s.method,
+    reference: s.reference,
+    advancePart: num(s.advance_part),
+    owedAfter: num(s.owed_after),
+    advanceAfter: num(s.advance_after),
+  }));
+}
+
+/** The signed-in person's own pay. ``null`` when the owner has not set it up. */
+export async function getMyPay(): Promise<{ balance: PayBalance; unsettled: Unsettled[]; payType: PayType } | null> {
+  try {
+    const r = await api<Raw>('/payroll/me/');
+    return {
+      balance: balanceFromApi(r),
+      payType: r.pay_type,
+      unsettled: (r.unsettled as Raw[]).map((u) => ({
+        id: u.id,
+        kind: u.kind,
+        date: u.entry_date,
+        description: u.description,
+        amount: num(u.amount),
+        paid: num(u.paid),
+        remaining: num(u.remaining),
+        carriedOver: Boolean(u.carried_over),
+      })),
+    };
+  } catch (e) {
+    if (e instanceof ApiError && e.code === 'no_salary') return null;
+    throw e;
+  }
+}
+
+export function listMyStatement(): Promise<StatementRow[]> {
+  return allPages<Raw, StatementRow>('/payroll/me/statement/', (s) => ({
     id: s.id,
     date: s.date,
     type: s.type,
