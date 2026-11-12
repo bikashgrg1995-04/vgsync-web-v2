@@ -326,6 +326,59 @@ export async function listStatement(staffId: number, dateFrom = '', dateTo = '')
   }));
 }
 
+// ---- Daily sheet ------------------------------------------------------------
+
+export type WorkStatus = 'present' | 'half' | 'absent';
+
+export interface WorkRow {
+  staffId: number;
+  name: string;
+  rate: number;
+  /** ``null`` when the day has not been marked yet. */
+  status: WorkStatus | null;
+  extra: number;
+  note: string;
+  amount: number;
+  month: { present: number; half: number; absent: number; earned: number };
+}
+
+export interface WorkMark {
+  staff: number;
+  status: WorkStatus;
+  extra?: number;
+  note?: string;
+}
+
+function workRows(r: Raw): WorkRow[] {
+  return (r.staff as Raw[]).map((w) => ({
+    staffId: w.staff,
+    name: w.staff_name,
+    rate: num(w.rate),
+    status: w.status ?? null,
+    extra: num(w.extra),
+    note: w.note ?? '',
+    amount: num(w.amount),
+    month: {
+      present: w.month.present,
+      half: w.month.half,
+      absent: w.month.absent,
+      earned: num(w.month.earned),
+    },
+  }));
+}
+
+export async function getWorkSheet(date: string): Promise<WorkRow[]> {
+  return workRows(await api<Raw>(`/payroll/workdays/?date=${encodeURIComponent(date)}`));
+}
+
+export async function saveWorkSheet(date: string, marks: WorkMark[]): Promise<WorkRow[]> {
+  const body = {
+    date,
+    marks: marks.map((m) => ({ staff: m.staff, status: m.status, extra: (m.extra ?? 0).toFixed(2), note: m.note ?? '' })),
+  };
+  return workRows(await api<Raw>('/payroll/workdays/', { method: 'POST', body }));
+}
+
 /** The signed-in person's own pay. ``null`` when the owner has not set it up. */
 export async function getMyPay(): Promise<{ balance: PayBalance; unsettled: Unsettled[]; payType: PayType } | null> {
   try {
@@ -384,6 +437,10 @@ export async function listSalaries(): Promise<SalaryProfile[]> {
 
 export async function saveSalary(staffId: number, input: SalaryInput): Promise<SalaryProfile> {
   const body: Record<string, unknown> = { pay_type: input.payType };
+  if (input.payType === 'daily') {
+    // The usual wage for a full day; empty means each day's amount is typed in.
+    body.rate = input.rate ? input.rate.toFixed(2) : null;
+  }
   if (input.payType === 'monthly') {
     body.rate = (input.rate ?? 0).toFixed(2);
     body.allowances = (input.allowances ?? 0).toFixed(2);
