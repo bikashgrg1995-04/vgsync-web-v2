@@ -163,6 +163,16 @@ function applySessionUI(): void {
       .filter((item) => navItemVisible(item, viewer))
       .map((i) => i.id),
   );
+  // Typing the address of a page the menu hides does not open it.
+  const here = window.location.pathname.replace(/\/+$/, '');
+  const blocked = getNavItemsForRole().find(
+    (i) => !allowed.has(i.id) && i.href.split('#')[0] === here && !i.href.includes('#'),
+  );
+  if (blocked && here !== '/dashboard') {
+    window.location.replace('/dashboard');
+    return;
+  }
+
   document.querySelectorAll<HTMLElement>('[data-nav-id]').forEach((el) => {
     const id = el.dataset.navId;
     // Settings, Help & Support and Logout are for every role.
