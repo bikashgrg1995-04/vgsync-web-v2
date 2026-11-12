@@ -347,6 +347,8 @@ export interface WorkMark {
   status: WorkStatus;
   extra?: number;
   note?: string;
+  /** The day's wage when it is not the usual rate; empty uses the rate. */
+  amount?: number;
 }
 
 function workRows(r: Raw): WorkRow[] {
@@ -374,7 +376,14 @@ export async function getWorkSheet(date: string): Promise<WorkRow[]> {
 export async function saveWorkSheet(date: string, marks: WorkMark[]): Promise<WorkRow[]> {
   const body = {
     date,
-    marks: marks.map((m) => ({ staff: m.staff, status: m.status, extra: (m.extra ?? 0).toFixed(2), note: m.note ?? '' })),
+    marks: marks.map((m) => ({
+      staff: m.staff,
+      status: m.status,
+      extra: (m.extra ?? 0).toFixed(2),
+      note: m.note ?? '',
+      // Typed in when the day's wage is not the usual rate.
+      ...(m.amount ? { amount: m.amount.toFixed(2) } : {}),
+    })),
   };
   return workRows(await api<Raw>('/payroll/workdays/', { method: 'POST', body }));
 }

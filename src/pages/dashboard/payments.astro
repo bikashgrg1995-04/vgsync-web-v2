@@ -59,7 +59,7 @@ const navItems = getNavItemsForRole(defaultRole);
             <thead>
               <tr><th>Date</th><th>Category</th><th>Details</th><th>Method</th><th class="num">Amount</th><th>Status</th><th></th></tr>
             </thead>
-            <tbody id="lg-tbody"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
+            <tbody id="lg-tbody"><tr><td colspan="8" class="py-empty">Loading…</td></tr></tbody>
           </table>
         </div>
         <p class="py-foot" id="lg-foot"></p>
@@ -81,12 +81,12 @@ const navItems = getNavItemsForRole(defaultRole);
         <div class="py-table-wrap">
           <table class="py-table">
             <thead>
-              <tr><th>Staff</th><th class="num">Daily rate</th><th>Today</th><th class="num">Extra</th><th>Note</th><th class="num">Day's pay</th><th>This month</th></tr>
+              <tr><th>Staff</th><th class="num">Daily rate</th><th>Today</th><th class="num">Day's wage</th><th class="num">Extra</th><th>Note</th><th class="num">Day's pay</th><th>This month</th></tr>
             </thead>
             <tbody id="ds-tbody"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
           </table>
         </div>
-        <p class="py-note">Present pays the full daily rate, Half pays half, Absent pays nothing. Marking a day again changes the wage already recorded. Only people on daily pay are listed.</p>
+        <p class="py-note">Present pays the full daily rate, Half pays half, Absent pays nothing. If the wage is different that day (or there is no fixed rate), type it in Day's wage. Marking a day again changes the wage already recorded. Only people on daily pay are listed.</p>
       </div>
     </section>
 
@@ -759,15 +759,24 @@ const navItems = getNavItemsForRole(defaultRole);
   };
   const STATES: [WorkStatus, string][] = [['present', 'Present'], ['half', 'Half'], ['absent', 'Absent']];
 
-  function dayPay(r: WorkRow, status: WorkStatus | null, extra: number): number {
+  // `typed` is the day's wage entered by hand; empty uses the usual rate.
+  function dayPay(r: WorkRow, status: WorkStatus | null, extra: number, typed = 0): number {
     if (!status || status === 'absent') return 0;
-    return r.rate * (status === 'half' ? 0.5 : 1) + extra;
+    return (typed > 0 ? typed : r.rate * (status === 'half' ? 0.5 : 1)) + extra;
+  }
+
+  /** What was typed on a marked day: the saved wage when it differs from the usual rate. */
+  function typedWage(r: WorkRow): string {
+    if (!r.status || r.status === 'absent') return '';
+    const usual = r.rate * (r.status === 'half' ? 0.5 : 1);
+    const saved = r.amount - r.extra;
+    return Math.abs(saved - usual) > 0.004 ? String(saved) : '';
   }
 
   function showDaily(): void {
     const body = $('ds-tbody');
     if (!sheet.length) {
-      body.innerHTML = '<tr><td colspan="7" class="py-empty">Nobody is on daily pay. Set someone\'s pay to "Daily wage" on the Staff pay tab.</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" class="py-empty">Nobody is on daily pay. Set someone\'s pay to "Daily wage" on the Staff pay tab.</td></tr>';
       $('ds-sum').textContent = '';
       return;
     }
@@ -775,6 +784,7 @@ const navItems = getNavItemsForRole(defaultRole);
       <td><strong>${esc(r.name)}</strong></td>
       <td class="num">${formatNpr(r.rate)}</td>
       <td><div class="py-seg" role="group">${STATES.map(([v, l]) => `<button type="button" class="py-seg-btn${r.status === v ? ' is-on' : ''}" data-set="${v}">${l}</button>`).join('')}</div></td>
+      <td class="num"><input type="number" class="ds-amt" min="0" step="0.01" value="${typedWage(r)}" placeholder="${r.rate ? 'Usual' : 'Amount'}" style="width:92px" /></td>
       <td class="num"><input type="number" class="ds-extra" min="0" step="0.01" value="${r.extra || ''}" placeholder="0" style="width:84px" /></td>
       <td><input type="text" class="ds-note" maxlength="150" value="${esc(r.note)}" placeholder="Note" /></td>
       <td class="num ds-pay">${formatNpr(dayPay(r, r.status, r.extra))}</td>
@@ -791,7 +801,8 @@ const navItems = getNavItemsForRole(defaultRole);
       const r = sheet.find((x) => x.staffId === Number(tr.dataset.staff))!;
       const status = (tr.querySelector<HTMLElement>('.is-on')?.dataset.set ?? null) as WorkStatus | null;
       const extra = Number(tr.querySelector<HTMLInputElement>('.ds-extra')!.value) || 0;
-      const pay = dayPay(r, status, extra);
+      const typed = Number(tr.querySelector<HTMLInputElement>('.ds-amt')!.value) || 0;
+      const pay = dayPay(r, status, extra, typed);
       tr.querySelector('.ds-pay')!.textContent = formatNpr(pay);
       total += pay;
       if (status) marked += 1;
@@ -809,7 +820,7 @@ const navItems = getNavItemsForRole(defaultRole);
       sheet = await getWorkSheet(input.value);
       showDaily();
     } catch (e) {
-      $('ds-tbody').innerHTML = `<tr><td colspan="7" class="py-empty">${esc(e instanceof Error ? e.message : 'Could not load the sheet.')}</td></tr>`;
+      $('ds-tbody').innerHTML = `<tr><td colspan="8" class="py-empty">${esc(e instanceof Error ? e.message : 'Could not load the sheet.')}</td></tr>`;
     }
   }
 
@@ -842,9 +853,10 @@ const navItems = getNavItemsForRole(defaultRole);
         staff: Number(tr.dataset.staff),
         status: tr.querySelector<HTMLElement>('.is-on')?.dataset.set as WorkStatus | undefined,
         extra: Number(tr.querySelector<HTMLInputElement>('.ds-extra')!.value) || 0,
+        amount: Number(tr.querySelector<HTMLInputElement>('.ds-amt')!.value) || 0,
         note: tr.querySelector<HTMLInputElement>('.ds-note')!.value.trim(),
       }))
-      .filter((m): m is { staff: number; status: WorkStatus; extra: number; note: string } => Boolean(m.status));
+      .filter((m): m is { staff: number; status: WorkStatus; extra: number; amount: number; note: string } => Boolean(m.status));
     const err = $('ds-error');
     err.hidden = true;
     if (!marks.length) {
