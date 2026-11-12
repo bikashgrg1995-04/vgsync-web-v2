@@ -205,10 +205,10 @@ const navItems = getNavItemsForRole(defaultRole);
             <thead>
               <tr>
                 <th>No</th><th>Date</th><th>Supplier</th><th>Bill</th><th>Status</th>
-                <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Payment</th>
+                <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Pay by</th><th>Payment</th>
               </tr>
             </thead>
-            <tbody id="pu-tbody"><tr><td colspan="9" class="pu-empty">Loading…</td></tr></tbody>
+            <tbody id="pu-tbody"><tr><td colspan="10" class="pu-empty">Loading…</td></tr></tbody>
           </table>
         </div>
         <p class="pu-foot" id="pu-count"></p>
@@ -757,10 +757,17 @@ const navItems = getNavItemsForRole(defaultRole);
 
   $('pu-export')?.addEventListener('click', exportCsv);
 
+  /** The supplier's payment due date, in red once it has passed with money still owed. */
+  function payBy(p: Purchase): string {
+    if (!p.dueDate || p.status === 'cancelled') return '—';
+    const late = p.remaining > 0 && p.dueDate < new Date().toISOString().slice(0, 10);
+    return `<span${late ? ' style="color:#ef4444;font-weight:650"' : ''}>${esc(p.dueDate)}${late ? ' (late)' : ''}</span>`;
+  }
+
   function renderList(): void {
     const tbody = $('pu-tbody')!;
     if (purchases.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="9" class="pu-empty">No purchases found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="pu-empty">No purchases found.</td></tr>`;
     } else {
       tbody.innerHTML = purchases
         .map(
@@ -773,6 +780,7 @@ const navItems = getNavItemsForRole(defaultRole);
             <td class="num">${formatNpr(p.netTotal)}</td>
             <td class="num">${formatNpr(p.paid)}</td>
             <td class="num">${p.status === 'cancelled' ? '—' : formatNpr(p.remaining)}</td>
+            <td>${payBy(p)}</td>
             <td>${p.status === 'cancelled' ? '—' : badge('pay-' + p.paymentStatus, PAYMENT_LABEL[p.paymentStatus])}</td>
           </tr>`,
         )

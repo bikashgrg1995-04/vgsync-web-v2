@@ -57,6 +57,8 @@ export interface Purchase {
   supplierName: string;
   billNo: string;
   purchaseDate: string;
+  /** When the supplier expects to be paid. */
+  dueDate: string | null;
   status: PurchaseStatus;
   lines: PurchaseLine[];
   subtotal: number;
@@ -82,6 +84,7 @@ export interface PurchaseInput {
   supplierId: number;
   billNo?: string;
   purchaseDate?: string;
+  dueDate?: string | null;
   discount?: number;
   vatRate?: number;
   freight?: number;
@@ -201,6 +204,7 @@ interface ApiPurchase {
   supplier_name: string;
   bill_no: string;
   purchase_date: string;
+  due_date?: string | null;
   status: PurchaseStatus;
   items: ApiLine[];
   subtotal: string;
@@ -285,6 +289,7 @@ function purchaseFromApi(p: ApiPurchase): Purchase {
     supplierName: p.supplier_name,
     billNo: p.bill_no,
     purchaseDate: p.purchase_date,
+    dueDate: p.due_date ?? null,
     status: p.status,
     lines: (p.items ?? []).map((l) => ({
       id: l.id,
@@ -415,6 +420,7 @@ function purchaseBody(input: PurchaseInput): Record<string, unknown> {
     })),
   };
   if (input.purchaseDate) body.purchase_date = input.purchaseDate;
+  if (input.dueDate !== undefined) body.due_date = input.dueDate || null;
   return body;
 }
 
@@ -580,4 +586,9 @@ export function formatNpr(n: number): string {
 
 export function formatQty(n: number): string {
   return new Intl.NumberFormat('en-NP', { maximumFractionDigits: 3 }).format(n);
+}
+
+/** Set or clear when the supplier expects to be paid (also after the goods arrived). */
+export async function setPurchaseDueDate(id: number, dueDate: string | null): Promise<Purchase> {
+  return purchaseFromApi(await api<ApiPurchase>(`/purchases/${id}/due-date/`, { method: 'POST', body: { due_date: dueDate } }));
 }

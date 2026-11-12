@@ -49,6 +49,7 @@ const FIELD_LABELS: Record<string, string> = {
   supplier: 'Supplier',
   bill_no: 'Bill no',
   purchase_date: 'Date',
+  due_date: 'Payment due date',
   discount_amount: 'Discount',
   vat_rate: 'VAT',
   freight_amount: 'Freight',
@@ -197,6 +198,7 @@ export function openForm(p?: Purchase): void {
   sup.value = p ? String(p.supplierId) : '';
   $<HTMLInputElement>('pf-bill')!.value = p?.billNo ?? '';
   $<HTMLInputElement>('pf-date')!.value = p?.purchaseDate ?? today();
+  $<HTMLInputElement>('pf-due')!.value = p?.dueDate ?? '';
   $<HTMLInputElement>('pf-notes')!.value = p?.notes ?? '';
   $<HTMLInputElement>('pf-discount')!.value = String(p?.discount ?? 0);
   $<HTMLInputElement>('pf-vat')!.value = String(p?.vatRate ?? 0);
@@ -229,6 +231,7 @@ $('form-purchase')?.addEventListener('submit', (e) => {
     supplierId: Number(val('pf-supplier')),
     billNo: val('pf-bill'),
     purchaseDate: val('pf-date'),
+    dueDate: val('pf-due') || null,
     discount: Number(val('pf-discount')) || 0,
     vatRate: Number(val('pf-vat')) || 0,
     freight: Number(val('pf-freight')) || 0,
