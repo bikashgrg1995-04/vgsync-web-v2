@@ -44,6 +44,8 @@ export interface StaffMember {
   positionName: string;
   isActive: boolean;
   mustChangePassword: boolean;
+  /** False for someone kept only in the records (never signs in). */
+  canSignIn: boolean;
   lastLogin: string | null;
   dateJoined: string;
 }
@@ -58,6 +60,8 @@ export interface StaffInput {
   positionId: number | null;
   /** Leave empty to have the server generate a temporary password. */
   password?: string;
+  /** Default true. False: no login, no password, position optional. */
+  canSignIn?: boolean;
 }
 
 export interface PositionPermission {
@@ -136,6 +140,7 @@ interface ApiStaff {
   position_name: string | null;
   is_active: boolean;
   must_change_password: boolean;
+  can_sign_in?: boolean;
   last_login: string | null;
   date_joined: string;
   temporary_password?: string;
@@ -178,6 +183,7 @@ function staffFromApi(s: ApiStaff): StaffMember {
     positionName: s.position_name ?? '',
     isActive: s.is_active,
     mustChangePassword: s.must_change_password,
+    canSignIn: s.can_sign_in !== false,
     lastLogin: s.last_login,
     dateJoined: s.date_joined,
   };
@@ -228,8 +234,9 @@ export async function getStaff(id: number): Promise<StaffMember> {
 export async function createStaff(
   input: StaffInput,
 ): Promise<{ member: StaffMember; temporaryPassword: string | null }> {
+  const signsIn = input.canSignIn !== false;
   const body: Record<string, unknown> = {
-    username: (input.username ?? '').trim(),
+    can_sign_in: signsIn,
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
     email: input.email.trim(),
@@ -237,7 +244,8 @@ export async function createStaff(
     role: input.role,
     position: input.role === 'staff' ? input.positionId : null,
   };
-  if (input.password) body.password = input.password;
+  if (signsIn) body.username = (input.username ?? '').trim();
+  if (signsIn && input.password) body.password = input.password;
 
   const data = await api<ApiStaff>('/staff/', { method: 'POST', body });
   return { member: staffFromApi(data), temporaryPassword: data.temporary_password ?? null };
@@ -256,6 +264,18 @@ export async function updateStaff(id: number, input: StaffInput): Promise<StaffM
     },
   });
   return staffFromApi(data);
+}
+
+/** Give or take away the right to sign in. Giving it returns a one-time password. */
+export async function setSignIn(
+  id: number,
+  canSignIn: boolean,
+  positionId?: number | null,
+): Promise<{ member: StaffMember; temporaryPassword: string | null }> {
+  const body: Record<string, unknown> = { can_sign_in: canSignIn };
+  if (positionId) body.position = positionId;
+  const data = await api<ApiStaff>(`/staff/${id}/`, { method: 'PATCH', body });
+  return { member: staffFromApi(data), temporaryPassword: data.temporary_password ?? null };
 }
 
 export async function deactivateStaff(id: number): Promise<void> {
