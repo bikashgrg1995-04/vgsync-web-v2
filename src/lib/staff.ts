@@ -7,7 +7,7 @@
  * back once as `temporaryPassword`; it cannot be looked up again.
  */
 
-import { api } from './api';
+import { api, apiDownload } from './api';
 
 export type StaffRole = 'admin' | 'accountant' | 'staff';
 
@@ -375,4 +375,64 @@ export async function saveOverrides(
   return accessFromApi(
     await api<ApiAccess>(`/staff/${id}/access/`, { method: 'PUT', body: { overrides: changes } }),
   );
+}
+
+
+// ---- Documents kept on a staff record ---------------------------------------
+
+export interface StaffDocument {
+  id: number;
+  title: string;
+  category: 'identity' | 'contract' | 'cv' | 'other';
+  fileName: string;
+  size: number;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+export const DOCUMENT_CATEGORIES: Record<StaffDocument['category'], string> = {
+  identity: 'Identity',
+  contract: 'Contract',
+  cv: 'CV / Certificate',
+  other: 'Other',
+};
+
+type RawDoc = Record<string, any>;
+
+function docFromApi(d: RawDoc): StaffDocument {
+  return {
+    id: d.id,
+    title: d.title,
+    category: d.category,
+    fileName: d.original_name,
+    size: d.size,
+    uploadedBy: d.uploaded_by_name ?? '',
+    createdAt: d.created_at,
+  };
+}
+
+export async function listDocuments(staffId: number): Promise<StaffDocument[]> {
+  const rows = await api<RawDoc[]>(`/staff/${staffId}/documents/`);
+  return rows.map(docFromApi);
+}
+
+export async function uploadDocument(
+  staffId: number,
+  file: File,
+  title: string,
+  category: StaffDocument['category'],
+): Promise<StaffDocument> {
+  const form = new FormData();
+  form.append('file', file);
+  if (title.trim()) form.append('title', title.trim());
+  form.append('category', category);
+  return docFromApi(await api<RawDoc>(`/staff/${staffId}/documents/`, { method: 'POST', body: form }));
+}
+
+export function downloadDocument(staffId: number, doc: StaffDocument): Promise<void> {
+  return apiDownload(`/staff/${staffId}/documents/${doc.id}/`, doc.fileName);
+}
+
+export async function deleteDocument(staffId: number, id: number): Promise<void> {
+  await api(`/staff/${staffId}/documents/${id}/`, { method: 'DELETE' });
 }
