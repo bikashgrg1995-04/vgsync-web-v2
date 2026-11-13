@@ -68,7 +68,7 @@ const ic = {
         <nav class="sd-nav" aria-label="Staff sections" id="sd-nav">
           <button type="button" class="is-active" data-tab="overview"><Fragment set:html={I(ic.home)} />Overview</button>
           <button type="button" data-tab="salary"><Fragment set:html={I(ic.coin)} />Salary Records</button>
-          <button type="button" disabled title="Not available yet"><Fragment set:html={I(ic.cal)} />Attendance<em>Soon</em></button>
+          <button type="button" data-tab="attendance" id="sd-tab-attendance"><Fragment set:html={I(ic.cal)} />Attendance</button>
           <button type="button" data-tab="access"><Fragment set:html={I(ic.shield)} />Access &amp; Permissions</button>
           <button type="button" disabled title="Not available yet"><Fragment set:html={I(ic.folder)} />Documents<em>Soon</em></button>
           <button type="button" data-tab="activity"><Fragment set:html={I(ic.history)} />Activity Logs</button>
@@ -133,6 +133,24 @@ const ic = {
           </div>
         </section>
 
+        <!-- ATTENDANCE -->
+        <section class="sd-panel" data-panel="attendance">
+          <div class="sd-card">
+            <div class="sd-card-head">
+              <h3>Attendance</h3>
+              <input type="month" id="sd-att-month" class="sd-btn" aria-label="Month" />
+            </div>
+            <div class="sd-kpis" id="sd-att-kpis"></div>
+            <div class="sd-table-wrap">
+              <table class="sd-table">
+                <thead><tr><th>Date</th><th>Status</th><th>Note</th><th class="num">Extra</th><th class="num">Day's pay</th></tr></thead>
+                <tbody id="sd-att-rows"><tr><td colspan="5" class="sd-empty">Loading…</td></tr></tbody>
+              </table>
+            </div>
+            <p class="sd-hint">Attendance is marked on the Daily sheet in Payments, for people paid by the day.</p>
+          </div>
+        </section>
+
         <!-- ACCESS -->
         <section class="sd-panel" data-panel="access">
           <div class="sd-card">
@@ -181,6 +199,7 @@ const ic = {
     type StaffMember,
   } from '../../../lib/staff';
   import {
+    getAttendance,
     getBalance,
     listSalaries,
     listStatement,
@@ -224,6 +243,35 @@ const ic = {
     if (!el) return;
     el.hidden = false;
     el.textContent = message;
+  }
+
+  // ---------- attendance ----------
+  const STATUS_LABEL: Record<string, string> = { present: 'Present', half: 'Half day', absent: 'Absent' };
+  const monthInput = $<HTMLInputElement>('sd-att-month');
+  if (monthInput) {
+    const now = new Date();
+    monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    monthInput.addEventListener('change', () => void loadAttendance());
+  }
+
+  async function loadAttendance(): Promise<void> {
+    const body = $('sd-att-rows');
+    const kpis = $('sd-att-kpis');
+    if (!body || !kpis || !monthInput?.value) return;
+    try {
+      const a = await getAttendance(staffId, monthInput.value);
+      kpis.innerHTML = [
+        ['Present', String(a.present)],
+        ['Half days', String(a.half)],
+        ['Absent', String(a.absent)],
+        ['Earned', formatNpr(a.earned)],
+      ].map(([k, v]) => `<div class="sd-kpi"><small>${k}</small><strong>${esc(v)}</strong></div>`).join('');
+      body.innerHTML = a.days.length
+        ? a.days.map((d) => `<tr><td>${esc(date(d.date))}</td><td>${esc(STATUS_LABEL[d.status] ?? d.status)}</td><td>${esc(d.note) || '—'}</td><td class="num">${d.extra ? esc(formatNpr(d.extra)) : '—'}</td><td class="num">${d.status === 'absent' ? '—' : esc(formatNpr(d.amount))}</td></tr>`).join('')
+        : '<tr><td colspan="5" class="sd-empty">No attendance marked this month.</td></tr>';
+    } catch (error) {
+      body.innerHTML = `<tr><td colspan="5" class="sd-empty">${esc(error instanceof ApiError ? error.message : 'Could not load attendance.')}</td></tr>`;
+    }
   }
 
   // ---------- profile ----------
@@ -513,6 +561,7 @@ const ic = {
     renderSalary(profile, bal);
     renderStatement(statement, bal);
     void loadActivity();
+    void loadAttendance();
   }
 
   if (session && canManageStaff(session)) {
