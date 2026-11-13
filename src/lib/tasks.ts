@@ -3,10 +3,11 @@
  * their own; seeing the whole team and assigning needs permission.
  */
 
-import { api } from './api';
+import { api, apiDownload } from './api';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done' | 'cancelled';
 export type TaskPriority = 'low' | 'normal' | 'high';
+export type TaskRepeat = 'none' | 'daily' | 'weekly' | 'monthly';
 
 export interface Person {
   id: number;
@@ -34,6 +35,9 @@ export interface Task {
   priorityLabel: string;
   dueDate: string | null;
   isOverdue: boolean;
+  repeat: TaskRepeat;
+  repeatLabel: string;
+  attachmentCount: number;
   assignedTo: Person;
   assignedBy: Person;
   startedAt: string | null;
@@ -60,6 +64,7 @@ export interface TaskInput {
   description?: string;
   priority?: TaskPriority;
   dueDate?: string | null;
+  repeat?: TaskRepeat;
   assignedTo: number;
 }
 
@@ -75,6 +80,9 @@ function toTask(r: any): Task {
     priorityLabel: r.priority_label,
     dueDate: r.due_date,
     isOverdue: Boolean(r.is_overdue),
+    repeat: r.repeat ?? 'none',
+    repeatLabel: r.repeat_label ?? '',
+    attachmentCount: r.attachment_count ?? 0,
     assignedTo: r.assigned_to,
     assignedBy: r.assigned_by,
     startedAt: r.started_at,
@@ -116,6 +124,7 @@ export async function createTask(input: TaskInput): Promise<Task> {
         description: input.description ?? '',
         priority: input.priority ?? 'normal',
         due_date: input.dueDate || null,
+        repeat: input.repeat ?? 'none',
         assigned_to: input.assignedTo,
       },
     }),
@@ -128,6 +137,7 @@ export async function editTask(id: number, input: Partial<TaskInput>): Promise<T
   if (input.description !== undefined) body.description = input.description;
   if (input.priority !== undefined) body.priority = input.priority;
   if (input.dueDate !== undefined) body.due_date = input.dueDate || null;
+  if (input.repeat !== undefined) body.repeat = input.repeat;
   if (input.assignedTo !== undefined) body.assigned_to = input.assignedTo;
 
   return toTask(await api(`/tasks/${id}/`, { method: 'PATCH', body }));
@@ -153,4 +163,39 @@ export async function getTaskSummary(): Promise<TaskSummary> {
   const r = await api<any>('/tasks/summary/');
 
   return { mine: counts(r.mine), team: r.team ? counts(r.team) : null, people: r.people ?? [] };
+}
+
+
+export interface TaskFile {
+  id: number;
+  name: string;
+  size: number;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+const toFile = (r: any): TaskFile => ({
+  id: r.id,
+  name: r.original_name,
+  size: r.size,
+  uploadedBy: r.uploaded_by_name ?? '',
+  createdAt: r.created_at,
+});
+
+export async function listTaskFiles(taskId: number): Promise<TaskFile[]> {
+  return (await api<any[]>(`/tasks/${taskId}/attachments/`)).map(toFile);
+}
+
+export async function uploadTaskFile(taskId: number, file: File): Promise<TaskFile> {
+  const form = new FormData();
+  form.append('file', file);
+  return toFile(await api(`/tasks/${taskId}/attachments/`, { method: 'POST', body: form }));
+}
+
+export function downloadTaskFile(taskId: number, file: TaskFile): Promise<void> {
+  return apiDownload(`/tasks/${taskId}/attachments/${file.id}/`, file.name);
+}
+
+export async function deleteTaskFile(taskId: number, id: number): Promise<void> {
+  await api(`/tasks/${taskId}/attachments/${id}/`, { method: 'DELETE' });
 }

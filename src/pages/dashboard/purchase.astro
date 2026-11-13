@@ -757,10 +757,15 @@ const navItems = getNavItemsForRole(defaultRole);
 
   $('pu-export')?.addEventListener('click', exportCsv);
 
+  const localToday = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
   /** The supplier's payment due date, in red once it has passed with money still owed. */
   function payBy(p: Purchase): string {
     if (!p.dueDate || p.status === 'cancelled') return '—';
-    const late = p.remaining > 0 && p.dueDate < new Date().toISOString().slice(0, 10);
+    const late = p.remaining > 0 && p.dueDate < localToday();
     return `<span${late ? ' style="color:#ef4444;font-weight:650"' : ''}>${esc(p.dueDate)}${late ? ' (late)' : ''}</span>`;
   }
 
