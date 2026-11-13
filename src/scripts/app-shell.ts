@@ -10,6 +10,7 @@ import { AUTH_STORAGE_KEY } from '../lib/session-store';
 import { redirectToLogin } from '../lib/api';
 import { getNavItemsForRole, navItemVisible, type NavViewer } from '../lib/navigation';
 import { paintAvatar } from '../lib/avatar';
+import './table-cards';
 
 const root = document.documentElement;
 const shell = document.getElementById('app-shell');

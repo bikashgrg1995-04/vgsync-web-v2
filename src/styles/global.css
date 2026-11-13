@@ -316,3 +316,78 @@ body {
     min-height: 38px;
   }
 }
+
+/* Phones: a table row becomes a card (cells are labelled by table-cards.ts). */
+@media (max-width: 640px) {
+  table.tc.tc,
+  table.tc.tc tbody {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  table.tc.tc thead {
+    display: none !important;
+  }
+
+  table.tc.tc tr {
+    display: block !important;
+    margin: 0 0 10px !important;
+    padding: 4px 12px !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    background: var(--surface, transparent) !important;
+  }
+
+  table.tc.tc td {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 7px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+    text-align: right !important;
+    white-space: normal !important;
+    word-break: break-word;
+  }
+
+  table.tc.tc td:last-child {
+    border-bottom: 0 !important;
+  }
+
+  table.tc.tc td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 38%;
+    max-width: 38%;
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-weight: 650;
+    letter-spacing: 0.03em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  /* Cells with no heading (actions, avatars) just fill the card's width. */
+  table.tc.tc td:not([data-label]) {
+    justify-content: flex-end;
+  }
+
+  table.tc.tc td.tc-skip {
+    display: none !important;
+  }
+
+  table.tc.tc tr.tc-note {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  table.tc.tc tr.tc-note td {
+    display: block !important;
+    text-align: center !important;
+    border: 0 !important;
+  }
+}
