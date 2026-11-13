@@ -70,7 +70,7 @@ const ic = {
           <button type="button" data-tab="salary"><Fragment set:html={I(ic.coin)} />Salary Records</button>
           <button type="button" data-tab="attendance" id="sd-tab-attendance"><Fragment set:html={I(ic.cal)} />Attendance</button>
           <button type="button" data-tab="access"><Fragment set:html={I(ic.shield)} />Access &amp; Permissions</button>
-          <button type="button" disabled title="Not available yet"><Fragment set:html={I(ic.folder)} />Documents<em>Soon</em></button>
+          <button type="button" data-tab="documents"><Fragment set:html={I(ic.folder)} />Documents</button>
           <button type="button" data-tab="activity"><Fragment set:html={I(ic.history)} />Activity Logs</button>
         </nav>
       </aside>
@@ -151,6 +151,32 @@ const ic = {
           </div>
         </section>
 
+        <!-- DOCUMENTS -->
+        <section class="sd-panel" data-panel="documents">
+          <div class="sd-card">
+            <div class="sd-card-head"><h3>Documents</h3></div>
+            <form id="sd-doc-form" class="sd-doc-form" hidden>
+              <input type="text" id="sd-doc-title" placeholder="Title (optional)" maxlength="150" />
+              <select id="sd-doc-category" aria-label="Category">
+                <option value="identity">Identity</option>
+                <option value="contract">Contract</option>
+                <option value="cv">CV / Certificate</option>
+                <option value="other" selected>Other</option>
+              </select>
+              <input type="file" id="sd-doc-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt" required />
+              <button type="submit" class="sd-btn" id="sd-doc-upload">Upload</button>
+            </form>
+            <p class="sd-hint" id="sd-doc-error" hidden></p>
+            <div class="sd-table-wrap">
+              <table class="sd-table">
+                <thead><tr><th>Title</th><th>Category</th><th>File</th><th>Added</th><th class="num">Size</th><th></th></tr></thead>
+                <tbody id="sd-docs"><tr><td colspan="6" class="sd-empty">Loading…</td></tr></tbody>
+              </table>
+            </div>
+            <p class="sd-hint">PDF, image, Word, Excel or text files up to 10 MB. Files open only after signing in.</p>
+          </div>
+        </section>
+
         <!-- ACCESS -->
         <section class="sd-panel" data-panel="access">
           <div class="sd-card">
@@ -197,6 +223,12 @@ const ic = {
     type Position,
     type StaffAccess,
     type StaffMember,
+    type StaffDocument,
+    DOCUMENT_CATEGORIES,
+    listDocuments,
+    uploadDocument,
+    downloadDocument,
+    deleteDocument,
   } from '../../../lib/staff';
   import {
     getAttendance,
@@ -273,6 +305,81 @@ const ic = {
       body.innerHTML = `<tr><td colspan="5" class="sd-empty">${esc(error instanceof ApiError ? error.message : 'Could not load attendance.')}</td></tr>`;
     }
   }
+
+  // ---------- documents ----------
+  let docs: StaffDocument[] = [];
+  const docError = (message: string) => {
+    const el = $('sd-doc-error');
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message;
+  };
+  const sizeText = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+  function renderDocuments(): void {
+    const body = $('sd-docs');
+    if (!body) return;
+    const canEdit = getSession()?.accessMode !== 'read_only';
+    body.innerHTML = docs.length
+      ? docs.map((d) => `<tr><td>${esc(d.title)}</td><td>${esc(DOCUMENT_CATEGORIES[d.category] ?? d.category)}</td><td>${esc(d.fileName)}</td><td>${esc(date(d.createdAt))}</td><td class="num">${sizeText(d.size)}</td><td class="num"><button type="button" class="sd-link" data-doc-get="${d.id}">Download</button>${canEdit ? ` <button type="button" class="sd-link" data-doc-del="${d.id}">Delete</button>` : ''}</td></tr>`).join('')
+      : '<tr><td colspan="6" class="sd-empty">No documents yet.</td></tr>';
+  }
+
+  async function loadDocuments(): Promise<void> {
+    try {
+      docs = await listDocuments(staffId);
+      renderDocuments();
+    } catch (error) {
+      docError(error instanceof ApiError ? error.message : 'Could not load documents.');
+    }
+  }
+
+  if (getSession()?.accessMode !== 'read_only') $('sd-doc-form')?.removeAttribute('hidden');
+
+  $<HTMLFormElement>('sd-doc-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = $<HTMLInputElement>('sd-doc-file');
+    const file = input?.files?.[0];
+    if (!file) return;
+    const button = $<HTMLButtonElement>('sd-doc-upload')!;
+    button.disabled = true;
+    docError('');
+    try {
+      await uploadDocument(
+        staffId,
+        file,
+        $<HTMLInputElement>('sd-doc-title')!.value,
+        $<HTMLSelectElement>('sd-doc-category')!.value as StaffDocument['category'],
+      );
+      $<HTMLFormElement>('sd-doc-form')!.reset();
+      await loadDocuments();
+    } catch (error) {
+      docError(error instanceof ApiError ? error.message : 'Could not upload the file.');
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  $('sd-docs')?.addEventListener('click', async (e) => {
+    const t = e.target as HTMLElement;
+    const get = t.closest<HTMLElement>('[data-doc-get]');
+    const del = t.closest<HTMLElement>('[data-doc-del]');
+    docError('');
+    try {
+      if (get) {
+        const d = docs.find((x) => x.id === Number(get.dataset.docGet));
+        if (d) await downloadDocument(staffId, d);
+      } else if (del) {
+        const d = docs.find((x) => x.id === Number(del.dataset.docDel));
+        if (d && confirm(`Delete "${d.title}"? This cannot be undone.`)) {
+          await deleteDocument(staffId, d.id);
+          await loadDocuments();
+        }
+      }
+    } catch (error) {
+      docError(error instanceof ApiError ? error.message : 'That did not work.');
+    }
+  });
 
   // ---------- profile ----------
   function renderStaff(m: StaffMember): void {
@@ -562,6 +669,7 @@ const ic = {
     renderStatement(statement, bal);
     void loadActivity();
     void loadAttendance();
+    void loadDocuments();
   }
 
   if (session && canManageStaff(session)) {
