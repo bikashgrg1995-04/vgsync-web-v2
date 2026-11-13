@@ -294,3 +294,25 @@ body {
 /* The hidden attribute must always win over a component's own display value,
    so a button hidden for a read-only branch stays hidden. */
 [hidden] { display: none !important; }
+
+/* Touch screens: text links and small tabs get a finger-sized hit area. */
+@media (pointer: coarse) {
+  .ov-more,
+  .btn-link,
+  .inv-name-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+    padding-inline: 4px;
+  }
+
+  .ov-list a {
+    display: inline-block;
+    padding-block: 8px;
+  }
+
+  .tk-tab,
+  .py-tab {
+    min-height: 38px;
+  }
+}
