@@ -285,7 +285,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
                 <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"></path><path d="m7 8 5-5 5 5"></path><path d="M4 21h16"></path></svg></span>
                 <div><h3>Restore</h3><p>Put your business records back the way they were in a backup file</p></div>
               </header>
-              <p class="se-hint">Restoring replaces this business's records (sales, purchases, stock, customers, payroll, finance) with the ones in the file. Staff accounts, passwords and permissions are not touched. A safety copy of your data from just before is kept, so you can undo a restore.</p>
+              <p class="se-hint">Restoring replaces this business's records (sales, purchases, stock, customers, payroll, finance, tasks, approvals) with the ones in the file. Staff accounts, passwords and permissions are not touched, and the change history is kept. Staff documents (uploaded files) are not part of a backup. Reminders are rebuilt from the restored records. A safety copy of your data from just before is kept, so you can undo a restore.</p>
               <div class="bk-row">
                 <input type="file" id="bk-file" accept=".zip,application/zip" />
                 <button type="button" class="se-btn is-outline" id="bk-check">Check file</button>
