@@ -47,9 +47,9 @@ const navItems = getNavItemsForRole(defaultRole);
 
       <div class="inv-hero-actions">
         <button type="button" class="btn-primary-sm" id="inv-add" hidden>+ Add Stock</button>
-        <button type="button" class="btn-ghost-sm" id="inv-import" title="Coming soon" disabled>Import</button>
-        <button type="button" class="btn-ghost-sm" id="inv-mrp" title="Coming soon" disabled>Update MRP</button>
-        <button type="button" class="btn-ghost-sm" id="inv-export" title="Coming soon" disabled>Export</button>
+        <button type="button" class="btn-ghost-sm" id="inv-import" hidden>Import</button>
+        <button type="button" class="btn-ghost-sm" id="inv-mrp" hidden>Update MRP</button>
+        <button type="button" class="btn-ghost-sm" id="inv-export">Export</button>
         <button type="button" class="btn-warn-sm" id="inv-low-filter">Low Stocks</button>
       </div>
     </header>
@@ -254,6 +254,29 @@ const navItems = getNavItemsForRole(defaultRole);
       <div class="inv-dialog-actions">
         <button type="button" class="btn-ghost-sm" id="adj-cancel">Cancel</button>
         <button type="submit" class="btn-primary-sm" id="adj-submit">Apply</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- IMPORT / UPDATE MRP DIALOG -->
+  <dialog class="inv-dialog" id="inv-import-dialog">
+    <form method="dialog" class="inv-dialog-inner" id="imp-form">
+      <h2 class="inv-dialog-title" id="imp-title">Import products</h2>
+      <p class="inv-dialog-sub" id="imp-help"></p>
+      <p class="inv-dialog-sub"><button type="button" class="btn-ghost-sm" id="imp-template">Download template</button></p>
+
+      <label class="inv-field">
+        <span>Excel (.xlsx) or CSV file</span>
+        <input type="file" id="imp-file" accept=".xlsx,.csv" required />
+      </label>
+
+      <div id="imp-result" class="inv-dialog-sub" hidden></div>
+      <p class="inv-dialog-error" id="imp-error" hidden></p>
+
+      <div class="inv-dialog-actions">
+        <button type="button" class="btn-ghost-sm" id="imp-cancel">Close</button>
+        <button type="button" class="btn-ghost-sm" id="imp-check">Check file</button>
+        <button type="submit" class="btn-primary-sm" id="imp-apply" disabled>Save</button>
       </div>
     </form>
   </dialog>

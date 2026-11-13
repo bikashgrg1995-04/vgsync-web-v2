@@ -541,3 +541,85 @@ export function formatNpr(n: number): string {
     minimumFractionDigits: 0,
   }).format(n);
 }
+
+
+// ---- Cash and bank ----------------------------------------------------------
+
+export interface MethodCheck {
+  id: number;
+  method: PayMethod;
+  asOf: string;
+  expected: number;
+  counted: number;
+  difference: number;
+  note: string;
+  adjusted: boolean;
+  createdBy: string;
+}
+
+export interface MethodBalance {
+  method: PayMethod;
+  label: string;
+  opening: number;
+  openingAsOf: string | null;
+  received: number;
+  paid: number;
+  expected: number;
+  lastCheck: MethodCheck | null;
+}
+
+const toCheck = (r: any): MethodCheck => ({
+  id: r.id,
+  method: r.method,
+  asOf: r.as_of,
+  expected: Number(r.expected),
+  counted: Number(r.counted),
+  difference: Number(r.difference),
+  note: r.note ?? '',
+  adjusted: Boolean(r.adjusted),
+  createdBy: r.created_by ?? '',
+});
+
+/** What the books say is held in each payment method on a date (owner only). */
+export async function getBalances(
+  asOf?: string,
+): Promise<{ asOf: string; methods: MethodBalance[]; withoutMethod: number }> {
+  const r = await api<any>(`/finance/balances/${asOf ? `?as_of=${asOf}` : ''}`);
+  return {
+    asOf: r.as_of,
+    withoutMethod: r.without_method,
+    methods: r.methods.map((m: any) => ({
+      method: m.method,
+      label: m.label,
+      opening: Number(m.opening),
+      openingAsOf: m.opening_as_of,
+      received: Number(m.received),
+      paid: Number(m.paid),
+      expected: Number(m.expected),
+      lastCheck: m.last_check ? toCheck(m.last_check) : null,
+    })),
+  };
+}
+
+export async function setOpeningBalance(method: PayMethod, amount: number, asOf: string): Promise<void> {
+  await api(`/finance/opening-balances/${method}/`, { method: 'PUT', body: { amount: amount.toFixed(2), as_of: asOf } });
+}
+
+export async function listChecks(): Promise<MethodCheck[]> {
+  return (await api<any[]>('/finance/reconciliations/')).map(toCheck);
+}
+
+export async function saveCheck(input: {
+  method: PayMethod;
+  asOf: string;
+  counted: number;
+  note: string;
+  adjust: boolean;
+}): Promise<MethodCheck> {
+  return toCheck(
+    await api('/finance/reconciliations/', {
+      method: 'POST',
+      body: { method: input.method, as_of: input.asOf, counted: input.counted.toFixed(2), note: input.note, adjust: input.adjust },
+    }),
+  );
+}
