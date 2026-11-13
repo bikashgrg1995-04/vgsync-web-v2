@@ -63,6 +63,10 @@ const navItems = getNavItemsForRole(defaultRole);
     </section>
 
     <div class="ov-grid">
+      <section class="ov-card" id="ov-mytasks-card">
+        <h3>My tasks <a href="/dashboard/tasks" class="ov-more">Open</a></h3>
+        <div id="ov-mytasks"></div>
+      </section>
       <section class="ov-card">
         <h3>Sales, last 14 days <span class="ov-hint">confirmed sales</span></h3>
         <div id="ov-chart"></div>
@@ -89,6 +93,7 @@ const navItems = getNavItemsForRole(defaultRole);
   import { listFollowups, type Followup } from '../lib/sales';
   import { listStock, getInventorySummary, type StockItem } from '../lib/inventory';
   import { listOrders, type OrderSummary } from '../lib/orders';
+  import { listTasks, type Task } from '../lib/tasks';
   import { loadDashboard, formatNpr, type Dashboard } from '../lib/reports';
 
   const session = getSession();
@@ -121,6 +126,22 @@ const navItems = getNavItemsForRole(defaultRole);
       .join('')}</div>`;
   }
 
+  /** Open tasks handed to me: overdue first, then by due date. */
+  function myTasksHtml(tasks: Task[]): string {
+    if (tasks.length === 0) return empty('Nothing waiting for you.');
+    const sorted = [...tasks].sort(
+      (a, b) =>
+        Number(b.isOverdue) - Number(a.isOverdue) ||
+        (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'),
+    );
+    const rows = sorted.slice(0, 6).map((t) => {
+      const due = t.dueDate ? `${t.isOverdue ? 'overdue · ' : 'due '}${esc(t.dueDate)}` : 'no due date';
+      return `<li><span><a href="/dashboard/tasks?id=${t.id}">${esc(t.title)}</a><em>${due}${t.status === 'in_progress' ? ' · in progress' : ''}</em></span>${t.isOverdue ? '<b class="ov-tag">Overdue</b>' : t.priority === 'high' ? '<b class="ov-tag">High</b>' : ''}</li>`;
+    });
+    const more = sorted.length > 6 ? `<p class="ov-empty">+ ${sorted.length - 6} more</p>` : '';
+    return `<ul class="ov-list">${rows.join('')}</ul>${more}`;
+  }
+
   async function load(): Promise<void> {
     const mine = ++run;
     const s = getSession();
@@ -132,7 +153,7 @@ const navItems = getNavItemsForRole(defaultRole);
     const from = month < from14 ? month : from14;
     const today = iso(new Date());
 
-    const [sales, follow, stock, orders] = await Promise.all([
+    const [sales, follow, stock, orders, myTasks] = await Promise.all([
       listSales({ status: 'confirmed', dateFrom: from }).catch(() => null),
       listFollowups({ status: 'pending' }).catch(() => null),
       // Stock is only readable by people who sell, buy or manage it.
@@ -140,8 +161,12 @@ const navItems = getNavItemsForRole(defaultRole);
         ? listStock().catch(() => null)
         : Promise.resolve(null),
       s.businessType === 'independent' || s.role === 'staff' ? Promise.resolve(null) : listOrders().catch(() => null),
+      listTasks({ mine: 'true', status: 'todo,in_progress' }).catch(() => null),
     ]);
     if (mine !== run) return;
+
+    $('ov-mytasks-card').hidden = myTasks === null;
+    if (myTasks) $('ov-mytasks').innerHTML = myTasksHtml(myTasks);
 
     const kpis: string[] = [];
     // People with the full dashboard get these two in its own cards below.

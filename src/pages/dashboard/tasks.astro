@@ -88,6 +88,9 @@ const navItems = getNavItemsForRole(defaultRole);
       <div class="pu-grid">
         <label class="pu-field"><span>Assign to *</span><select id="tf-who" required></select></label>
         <label class="pu-field"><span>Due date</span><input type="date" id="tf-due" /></label>
+        <label class="pu-field"><span>Repeats</span>
+          <select id="tf-repeat"><option value="none" selected>Does not repeat</option><option value="daily">Every day</option><option value="weekly">Every week</option><option value="monthly">Every month</option></select>
+        </label>
         <label class="pu-field"><span>Priority</span>
           <select id="tf-priority"><option value="low">Low</option><option value="normal" selected>Normal</option><option value="high">High</option></select>
         </label>
@@ -109,6 +112,12 @@ const navItems = getNavItemsForRole(defaultRole);
       <div class="td-actions" id="td-actions"></div>
       <label class="pu-field" id="td-note-wrap"><span>Note (optional)</span><input type="text" id="td-note" maxlength="500" placeholder="What was done?" /></label>
       <p class="pu-error" id="td-error" hidden></p>
+      <h3 class="td-h">Files</h3>
+      <ul class="td-files" id="td-files"></ul>
+      <div class="td-comment" id="td-upload" hidden>
+        <input type="file" id="td-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt" aria-label="Attach a file" />
+        <button type="button" class="btn-ghost-sm" id="td-attach">Attach</button>
+      </div>
       <h3 class="td-h">History</h3>
       <ol class="td-events" id="td-events"></ol>
       <div class="td-comment">
@@ -140,6 +149,8 @@ const navItems = getNavItemsForRole(defaultRole);
   .td-events { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
   .td-event { font-size: 0.8rem; }
   .td-event small { display: block; color: var(--text-muted); font-size: 0.7rem; }
+  .td-files { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; }
+  .td-files li { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
   .td-comment { display: flex; gap: 8px; margin-top: 12px; }
   .td-comment input, #tf-desc { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 0.85rem; }
   #tf-desc { width: 100%; resize: vertical; }
@@ -148,8 +159,8 @@ const navItems = getNavItemsForRole(defaultRole);
 <script>
   import { can, getSession } from '../../lib/auth';
   import {
-    cancelTask, commentOnTask, createTask, editTask, getTask, getTaskSummary, listAssignees, listTasks, setTaskStatus,
-    type Person, type Task, type TaskStatus, type TaskSummary,
+    cancelTask, commentOnTask, deleteTaskFile, downloadTaskFile, listTaskFiles, uploadTaskFile, createTask, editTask, getTask, getTaskSummary, listAssignees, listTasks, setTaskStatus,
+    type Person, type Task, type TaskFile, type TaskRepeat, type TaskStatus, type TaskSummary,
   } from '../../lib/tasks';
 
   const $ = (id: string) => document.getElementById(id)!;
@@ -257,7 +268,7 @@ const navItems = getNavItemsForRole(defaultRole);
   function paintDetail(t: Task): void {
     openId = t.id;
     $('td-title').innerHTML = `${esc(t.title)} <span class="tk-pill ${t.status}">${esc(t.statusLabel)}</span>`;
-    $('td-meta').textContent = `For ${t.assignedTo.name} · from ${t.assignedBy.name} · ${t.dueDate ? `due ${t.dueDate}${t.isOverdue ? ' (overdue)' : ''}` : 'no due date'} · ${t.priorityLabel} priority`;
+    $('td-meta').textContent = `For ${t.assignedTo.name} · from ${t.assignedBy.name} · ${t.dueDate ? `due ${t.dueDate}${t.isOverdue ? ' (overdue)' : ''}` : 'no due date'} · ${t.priorityLabel} priority${t.repeat !== 'none' ? ` · ${t.repeatLabel.toLowerCase()}` : ''}`;
     $('td-desc').textContent = t.description;
     $('td-desc').hidden = !t.description;
     const mine = t.assignedTo.id === me;
@@ -276,8 +287,66 @@ const navItems = getNavItemsForRole(defaultRole);
     $('td-events').innerHTML = t.events
       .map((e) => `<li class="td-event">${esc(eventText(e))}<small>${esc(e.actorName)} · ${esc(when(e.createdAt))}</small></li>`)
       .join('');
+    void paintFiles(t);
     $('td-actions').querySelectorAll<HTMLButtonElement>('[data-do]').forEach((b) => b.addEventListener('click', () => void act(t, b.dataset.do!)));
   }
+
+  // ---- files on a task ----------------------------------------------------
+  let files: TaskFile[] = [];
+  const sizeText = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+  async function paintFiles(t: Task): Promise<void> {
+    const involved = t.assignedTo.id === me || t.assignedBy.id === me || canEdit;
+    $('td-upload').hidden = readOnly || !involved || t.status === 'cancelled';
+    try {
+      files = await listTaskFiles(t.id);
+    } catch {
+      files = [];
+    }
+    $('td-files').innerHTML = files.length
+      ? files
+          .map((f) => `<li><span>${esc(f.name)} <small class="tk-sub" style="display:inline">${sizeText(f.size)} · ${esc(f.uploadedBy)}</small></span><span><button type="button" class="btn-ghost-sm" data-file-get="${f.id}">Download</button>${readOnly ? '' : ` <button type="button" class="btn-ghost-sm" data-file-del="${f.id}">Remove</button>`}</span></li>`)
+          .join('')
+      : '<li class="tk-sub">No files yet.</li>';
+  }
+
+  $('td-files').addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+    const get = target.closest<HTMLElement>('[data-file-get]');
+    const del = target.closest<HTMLElement>('[data-file-del]');
+    if (openId === null) return;
+    $('td-error').hidden = true;
+    try {
+      if (get) {
+        const f = files.find((x) => x.id === Number(get.dataset.fileGet));
+        if (f) await downloadTaskFile(openId, f);
+      } else if (del) {
+        const f = files.find((x) => x.id === Number(del.dataset.fileDel));
+        if (f && confirm(`Remove "${f.name}"?`)) {
+          await deleteTaskFile(openId, f.id);
+          paintDetail(await getTask(openId));
+        }
+      }
+    } catch (err) {
+      $('td-error').textContent = message(err);
+      $('td-error').hidden = false;
+    }
+  });
+
+  $('td-attach').addEventListener('click', async () => {
+    const input = $('td-file') as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || openId === null) return;
+    $('td-error').hidden = true;
+    try {
+      await uploadTaskFile(openId, file);
+      input.value = '';
+      paintDetail(await getTask(openId));
+    } catch (err) {
+      $('td-error').textContent = message(err);
+      $('td-error').hidden = false;
+    }
+  });
 
   async function openTask(id: number): Promise<void> {
     try {
@@ -343,6 +412,7 @@ const navItems = getNavItemsForRole(defaultRole);
     ($('tf-desc') as HTMLTextAreaElement).value = task?.description ?? '';
     ($('tf-due') as HTMLInputElement).value = task?.dueDate ?? '';
     ($('tf-priority') as HTMLSelectElement).value = task?.priority ?? 'normal';
+    ($('tf-repeat') as HTMLSelectElement).value = task?.repeat ?? 'none';
     if (task) ($('tf-who') as HTMLSelectElement).value = String(task.assignedTo.id);
     const dlg = $('tk-form-dlg') as HTMLDialogElement;
     if (!dlg.open) dlg.showModal();
@@ -363,8 +433,14 @@ const navItems = getNavItemsForRole(defaultRole);
       description: ($('tf-desc') as HTMLTextAreaElement).value.trim(),
       dueDate: ($('tf-due') as HTMLInputElement).value || null,
       priority: ($('tf-priority') as HTMLSelectElement).value as 'low' | 'normal' | 'high',
+      repeat: ($('tf-repeat') as HTMLSelectElement).value as TaskRepeat,
       assignedTo: Number(whoValue),
     };
+    if (input.repeat !== 'none' && !input.dueDate) {
+      err.textContent = 'Set a due date for a repeating task.';
+      err.hidden = false;
+      return;
+    }
     const btn = $('tf-save') as HTMLButtonElement;
     btn.disabled = true;
     try {
