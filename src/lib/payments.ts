@@ -373,6 +373,34 @@ export async function getWorkSheet(date: string): Promise<WorkRow[]> {
   return workRows(await api<Raw>(`/payroll/workdays/?date=${encodeURIComponent(date)}`));
 }
 
+export interface Attendance {
+  month: string;
+  present: number;
+  half: number;
+  absent: number;
+  earned: number;
+  days: { date: string; status: WorkStatus; extra: number; note: string; amount: number }[];
+}
+
+/** One person's marks for a month (``YYYY-MM``). Owner only. */
+export async function getAttendance(staffId: number, month: string): Promise<Attendance> {
+  const r = await api<Raw>(`/payroll/workdays/staff/${staffId}/?month=${encodeURIComponent(month)}`);
+  return {
+    month: r.month,
+    present: r.present,
+    half: r.half,
+    absent: r.absent,
+    earned: num(r.earned),
+    days: (r.days as Raw[]).map((d) => ({
+      date: d.date,
+      status: d.status,
+      extra: num(d.extra),
+      note: d.note ?? '',
+      amount: num(d.amount),
+    })),
+  };
+}
+
 export async function saveWorkSheet(date: string, marks: WorkMark[]): Promise<WorkRow[]> {
   const body = {
     date,
