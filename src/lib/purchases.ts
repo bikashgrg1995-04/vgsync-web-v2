@@ -592,3 +592,34 @@ export function formatQty(n: number): string {
 export async function setPurchaseDueDate(id: number, dueDate: string | null): Promise<Purchase> {
   return purchaseFromApi(await api<ApiPurchase>(`/purchases/${id}/due-date/`, { method: 'POST', body: { due_date: dueDate } }));
 }
+
+
+export interface ImportedLine {
+  productId: number;
+  stockNo: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+/** Read order lines from an Excel or CSV file. Nothing is saved. */
+export async function readPurchaseFile(
+  file: File,
+): Promise<{ lines: ImportedLine[]; errors: { row: number; message: string }[] }> {
+  const form = new FormData();
+  form.append('file', file);
+  const r = await api<{ lines: any[]; errors: { row: number; message: string }[] }>(
+    '/purchases/import-lines/',
+    { method: 'POST', body: form },
+  );
+  return {
+    errors: r.errors,
+    lines: r.lines.map((l) => ({
+      productId: l.product,
+      stockNo: l.stock_no,
+      name: l.name,
+      quantity: Number(l.quantity),
+      unitPrice: Number(l.unit_price),
+    })),
+  };
+}

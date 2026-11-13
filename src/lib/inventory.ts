@@ -8,7 +8,7 @@
  * works out the balance and the stock status.
  */
 
-import { api } from './api';
+import { api, apiDownload } from './api';
 import { getSession } from './auth';
 
 // ==================================================
@@ -637,4 +637,42 @@ export function formatQty(n: number): string {
   return new Intl.NumberFormat('en-NP', {
     maximumFractionDigits: 3,
   }).format(n);
+}
+
+
+// ==================================================
+// IMPORT / EXPORT
+// ==================================================
+
+export interface ImportRowError {
+  row: number;
+  message: string;
+}
+
+export interface ImportResult {
+  created: number;
+  updated: number;
+  unchanged: number;
+  errors: ImportRowError[];
+  applied: boolean;
+}
+
+export const downloadProducts = () => apiDownload('/inventory/products/export/', 'products.xlsx');
+export const downloadImportTemplate = () =>
+  apiDownload('/inventory/products/import-template/', 'product-import-template.xlsx');
+
+/**
+ * Check a product file (or save it with ``apply``). ``prices`` changes MRP and
+ * prices of existing products only. Nothing is saved while there are errors.
+ */
+export async function importProducts(
+  file: File,
+  mode: 'products' | 'prices',
+  apply: boolean,
+): Promise<ImportResult> {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('mode', mode);
+  form.append('apply', apply ? 'true' : 'false');
+  return api<ImportResult>('/inventory/products/import/', { method: 'POST', body: form });
 }

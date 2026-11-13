@@ -39,7 +39,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
       <div class="pd-hero-actions">
         <button type="button" class="btn-primary-sm" id="pu-new" hidden>+ New Purchase</button>
-        <button type="button" class="btn-ghost-sm" id="pu-import" disabled title="Coming soon">Import PO</button>
+        <button type="button" class="btn-ghost-sm" id="pu-import" hidden>Import PO</button>
         <button type="button" class="btn-ghost-sm" id="pu-export">Export</button>
         <a class="btn-ghost-sm pd-link-btn" href="/dashboard/reports">Reports</a>
       </div>
@@ -124,7 +124,7 @@ const navItems = getNavItemsForRole(defaultRole);
               <button type="button" class="pd-quick-btn" id="qa-new" hidden>
                 <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg></span>New Purchase Order
               </button>
-              <button type="button" class="pd-quick-btn" id="qa-import" disabled title="Coming soon">
+              <button type="button" class="pd-quick-btn" id="qa-import" hidden>
                 <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M4 21h16"></path></svg></span>Import from Excel
               </button>
               <button type="button" class="pd-quick-btn" data-goto="list">
@@ -259,6 +259,24 @@ const navItems = getNavItemsForRole(defaultRole);
   <PurchaseDialogs />
 
   <!-- Use credit -->
+  <dialog class="pu-dialog pu-wide" id="dlg-po-import">
+    <form method="dialog" class="pu-dialog-inner" id="form-po-import">
+      <h2 class="pu-dialog-title">Import purchase order from Excel</h2>
+      <p class="pu-hint">One row per item. Columns: Stock No, Quantity and Unit Price (optional; the product's purchase price is used if left empty). A draft purchase is created, which you can still edit before the goods arrive.</p>
+      <div class="pu-grid">
+        <label class="pu-field"><span>Supplier *</span><select id="poi-supplier" required></select></label>
+        <label class="pu-field"><span>File (.xlsx or .csv) *</span><input type="file" id="poi-file" accept=".xlsx,.csv" required /></label>
+      </div>
+      <div id="poi-preview"></div>
+      <p class="pu-error" id="poi-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-po-import">Cancel</button>
+        <button type="button" class="btn-ghost-sm" id="poi-check">Check file</button>
+        <button type="submit" class="btn-primary-sm" id="poi-save" disabled>Create draft</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog class="pu-dialog pu-wide" id="dlg-credit">
     <form method="dialog" class="pu-dialog-inner" id="form-credit">
       <h2 class="pu-dialog-title">Use supplier credit</h2>
@@ -315,6 +333,9 @@ const navItems = getNavItemsForRole(defaultRole);
   import { listStock, type StockItem } from '../../lib/inventory';
   import {
     listPurchases,
+    createPurchase,
+    readPurchaseFile,
+    type ImportedLine,
     listReturns,
     voidReturn,
     listCredits,
@@ -1038,6 +1059,8 @@ const navItems = getNavItemsForRole(defaultRole);
     canWrite = s?.accessMode !== 'read_only';
     $('pu-new')!.hidden = !canWrite;
     $('qa-new')!.hidden = !canWrite;
+    $('pu-import')!.hidden = !canWrite;
+    $('qa-import')!.hidden = !canWrite;
     $('cr-new')!.hidden = !canWrite;
     loaded = { returns: false, credits: false };
 
@@ -1056,6 +1079,79 @@ const navItems = getNavItemsForRole(defaultRole);
     if (activeTab === 'returns') void loadReturns();
     if (activeTab === 'credits') void loadCredits();
   }
+
+  // ---- import an order from Excel ------------------------------------------
+  let poLines: ImportedLine[] = [];
+
+  function openPoImport(): void {
+    $<HTMLSelectElement>('poi-supplier')!.innerHTML =
+      `<option value="">Choose supplier…</option>` + suppliers.map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('');
+    $<HTMLInputElement>('poi-file')!.value = '';
+    $('poi-preview')!.innerHTML = '';
+    $('poi-error')!.hidden = true;
+    $<HTMLButtonElement>('poi-save')!.disabled = true;
+    poLines = [];
+    $<HTMLDialogElement>('dlg-po-import').showModal();
+  }
+
+  function poError(message: string): void {
+    const el = $('poi-error')!;
+    el.textContent = message;
+    el.hidden = false;
+  }
+
+  async function checkPoFile(): Promise<void> {
+    const file = $<HTMLInputElement>('poi-file')!.files?.[0];
+    $('poi-error')!.hidden = true;
+    $<HTMLButtonElement>('poi-save')!.disabled = true;
+    if (!file) return poError('Choose a file first.');
+    try {
+      const r = await readPurchaseFile(file);
+      if (r.errors.length) {
+        poLines = [];
+        $('poi-preview')!.innerHTML =
+          `<p><strong>${r.errors.length} problem${r.errors.length === 1 ? '' : 's'}. Fix the file and check again.</strong></p><ul style="max-height:160px;overflow:auto;padding-left:18px">` +
+          r.errors.slice(0, 50).map((e) => `<li>Row ${e.row}: ${esc(e.message)}</li>`).join('') + '</ul>';
+        return;
+      }
+      poLines = r.lines;
+      const total = poLines.reduce((a, l) => a + l.quantity * l.unitPrice, 0);
+      $('poi-preview')!.innerHTML =
+        `<table class="pu-table"><thead><tr><th>Stock No</th><th>Item</th><th>Qty</th><th>Unit price</th></tr></thead><tbody>` +
+        poLines.map((l) => `<tr><td>${esc(l.stockNo)}</td><td>${esc(l.name)}</td><td>${formatQty(l.quantity)}</td><td>${formatNpr(l.unitPrice)}</td></tr>`).join('') +
+        `</tbody></table><p>${poLines.length} item${poLines.length === 1 ? '' : 's'} · ${esc(formatNpr(total))} before discount and VAT</p>`;
+      $<HTMLButtonElement>('poi-save')!.disabled = false;
+    } catch (error) {
+      poError(describe(error));
+    }
+  }
+
+  $('pu-import')?.addEventListener('click', openPoImport);
+  $('qa-import')?.addEventListener('click', openPoImport);
+  $('poi-check')?.addEventListener('click', () => void checkPoFile());
+  $('poi-file')?.addEventListener('change', () => {
+    poLines = [];
+    $('poi-preview')!.innerHTML = '';
+    $<HTMLButtonElement>('poi-save')!.disabled = true;
+  });
+  $('form-po-import')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const supplierId = Number($<HTMLSelectElement>('poi-supplier')!.value);
+    if (!supplierId) return poError('Choose a supplier.');
+    if (!poLines.length) return poError('Check the file first.');
+    $<HTMLButtonElement>('poi-save')!.disabled = true;
+    try {
+      const made = await createPurchase({
+        supplierId,
+        lines: poLines.map((l) => ({ productId: l.productId, quantity: l.quantity, unitPrice: l.unitPrice })),
+      });
+      $<HTMLDialogElement>('dlg-po-import').close();
+      await refreshAfterChange(made.id);
+    } catch (error) {
+      poError(describe(error));
+      $<HTMLButtonElement>('poi-save')!.disabled = false;
+    }
+  });
 
   void init();
 </script>

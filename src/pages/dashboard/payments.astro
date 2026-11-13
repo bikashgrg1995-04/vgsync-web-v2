@@ -30,6 +30,7 @@ const navItems = getNavItemsForRole(defaultRole);
           <button type="button" class="py-tab" data-tab="income">Income</button>
           <button type="button" class="py-tab" data-tab="payroll">Staff pay</button>
           <button type="button" class="py-tab" data-tab="daily">Daily sheet</button>
+          <button type="button" class="py-tab" data-tab="cash">Cash &amp; bank</button>
         </div>
       </div>
       <div class="py-toolbar-right">
@@ -65,6 +66,61 @@ const navItems = getNavItemsForRole(defaultRole);
         <p class="py-foot" id="lg-foot"></p>
       </div>
     </section>
+
+    <!-- Cash and bank -->
+    <section class="py-panel" data-panel="cash">
+      <div class="py-card">
+        <div class="py-filters">
+          <label class="py-field"><span>As at</span><input type="date" id="cb-date" /></label>
+        </div>
+        <div class="py-table-wrap">
+          <table class="py-table">
+            <thead><tr><th>Method</th><th class="num">Opening</th><th class="num">Received</th><th class="num">Paid</th><th class="num">Books say</th><th>Last check</th><th></th></tr></thead>
+            <tbody id="cb-rows"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="py-hint" id="cb-hint"></p>
+        <p class="py-hint">Set the opening balance once (what you held at the end of a date), then check against the cash in the drawer or your bank statement. Money received and paid after the opening date is added automatically from sales, purchases, salaries, expenses and income.</p>
+      </div>
+      <div class="py-card">
+        <h3 class="py-h">Past checks</h3>
+        <div class="py-table-wrap">
+          <table class="py-table">
+            <thead><tr><th>Date</th><th>Method</th><th class="num">Books said</th><th class="num">Counted</th><th class="num">Difference</th><th>Note</th><th>By</th></tr></thead>
+            <tbody id="cb-history"><tr><td colspan="7" class="py-empty">No checks yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <dialog class="py-dialog" id="dlg-open-bal">
+      <form method="dialog" class="py-dialog-inner" id="form-open-bal">
+        <h2 class="py-dialog-title" id="ob-title">Opening balance</h2>
+        <label class="py-field"><span>Held at the end of *</span><input type="date" id="ob-date" required /></label>
+        <label class="py-field"><span>Amount *</span><input type="number" id="ob-amount" step="0.01" required /></label>
+        <p class="py-error" id="ob-error" hidden></p>
+        <div class="py-actions">
+          <button type="button" class="btn-ghost-sm" data-close="dlg-open-bal">Cancel</button>
+          <button type="submit" class="btn-primary-sm">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="py-dialog" id="dlg-check">
+      <form method="dialog" class="py-dialog-inner" id="form-check">
+        <h2 class="py-dialog-title" id="ck-title">Check</h2>
+        <p class="py-hint" id="ck-expected"></p>
+        <label class="py-field"><span>Date *</span><input type="date" id="ck-date" required /></label>
+        <label class="py-field"><span>Counted / bank statement balance *</span><input type="number" id="ck-counted" step="0.01" required /></label>
+        <label class="py-field"><span>Note</span><input type="text" id="ck-note" maxlength="200" /></label>
+        <label class="py-field py-check"><input type="checkbox" id="ck-adjust" /> <span>Record any difference in the books (adds an income or expense entry)</span></label>
+        <p class="py-error" id="ck-error" hidden></p>
+        <div class="py-actions">
+          <button type="button" class="btn-ghost-sm" data-close="dlg-check">Cancel</button>
+          <button type="submit" class="btn-primary-sm">Save check</button>
+        </div>
+      </form>
+    </dialog>
 
     <!-- Daily sheet -->
     <section class="py-panel" data-panel="daily">
@@ -256,16 +312,21 @@ const navItems = getNavItemsForRole(defaultRole);
     type PayType,
     type EntryKind,
     type SalaryProfile,
+    type MethodBalance,
+    getBalances,
+    listChecks,
+    saveCheck,
+    setOpeningBalance,
   } from '../../lib/payments';
 
   if (!getSession()) window.location.replace('/');
 
   // Everyone's pay is the owner's; others see only their own on the My pay page.
   if (!getSession()?.isOwner) {
-    for (const t of ['payroll', 'daily']) document.querySelector<HTMLElement>(`[data-tab="${t}"]`)?.setAttribute('hidden', '');
+    for (const t of ['payroll', 'daily', 'cash']) document.querySelector<HTMLElement>(`[data-tab="${t}"]`)?.setAttribute('hidden', '');
   }
 
-  type Tab = 'expenses' | 'income' | 'payroll' | 'daily';
+  type Tab = 'expenses' | 'income' | 'payroll' | 'daily' | 'cash';
   let tab: Tab = 'expenses';
   let canWrite = true;
   let entries: LedgerEntry[] = [];
@@ -878,20 +939,116 @@ const navItems = getNavItemsForRole(defaultRole);
     }
   });
 
+  // ---- Cash and bank ------------------------------------------------------
+
+  let cashRows: MethodBalance[] = [];
+  const cashDate = () => $<HTMLInputElement>('cb-date')!;
+
+  async function loadCash(): Promise<void> {
+    if (!cashDate().value) cashDate().value = today();
+    const body = $('cb-rows')!;
+    try {
+      const [b, checks] = await Promise.all([getBalances(cashDate().value), listChecks()]);
+      cashRows = b.methods;
+      body.innerHTML = b.methods
+        .map((m) => {
+          const last = m.lastCheck;
+          const lastText = last
+            ? `${esc(last.asOf)}: ${last.difference === 0 ? 'matched' : `${last.difference > 0 ? 'over' : 'short'} ${esc(formatNpr(Math.abs(last.difference)))}`}${last.adjusted ? ' (adjusted)' : ''}`
+            : 'Never';
+          const open = m.openingAsOf ? `${esc(formatNpr(m.opening))}<br><small>at ${esc(m.openingAsOf)}</small>` : '<small>not set</small>';
+          return `<tr><td>${esc(m.label)}</td><td class="num">${open}</td><td class="num">${esc(formatNpr(m.received))}</td><td class="num">${esc(formatNpr(m.paid))}</td><td class="num"><strong>${esc(formatNpr(m.expected))}</strong></td><td>${lastText}</td><td class="num">${canWrite ? `<button type="button" class="btn-ghost-sm" data-cb-open="${m.method}">Opening</button> <button type="button" class="btn-primary-sm" data-cb-check="${m.method}">Check</button>` : ''}</td></tr>`;
+        })
+        .join('');
+      $('cb-hint')!.textContent = b.withoutMethod
+        ? `${b.withoutMethod} entr${b.withoutMethod === 1 ? 'y has' : 'ies have'} no payment method, so they are in none of these balances.`
+        : '';
+      $('cb-history')!.innerHTML = checks.length
+        ? checks
+            .map((c) => `<tr><td>${esc(c.asOf)}</td><td>${esc(pretty(c.method))}</td><td class="num">${esc(formatNpr(c.expected))}</td><td class="num">${esc(formatNpr(c.counted))}</td><td class="num">${c.difference === 0 ? 'Matched' : esc(formatNpr(c.difference))}${c.adjusted ? ' <small>adjusted</small>' : ''}</td><td>${esc(c.note) || '—'}</td><td>${esc(c.createdBy)}</td></tr>`)
+            .join('')
+        : '<tr><td colspan="7" class="py-empty">No checks yet.</td></tr>';
+    } catch (e) {
+      body.innerHTML = `<tr><td colspan="7" class="py-empty">${esc(e instanceof Error ? e.message : 'Could not load.')}</td></tr>`;
+    }
+  }
+
+  cashDate().addEventListener('change', () => void loadCash());
+
+  let cashMethod: PayMethod = 'cash';
+
+  $('cb-rows')?.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    const open = t.closest<HTMLElement>('[data-cb-open]');
+    const check = t.closest<HTMLElement>('[data-cb-check]');
+    if (open) {
+      cashMethod = open.dataset.cbOpen as PayMethod;
+      const row = cashRows.find((r) => r.method === cashMethod)!;
+      $('ob-title')!.textContent = `${row.label}: opening balance`;
+      $<HTMLInputElement>('ob-date')!.value = row.openingAsOf ?? today();
+      $<HTMLInputElement>('ob-date')!.max = today();
+      $<HTMLInputElement>('ob-amount')!.value = row.openingAsOf ? String(row.opening) : '';
+      showError('ob-error', null);
+      dlg('dlg-open-bal').showModal();
+    } else if (check) {
+      cashMethod = check.dataset.cbCheck as PayMethod;
+      const row = cashRows.find((r) => r.method === cashMethod)!;
+      $('ck-title')!.textContent = `Check ${row.label.toLowerCase()}`;
+      $('ck-expected')!.textContent = `The books say ${formatNpr(row.expected)} as at ${cashDate().value}.`;
+      $<HTMLInputElement>('ck-date')!.value = cashDate().value;
+      $<HTMLInputElement>('ck-date')!.max = today();
+      $<HTMLInputElement>('ck-counted')!.value = '';
+      $<HTMLInputElement>('ck-note')!.value = '';
+      $<HTMLInputElement>('ck-adjust')!.checked = false;
+      showError('ck-error', null);
+      dlg('dlg-check').showModal();
+    }
+  });
+
+  $('form-open-bal')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await setOpeningBalance(cashMethod, Number(val('ob-amount')), val('ob-date'));
+      dlg('dlg-open-bal').close();
+      await loadCash();
+    } catch (err) {
+      showError('ob-error', err instanceof Error ? err.message : 'Could not save.');
+    }
+  });
+
+  $('form-check')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const r = await saveCheck({
+        method: cashMethod,
+        asOf: val('ck-date'),
+        counted: Number(val('ck-counted')),
+        note: val('ck-note'),
+        adjust: $<HTMLInputElement>('ck-adjust')!.checked,
+      });
+      dlg('dlg-check').close();
+      notice(r.difference === 0 ? 'Matched: the books and the count agree.' : `Saved. Difference: ${formatNpr(r.difference)}${r.adjusted ? ' (recorded in the books)' : ''}.`);
+      await loadCash();
+    } catch (err) {
+      showError('ck-error', err instanceof Error ? err.message : 'Could not save.');
+    }
+  });
+
   // ---- Tabs and load ---------------------------------------------------
 
   function syncTab(): void {
     document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('is-active', (b as HTMLElement).dataset.tab === tab));
     document.querySelectorAll('[data-panel]').forEach((p) => p.classList.remove('is-active'));
-    document.querySelector(`[data-panel="${tab === 'payroll' || tab === 'daily' ? tab : 'ledger'}"]`)?.classList.add('is-active');
+    document.querySelector(`[data-panel="${tab === 'payroll' || tab === 'daily' || tab === 'cash' ? tab : 'ledger'}"]`)?.classList.add('is-active');
     const add = $<HTMLButtonElement>('py-add')!;
-    add.hidden = !canWrite || tab === 'payroll' || tab === 'daily';
+    add.hidden = !canWrite || tab === 'payroll' || tab === 'daily' || tab === 'cash';
     add.textContent = tab === 'income' ? '+ Add income' : '+ Add expense';
   }
 
   async function refresh(): Promise<void> {
     syncTab();
-    if (tab === 'daily') await loadDaily();
+    if (tab === 'cash') await loadCash();
+    else if (tab === 'daily') await loadDaily();
     else if (tab === 'payroll') await loadPayroll();
     else await loadLedger();
   }
@@ -1018,6 +1175,8 @@ const navItems = getNavItemsForRole(defaultRole);
   .py-seg-btn.is-on[data-set="half"] { background: #d97706; color: #fff; }
   .py-seg-btn.is-on[data-set="absent"] { background: #dc2626; color: #fff; }
   .py-hint { font-size: 0.74rem; color: var(--text-muted); }
+  .py-h { margin: 0 0 8px; font-size: 0.9rem; font-weight: 650; }
+  .py-check { flex-direction: row; align-items: center; gap: 8px; }
   .ds-note { width: 100%; min-width: 120px; }
   #ds-sum { margin-left: auto; }
   .py-note { margin: 10px 0 0; font-size: 0.74rem; color: var(--text-muted); }
