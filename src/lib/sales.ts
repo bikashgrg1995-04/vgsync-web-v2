@@ -76,6 +76,10 @@ export interface Sale {
   firstEmiDue: string;
   interestRate: number | null;
   financeCharge: number;
+  freeServices: number;
+  freeServicesUsed: number;
+  freeServicesLeft: number;
+  freeServiceRecords: FreeService[];
   amountDue: number;
   dueDate: string;
   vehicleChassisNo: string;
@@ -92,6 +96,17 @@ export interface Sale {
   createdAt: string | null;
   confirmedAt: string | null;
   cancelledAt: string | null;
+}
+
+export interface FreeService {
+  id: number;
+  number: number;
+  serviceDate: string;
+  odometerKm: number;
+  performance: string;
+  workDone: string;
+  technician: string;
+  recordedBy: string;
 }
 
 export interface SaleLineInput {
@@ -117,6 +132,8 @@ export interface SaleInput {
   /** Yearly interest in percent; 0 or empty means none. */
   interestRate?: number;
   firstEmiDue?: string;
+  /** Bike sales: how many free services come with the bike. */
+  freeServices?: number;
   dueDate?: string;
   vehicleChassisNo?: string;
   vehicleRegNo?: string;
@@ -263,6 +280,17 @@ interface ApiLine {
   returnable_quantity: string;
 }
 
+interface ApiFreeService {
+  id: number;
+  number: number;
+  service_date: string;
+  odometer_km: number;
+  performance: string;
+  work_done: string;
+  technician: string;
+  recorded_by_name: string;
+}
+
 interface ApiPayment {
   id: number;
   amount: string;
@@ -305,6 +333,10 @@ interface ApiSale {
   first_emi_due: string | null;
   interest_rate: string | null;
   finance_charge: string;
+  free_services?: number;
+  free_services_used?: number;
+  free_services_left?: number;
+  free_service_records?: ApiFreeService[];
   amount_due: string;
   due_date: string | null;
   vehicle_chassis_no: string;
@@ -369,6 +401,19 @@ function saleFromApi(s: ApiSale): Sale {
     firstEmiDue: s.first_emi_due ?? '',
     interestRate: s.interest_rate === null || s.interest_rate === undefined ? null : num(s.interest_rate),
     financeCharge: num(s.finance_charge),
+    freeServices: s.free_services ?? 0,
+    freeServicesUsed: s.free_services_used ?? 0,
+    freeServicesLeft: s.free_services_left ?? 0,
+    freeServiceRecords: (s.free_service_records ?? []).map((r) => ({
+      id: r.id,
+      number: r.number,
+      serviceDate: r.service_date,
+      odometerKm: r.odometer_km,
+      performance: r.performance,
+      workDone: r.work_done,
+      technician: r.technician,
+      recordedBy: r.recorded_by_name,
+    })),
     amountDue: num(s.amount_due),
     dueDate: s.due_date ?? '',
     vehicleChassisNo: s.vehicle_chassis_no,
@@ -456,6 +501,7 @@ function saleBody(input: SaleInput, isEdit: boolean): Record<string, unknown> {
   if (input.saleDate) body.sale_date = input.saleDate;
   if (input.saleType === 'bike') {
     body.payment_mode = input.paymentMode ?? 'full';
+    body.free_services = input.freeServices ?? 0;
     if (input.paymentMode === 'emi') {
       body.down_payment = String(input.downPayment ?? 0);
       body.emi_months = input.emiMonths;
@@ -822,4 +868,33 @@ export function formatNpr(n: number): string {
 
 export function formatQty(n: number): string {
   return new Intl.NumberFormat('en-NP', { maximumFractionDigits: 3 }).format(n);
+}
+
+export interface FreeServiceInput {
+  serviceDate?: string;
+  odometerKm: number;
+  performance?: string;
+  workDone?: string;
+  technician?: string;
+}
+
+export async function addFreeService(saleId: number, input: FreeServiceInput): Promise<void> {
+  await api(`/sales/${saleId}/free-services/`, {
+    method: 'POST',
+    body: {
+      ...(input.serviceDate ? { service_date: input.serviceDate } : {}),
+      odometer_km: input.odometerKm,
+      performance: (input.performance ?? '').trim(),
+      work_done: (input.workDone ?? '').trim(),
+      technician: (input.technician ?? '').trim(),
+    },
+  });
+}
+
+export async function removeFreeService(saleId: number, recordId: number): Promise<void> {
+  await api(`/sales/${saleId}/free-services/${recordId}/`, { method: 'DELETE' });
+}
+
+export async function setFreeServiceCount(saleId: number, count: number): Promise<void> {
+  await api(`/sales/${saleId}/free-service-count/`, { method: 'POST', body: { free_services: count } });
 }

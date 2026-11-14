@@ -33,6 +33,7 @@
           <label class="sa-field"><span>Payment</span>
             <select id="sf-mode"><option value="full">Full payment</option><option value="emi">EMI</option></select>
           </label>
+          <label class="sa-field"><span>Free services included</span><input type="number" id="sf-free" min="0" max="20" step="1" value="0" /></label>
         </div>
         <div class="sa-grid sa-grid-3" id="sf-emi-fields" hidden>
           <label class="sa-field"><span>Down payment</span><input type="number" id="sf-down" min="0" step="0.01" value="0" /></label>
@@ -71,6 +72,26 @@
       <div class="sa-actions">
         <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
         <button type="submit" class="btn-primary-sm" id="py-save">Save payment</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Free service -->
+  <dialog class="sa-dialog" id="dlg-fs">
+    <form method="dialog" class="sa-dialog-inner" id="form-fs">
+      <h2 class="sa-dialog-title" id="fs-title">Record free service</h2>
+      <p class="sa-sub" id="fs-sub"></p>
+      <div class="sa-grid">
+        <label class="sa-field"><span>Service date</span><input type="date" id="fs-date" /></label>
+        <label class="sa-field"><span>Km at service *</span><input type="number" id="fs-km" required min="0" step="1" /></label>
+        <label class="sa-field"><span>Technician</span><input type="text" id="fs-tech" maxlength="120" /></label>
+      </div>
+      <label class="sa-field"><span>Bike performance</span><textarea id="fs-perf" rows="2" maxlength="2000" placeholder="Engine, brakes, mileage, any complaint…"></textarea></label>
+      <label class="sa-field"><span>Work done</span><textarea id="fs-work" rows="2" maxlength="2000" placeholder="Oil change, chain adjust…"></textarea></label>
+      <p class="sa-error" id="fs-error" hidden></p>
+      <div class="sa-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-fs">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="fs-save">Save service</button>
       </div>
     </form>
   </dialog>

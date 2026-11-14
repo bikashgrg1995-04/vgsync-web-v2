@@ -288,6 +288,7 @@ export function openForm(s?: Sale): void {
   $<HTMLSelectElement>('sf-mode')!.value = s?.paymentMode ?? 'full';
   $<HTMLInputElement>('sf-down')!.value = String(s?.downPayment ?? 0);
   $<HTMLInputElement>('sf-months')!.value = String(s?.emiMonths || 12);
+  $<HTMLInputElement>('sf-free')!.value = String(s?.freeServices ?? 0);
   $<HTMLInputElement>('sf-rate')!.value = s?.interestRate ? String(s.interestRate) : '';
   $<HTMLInputElement>('sf-first')!.value = s?.firstEmiDue ?? '';
   $<HTMLInputElement>('sf-notes')!.value = s?.notes ?? '';
@@ -334,6 +335,7 @@ $('form-sale')?.addEventListener('submit', (e) => {
     emiMonths: Number(val('sf-months')) || undefined,
     interestRate: Number(val('sf-rate')) || 0,
     firstEmiDue: val('sf-first'),
+    freeServices: Number(val('sf-free')) || 0,
     dueDate: val('sf-due'),
     vehicleChassisNo: val('sf-chassis'),
     vehicleRegNo: val('sf-reg'),
