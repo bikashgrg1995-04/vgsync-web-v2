@@ -231,8 +231,16 @@ function renderInfo(s: Sale): void {
   setText("inf-customer", customerName(s));
   setText("inf-date", fmtDate(s.saleDate));
   setText("inf-kind", kindLabel(s));
-  setText("inf-due-label", emi ? "First EMI Due" : "Pay By");
-  setText("inf-due", fmtDate(emi ? s.firstEmiDue : s.dueDate));
+  const financed = s.paymentMode === "financed";
+  setText("inf-due-label", emi ? "First EMI Due" : financed ? "Company Pays By" : "Pay By");
+  setText("inf-due", fmtDate(emi ? s.firstEmiDue : financed ? s.financerDueDate : s.dueDate));
+  setHidden("inf-fin-row", !financed);
+  setHidden("inf-fin-recv-row", !financed);
+  setText("inf-fin", [s.financerName, s.financerRef].filter(Boolean).join(" · "));
+  setText(
+    "inf-fin-recv",
+    `${formatNpr(s.financerReceived)} of ${formatNpr(s.financerReceivable)} received from company`,
+  );
 
   setText("inf-subtotal", formatNpr(s.subtotal));
   setText("inf-discount", s.discount > 0 ? `− ${formatNpr(s.discount)}` : formatNpr(0));
@@ -355,7 +363,7 @@ function renderPayments(s: Sale): void {
 
       return `<tr class="${voided ? "is-void" : ""}">
         <td class="pud-nowrap">${esc(fmtDate(x.paidOn))}</td>
-        <td>${esc(METHOD_LABEL[x.method] ?? x.method)}</td>
+        <td>${esc(METHOD_LABEL[x.method] ?? x.method)}${x.payer === "financer" ? " · from company" : ""}</td>
         <td class="hide-sm mono">${esc(x.reference || "—")}</td>
         <td class="num"><strong>${formatNpr(x.amount)}</strong></td>
         <td>${
@@ -392,7 +400,7 @@ function kindLabel(s: Sale): string {
       ? `Maintenance · ${SERVICE_KIND_LABEL[s.serviceKind]}${s.freeServiceForNo ? ` of ${s.freeServiceForNo}` : ""}`
       : TYPE_LABEL[s.saleType];
 
-  return `${base}${s.paymentMode === "emi" ? " · EMI" : ""}`;
+  return `${base}${s.paymentMode === "emi" ? " · Own EMI" : s.paymentMode === "financed" ? " · Financed" : ""}`;
 }
 
 const sizeText = (n: number): string => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
@@ -756,7 +764,7 @@ function renderFollowups(list: Followup[]): void {
 
       return `<tr>
         <td class="pud-nowrap">${esc(fmtDate(f.dueDate))}</td>
-        <td>${esc(FOLLOWUP_LABEL[f.kind])}${f.installmentNumber ? ` #${f.installmentNumber}` : ""}</td>
+        <td>${esc(FOLLOWUP_LABEL[f.kind])}${f.installmentNumber ? ` #${f.installmentNumber}` : f.serviceNumber ? ` #${f.serviceNumber}` : ""}</td>
         <td class="num">${f.amount > 0 ? formatNpr(f.amount) : "—"}</td>
         <td><span class="pd-pill ${cls}">${esc(label)}</span></td>
       </tr>`;
