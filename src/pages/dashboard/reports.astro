@@ -283,6 +283,17 @@ const navItems = getNavItemsForRole(defaultRole);
           d.suppliers.map((s, i) => [String(i + 1), esc(s.name), String(s.purchases), `<strong>${formatNpr(s.total)}</strong>`]),
         )}<p class="rp-note">Received and part-received purchases only.</p>`;
       }
+      case 'technicians': {
+        const d = report.data;
+        return `
+          ${kpis([kpi('Jobs given', String(d.totals.assigned)), kpi('Jobs done', String(d.totals.done))])}
+          ${table(
+            [{ label: 'Technician' }, { label: 'Given', num: true }, { label: 'Done', num: true }, { label: 'Open', num: true }, { label: 'Normal / Free / Accident' }, { label: 'Avg hours', num: true }, { label: 'Billed', num: true }],
+            d.rows.map((t) => [esc(t.name), String(t.assigned), `<strong>${t.done}</strong>`, String(t.pending + t.inProgress), `${t.normal} / ${t.free} / ${t.accident}`, t.averageHours === null ? '—' : String(t.averageHours), formatNpr(t.billed)]),
+            'No jobs were given in this period.',
+          )}
+          <p class="rp-note">Jobs are counted by the day they were given. Hours run from when the technician started a job to when he finished it. Billed is the job total of finished jobs.</p>`;
+      }
       case 'payroll-summary': {
         const d = report.data;
         return `

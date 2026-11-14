@@ -1,0 +1,123 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import type { UserRole } from '../../lib/auth';
+import '../../styles/app/purchase-shared.css';
+import '../../styles/app/purchase-page.css';
+
+const meta = PAGE_META['my-jobs'];
+const defaultRole: UserRole = 'owner';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="pu-page pd-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div>
+          <h2 class="pd-hero-title">My jobs</h2>
+          <p class="pd-hero-sub">Workshop jobs given to you. Start a job, then mark it done with a note on how the bike runs.</p>
+        </div>
+      </div>
+      <div class="pd-hero-actions">
+        <button type="button" class="btn-ghost-sm" id="mj-refresh">Refresh</button>
+      </div>
+    </header>
+
+    <p class="pu-error" id="mj-error" role="alert" hidden></p>
+    <p class="pu-empty" id="mj-none" hidden>No job is given to you right now.</p>
+    <div id="mj-list" style="display:grid;gap:14px"></div>
+  </div>
+</AppLayout>
+
+<script>
+  import { getSession } from '../../lib/auth';
+  import { listMyJobs, startMyJob, finishMyJob, JOB_STATUS_LABEL, SERVICE_KIND_LABEL, type MyJob } from '../../lib/sales';
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const session = getSession();
+  if (!session) window.location.replace('/');
+
+  const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
+
+  function showError(message: string | null): void {
+    $('mj-error').hidden = !message;
+    $('mj-error').textContent = message ?? '';
+  }
+
+  const failure = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong.');
+
+  function card(j: MyJob): string {
+    const bike = [j.regNo, j.chassisNo].filter(Boolean).join(' · ');
+    const work = j.work.map((w) => `<li>${esc(w.description)}${Number(w.quantity) !== 1 ? ` × ${esc(w.quantity)}` : ''}</li>`).join('');
+    const kind = j.serviceKind === 'paid' ? '' : ` · ${SERVICE_KIND_LABEL[j.serviceKind]}${j.freeServiceForNo ? ` of ${esc(j.freeServiceForNo)}` : ''}`;
+    const action =
+      j.jobStatus === 'pending'
+        ? `<button type="button" class="btn-primary-sm" data-start="${j.id}">Start job</button>`
+        : j.jobStatus === 'in_progress'
+          ? `<button type="button" class="btn-primary-sm" data-done="${j.id}">Mark done</button>`
+          : '';
+
+    return `<article class="pu-card" style="padding:16px">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <strong>${esc(j.saleNo)}${kind}</strong><span class="pu-count">${JOB_STATUS_LABEL[j.jobStatus]}</span>
+      </div>
+      <p style="margin:6px 0">${esc(j.customerName || 'Walk-in')}${j.customerPhone ? ` · <a href="tel:${esc(j.customerPhone)}">${esc(j.customerPhone)}</a>` : ''}</p>
+      <p style="margin:6px 0">${bike ? `Bike: ${esc(bike)}` : ''}${j.odometerKm != null ? ` · ${j.odometerKm.toLocaleString('en-US')} km` : ''}</p>
+      <ul style="margin:6px 0 6px 18px">${work}</ul>
+      ${j.notes ? `<p style="margin:6px 0">Note: ${esc(j.notes)}</p>` : ''}
+      <p class="pu-count" style="margin:6px 0">Given ${when(j.assignedAt)}${j.startedAt ? ` · started ${when(j.startedAt)}` : ''}${j.doneAt ? ` · done ${when(j.doneAt)}` : ''}</p>
+      ${j.jobNotes ? `<p style="margin:6px 0">Your notes: ${esc(j.jobNotes)}</p>` : ''}
+      ${action}
+    </article>`;
+  }
+
+  async function load(): Promise<void> {
+    showError(null);
+    try {
+      const jobs = await listMyJobs();
+      $('mj-none').hidden = jobs.length > 0;
+      $('mj-list').innerHTML = jobs.map(card).join('');
+      document.querySelectorAll<HTMLButtonElement>('[data-start]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          try {
+            await startMyJob(Number(b.dataset.start));
+            await load();
+          } catch (e) {
+            showError(failure(e));
+          }
+        }),
+      );
+      document.querySelectorAll<HTMLButtonElement>('[data-done]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          const notes = prompt('How did the work go / how does the bike run? (optional)', '');
+          if (notes === null) return;
+          try {
+            await finishMyJob(Number(b.dataset.done), notes);
+            await load();
+          } catch (e) {
+            showError(failure(e));
+          }
+        }),
+      );
+    } catch (e) {
+      showError(failure(e));
+    }
+  }
+
+  $('mj-refresh').addEventListener('click', () => void load());
+  void load();
+</script>

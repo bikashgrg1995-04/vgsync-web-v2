@@ -3,7 +3,7 @@ import { can, getSession } from '../lib/auth';
 import type { Customer } from '../lib/customers';
 import type { StockItem } from '../lib/inventory';
 import {
-  createSale, updateSale, listSales, addPayment, createReturn,
+  createSale, updateSale, listSales, listTechnicians, type Technician, addPayment, createReturn,
   previewTotals, previewEmi, formatNpr, formatQty,
   type Sale, type SaleType, type ServiceKind, type PaymentMode, type Payer, type BikeUnit, type LocalProduct, type PayMethod, type SaleLineInput,
 } from '../lib/sales';
@@ -271,6 +271,21 @@ function showCovers(): void {
   $('sf-covers-note')!.textContent = `${covers ? `This free service covers: ${covers}. ` : ''}Covered work: price 0. Extra parts or extra work: enter the price and the customer pays it.`;
 }
 
+let technicianList: Technician[] | null = null;
+
+async function loadTechnicians(): Promise<void> {
+  try {
+    technicianList ??= await listTechnicians();
+  } catch {
+    technicianList = [];
+  }
+  const sel = $<HTMLSelectElement>('sf-tech')!;
+  const keep = sel.value;
+  sel.innerHTML = `<option value="">Not assigned yet</option>` + technicianList
+    .map((t) => `<option value="${t.id}">${esc(t.name)}${t.position ? ` · ${esc(t.position)}` : ''}</option>`).join('');
+  sel.value = keep;
+}
+
 export function syncKind(selectedFor?: number | null): void {
   const type = formType();
   const kind = val('sf-kind');
@@ -279,6 +294,8 @@ export function syncKind(selectedFor?: number | null): void {
   $('sf-fs-box')!.hidden = !(type === 'maintenance' && kind === 'free');
   $('sf-adv-box')!.hidden = !(type === 'maintenance' && kind === 'accident' && !editing);
   $<HTMLSelectElement>('sf-kind')!.disabled = editing;
+  $('sf-tech')!.closest<HTMLElement>('.sa-grid')!.hidden = editing;
+  if (type === 'maintenance' && !editing) void loadTechnicians();
   if (type === 'maintenance' && kind === 'free') void loadFreeBikeSales(selectedFor);
 }
 
@@ -331,6 +348,7 @@ export function openForm(s?: Sale): void {
   $<HTMLInputElement>('sf-free')!.value = String(s?.freeServices ?? 0);
   $<HTMLInputElement>('sf-covers')!.value = s?.freeServiceCovers ?? '';
   $<HTMLSelectElement>('sf-kind')!.value = s?.serviceKind ?? 'paid';
+  $<HTMLSelectElement>('sf-tech')!.value = '';
   $<HTMLInputElement>('sf-km')!.value = s?.odometerKm != null ? String(s.odometerKm) : '';
   $<HTMLInputElement>('sf-adv')!.value = '';
   $<HTMLSelectElement>('sf-adv-method')!.value = 'cash';
@@ -402,6 +420,7 @@ $('form-sale')?.addEventListener('submit', (e) => {
     freeServices: Number(val('sf-free')) || 0,
     freeServiceCovers: val('sf-covers'),
     serviceKind: kind,
+    technician: Number(val('sf-tech')) || null,
     freeServiceFor: Number(val('sf-fs-sale')) || null,
     odometerKm: val('sf-km') === '' ? null : Number(val('sf-km')),
     advanceAmount: Number(val('sf-adv')) || 0,
