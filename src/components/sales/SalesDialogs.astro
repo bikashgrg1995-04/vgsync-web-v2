@@ -35,7 +35,7 @@
         <div class="sa-grid" id="sf-fs-box" hidden>
           <label class="sa-field"><span>Bike sale *</span><select id="sf-fs-sale"></select></label>
           <label class="sa-field"><span>Bike km now *</span><input type="number" id="sf-km" min="0" step="1" /></label>
-          <p class="sa-sub" style="grid-column:1/-1">Confirming this job logs it as the next free service of that bike sale. Price can stay 0.</p>
+          <p class="sa-sub" style="grid-column:1/-1" id="sf-covers-note">Confirming this job logs it as the next free service of that bike sale. Covered work: price 0. Extra parts or extra work: enter the price and the customer pays it.</p>
         </div>
         <div class="sa-grid" id="sf-adv-box" hidden>
           <label class="sa-field"><span>Advance taken now *</span><input type="number" id="sf-adv" min="0" step="0.01" /></label>
@@ -58,6 +58,7 @@
           </label>
           <label class="sa-field"><span>Free services included</span><input type="number" id="sf-free" min="0" max="20" step="1" value="0" /></label>
         </div>
+        <label class="sa-field"><span>What a free service covers (told to the customer)</span><input type="text" id="sf-covers" maxlength="500" placeholder="e.g. Labour, engine oil, chain lube, wash. Extra parts and extra work are charged." /></label>
         <div class="sa-grid sa-grid-3" id="sf-emi-fields" hidden>
           <label class="sa-field"><span>Down payment</span><input type="number" id="sf-down" min="0" step="0.01" value="0" /></label>
           <label class="sa-field"><span>Months</span><input type="number" id="sf-months" min="1" max="120" step="1" value="12" /></label>

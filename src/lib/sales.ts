@@ -85,6 +85,8 @@ export interface Sale {
   documentsTotal: number;
   documentsVerified: number;
   freeServices: number;
+  freeServiceCovers: string;
+  freeServiceForCovers: string;
   freeServicesUsed: number;
   freeServicesLeft: number;
   freeServiceRecords: FreeService[];
@@ -142,6 +144,7 @@ export interface SaleInput {
   firstEmiDue?: string;
   /** Bike sales: how many free services come with the bike. */
   freeServices?: number;
+  freeServiceCovers?: string;
   /** Maintenance: normal, free (of a bike sold earlier) or accident case. */
   serviceKind?: ServiceKind;
   freeServiceFor?: number | null;
@@ -362,6 +365,8 @@ interface ApiSale {
   documents_total?: number;
   documents_verified?: number;
   free_services?: number;
+  free_service_covers?: string;
+  free_service_for_covers?: string | null;
   free_services_used?: number;
   free_services_left?: number;
   free_service_records?: ApiFreeService[];
@@ -437,6 +442,8 @@ function saleFromApi(s: ApiSale): Sale {
     documentsTotal: s.documents_total ?? 0,
     documentsVerified: s.documents_verified ?? 0,
     freeServices: s.free_services ?? 0,
+    freeServiceCovers: s.free_service_covers ?? '',
+    freeServiceForCovers: s.free_service_for_covers ?? '',
     freeServicesUsed: s.free_services_used ?? 0,
     freeServicesLeft: s.free_services_left ?? 0,
     freeServiceRecords: (s.free_service_records ?? []).map((r) => ({
@@ -537,6 +544,7 @@ function saleBody(input: SaleInput, isEdit: boolean): Record<string, unknown> {
   if (input.saleType === 'bike') {
     body.payment_mode = input.paymentMode ?? 'full';
     body.free_services = input.freeServices ?? 0;
+    body.free_service_covers = (input.freeServiceCovers ?? '').trim();
     if (input.paymentMode === 'emi') {
       body.down_payment = String(input.downPayment ?? 0);
       body.emi_months = input.emiMonths;
@@ -942,8 +950,11 @@ export async function removeFreeService(saleId: number, recordId: number): Promi
   await api(`/sales/${saleId}/free-services/${recordId}/`, { method: 'DELETE' });
 }
 
-export async function setFreeServiceCount(saleId: number, count: number): Promise<void> {
-  await api(`/sales/${saleId}/free-service-count/`, { method: 'POST', body: { free_services: count } });
+export async function setFreeServiceCount(saleId: number, count: number, covers?: string): Promise<void> {
+  await api(`/sales/${saleId}/free-service-count/`, {
+    method: 'POST',
+    body: { free_services: count, ...(covers === undefined ? {} : { free_service_covers: covers.trim() }) },
+  });
 }
 
 export interface SaleDocument {
