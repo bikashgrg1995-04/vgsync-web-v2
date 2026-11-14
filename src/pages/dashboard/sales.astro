@@ -285,6 +285,8 @@ const navItems = getNavItemsForRole(defaultRole);
             <option value="maintenance_due">Maintenance (90 days)</option>
             <option value="emi_due">EMI instalment</option>
             <option value="credit_due">Credit to receive</option>
+            <option value="financer_due">Due from finance company</option>
+            <option value="free_service_due">Free service due</option>
           </select>
           <label class="sa-check"><input type="checkbox" id="fu-overdue" /> Overdue only</label>
         </div>
@@ -855,7 +857,7 @@ const navItems = getNavItemsForRole(defaultRole);
           <td class="mono">${esc(s.invoiceNo || s.saleNo)}</td>
           <td>${esc(s.saleDate)}</td>
           <td>${customerLabel(s)}</td>
-          <td>${esc(TYPE_LABEL[s.saleType])}${s.paymentMode === 'emi' ? ' · EMI' : ''}</td>
+          <td>${esc(TYPE_LABEL[s.saleType])}${s.paymentMode === 'emi' ? ' · EMI' : s.paymentMode === 'financed' ? ' · Financed' : ''}</td>
           <td>${badge(s.status, STATUS_LABEL[s.status])}</td>
           <td class="num">${formatNpr(s.netTotal)}</td>
           <td class="num">${formatNpr(s.paid)}</td>
@@ -1006,7 +1008,7 @@ const navItems = getNavItemsForRole(defaultRole);
     }
     if (kind === 'adjustment') {
       const cid = Number(val('cr-customer'));
-      const open = allSales.filter((s) => s.customerId === cid && s.status === 'confirmed' && s.remaining > 0 && s.paymentMode !== 'emi');
+      const open = allSales.filter((s) => s.customerId === cid && s.status === 'confirmed' && s.remaining > 0 && s.paymentMode === 'full');
       $('cr-sale')!.innerHTML = open.length
         ? open.map((s) => `<option value="${s.id}">${esc(s.invoiceNo)} · owes ${esc(formatNpr(s.remaining))}</option>`).join('')
         : `<option value="">No unpaid sale for this customer</option>`;
@@ -1083,7 +1085,7 @@ const navItems = getNavItemsForRole(defaultRole);
           }
           return `<tr>
             <td class="${f.isOverdue ? 'is-overdue' : ''}">${esc(f.dueDate)}${f.isOverdue ? ' · overdue' : ''}</td>
-            <td>${esc(FOLLOWUP_LABEL[f.kind])}${f.installmentNumber ? ` #${f.installmentNumber}` : ''}${prev}</td>
+            <td>${esc(FOLLOWUP_LABEL[f.kind])}${f.installmentNumber ? ` #${f.installmentNumber}` : f.serviceNumber ? ` #${f.serviceNumber}` : ''}${prev}</td>
             <td>${esc(f.customerName)}${f.customerPhone ? `<br /><span class="muted small">${esc(f.customerPhone)}</span>` : ''}</td>
             <td class="mono">${esc(f.invoiceNo || f.saleNo)}</td>
             <td>${esc([f.vehicleRegNo, f.vehicleChassisNo].filter(Boolean).join(' / ') || '—')}</td>

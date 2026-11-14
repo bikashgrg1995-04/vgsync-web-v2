@@ -12,11 +12,23 @@ import { api, apiDownload } from './api';
 export type SaleStatus = 'draft' | 'confirmed' | 'cancelled';
 export type SaleType = 'stock' | 'bike' | 'maintenance';
 export type ServiceKind = 'paid' | 'free' | 'accident';
-export type PaymentMode = 'full' | 'emi';
+export type PaymentMode = 'full' | 'emi' | 'financed';
+export type Payer = 'customer' | 'financer';
+export const PAYMENT_MODE_LABEL: Record<PaymentMode, string> = {
+  full: 'Full payment',
+  emi: 'Own EMI',
+  financed: 'Financed by company',
+};
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 export type PayMethod = 'cash' | 'bank' | 'online' | 'cheque';
 export type CreditKind = 'refund' | 'adjustment' | 'replacement';
-export type FollowupKind = 'maintenance_post' | 'maintenance_due' | 'emi_due' | 'credit_due';
+export type FollowupKind =
+  | 'maintenance_post'
+  | 'maintenance_due'
+  | 'emi_due'
+  | 'credit_due'
+  | 'financer_due'
+  | 'free_service_due';
 export type FollowupStatus = 'pending' | 'done' | 'skipped';
 
 export interface SaleLine {
@@ -40,6 +52,7 @@ export interface SalePayment {
   amount: number;
   paidOn: string;
   method: PayMethod;
+  payer: Payer;
   reference: string;
   status: 'active' | 'void';
   voidReason: string;
@@ -71,6 +84,11 @@ export interface Sale {
   vatAmount: number;
   netTotal: number;
   paymentMode: PaymentMode;
+  financerName: string;
+  financerRef: string;
+  financerDueDate: string | null;
+  financerReceivable: number;
+  financerReceived: number;
   downPayment: number;
   emiMonths: number;
   emiAmount: number;
@@ -137,6 +155,9 @@ export interface SaleInput {
   discount?: number;
   vatRate?: number;
   paymentMode?: PaymentMode;
+  financerName?: string;
+  financerRef?: string;
+  financerDueDate?: string;
   downPayment?: number;
   emiMonths?: number;
   /** Yearly interest in percent; 0 or empty means none. */
@@ -211,6 +232,7 @@ export interface Followup {
   vehicleChassisNo: string;
   vehicleRegNo: string;
   installmentNumber: number | null;
+  serviceNumber: number | null;
   dueDate: string;
   amount: number;
   status: FollowupStatus;
@@ -284,6 +306,8 @@ export const FOLLOWUP_LABEL: Record<FollowupKind, string> = {
   maintenance_due: 'Maintenance follow-up (90 days)',
   emi_due: 'EMI instalment',
   credit_due: 'Credit to receive',
+  financer_due: 'Payment due from finance company',
+  free_service_due: 'Free service due',
 };
 
 // ---- API shapes --------------------------------------------------------
@@ -320,6 +344,7 @@ interface ApiPayment {
   amount: string;
   paid_on: string;
   method: PayMethod;
+  payer?: Payer;
   reference: string;
   status: 'active' | 'void';
   void_reason: string;
@@ -350,6 +375,11 @@ interface ApiSale {
   vat_rate: string;
   vat_amount: string;
   net_total: string;
+  financer_name?: string;
+  financer_ref?: string;
+  financer_due_date?: string | null;
+  financer_receivable?: string;
+  financer_received?: string;
   payment_mode: PaymentMode;
   down_payment: string;
   emi_months: number | null;
@@ -428,6 +458,11 @@ function saleFromApi(s: ApiSale): Sale {
     vatAmount: num(s.vat_amount),
     netTotal: num(s.net_total),
     paymentMode: s.payment_mode,
+    financerName: s.financer_name ?? '',
+    financerRef: s.financer_ref ?? '',
+    financerDueDate: s.financer_due_date ?? null,
+    financerReceivable: num(s.financer_receivable ?? 0),
+    financerReceived: num(s.financer_received ?? 0),
     downPayment: num(s.down_payment),
     emiMonths: s.emi_months ?? 0,
     emiAmount: num(s.emi_amount),
@@ -475,6 +510,7 @@ function saleFromApi(s: ApiSale): Sale {
       amount: num(p.amount),
       paidOn: p.paid_on,
       method: p.method,
+      payer: p.payer ?? 'customer',
       reference: p.reference,
       status: p.status,
       voidReason: p.void_reason,
@@ -545,6 +581,12 @@ function saleBody(input: SaleInput, isEdit: boolean): Record<string, unknown> {
     body.payment_mode = input.paymentMode ?? 'full';
     body.free_services = input.freeServices ?? 0;
     body.free_service_covers = (input.freeServiceCovers ?? '').trim();
+    if (input.paymentMode === 'financed') {
+      body.down_payment = String(input.downPayment ?? 0);
+      body.financer_name = (input.financerName ?? '').trim();
+      body.financer_ref = (input.financerRef ?? '').trim();
+      body.financer_due_date = input.financerDueDate || null;
+    }
     if (input.paymentMode === 'emi') {
       body.down_payment = String(input.downPayment ?? 0);
       body.emi_months = input.emiMonths;
@@ -595,12 +637,14 @@ export async function addPayment(input: {
   method: PayMethod;
   paidOn?: string;
   reference?: string;
+  payer?: Payer;
 }): Promise<void> {
   const body: Record<string, unknown> = {
     sale: input.saleId,
     amount: input.amount.toFixed(2),
     method: input.method,
     reference: (input.reference ?? '').trim(),
+    payer: input.payer ?? 'customer',
   };
   if (input.paidOn) body.paid_on = input.paidOn;
   await api('/sales/payments/', { method: 'POST', body });
@@ -742,6 +786,7 @@ interface ApiFollowup {
   vehicle_chassis_no: string;
   vehicle_reg_no: string;
   installment_number: number | null;
+  service_number?: number | null;
   due_date: string;
   amount: string | null;
   status: FollowupStatus;
@@ -769,6 +814,7 @@ export function listFollowups(filters: { status?: FollowupStatus | ''; kind?: Fo
     vehicleChassisNo: f.vehicle_chassis_no,
     vehicleRegNo: f.vehicle_reg_no,
     installmentNumber: f.installment_number,
+    serviceNumber: f.service_number ?? null,
     dueDate: f.due_date,
     amount: num(f.amount),
     status: f.status,

@@ -5,7 +5,7 @@ import type { StockItem } from '../lib/inventory';
 import {
   createSale, updateSale, listSales, addPayment, createReturn,
   previewTotals, previewEmi, formatNpr, formatQty,
-  type Sale, type SaleType, type ServiceKind, type BikeUnit, type LocalProduct, type PayMethod, type SaleLineInput,
+  type Sale, type SaleType, type ServiceKind, type PaymentMode, type Payer, type BikeUnit, type LocalProduct, type PayMethod, type SaleLineInput,
 } from '../lib/sales';
 
 /**
@@ -292,6 +292,7 @@ export function syncFormType(resetLines: boolean): void {
   $('sf-emi-box')!.hidden = type !== 'bike';
   $('sf-add-line')!.hidden = type === 'bike';
   $('sf-emi-fields')!.hidden = !(type === 'bike' && val('sf-mode') === 'emi');
+  $('sf-fin-fields')!.hidden = !(type === 'bike' && val('sf-mode') === 'financed');
   if (resetLines) {
     const box = $('sf-lines')!;
     box.innerHTML = '';
@@ -321,7 +322,11 @@ export function openForm(s?: Sale): void {
   $<HTMLInputElement>('sf-discount')!.value = String(s?.discount ?? 0);
   $<HTMLInputElement>('sf-vat')!.value = String(s?.vatRate ?? 0);
   $<HTMLSelectElement>('sf-mode')!.value = s?.paymentMode ?? 'full';
-  $<HTMLInputElement>('sf-down')!.value = String(s?.downPayment ?? 0);
+  $<HTMLInputElement>('sf-down')!.value = String(s?.paymentMode === 'emi' ? s.downPayment : 0);
+  $<HTMLInputElement>('sf-fin-down')!.value = String(s?.paymentMode === 'financed' ? s.downPayment : 0);
+  $<HTMLInputElement>('sf-fin-name')!.value = s?.financerName ?? '';
+  $<HTMLInputElement>('sf-fin-ref')!.value = s?.financerRef ?? '';
+  $<HTMLInputElement>('sf-fin-due')!.value = s?.financerDueDate ?? '';
   $<HTMLInputElement>('sf-months')!.value = String(s?.emiMonths || 12);
   $<HTMLInputElement>('sf-free')!.value = String(s?.freeServices ?? 0);
   $<HTMLInputElement>('sf-covers')!.value = s?.freeServiceCovers ?? '';
@@ -362,6 +367,10 @@ $('form-sale')?.addEventListener('submit', (e) => {
   const id = Number(val('sf-id')) || 0;
   const type = formType();
   const kind = (type === 'maintenance' ? val('sf-kind') : 'paid') as ServiceKind;
+  if (type === 'bike' && val('sf-mode') === 'financed' && !val('sf-fin-name').trim()) {
+    showError('sf-error', 'Enter the finance company.');
+    return;
+  }
   if (lines.length === 0 && kind !== 'accident') {
     showError('sf-error', 'Add at least one item.');
     return;
@@ -382,8 +391,11 @@ $('form-sale')?.addEventListener('submit', (e) => {
     saleDate: val('sf-date'),
     discount: Number(val('sf-discount')) || 0,
     vatRate: Number(val('sf-vat')) || 0,
-    paymentMode: (val('sf-mode') || 'full') as 'full' | 'emi',
-    downPayment: Number(val('sf-down')) || 0,
+    paymentMode: (val('sf-mode') || 'full') as PaymentMode,
+    downPayment: Number(val(val('sf-mode') === 'financed' ? 'sf-fin-down' : 'sf-down')) || 0,
+    financerName: val('sf-fin-name'),
+    financerRef: val('sf-fin-ref'),
+    financerDueDate: val('sf-fin-due'),
     emiMonths: Number(val('sf-months')) || undefined,
     interestRate: Number(val('sf-rate')) || 0,
     firstEmiDue: val('sf-first'),
@@ -414,6 +426,13 @@ export function openPay(s: Sale): void {
   $<HTMLSelectElement>('py-method')!.value = 'cash';
   $<HTMLInputElement>('py-date')!.value = today();
   $<HTMLInputElement>('py-ref')!.value = '';
+  const financed = s.paymentMode === 'financed' && s.status === 'confirmed';
+  $('py-payer-wrap')!.hidden = !financed;
+  $<HTMLSelectElement>('py-payer')!.value = financed && s.financerReceived < s.financerReceivable ? 'financer' : 'customer';
+  if (financed && val('py-payer') === 'financer') {
+    $<HTMLInputElement>('py-amount')!.value = String(Math.max(s.financerReceivable - s.financerReceived, 0));
+    $('py-sub')!.textContent += ` · company still to pay ${formatNpr(Math.max(s.financerReceivable - s.financerReceived, 0))}`;
+  }
   showError('py-error', null);
   $('form-pay')!.dataset.id = String(s.id);
   dlg('dlg-pay').showModal();
@@ -423,7 +442,7 @@ $('form-pay')?.addEventListener('submit', (e) => {
   e.preventDefault();
   const id = Number($('form-pay')!.dataset.id);
   void submit('py-save', 'py-error', 'dlg-pay', async () => {
-    await addPayment({ saleId: id, amount: Number(val('py-amount')), method: val('py-method') as PayMethod, paidOn: val('py-date'), reference: val('py-ref') });
+    await addPayment({ saleId: id, amount: Number(val('py-amount')), method: val('py-method') as PayMethod, paidOn: val('py-date'), reference: val('py-ref'), payer: ($('py-payer-wrap')!.hidden ? 'customer' : val('py-payer')) as Payer });
     await hooks.onChanged(id);
   });
 });
