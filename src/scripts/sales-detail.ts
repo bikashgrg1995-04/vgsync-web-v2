@@ -1,4 +1,4 @@
-import { getSession } from "../lib/auth";
+import { can, getSession } from "../lib/auth";
 import { ApiError } from "../lib/api";
 import { listCustomers, type Customer } from "../lib/customers";
 import { listStock, type StockItem } from "../lib/inventory";
@@ -201,16 +201,27 @@ function renderHeader(s: Sale): void {
   setText("sad-stat-due", cancelled ? "—" : formatNpr(s.remaining));
 }
 
+function mayCollect(): boolean {
+  const me = getSession();
+
+  return (
+    canWrite &&
+    (can(me, "sales.collect") || can(me, "sales.update") || can(me, "sales.create"))
+  );
+}
+
 function renderActions(s: Sale): void {
+  // Recording money needs sales.collect (accountant) or the right to edit sales.
+  const canCollect = mayCollect();
   const allowed: Record<string, boolean> = {
     confirm: canWrite && s.status === "draft",
-    edit: canWrite && s.status === "draft",
-    pay: canWrite && s.status !== "cancelled" && s.remaining > 0,
+    edit: canWrite && can(getSession(), "sales.update") && s.status === "draft",
+    pay: canCollect && s.status !== "cancelled" && s.remaining > 0,
     return:
       canWrite &&
       s.status === "confirmed" &&
       s.lines.some((l) => l.returnableQuantity > 0),
-    cancel: canWrite && s.status === "draft",
+    cancel: canWrite && can(getSession(), "sales.cancel") && s.status === "draft",
   };
 
   let any = false;
@@ -377,7 +388,7 @@ function renderPayments(s: Sale): void {
             : `<span class="pd-pill pd-pill-received">Paid</span>`
         }</td>
         <td class="actions">${
-          !voided && canWrite
+          !voided && mayCollect()
             ? `<button type="button" class="btn-link is-danger" data-void-pay="${x.id}">Void</button>`
             : ""
         }</td>

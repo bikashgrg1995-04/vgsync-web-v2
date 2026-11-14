@@ -69,7 +69,7 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession } from '../../lib/auth';
+  import { can, getSession } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
   import {
     REPORTS,
@@ -342,7 +342,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
   // Payroll is the owner's: other positions never see that report.
   function visibleReports() {
-    return REPORTS.filter((r) => r.id !== 'payroll-summary' || getSession()?.isOwner);
+    return REPORTS.filter((r) => r.id !== 'payroll-summary' || can(getSession(), 'staff.pay_view'));
   }
 
   function renderChips(): void {
