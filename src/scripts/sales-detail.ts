@@ -11,6 +11,9 @@ import {
   listFollowups,
   listBikes,
   listLocalProducts,
+  addFreeService,
+  removeFreeService,
+  setFreeServiceCount,
   formatNpr,
   formatQty,
   STATUS_LABEL,
@@ -32,6 +35,11 @@ import {
   openReason,
   describe,
   esc,
+  submit,
+  showError,
+  dlg,
+  val,
+  today,
 } from "./sales-dialogs";
 
 if (!getSession()) window.location.replace("/");
@@ -370,6 +378,74 @@ function renderPayments(s: Sale): void {
   });
 }
 
+function renderFreeService(s: Sale): void {
+  const show = s.saleType === "bike" && s.status === "confirmed";
+
+  setHidden("sad-fs-tab", !show);
+
+  if (!show) {
+    if (document.querySelector('.invd-tab.is-active[data-tab="freeservice"]')) showTab("details");
+    return;
+  }
+
+  setText("fs-total", String(s.freeServices));
+  setText("fs-used", String(s.freeServicesUsed));
+  setText("fs-left", String(s.freeServicesLeft));
+  setText(
+    "fs-note",
+    s.freeServices === 0
+      ? "No free service was included with this bike. Use Change count to add some."
+      : s.freeServicesLeft === 0
+        ? "All free services are done."
+        : `${s.freeServicesLeft} free service${s.freeServicesLeft === 1 ? "" : "s"} still to give.`,
+  );
+  setHidden("sad-fs-add-btn", !(canWrite && s.freeServicesLeft > 0));
+  setHidden("sad-fs-count-btn", !canWrite);
+
+  const tbody = $("sad-fs");
+  if (!tbody) return;
+
+  const records = s.freeServiceRecords;
+
+  if (!records.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="inv-empty">No free service done yet</td></tr>`;
+    return;
+  }
+
+  const last = records[records.length - 1].id;
+
+  tbody.innerHTML = records
+    .map(
+      (r) => `<tr>
+        <td><strong>${r.number}</strong></td>
+        <td class="pud-nowrap">${esc(fmtDate(r.serviceDate))}</td>
+        <td class="num">${r.odometerKm.toLocaleString("en-US")} km</td>
+        <td>${esc(r.performance || "—")}</td>
+        <td>${esc(r.workDone || "—")}</td>
+        <td class="hide-sm">${esc(r.technician || "—")}</td>
+        <td class="actions">${
+          canWrite && r.id === last
+            ? `<button type="button" class="btn-link is-danger" data-rm-fs="${r.id}">Remove</button>`
+            : ""
+        }</td>
+      </tr>`,
+    )
+    .join("");
+
+  tbody.querySelectorAll<HTMLButtonElement>("[data-rm-fs]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Remove this free service record?")) return;
+
+      try {
+        await removeFreeService(s.id, Number(btn.dataset.rmFs));
+        await load();
+      } catch (error) {
+        showNotice(describe(error));
+      }
+    });
+  });
+}
+
 function renderEmi(s: Sale): void {
   const emi = s.paymentMode === "emi";
 
@@ -659,6 +735,65 @@ document
 
 $("sad-pay-btn")?.addEventListener("click", () => runAction("pay"));
 
+$("sad-fs-add-btn")?.addEventListener("click", () => {
+  const s = sale;
+  if (!s) return;
+
+  const last = s.freeServiceRecords[s.freeServiceRecords.length - 1];
+
+  $("fs-title")!.textContent = `Record free service ${s.freeServicesUsed + 1} of ${s.freeServices}`;
+  $("fs-sub")!.textContent = last
+    ? `Previous: ${last.odometerKm.toLocaleString("en-US")} km on ${fmtDate(last.serviceDate)}`
+    : "";
+  ($("fs-date") as HTMLInputElement).value = today();
+  ($("fs-date") as HTMLInputElement).min = s.saleDate;
+  ($("fs-km") as HTMLInputElement).value = "";
+  ($("fs-tech") as HTMLInputElement).value = "";
+  ($("fs-perf") as HTMLTextAreaElement).value = "";
+  ($("fs-work") as HTMLTextAreaElement).value = "";
+  showError("fs-error", null);
+  dlg("dlg-fs").showModal();
+});
+
+$("form-fs")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const s = sale;
+  if (!s) return;
+
+  void submit("fs-save", "fs-error", "dlg-fs", async () => {
+    await addFreeService(s.id, {
+      serviceDate: val("fs-date"),
+      odometerKm: Number(val("fs-km")),
+      performance: val("fs-perf"),
+      workDone: val("fs-work"),
+      technician: val("fs-tech"),
+    });
+    await load();
+  });
+});
+
+$("sad-fs-count-btn")?.addEventListener("click", async () => {
+  const s = sale;
+  if (!s) return;
+
+  const answer = prompt(`How many free services does this bike include? (${s.freeServicesUsed} already done)`, String(s.freeServices));
+  if (answer === null) return;
+
+  const count = Number(answer);
+
+  if (!Number.isInteger(count) || count < 0 || count > 20) {
+    showNotice("Enter a whole number from 0 to 20.");
+    return;
+  }
+
+  try {
+    await setFreeServiceCount(s.id, count);
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
+
 // ==================================================
 // LOAD
 // ==================================================
@@ -682,6 +817,7 @@ async function load(): Promise<void> {
   renderLines(sale);
   renderPayments(sale);
   renderEmi(sale);
+  renderFreeService(sale);
   renderRelated(sale);
 
   if (!canWrite) {

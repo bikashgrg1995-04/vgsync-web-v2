@@ -89,6 +89,10 @@ const navItems = getNavItemsForRole(defaultRole);
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg>
         EMI Schedule
       </button>
+      <button type="button" class="invd-tab" role="tab" data-tab="freeservice" id="sad-fs-tab" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.1-.6-.6-2.1z"></path></svg>
+        Free Servicing
+      </button>
       <button type="button" class="invd-tab" role="tab" data-tab="activities">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
         Activities
@@ -232,6 +236,41 @@ const navItems = getNavItemsForRole(defaultRole);
               </tr>
             </thead>
             <tbody id="sad-emi"><tr><td colspan="5" class="inv-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: FREE SERVICING -->
+    <section class="invd-panel" data-panel="freeservice">
+      <div class="inv-card">
+        <div class="inv-card-head">
+          <h3 class="inv-card-title">Free Servicing</h3>
+          <span style="display:flex;gap:16px;flex-wrap:wrap">
+            <button type="button" class="btn-link" id="sad-fs-count-btn" hidden>Change count</button>
+            <button type="button" class="btn-link" id="sad-fs-add-btn" hidden>+ Record service</button>
+          </span>
+        </div>
+        <div class="invd-stats">
+          <div class="invd-stat"><strong id="fs-total">—</strong><span>Included</span></div>
+          <div class="invd-stat"><strong id="fs-used">—</strong><span>Done</span></div>
+          <div class="invd-stat"><strong id="fs-left">—</strong><span>Remaining</span></div>
+        </div>
+        <p class="sad-emi-sum" id="fs-note" style="margin-top:10px"></p>
+        <div class="inv-table-wrap">
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th class="num">Km</th>
+                <th>Performance</th>
+                <th>Work done</th>
+                <th class="hide-sm">Technician</th>
+                <th class="actions"></th>
+              </tr>
+            </thead>
+            <tbody id="sad-fs"><tr><td colspan="7" class="inv-empty">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
