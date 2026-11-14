@@ -260,7 +260,7 @@ const navItems = getNavItemsForRole();
     await loadRules();
   });
 
-  if (isOwner) {
+  if (isOwner || can(session, 'finance.manage_rules')) {
     $('ap-rules-tab').hidden = false;
     void loadRules();
     if (window.location.hash === '#rules') tab = 'rules';

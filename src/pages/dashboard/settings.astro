@@ -719,9 +719,12 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
 
     // ---- Business details: owners can look, only VGSync support changes them.
     const isOwner = me.role === 'owner' || me.role === 'branch_owner';
+    // Administrators see the Users & Permissions overview when they hold one of its parts.
+    if (isOwner || ['staff.view_audit', 'staff.manage_positions', 'finance.manage_rules'].some((c) => can(session, c))) {
+      $('tab-users')!.hidden = false;
+    }
     if (isOwner) {
       $('tab-business')!.hidden = false;
-      $('tab-users')!.hidden = false;
       setText('biz-active', me.activeBranchName);
       setText('biz-code', me.activeBranchCode);
       void (async () => {

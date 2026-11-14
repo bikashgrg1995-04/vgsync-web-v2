@@ -269,6 +269,11 @@ export function canEditPositions(session: AuthSession | null): boolean {
   return auth.user.role === 'owner';
 }
 
+/** The owner, or staff holding `staff.manage_positions` (never above their own access). */
+export function canManagePositions(session: AuthSession | null): boolean {
+  return canEditPositions(session) || (!!session && session.permissions.includes('staff.manage_positions'));
+}
+
 /**
  * Whether the signed-in person holds a permission such as `sales.cancel`.
  * The API decides for real; this only decides what is shown. Owners hold all.
