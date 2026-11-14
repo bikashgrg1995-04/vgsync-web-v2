@@ -220,7 +220,7 @@ const navItems = getNavItemsForRole(defaultRole);
         </label>
       </div>
       <div class="st-perm-groups" id="perm-groups"></div>
-      <p class="st-hint">Create, edit and delete need View as well. A preset only fills the boxes; later changes to it never change this position. Managing permissions stays with the owner.</p>
+      <p class="st-hint">Create, edit and delete need View as well. A preset only fills the boxes; later changes to it never change this position. Managing permissions stays with the owner. An administrator can only grant what they hold themselves.</p>
       <p class="st-error" id="p-error" role="alert" hidden></p>
       <div class="st-dialog-actions">
         <button type="button" class="btn-ghost-sm" id="p-cancel">Cancel</button>
@@ -232,7 +232,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
 <script>
   import { paintAvatar } from '../../lib/avatar';
-  import { getSession, canManageStaff, canEditPositions, refreshProfile } from '../../lib/auth';
+  import { getSession, canManageStaff, canEditPositions, canManagePositions, refreshProfile } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
   import {
     MODULES,
@@ -549,7 +549,7 @@ const navItems = getNavItemsForRole(defaultRole);
     const current = getSession();
     canWrite = current?.accessMode !== 'read_only';
     // Positions are changed by the owner only; others can read them.
-    canEditPos = canWrite && canEditPositions(current);
+    canEditPos = canWrite && canManagePositions(current);
     const add = $('member-add');
     if (add) add.hidden = !canWrite;
     const addPosition = $('position-add');
