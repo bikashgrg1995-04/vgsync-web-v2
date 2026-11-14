@@ -7,10 +7,11 @@
  * helpers here only preview totals while the form is open.
  */
 
-import { api } from './api';
+import { api, apiDownload } from './api';
 
 export type SaleStatus = 'draft' | 'confirmed' | 'cancelled';
 export type SaleType = 'stock' | 'bike' | 'maintenance';
+export type ServiceKind = 'paid' | 'free' | 'accident';
 export type PaymentMode = 'full' | 'emi';
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 export type PayMethod = 'cash' | 'bank' | 'online' | 'cheque';
@@ -76,6 +77,13 @@ export interface Sale {
   firstEmiDue: string;
   interestRate: number | null;
   financeCharge: number;
+  serviceKind: ServiceKind;
+  freeServiceFor: number | null;
+  freeServiceForNo: string;
+  odometerKm: number | null;
+  documentsIgnored: boolean;
+  documentsTotal: number;
+  documentsVerified: number;
   freeServices: number;
   freeServicesUsed: number;
   freeServicesLeft: number;
@@ -134,6 +142,13 @@ export interface SaleInput {
   firstEmiDue?: string;
   /** Bike sales: how many free services come with the bike. */
   freeServices?: number;
+  /** Maintenance: normal, free (of a bike sold earlier) or accident case. */
+  serviceKind?: ServiceKind;
+  freeServiceFor?: number | null;
+  odometerKm?: number | null;
+  /** Accident case, when it is opened. */
+  advanceAmount?: number;
+  advanceMethod?: PayMethod;
   dueDate?: string;
   vehicleChassisNo?: string;
   vehicleRegNo?: string;
@@ -228,6 +243,12 @@ export const STATUS_LABEL: Record<SaleStatus, string> = {
   draft: 'Draft',
   confirmed: 'Confirmed',
   cancelled: 'Cancelled',
+};
+
+export const SERVICE_KIND_LABEL: Record<ServiceKind, string> = {
+  paid: 'Normal service',
+  free: 'Free service',
+  accident: 'Accident case',
 };
 
 export const TYPE_LABEL: Record<SaleType, string> = {
@@ -333,6 +354,13 @@ interface ApiSale {
   first_emi_due: string | null;
   interest_rate: string | null;
   finance_charge: string;
+  service_kind?: ServiceKind;
+  free_service_for?: number | null;
+  free_service_for_no?: string | null;
+  odometer_km?: number | null;
+  documents_ignored?: boolean;
+  documents_total?: number;
+  documents_verified?: number;
   free_services?: number;
   free_services_used?: number;
   free_services_left?: number;
@@ -401,6 +429,13 @@ function saleFromApi(s: ApiSale): Sale {
     firstEmiDue: s.first_emi_due ?? '',
     interestRate: s.interest_rate === null || s.interest_rate === undefined ? null : num(s.interest_rate),
     financeCharge: num(s.finance_charge),
+    serviceKind: s.service_kind ?? 'paid',
+    freeServiceFor: s.free_service_for ?? null,
+    freeServiceForNo: s.free_service_for_no ?? '',
+    odometerKm: s.odometer_km ?? null,
+    documentsIgnored: s.documents_ignored ?? false,
+    documentsTotal: s.documents_total ?? 0,
+    documentsVerified: s.documents_verified ?? 0,
     freeServices: s.free_services ?? 0,
     freeServicesUsed: s.free_services_used ?? 0,
     freeServicesLeft: s.free_services_left ?? 0,
@@ -512,6 +547,13 @@ function saleBody(input: SaleInput, isEdit: boolean): Record<string, unknown> {
   }
   if (input.saleType !== 'bike') body.due_date = input.dueDate || null;
   if (input.saleType === 'maintenance') {
+    body.service_kind = input.serviceKind ?? 'paid';
+    body.free_service_for = input.serviceKind === 'free' ? input.freeServiceFor ?? null : null;
+    body.odometer_km = input.serviceKind === 'free' ? input.odometerKm ?? null : null;
+    if (!isEdit && input.serviceKind === 'accident') {
+      body.advance_amount = (input.advanceAmount ?? 0).toFixed(2);
+      body.advance_method = input.advanceMethod ?? 'cash';
+    }
     body.vehicle_chassis_no = (input.vehicleChassisNo ?? '').trim();
     body.vehicle_reg_no = (input.vehicleRegNo ?? '').trim();
   }
@@ -526,8 +568,13 @@ export async function updateSale(id: number, input: SaleInput): Promise<Sale> {
   return saleFromApi(await api<ApiSale>(`/sales/${id}/`, { method: 'PATCH', body: saleBody(input, true) }));
 }
 
-export async function confirmSale(id: number): Promise<Sale> {
-  return saleFromApi(await api<ApiSale>(`/sales/${id}/confirm/`, { method: 'POST', body: {} }));
+export async function confirmSale(id: number, ignoreDocuments = false): Promise<Sale> {
+  return saleFromApi(
+    await api<ApiSale>(`/sales/${id}/confirm/`, {
+      method: 'POST',
+      body: ignoreDocuments ? { ignore_documents: true } : {},
+    }),
+  );
 }
 
 export async function cancelSale(id: number, reason: string): Promise<Sale> {
@@ -897,4 +944,76 @@ export async function removeFreeService(saleId: number, recordId: number): Promi
 
 export async function setFreeServiceCount(saleId: number, count: number): Promise<void> {
   await api(`/sales/${saleId}/free-service-count/`, { method: 'POST', body: { free_services: count } });
+}
+
+export interface SaleDocument {
+  id: number;
+  title: string;
+  category: string;
+  fileName: string;
+  size: number;
+  uploadedBy: string;
+  createdAt: string;
+  verified: boolean;
+  verifiedBy: string;
+  verifiedAt: string | null;
+}
+
+export const DOC_CATEGORY_LABEL: Record<string, string> = {
+  police_report: 'Police report',
+  insurance: 'Insurance',
+  license: 'Driving licence',
+  bluebook: 'Blue book',
+  photo: 'Photo of damage',
+  other: 'Other',
+};
+
+interface RawSaleDoc {
+  id: number;
+  title: string;
+  category: string;
+  original_name: string;
+  size: number;
+  uploaded_by_name: string;
+  created_at: string;
+  verified: boolean;
+  verified_by_name: string;
+  verified_at: string | null;
+}
+
+const docOf = (d: RawSaleDoc): SaleDocument => ({
+  id: d.id,
+  title: d.title,
+  category: d.category,
+  fileName: d.original_name,
+  size: d.size,
+  uploadedBy: d.uploaded_by_name,
+  createdAt: d.created_at,
+  verified: d.verified,
+  verifiedBy: d.verified_by_name,
+  verifiedAt: d.verified_at,
+});
+
+export async function listSaleDocuments(saleId: number): Promise<SaleDocument[]> {
+  return (await api<RawSaleDoc[]>(`/sales/${saleId}/documents/`)).map(docOf);
+}
+
+export async function uploadSaleDocument(saleId: number, file: File, title: string, category: string): Promise<void> {
+  const form = new FormData();
+  form.append('file', file);
+  if (title.trim()) form.append('title', title.trim());
+  form.append('category', category);
+  await api(`/sales/${saleId}/documents/`, { method: 'POST', body: form });
+}
+
+export function downloadSaleDocument(saleId: number, doc: SaleDocument): Promise<void> {
+  return apiDownload(`/sales/${saleId}/documents/${doc.id}/`, doc.fileName);
+}
+
+export async function verifySaleDocument(saleId: number, id: number, verified: boolean): Promise<void> {
+  await api(`/sales/${saleId}/documents/${id}/verify/`, { method: 'POST', body: { verified } });
+}
+
+export async function deleteSaleDocument(saleId: number, id: number): Promise<void> {
+  await api(`/sales/${saleId}/documents/${id}/`, { method: 'DELETE' });
 }

@@ -93,6 +93,10 @@ const navItems = getNavItemsForRole(defaultRole);
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.1-.6-.6-2.1z"></path></svg>
         Free Servicing
       </button>
+      <button type="button" class="invd-tab" role="tab" data-tab="documents" id="sad-doc-tab" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>
+        Documents
+      </button>
       <button type="button" class="invd-tab" role="tab" data-tab="activities">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
         Activities
@@ -271,6 +275,23 @@ const navItems = getNavItemsForRole(defaultRole);
               </tr>
             </thead>
             <tbody id="sad-fs"><tr><td colspan="7" class="inv-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: DOCUMENTS (accident case) -->
+    <section class="invd-panel" data-panel="documents">
+      <div class="inv-card">
+        <div class="inv-card-head">
+          <h3 class="inv-card-title">Accident papers</h3>
+          <button type="button" class="btn-link" id="sad-doc-add-btn" hidden>+ Upload paper</button>
+        </div>
+        <p class="sad-emi-sum" id="doc-note"></p>
+        <div class="inv-table-wrap">
+          <table class="inv-table">
+            <thead><tr><th>Paper</th><th>Type</th><th>Uploaded</th><th>Verified</th><th class="actions"></th></tr></thead>
+            <tbody id="sad-docs"><tr><td colspan="5" class="inv-empty">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>

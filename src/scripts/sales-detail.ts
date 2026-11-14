@@ -18,6 +18,14 @@ import {
   formatQty,
   STATUS_LABEL,
   TYPE_LABEL,
+  SERVICE_KIND_LABEL,
+  DOC_CATEGORY_LABEL,
+  listSaleDocuments,
+  downloadSaleDocument,
+  verifySaleDocument,
+  deleteSaleDocument,
+  uploadSaleDocument,
+  type SaleDocument,
   PAYMENT_LABEL,
   METHOD_LABEL,
   FOLLOWUP_LABEL,
@@ -164,7 +172,7 @@ function renderHeader(s: Sale): void {
 
   if (kind) {
     kind.hidden = false;
-    kind.textContent = `${TYPE_LABEL[s.saleType]}${s.paymentMode === "emi" ? " · EMI" : ""}`;
+    kind.textContent = kindLabel(s);
   }
 
   const vehicle = $("sad-vehicle");
@@ -222,7 +230,7 @@ function renderInfo(s: Sale): void {
   setText("inf-no", s.saleNo);
   setText("inf-customer", customerName(s));
   setText("inf-date", fmtDate(s.saleDate));
-  setText("inf-kind", `${TYPE_LABEL[s.saleType]}${emi ? " · EMI" : ""}`);
+  setText("inf-kind", kindLabel(s));
   setText("inf-due-label", emi ? "First EMI Due" : "Pay By");
   setText("inf-due", fmtDate(emi ? s.firstEmiDue : s.dueDate));
 
@@ -376,6 +384,94 @@ function renderPayments(s: Sale): void {
       ),
     );
   });
+}
+
+function kindLabel(s: Sale): string {
+  const base =
+    s.saleType === "maintenance" && s.serviceKind !== "paid"
+      ? `Maintenance · ${SERVICE_KIND_LABEL[s.serviceKind]}${s.freeServiceForNo ? ` of ${s.freeServiceForNo}` : ""}`
+      : TYPE_LABEL[s.saleType];
+
+  return `${base}${s.paymentMode === "emi" ? " · EMI" : ""}`;
+}
+
+const sizeText = (n: number): string => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+async function renderDocuments(s: Sale): Promise<void> {
+  const show = s.saleType === "maintenance" && s.serviceKind === "accident";
+
+  setHidden("sad-doc-tab", !show);
+  if (!show) return;
+
+  const open = s.status === "draft";
+  setHidden("sad-doc-add-btn", !(canWrite && s.status !== "cancelled"));
+  setText(
+    "doc-note",
+    s.documentsIgnored
+      ? "The bill was made without all papers verified."
+      : s.documentsTotal === 0
+        ? "No papers uploaded yet. Upload and verify them before billing."
+        : s.documentsVerified === s.documentsTotal
+          ? "All papers are verified."
+          : `${s.documentsTotal - s.documentsVerified} of ${s.documentsTotal} papers still to verify.`,
+  );
+
+  const tbody = $("sad-docs");
+  if (!tbody) return;
+
+  let docs: SaleDocument[] = [];
+
+  try {
+    docs = await listSaleDocuments(s.id);
+  } catch (error) {
+    showNotice(describe(error));
+  }
+
+  if (!docs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="inv-empty">No papers yet</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = docs
+    .map(
+      (d) => `<tr>
+        <td><button type="button" class="btn-link" data-dl-doc="${d.id}">${esc(d.title)}</button><br /><small>${esc(d.fileName)} · ${sizeText(d.size)}</small></td>
+        <td>${esc(DOC_CATEGORY_LABEL[d.category] ?? d.category)}</td>
+        <td>${esc(d.uploadedBy || "—")}<br /><small>${esc(fmtDate(d.createdAt.slice(0, 10)))}</small></td>
+        <td>${d.verified ? `<strong>Verified</strong><br /><small>${esc(d.verifiedBy)} · ${esc(fmtDate((d.verifiedAt ?? "").slice(0, 10)))}</small>` : "Not verified"}</td>
+        <td class="actions">${
+          canWrite && s.status !== "cancelled"
+            ? `<button type="button" class="btn-link" data-vf-doc="${d.id}" data-to="${d.verified ? "0" : "1"}">${d.verified ? "Unverify" : "Mark verified"}</button>`
+            : ""
+        }${open && canWrite ? ` <button type="button" class="btn-link is-danger" data-rm-doc="${d.id}">Remove</button>` : ""}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const byId = (id: string) => docs.find((d) => d.id === Number(id));
+  const run = async (fn: () => Promise<unknown>, reload = true) => {
+    try {
+      await fn();
+      if (reload) await load();
+    } catch (error) {
+      showNotice(describe(error));
+    }
+  };
+
+  tbody.querySelectorAll<HTMLButtonElement>("[data-dl-doc]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const d = byId(b.dataset.dlDoc ?? "");
+      if (d) void run(() => downloadSaleDocument(s.id, d), false);
+    }),
+  );
+  tbody.querySelectorAll<HTMLButtonElement>("[data-vf-doc]").forEach((b) =>
+    b.addEventListener("click", () => void run(() => verifySaleDocument(s.id, Number(b.dataset.vfDoc), b.dataset.to === "1"))),
+  );
+  tbody.querySelectorAll<HTMLButtonElement>("[data-rm-doc]").forEach((b) =>
+    b.addEventListener("click", () => {
+      if (confirm("Remove this paper?")) void run(() => deleteSaleDocument(s.id, Number(b.dataset.rmDoc)));
+    }),
+  );
 }
 
 function renderFreeService(s: Sale): void {
@@ -700,11 +796,31 @@ async function doConfirm(s: Sale): Promise<void> {
 
   try {
     await confirmSale(s.id);
-    await load();
-    void refreshChoices();
   } catch (error) {
-    showNotice(describe(error));
+    if (error instanceof ApiError && error.code === "documents_unverified") {
+      if (
+        !confirm(
+          `${error.message}\n\nOpen the Documents tab to upload and verify them first. Bill anyway without verified papers?`,
+        )
+      ) {
+        showTab("documents");
+        return;
+      }
+
+      try {
+        await confirmSale(s.id, true);
+      } catch (again) {
+        showNotice(describe(again));
+        return;
+      }
+    } else {
+      showNotice(describe(error));
+      return;
+    }
   }
+
+  await load();
+  void refreshChoices();
 }
 
 function runAction(act: string): void {
@@ -734,6 +850,24 @@ document
   });
 
 $("sad-pay-btn")?.addEventListener("click", () => runAction("pay"));
+
+$("sad-doc-add-btn")?.addEventListener("click", () => {
+  showError("doc-error", null);
+  ($("form-doc") as HTMLFormElement).reset();
+  dlg("dlg-doc").showModal();
+});
+
+$("form-doc")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const s = sale;
+  const file = ($("doc-file") as HTMLInputElement).files?.[0];
+  if (!s || !file) return;
+
+  void submit("doc-save", "doc-error", "dlg-doc", async () => {
+    await uploadSaleDocument(s.id, file, val("doc-title"), val("doc-cat"));
+    await load();
+  });
+});
 
 $("sad-fs-add-btn")?.addEventListener("click", () => {
   const s = sale;
@@ -818,6 +952,7 @@ async function load(): Promise<void> {
   renderPayments(sale);
   renderEmi(sale);
   renderFreeService(sale);
+  void renderDocuments(sale);
   renderRelated(sale);
 
   if (!canWrite) {
