@@ -495,6 +495,7 @@ function renderFreeService(s: Sale): void {
         ? "All free services are done."
         : `${s.freeServicesLeft} free service${s.freeServicesLeft === 1 ? "" : "s"} still to give.`,
   );
+  setText("fs-covers", s.freeServiceCovers ? `Free service covers: ${s.freeServiceCovers}. Extra parts or extra work are charged.` : "Extra parts or extra work in a free service are charged.");
   setHidden("sad-fs-add-btn", !(canWrite && s.freeServicesLeft > 0));
   setHidden("sad-fs-count-btn", !canWrite);
 
@@ -920,8 +921,11 @@ $("sad-fs-count-btn")?.addEventListener("click", async () => {
     return;
   }
 
+  const covers = prompt("What does a free service cover? (e.g. Labour, oil change, wash). Extra parts and extra work are charged.", s.freeServiceCovers);
+  if (covers === null) return;
+
   try {
-    await setFreeServiceCount(s.id, count);
+    await setFreeServiceCount(s.id, count, covers);
     await load();
   } catch (error) {
     showNotice(describe(error));

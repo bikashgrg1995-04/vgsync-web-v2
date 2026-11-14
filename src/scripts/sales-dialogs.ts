@@ -262,6 +262,13 @@ async function loadFreeBikeSales(selectedId?: number | null): Promise<void> {
     `<option value="">Choose the bike sale</option>` +
     rows.map((b) => `<option value="${b.id}">${esc(b.invoiceNo || b.saleNo)} · ${customerLabel(b)} · ${b.freeServicesLeft} left</option>`).join('');
   $<HTMLSelectElement>('sf-fs-sale')!.value = selectedId ? String(selectedId) : '';
+  showCovers();
+}
+
+function showCovers(): void {
+  const id = Number(val('sf-fs-sale'));
+  const covers = bikeSalesWithFree?.find((b) => b.id === id)?.freeServiceCovers ?? '';
+  $('sf-covers-note')!.textContent = `${covers ? `This free service covers: ${covers}. ` : ''}Covered work: price 0. Extra parts or extra work: enter the price and the customer pays it.`;
 }
 
 export function syncKind(selectedFor?: number | null): void {
@@ -317,6 +324,7 @@ export function openForm(s?: Sale): void {
   $<HTMLInputElement>('sf-down')!.value = String(s?.downPayment ?? 0);
   $<HTMLInputElement>('sf-months')!.value = String(s?.emiMonths || 12);
   $<HTMLInputElement>('sf-free')!.value = String(s?.freeServices ?? 0);
+  $<HTMLInputElement>('sf-covers')!.value = s?.freeServiceCovers ?? '';
   $<HTMLSelectElement>('sf-kind')!.value = s?.serviceKind ?? 'paid';
   $<HTMLInputElement>('sf-km')!.value = s?.odometerKm != null ? String(s.odometerKm) : '';
   $<HTMLInputElement>('sf-adv')!.value = '';
@@ -343,6 +351,7 @@ export function openForm(s?: Sale): void {
 $('sf-type')?.addEventListener('change', () => syncFormType(true));
 $('sf-mode')?.addEventListener('change', () => syncFormType(false));
 $('sf-kind')?.addEventListener('change', () => syncKind());
+$('sf-fs-sale')?.addEventListener('change', showCovers);
 $('sf-customer')?.addEventListener('change', syncWalkIn);
 $('sf-add-line')?.addEventListener('click', () => addSaleLine($('sf-lines')!, formType(), {}, updateTotals));
 for (const id of ['sf-discount', 'sf-vat', 'sf-down', 'sf-months', 'sf-rate']) $(id)?.addEventListener('input', updateTotals);
@@ -379,6 +388,7 @@ $('form-sale')?.addEventListener('submit', (e) => {
     interestRate: Number(val('sf-rate')) || 0,
     firstEmiDue: val('sf-first'),
     freeServices: Number(val('sf-free')) || 0,
+    freeServiceCovers: val('sf-covers'),
     serviceKind: kind,
     freeServiceFor: Number(val('sf-fs-sale')) || null,
     odometerKm: val('sf-km') === '' ? null : Number(val('sf-km')),
