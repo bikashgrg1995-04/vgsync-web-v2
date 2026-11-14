@@ -10,6 +10,7 @@ export interface PageMeta {
 
 export const PAGE_META: Record<string, PageMeta> = {
   'my-pay': { id: 'my-pay', title: 'My pay', breadcrumb: 'My pay /', skeletonTitle: 'My pay', skeletonHint: '' },
+  'my-jobs': { id: 'my-jobs', title: 'My jobs', breadcrumb: 'My jobs /', skeletonTitle: 'My jobs', skeletonHint: '' },
   tasks: { id: 'tasks', title: 'Tasks', breadcrumb: 'Tasks /', skeletonTitle: 'Tasks', skeletonHint: '' },
   notifications: { id: 'notifications', title: 'Notifications', breadcrumb: 'Notifications /', skeletonTitle: 'Notifications', skeletonHint: '' },
   overview: {

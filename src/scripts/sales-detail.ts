@@ -12,6 +12,11 @@ import {
   listBikes,
   listLocalProducts,
   addFreeService,
+  listTechnicians,
+  assignTechnician,
+  officeStartJob,
+  officeFinishJob,
+  JOB_STATUS_LABEL,
   removeFreeService,
   setFreeServiceCount,
   formatNpr,
@@ -482,6 +487,27 @@ async function renderDocuments(s: Sale): Promise<void> {
   );
 }
 
+function hoursText(from: string | null, to: string | null): string {
+  if (!from || !to) return "—";
+  const mins = Math.max(Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000), 0);
+  return mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} m` : `${mins} min`;
+}
+
+function renderJob(s: Sale): void {
+  const show = s.saleType === "maintenance" && s.status !== "cancelled";
+
+  setHidden("sad-job-tab", !show);
+  if (!show) return;
+
+  setText("job-tech", s.technicianName || "Not given yet");
+  setText("job-status", s.technicianId ? JOB_STATUS_LABEL[s.jobStatus] : "—");
+  setText("job-time", hoursText(s.jobStartedAt, s.jobDoneAt));
+  setText("job-notes", s.jobNotes ? `Technician's notes: ${s.jobNotes}` : "");
+  setHidden("sad-job-assign-btn", !(canWrite && s.jobStatus !== "done"));
+  setHidden("sad-job-start-btn", !(canWrite && s.technicianId && s.jobStatus === "pending"));
+  setHidden("sad-job-done-btn", !(canWrite && s.technicianId && s.jobStatus !== "done"));
+}
+
 function renderFreeService(s: Sale): void {
   const show = s.saleType === "bike" && s.status === "confirmed";
 
@@ -860,6 +886,51 @@ document
 
 $("sad-pay-btn")?.addEventListener("click", () => runAction("pay"));
 
+$("sad-job-assign-btn")?.addEventListener("click", async () => {
+  const s = sale;
+  if (!s) return;
+
+  try {
+    const people = await listTechnicians();
+    const list = people.map((p, i) => `${i + 1}. ${p.name}${p.position ? ` (${p.position})` : ""}`).join("\n");
+    const answer = prompt(`Give the job to (type the number, or 0 to take it back):\n${list}`, "");
+    if (answer === null || answer.trim() === "") return;
+
+    const n = Number(answer);
+    if (!Number.isInteger(n) || n < 0 || n > people.length) {
+      showNotice("Type a number from the list.");
+      return;
+    }
+
+    await assignTechnician(s.id, n === 0 ? null : people[n - 1].id);
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
+
+$("sad-job-start-btn")?.addEventListener("click", async () => {
+  if (!sale) return;
+  try {
+    await officeStartJob(sale.id);
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
+
+$("sad-job-done-btn")?.addEventListener("click", async () => {
+  if (!sale) return;
+  const notes = prompt("Notes on the work done / how the bike runs (optional):", sale.jobNotes);
+  if (notes === null) return;
+  try {
+    await officeFinishJob(sale.id, notes);
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
+
 $("sad-doc-add-btn")?.addEventListener("click", () => {
   showError("doc-error", null);
   ($("form-doc") as HTMLFormElement).reset();
@@ -964,6 +1035,7 @@ async function load(): Promise<void> {
   renderPayments(sale);
   renderEmi(sale);
   renderFreeService(sale);
+  renderJob(sale);
   void renderDocuments(sale);
   renderRelated(sale);
 

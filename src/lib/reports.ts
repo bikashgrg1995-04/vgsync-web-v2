@@ -14,6 +14,7 @@ export type ReportId =
   | 'top-products'
   | 'top-customers'
   | 'top-suppliers'
+  | 'technicians'
   | 'payroll-summary';
 
 export interface ReportParams {
@@ -44,6 +45,7 @@ export const REPORTS: ReportMeta[] = [
   { id: 'top-products', label: 'Top products', hint: 'Best sellers.', dates: true, by: true, limit: true },
   { id: 'top-customers', label: 'Top customers', hint: 'Who buys the most.', dates: true, limit: true },
   { id: 'top-suppliers', label: 'Top suppliers', hint: 'Who you buy the most from.', dates: true, limit: true },
+  { id: 'technicians', label: 'Technicians', hint: 'Jobs given to each technician and how many he finished.', dates: true },
   { id: 'payroll-summary', label: 'Payroll', hint: 'What staff earned and were paid.', dates: true },
 ];
 
@@ -114,6 +116,23 @@ export interface Payroll {
   byMonth: { month: string; earned: number; paid: number }[];
 }
 
+export interface TechnicianReport {
+  rows: {
+    technician: number;
+    name: string;
+    assigned: number;
+    pending: number;
+    inProgress: number;
+    done: number;
+    normal: number;
+    free: number;
+    accident: number;
+    billed: number;
+    averageHours: number | null;
+  }[];
+  totals: { assigned: number; done: number };
+}
+
 export type ReportData =
   | { id: 'profit-loss'; data: ProfitLoss }
   | { id: 'receivables'; data: Ageing }
@@ -123,6 +142,7 @@ export type ReportData =
   | { id: 'top-products'; data: TopProducts }
   | { id: 'top-customers'; data: TopCustomers }
   | { id: 'top-suppliers'; data: TopSuppliers }
+  | { id: 'technicians'; data: TechnicianReport }
   | { id: 'payroll-summary'; data: Payroll };
 
 // ---- Mapping -----------------------------------------------------------
@@ -279,6 +299,26 @@ export async function loadReport(id: ReportId, params: ReportParams): Promise<Re
             purchases: s.purchases ?? 0,
             total: num(s.total),
           })),
+        },
+      };
+    case 'technicians':
+      return {
+        id,
+        data: {
+          rows: (r.rows as Raw[]).map((t) => ({
+            technician: t.technician,
+            name: t.name,
+            assigned: t.assigned ?? 0,
+            pending: t.pending ?? 0,
+            inProgress: t.in_progress ?? 0,
+            done: t.done ?? 0,
+            normal: t.normal ?? 0,
+            free: t.free ?? 0,
+            accident: t.accident ?? 0,
+            billed: num(t.billed),
+            averageHours: t.average_hours ?? null,
+          })),
+          totals: { assigned: r.totals?.assigned ?? 0, done: r.totals?.done ?? 0 },
         },
       };
     case 'payroll-summary':

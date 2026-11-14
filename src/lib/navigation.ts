@@ -41,6 +41,7 @@ const ALL_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Dashboard', href: '/dashboard', icon: 'home', group: 'main' },
   { id: 'tasks', label: 'Tasks', href: '/dashboard/tasks', icon: 'clipboard', group: 'main' },
   // Everyone on the team can see their own pay; the owner has the Staff pay screen instead.
+  { id: 'my-jobs', label: 'My jobs', href: '/dashboard/my-jobs', icon: 'wrench', group: 'main', rule: 'not_owner' },
   { id: 'my-pay', label: 'My pay', href: '/dashboard/my-pay', icon: 'wallet', group: 'main', rule: 'not_owner' },
   { id: 'branches', label: 'Branches', href: '/dashboard/branches', icon: 'building', group: 'main', rule: 'company_owner' },
 

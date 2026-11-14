@@ -12,6 +12,12 @@ import { api, apiDownload } from './api';
 export type SaleStatus = 'draft' | 'confirmed' | 'cancelled';
 export type SaleType = 'stock' | 'bike' | 'maintenance';
 export type ServiceKind = 'paid' | 'free' | 'accident';
+export type JobStatus = 'pending' | 'in_progress' | 'done';
+export const JOB_STATUS_LABEL: Record<JobStatus, string> = {
+  pending: 'Not started',
+  in_progress: 'In progress',
+  done: 'Done',
+};
 export type PaymentMode = 'full' | 'emi' | 'financed';
 export type Payer = 'customer' | 'financer';
 export const PAYMENT_MODE_LABEL: Record<PaymentMode, string> = {
@@ -95,6 +101,12 @@ export interface Sale {
   firstEmiDue: string;
   interestRate: number | null;
   financeCharge: number;
+  technicianId: number | null;
+  technicianName: string;
+  jobStatus: JobStatus;
+  jobNotes: string;
+  jobStartedAt: string | null;
+  jobDoneAt: string | null;
   serviceKind: ServiceKind;
   freeServiceFor: number | null;
   freeServiceForNo: string;
@@ -168,6 +180,8 @@ export interface SaleInput {
   freeServiceCovers?: string;
   /** Maintenance: normal, free (of a bike sold earlier) or accident case. */
   serviceKind?: ServiceKind;
+  /** Maintenance: hand the job to this technician when it is opened. */
+  technician?: number | null;
   freeServiceFor?: number | null;
   odometerKm?: number | null;
   /** Accident case, when it is opened. */
@@ -387,6 +401,12 @@ interface ApiSale {
   first_emi_due: string | null;
   interest_rate: string | null;
   finance_charge: string;
+  technician?: number | null;
+  technician_name?: string;
+  job_status?: JobStatus;
+  job_notes?: string;
+  job_started_at?: string | null;
+  job_done_at?: string | null;
   service_kind?: ServiceKind;
   free_service_for?: number | null;
   free_service_for_no?: string | null;
@@ -469,6 +489,12 @@ function saleFromApi(s: ApiSale): Sale {
     firstEmiDue: s.first_emi_due ?? '',
     interestRate: s.interest_rate === null || s.interest_rate === undefined ? null : num(s.interest_rate),
     financeCharge: num(s.finance_charge),
+    technicianId: s.technician ?? null,
+    technicianName: s.technician_name ?? '',
+    jobStatus: s.job_status ?? 'pending',
+    jobNotes: s.job_notes ?? '',
+    jobStartedAt: s.job_started_at ?? null,
+    jobDoneAt: s.job_done_at ?? null,
     serviceKind: s.service_kind ?? 'paid',
     freeServiceFor: s.free_service_for ?? null,
     freeServiceForNo: s.free_service_for_no ?? '',
@@ -598,6 +624,7 @@ function saleBody(input: SaleInput, isEdit: boolean): Record<string, unknown> {
   if (input.saleType !== 'bike') body.due_date = input.dueDate || null;
   if (input.saleType === 'maintenance') {
     body.service_kind = input.serviceKind ?? 'paid';
+    if (!isEdit && input.technician) body.technician = input.technician;
     body.free_service_for = input.serviceKind === 'free' ? input.freeServiceFor ?? null : null;
     body.odometer_km = input.serviceKind === 'free' ? input.odometerKm ?? null : null;
     if (!isEdit && input.serviceKind === 'accident') {
@@ -1073,4 +1100,98 @@ export async function verifySaleDocument(saleId: number, id: number, verified: b
 
 export async function deleteSaleDocument(saleId: number, id: number): Promise<void> {
   await api(`/sales/${saleId}/documents/${id}/`, { method: 'DELETE' });
+}
+
+export interface Technician {
+  id: number;
+  name: string;
+  position: string;
+}
+
+export async function listTechnicians(): Promise<Technician[]> {
+  return api<Technician[]>('/sales/technicians/');
+}
+
+export async function assignTechnician(saleId: number, technicianId: number | null): Promise<void> {
+  await api(`/sales/${saleId}/assign-technician/`, { method: 'POST', body: { technician: technicianId } });
+}
+
+export async function officeStartJob(saleId: number): Promise<void> {
+  await api(`/sales/${saleId}/job-start/`, { method: 'POST', body: {} });
+}
+
+export async function officeFinishJob(saleId: number, notes: string): Promise<void> {
+  await api(`/sales/${saleId}/job-done/`, { method: 'POST', body: { notes: notes.trim() } });
+}
+
+export interface MyJob {
+  id: number;
+  saleNo: string;
+  saleDate: string;
+  serviceKind: ServiceKind;
+  freeServiceForNo: string;
+  customerName: string;
+  customerPhone: string;
+  chassisNo: string;
+  regNo: string;
+  odometerKm: number | null;
+  notes: string;
+  work: { description: string; quantity: string }[];
+  jobStatus: JobStatus;
+  assignedAt: string | null;
+  startedAt: string | null;
+  doneAt: string | null;
+  jobNotes: string;
+}
+
+interface RawMyJob {
+  id: number;
+  sale_no: string;
+  sale_date: string;
+  service_kind: ServiceKind;
+  free_service_for_no: string | null;
+  customer_name: string;
+  customer_phone: string;
+  vehicle_chassis_no: string;
+  vehicle_reg_no: string;
+  odometer_km: number | null;
+  notes: string;
+  work: { description: string; quantity: string }[];
+  job_status: JobStatus;
+  job_assigned_at: string | null;
+  job_started_at: string | null;
+  job_done_at: string | null;
+  job_notes: string;
+}
+
+const myJobOf = (j: RawMyJob): MyJob => ({
+  id: j.id,
+  saleNo: j.sale_no,
+  saleDate: j.sale_date,
+  serviceKind: j.service_kind,
+  freeServiceForNo: j.free_service_for_no ?? '',
+  customerName: j.customer_name,
+  customerPhone: j.customer_phone,
+  chassisNo: j.vehicle_chassis_no,
+  regNo: j.vehicle_reg_no,
+  odometerKm: j.odometer_km,
+  notes: j.notes,
+  work: j.work,
+  jobStatus: j.job_status,
+  assignedAt: j.job_assigned_at,
+  startedAt: j.job_started_at,
+  doneAt: j.job_done_at,
+  jobNotes: j.job_notes,
+});
+
+export async function listMyJobs(): Promise<MyJob[]> {
+  return (await api<RawMyJob[]>('/sales/my-jobs/')).map(myJobOf);
+}
+
+export async function startMyJob(id: number): Promise<void> {
+  await api(`/sales/my-jobs/${id}/start/`, { method: 'POST', body: {} });
+}
+
+export async function finishMyJob(id: number, notes: string): Promise<void> {
+  await api(`/sales/my-jobs/${id}/done/`, { method: 'POST', body: { notes: notes.trim() } });
 }
