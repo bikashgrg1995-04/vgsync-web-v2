@@ -277,7 +277,7 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession } from '../../lib/auth';
+  import { can, getSession } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
   import { listStaff, type StaffMember } from '../../lib/staff';
   import {
@@ -321,14 +321,20 @@ const navItems = getNavItemsForRole(defaultRole);
 
   if (!getSession()) window.location.replace('/');
 
-  // Everyone's pay is the owner's; others see only their own on the My pay page.
-  if (!getSession()?.isOwner) {
-    for (const t of ['payroll', 'daily', 'cash']) document.querySelector<HTMLElement>(`[data-tab="${t}"]`)?.setAttribute('hidden', '');
+  // Pay and cash tabs follow the permission (the owner holds all); others see their own pay on My pay.
+  {
+    const me = getSession();
+    const tabCode: Record<string, string> = { payroll: 'staff.pay_view', daily: 'staff.pay_view', cash: 'finance.reconcile' };
+    for (const [t, code] of Object.entries(tabCode)) {
+      if (!can(me, code)) document.querySelector<HTMLElement>(`[data-tab="${t}"]`)?.setAttribute('hidden', '');
+    }
   }
 
   type Tab = 'expenses' | 'income' | 'payroll' | 'daily' | 'cash';
   let tab: Tab = 'expenses';
   let canWrite = true;
+  let canPay = true; // record salary payments, wages, bonuses (staff.pay)
+  let canSetup = true; // set salary rates: owner only
   let entries: LedgerEntry[] = [];
   let balances: PayBalance[] = [];
   let staff: StaffMember[] = [];
@@ -587,7 +593,7 @@ const navItems = getNavItemsForRole(defaultRole);
     const el = $('pr-setup')!;
     const have = new Set(salaries.map((s) => s.staffId));
     const missing = staff.filter((s) => s.isActive && !have.has(s.id));
-    el.hidden = missing.length === 0 || !canWrite;
+    el.hidden = missing.length === 0 || !canSetup;
     if (el.hidden) return;
     el.innerHTML =
       `<strong>No pay set up yet:</strong> ` +
@@ -620,7 +626,7 @@ const navItems = getNavItemsForRole(defaultRole);
   async function loadPayroll(): Promise<void> {
     const mine = ++token;
     try {
-      const [b, s, st] = await Promise.all([listBalances(val('pr-search').trim()), listSalaries(), listStaff()]);
+      const [b, s, st] = await Promise.all([listBalances(val('pr-search').trim()), listSalaries(), listStaff().catch(() => [] as StaffMember[])]);
       if (mine !== token) return;
       balances = b;
       salaries = s;
@@ -645,11 +651,11 @@ const navItems = getNavItemsForRole(defaultRole);
       const [{ balance: b, unsettled }, statement] = await Promise.all([getBalance(id), listStatement(id)]);
       const profile = salaries.find((s) => s.staffId === id);
       const acts: string[] = [];
-      if (canWrite) {
+      if (canPay) {
         acts.push(`<button class="btn-primary-sm" data-act="pay">Pay</button>`);
         acts.push(`<button class="btn-ghost-sm" data-act="entry">${b.payType === 'daily' ? 'Add wage / bonus' : 'Add bonus / deduction'}</button>`);
-        acts.push(`<button class="btn-ghost-sm" data-act="setup">Pay setup</button>`);
       }
+      if (canSetup) acts.push(`<button class="btn-ghost-sm" data-act="setup">Pay setup</button>`);
       el.innerHTML = `
         <div class="py-detail-head">
           <h3>${esc(b.name)}</h3>
@@ -678,7 +684,7 @@ const navItems = getNavItemsForRole(defaultRole);
             return `<tr><td>${esc(s.date)}</td><td>${what}${note ? `<br /><span class="muted">${note}</span>` : ''}</td>
               <td class="num">${sign}${formatNpr(s.amount)}</td>
               <td class="num">${s.advanceAfter > 0 ? `<span class="muted">adv ${formatNpr(s.advanceAfter)}</span>` : formatNpr(s.owedAfter)}</td>
-              <td>${canWrite ? `<button class="btn-link is-danger" data-void-${s.type === 'payment' ? 'pay' : 'entry'}="${s.id}">Void</button>` : ''}</td></tr>`;
+              <td>${canPay ? `<button class="btn-link is-danger" data-void-${s.type === 'payment' ? 'pay' : 'entry'}="${s.id}">Void</button>` : ''}</td></tr>`;
           }).join('')}</tbody></table></div>
         ${statement.length > 60 ? `<p class="muted small">Showing the latest 60 of ${statement.length}.</p>` : ''}`}`;
 
@@ -1075,6 +1081,10 @@ const navItems = getNavItemsForRole(defaultRole);
     const s = getSession();
     if (s) $('py-scope')!.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
     canWrite = s?.accessMode !== 'read_only';
+    canPay = canWrite && can(s, 'staff.pay');
+    canSetup = canWrite && !!s?.isOwner;
+    const dsSave = $<HTMLButtonElement>('ds-save');
+    if (dsSave) dsSave.hidden = !canPay;
     fillCategoryFilter();
     void refresh();
   }
