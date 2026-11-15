@@ -1,7 +1,7 @@
 /**
  * Navigation menu definitions.
  *
- * Eight areas for the owner: Dashboard, Sales & Orders, Purchases, Finance,
+ * Eight areas for the owner: Dashboard, Sales, Purchases & Orders, Finance,
  * Inventory, Reports & Analytics, Staff Management and Settings (the last
  * one lives in the sidebar footer). What each person sees follows their
  * permissions: an item shows when the person holds its `perm`. The API
@@ -29,8 +29,8 @@ export interface NavItem {
 
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'main', label: null },
-  { id: 'sales', label: 'Sales & Orders' },
-  { id: 'purchases', label: 'Purchases' },
+  { id: 'sales', label: 'Sales' },
+  { id: 'purchases', label: 'Purchases & Orders' },
   { id: 'finance', label: 'Finance' },
   { id: 'inventory', label: 'Inventory' },
   { id: 'reports', label: 'Reports & Analytics' },
@@ -46,12 +46,12 @@ const ALL_ITEMS: NavItem[] = [
   { id: 'branches', label: 'Branches', href: '/dashboard/branches', icon: 'building', group: 'main', rule: 'company_owner' },
 
   { id: 'sales', label: 'Sales', href: '/dashboard/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },
-  { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'sales', perm: 'orders.view' },
   { id: 'returns', label: 'Returns', href: '/dashboard/sales#returns', icon: 'returns', group: 'sales', perm: 'sales.view' },
   { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users', group: 'sales', perm: 'sales.view' },
   { id: 'servicing', label: 'Follow-ups', href: '/dashboard/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
 
   { id: 'purchase', label: 'Purchase', href: '/dashboard/purchase', icon: 'clipboard', group: 'purchases', perm: 'purchases.view' },
+  { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'purchases', perm: 'orders.view' },
   { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck', group: 'purchases', perm: 'purchases.view' },
 
   { id: 'payments', label: 'Payments', href: '/dashboard/payments', icon: 'wallet', group: 'finance', perm: 'finance.view' },
