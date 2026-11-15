@@ -103,6 +103,8 @@ export interface Sale {
   financeCharge: number;
   technicianId: number | null;
   technicianName: string;
+  salespersonId: number | null;
+  salespersonName: string;
   jobStatus: JobStatus;
   jobNotes: string;
   jobStartedAt: string | null;
@@ -180,6 +182,8 @@ export interface SaleInput {
   freeServiceCovers?: string;
   /** Maintenance: normal, free (of a bike sold earlier) or accident case. */
   serviceKind?: ServiceKind;
+  /** Who sold it. Empty = the signed-in person; naming someone else needs sales.view_all. */
+  salesperson?: number | null;
   /** Maintenance: hand the job to this technician when it is opened. */
   technician?: number | null;
   freeServiceFor?: number | null;
@@ -200,6 +204,7 @@ export interface SaleFilters {
   saleType?: SaleType | '';
   paymentStatus?: PaymentStatus | '';
   customerId?: number;
+  salespersonId?: number;
   dateFrom?: string;
   dateTo?: string;
 }
@@ -403,6 +408,8 @@ interface ApiSale {
   finance_charge: string;
   technician?: number | null;
   technician_name?: string;
+  salesperson?: number | null;
+  salesperson_name?: string;
   job_status?: JobStatus;
   job_notes?: string;
   job_started_at?: string | null;
@@ -491,6 +498,8 @@ function saleFromApi(s: ApiSale): Sale {
     financeCharge: num(s.finance_charge),
     technicianId: s.technician ?? null,
     technicianName: s.technician_name ?? '',
+    salespersonId: s.salesperson ?? null,
+    salespersonName: s.salesperson_name ?? '',
     jobStatus: s.job_status ?? 'pending',
     jobNotes: s.job_notes ?? '',
     jobStartedAt: s.job_started_at ?? null,
@@ -572,6 +581,7 @@ export function listSales(filters: SaleFilters = {}): Promise<Sale[]> {
   if (filters.saleType) q.set('sale_type', filters.saleType);
   if (filters.paymentStatus) q.set('payment_status', filters.paymentStatus);
   if (filters.customerId) q.set('customer', String(filters.customerId));
+  if (filters.salespersonId) q.set('salesperson', String(filters.salespersonId));
   if (filters.dateFrom) q.set('sale_date__gte', filters.dateFrom);
   if (filters.dateTo) q.set('sale_date__lte', filters.dateTo);
   const qs = q.toString();
@@ -621,6 +631,7 @@ function saleBody(input: SaleInput, isEdit: boolean): Record<string, unknown> {
       if (input.firstEmiDue) body.first_emi_due = input.firstEmiDue;
     }
   }
+  if (input.salesperson) body.salesperson = input.salesperson;
   if (input.saleType !== 'bike') body.due_date = input.dueDate || null;
   if (input.saleType === 'maintenance') {
     body.service_kind = input.serviceKind ?? 'paid';

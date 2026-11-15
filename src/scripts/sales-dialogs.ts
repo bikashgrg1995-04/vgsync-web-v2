@@ -273,6 +273,22 @@ function showCovers(): void {
 
 let technicianList: Technician[] | null = null;
 
+// A manager (sales.view_all) can credit a sale to another salesperson.
+async function loadSellers(selected: number | null): Promise<void> {
+  const box = $('sf-seller-box')!;
+  box.hidden = !can(getSession(), 'sales.view_all');
+  if (box.hidden) return;
+  try {
+    technicianList ??= await listTechnicians();
+  } catch {
+    technicianList = [];
+  }
+  const sel = $<HTMLSelectElement>('sf-seller')!;
+  sel.innerHTML = `<option value="">Me</option>` + technicianList
+    .map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  sel.value = selected ? String(selected) : '';
+}
+
 async function loadTechnicians(): Promise<void> {
   try {
     technicianList ??= await listTechnicians();
@@ -349,6 +365,7 @@ export function openForm(s?: Sale): void {
   $<HTMLInputElement>('sf-covers')!.value = s?.freeServiceCovers ?? '';
   $<HTMLSelectElement>('sf-kind')!.value = s?.serviceKind ?? 'paid';
   $<HTMLSelectElement>('sf-tech')!.value = '';
+  void loadSellers(s?.salespersonId ?? null);
   $<HTMLInputElement>('sf-km')!.value = s?.odometerKm != null ? String(s.odometerKm) : '';
   $<HTMLInputElement>('sf-adv')!.value = '';
   $<HTMLSelectElement>('sf-adv-method')!.value = 'cash';
@@ -421,6 +438,7 @@ $('form-sale')?.addEventListener('submit', (e) => {
     freeServiceCovers: val('sf-covers'),
     serviceKind: kind,
     technician: Number(val('sf-tech')) || null,
+    salesperson: Number(val('sf-seller')) || null,
     freeServiceFor: Number(val('sf-fs-sale')) || null,
     odometerKm: val('sf-km') === '' ? null : Number(val('sf-km')),
     advanceAmount: Number(val('sf-adv')) || 0,
