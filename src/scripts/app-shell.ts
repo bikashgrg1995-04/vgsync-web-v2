@@ -194,6 +194,8 @@ function applySessionUI(): void {
     label.style.display = visible ? '' : 'none';
   });
 
+  setupMenuGroups();
+
   if (branchSelect) {
     if (!canSwitchBranch(session)) {
       branchSelect.style.display = 'none';
@@ -258,3 +260,60 @@ window.addEventListener('storage', (event) => {
   if (event.key === AUTH_STORAGE_KEY && !getSession()) redirectToLogin('logged-out');
 });
 import './notification-bell';
+
+
+// ---- Collapsible menu sections ----------------------------------------
+// Sections start folded; the one holding the open page is unfolded, and so
+// is anything the person unfolded earlier (kept in the browser, best effort).
+const OPEN_GROUPS_KEY = 'vgsync.menu.open';
+
+function readOpenGroups(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(OPEN_GROUPS_KEY);
+    const list = raw ? (JSON.parse(raw) as unknown) : [];
+    return new Set(Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string') : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveOpenGroups(open: Set<string>): void {
+  try {
+    window.localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify([...open]));
+  } catch {
+    // Not saving is fine.
+  }
+}
+
+function setGroupOpen(group: string, open: boolean): void {
+  document
+    .querySelectorAll<HTMLElement>(`[data-nav-group-item="${group}"]`)
+    .forEach((li) => li.classList.toggle('is-folded', !open));
+  document
+    .querySelector<HTMLElement>(`[data-group-toggle="${group}"]`)
+    ?.setAttribute('aria-expanded', String(open));
+}
+
+function setupMenuGroups(): void {
+  const stored = readOpenGroups();
+  const groups = Array.from(document.querySelectorAll<HTMLElement>('[data-group-toggle]'));
+
+  for (const toggle of groups) {
+    const group = toggle.dataset.groupToggle!;
+    const holdsPage = !!document.querySelector(`[data-nav-group-item="${group}"] .sidebar-link.is-active`);
+
+    setGroupOpen(group, holdsPage || stored.has(group));
+
+    if (toggle.dataset.bound) continue;
+    toggle.dataset.bound = '1';
+    toggle.addEventListener('click', () => {
+      const open = toggle.getAttribute('aria-expanded') !== 'true';
+      const now = readOpenGroups();
+
+      setGroupOpen(group, open);
+      if (open) now.add(group);
+      else now.delete(group);
+      saveOpenGroups(now);
+    });
+  }
+}
