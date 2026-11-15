@@ -229,6 +229,7 @@ const ic = {
     uploadDocument,
     downloadDocument,
     deleteDocument,
+    positionLabel,
   } from '../../../lib/staff';
   import {
     getAttendance,
@@ -393,13 +394,13 @@ const ic = {
       status.textContent = m.isActive ? (m.mustChangePassword ? 'Password pending' : 'Active') : 'Inactive';
       status.className = `sd-pill ${m.isActive ? (m.mustChangePassword ? 'is-pending' : 'is-active') : 'is-inactive'}`;
     }
-    text('sd-f-position', m.positionName || ROLE_LABEL[m.role]);
+    text('sd-f-position', positionLabel(m) || ROLE_LABEL[m.role]);
     text('sd-f-branch', branch);
     text('sd-f-phone', m.phone);
     text('sd-f-email', m.email);
     text('sd-t-joined', date(m.dateJoined));
     text('sd-t-role', ROLE_LABEL[m.role] ?? m.role);
-    text('sd-t-position', m.positionName || '—');
+    text('sd-t-position', positionLabel(m) || '—');
     text('sd-t-branch', branch);
     text('sd-k-name', m.name);
     text('sd-k-username', m.username);
@@ -532,8 +533,8 @@ const ic = {
     const owner = !!getSession()?.isOwner && getSession()?.accessMode !== 'read_only';
     save.hidden = !owner;
     note.textContent = owner
-      ? `Access comes from the "${m.positionName}" position. Allow or deny single permissions for this person only. Changing the position clears these exceptions.`
-      : `Access comes from the "${m.positionName}" position.`;
+      ? `Access comes from the "${positionLabel(m)}" position${m.extraPositionNames.length ? 's' : ''}. Allow or deny single permissions for this person only. Changing the positions clears these exceptions.`
+      : `Access comes from the "${positionLabel(m)}" position${m.extraPositionNames.length ? 's' : ''}.`;
 
     const mark = (on: boolean) => (on ? '<span class="sd-perm-on">✓</span>' : '<span class="sd-perm-off">—</span>');
 
