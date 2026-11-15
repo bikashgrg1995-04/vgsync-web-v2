@@ -27,6 +27,8 @@ export interface StockItem {
   group: string;
   unit: string;
   purchasePrice: number;
+  /** True when the signed-in person may not see what stock cost (inventory.view_cost). */
+  costHidden?: boolean;
   salePrice: number;
   mrp: number;
   reorderLevel: number;
@@ -270,7 +272,7 @@ interface ApiStockRow {
   category: string;
   group: string;
   unit: string;
-  purchase_price: string;
+  purchase_price?: string;
   sale_price: string;
   mrp: string;
   reorder_level: string;
@@ -351,6 +353,7 @@ function stockFromApi(r: ApiStockRow): StockItem {
     group: r.group ?? '',
     unit: r.unit ?? 'pcs',
     purchasePrice: num(r.purchase_price),
+    costHidden: r.purchase_price === undefined,
     salePrice: num(r.sale_price),
     mrp: num(r.mrp),
     reorderLevel,

@@ -39,6 +39,10 @@ import {
   type Followup,
   type BikeUnit,
   type LocalProduct,
+  listJobLines,
+  approveJobLine,
+  rejectJobLine,
+  JOB_LINE_STATUS_LABEL,
 } from "../lib/sales";
 import {
   configureSalesDialogs,
@@ -518,7 +522,76 @@ function renderJob(s: Sale): void {
   setHidden("sad-job-assign-btn", !(canWrite && s.jobStatus !== "done"));
   setHidden("sad-job-start-btn", !(canWrite && s.technicianId && s.jobStatus === "pending"));
   setHidden("sad-job-done-btn", !(canWrite && s.technicianId && s.jobStatus !== "done"));
+  void renderJobLines(s);
 }
+
+/** What the technician asked for; the office prices it and adds it, or turns it down. */
+async function renderJobLines(s: Sale): Promise<void> {
+  const box = $("job-lines-box");
+  const body = $("job-lines");
+
+  if (!box || !body) return;
+
+  box.hidden = !s.technicianId;
+  if (!s.technicianId) return;
+
+  try {
+    const lines = await listJobLines(s.id);
+    const mayDecide = canWrite && can(getSession(), "sales.update") && s.status === "draft";
+
+    box.hidden = lines.length === 0;
+    body.innerHTML = lines
+      .map((l) => {
+        const pending = l.status === "requested";
+        const price = pending
+          ? mayDecide
+            ? `<input type="number" min="0" step="0.01" class="inv-input" style="width:100px" data-line-price="${l.id}" value="${l.defaultPrice ?? ""}" placeholder="Price" />`
+            : "—"
+          : l.unitPrice != null ? formatNpr(l.unitPrice) : "—";
+        const acts = pending && mayDecide
+          ? `<button type="button" class="btn-link" data-line-approve="${l.id}">Add to job</button> <button type="button" class="btn-link is-danger" data-line-reject="${l.id}">Turn down</button>`
+          : "";
+
+        return `<tr><td>${l.kind === "part" ? "Part" : "Work"}: ${esc(l.name)}</td><td class="num">${l.quantity}</td><td>${esc(l.note)}</td><td>${JOB_LINE_STATUS_LABEL[l.status]}${l.rejectReason ? ` (${esc(l.rejectReason)})` : ""}</td><td class="num">${price}</td><td>${acts}</td></tr>`;
+      })
+      .join("");
+  } catch (error) {
+    // Someone who cannot see sales lines simply gets no box.
+    box.hidden = !(error instanceof ApiError && error.status !== 403);
+    const err = $("job-lines-error");
+
+    if (err && !box.hidden) {
+      err.textContent = describe(error);
+      err.hidden = false;
+    }
+  }
+}
+
+document.addEventListener("click", async (event) => {
+  const target = event.target as HTMLElement;
+  const approve = target.closest<HTMLElement>("[data-line-approve]");
+  const reject = target.closest<HTMLElement>("[data-line-reject]");
+
+  if (!approve && !reject) return;
+
+  try {
+    if (approve) {
+      const id = Number(approve.dataset.lineApprove);
+      const raw = (document.querySelector<HTMLInputElement>(`[data-line-price="${id}"]`)?.value ?? "").trim();
+
+      await approveJobLine(saleId, id, raw === "" ? undefined : Number(raw));
+    } else if (reject) {
+      const reason = prompt("Why is it turned down?", "");
+
+      if (!reason?.trim()) return;
+      await rejectJobLine(saleId, Number(reject.dataset.lineReject), reason);
+    }
+
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
 
 function renderFreeService(s: Sale): void {
   const show = s.saleType === "bike" && s.status === "confirmed";
