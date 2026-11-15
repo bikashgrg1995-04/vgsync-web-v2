@@ -42,12 +42,20 @@ export interface StaffMember {
   role: StaffRole;
   positionId: number | null;
   positionName: string;
+  /** More positions held at the same time; access is the union of all. */
+  extraPositionIds: number[];
+  extraPositionNames: string[];
   isActive: boolean;
   mustChangePassword: boolean;
   /** False for someone kept only in the records (never signs in). */
   canSignIn: boolean;
   lastLogin: string | null;
   dateJoined: string;
+}
+
+/** "Seller, Buyer": the main position first, then the extra ones. */
+export function positionLabel(m: Pick<StaffMember, 'positionName' | 'extraPositionNames'>): string {
+  return [m.positionName, ...m.extraPositionNames].filter(Boolean).join(', ');
 }
 
 export interface StaffInput {
@@ -58,6 +66,7 @@ export interface StaffInput {
   phone: string;
   role: StaffRole;
   positionId: number | null;
+  extraPositionIds?: number[];
   /** Leave empty to have the server generate a temporary password. */
   password?: string;
   /** Default true. False: no login, no password, position optional. */
@@ -138,6 +147,8 @@ interface ApiStaff {
   role: StaffRole;
   position: number | null;
   position_name: string | null;
+  extra_positions?: number[];
+  extra_position_names?: string[];
   is_active: boolean;
   must_change_password: boolean;
   can_sign_in?: boolean;
@@ -181,6 +192,8 @@ function staffFromApi(s: ApiStaff): StaffMember {
     role: s.role,
     positionId: s.position,
     positionName: s.position_name ?? '',
+    extraPositionIds: s.extra_positions ?? [],
+    extraPositionNames: s.extra_position_names ?? [],
     isActive: s.is_active,
     mustChangePassword: s.must_change_password,
     canSignIn: s.can_sign_in !== false,
@@ -243,6 +256,7 @@ export async function createStaff(
     phone: input.phone.trim(),
     role: input.role,
     position: input.role === 'staff' ? input.positionId : null,
+    extra_positions: input.role === 'staff' ? input.extraPositionIds ?? [] : [],
   };
   if (signsIn) body.username = (input.username ?? '').trim();
   if (signsIn && input.password) body.password = input.password;
@@ -261,6 +275,7 @@ export async function updateStaff(id: number, input: StaffInput): Promise<StaffM
       phone: input.phone.trim(),
       role: input.role,
       position: input.role === 'staff' ? input.positionId : null,
+      extra_positions: input.role === 'staff' ? input.extraPositionIds ?? [] : [],
     },
   });
   return staffFromApi(data);
