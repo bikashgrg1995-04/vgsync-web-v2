@@ -47,6 +47,12 @@ const navItems = getNavItemsForRole(defaultRole);
         <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Next salary</span><div class="pd-kpi-row"><strong id="mp-next">—</strong></div><span class="pd-kpi-sub" id="mp-type">—</span></div></article>
       </div>
 
+      <section class="pu-card" id="mp-incentive-card" hidden>
+        <div class="pu-filters"><strong>Incentive this month</strong><span class="pd-hint">So far, from your sales and jobs. It is added to your pay when the owner confirms it.</span></div>
+        <p><strong id="mp-inc-total">—</strong></p>
+        <p class="pd-hint" id="mp-inc-lines"></p>
+      </section>
+
       <section class="pu-card" id="mp-unsettled-card" hidden>
         <div class="pu-filters"><strong>Waiting to be paid</strong></div>
         <div class="pu-table-wrap">
@@ -72,7 +78,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
 <script>
   import { getSession } from '../../lib/auth';
-  import { getMyPay, listMyStatement, formatNpr } from '../../lib/payments';
+  import { getMyPay, getMyIncentive, listMyStatement, formatNpr } from '../../lib/payments';
 
   const $ = (id: string) => document.getElementById(id)!;
   const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -92,6 +98,11 @@ const navItems = getNavItemsForRole(defaultRole);
       $('mp-none').hidden = pay !== null;
       $('mp-body').hidden = pay === null;
       if (!pay) return;
+      void getMyIncentive().then((inc) => {
+        $('mp-incentive-card').hidden = inc.total <= 0;
+        $('mp-inc-total').textContent = formatNpr(inc.total);
+        $('mp-inc-lines').innerHTML = inc.lines.map((l) => `${l.name}: ${formatNpr(l.amount)}`).join('<br>');
+      }).catch(() => { $('mp-incentive-card').hidden = true; });
       const b = pay.balance;
       $('mp-owed').textContent = formatNpr(b.remaining);
       $('mp-owed-sub').textContent = b.previousRemaining > 0
