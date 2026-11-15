@@ -9,6 +9,10 @@ export interface PageMeta {
 }
 
 export const PAGE_META: Record<string, PageMeta> = {
+  'my-pay': { id: 'my-pay', title: 'My pay', breadcrumb: 'My pay /', skeletonTitle: 'My pay', skeletonHint: '' },
+  'my-jobs': { id: 'my-jobs', title: 'My jobs', breadcrumb: 'My jobs /', skeletonTitle: 'My jobs', skeletonHint: '' },
+  tasks: { id: 'tasks', title: 'Tasks', breadcrumb: 'Tasks /', skeletonTitle: 'Tasks', skeletonHint: '' },
+  notifications: { id: 'notifications', title: 'Notifications', breadcrumb: 'Notifications /', skeletonTitle: 'Notifications', skeletonHint: '' },
   overview: {
     id: 'overview',
     title: 'Dashboard',
@@ -63,6 +67,20 @@ export const PAGE_META: Record<string, PageMeta> = {
     skeletonTitle: 'Payments',
     skeletonHint:
       'Receipts, payments and outstanding balances will appear here.<br />Scoped to the active branch.',
+  },
+  statements: {
+    id: 'statements',
+    title: 'Statements',
+    breadcrumb: 'Finance /',
+    skeletonTitle: 'Statements',
+    skeletonHint: 'Customer and supplier statements.',
+  },
+  approvals: {
+    id: 'approvals',
+    title: 'Approvals',
+    breadcrumb: 'Finance /',
+    skeletonTitle: 'Approvals',
+    skeletonHint: 'Requests waiting for a decision.',
   },
   customers: {
     id: 'customers',

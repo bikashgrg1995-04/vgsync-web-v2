@@ -14,6 +14,8 @@ export type ReportId =
   | 'top-products'
   | 'top-customers'
   | 'top-suppliers'
+  | 'technicians'
+  | 'salespeople'
   | 'payroll-summary';
 
 export interface ReportParams {
@@ -44,6 +46,8 @@ export const REPORTS: ReportMeta[] = [
   { id: 'top-products', label: 'Top products', hint: 'Best sellers.', dates: true, by: true, limit: true },
   { id: 'top-customers', label: 'Top customers', hint: 'Who buys the most.', dates: true, limit: true },
   { id: 'top-suppliers', label: 'Top suppliers', hint: 'Who you buy the most from.', dates: true, limit: true },
+  { id: 'salespeople', label: 'Salespeople', hint: 'What each salesperson sold, collected and left due.', dates: true },
+  { id: 'technicians', label: 'Technicians', hint: 'Jobs given to each technician and how many he finished.', dates: true },
   { id: 'payroll-summary', label: 'Payroll', hint: 'What staff earned and were paid.', dates: true },
 ];
 
@@ -114,6 +118,38 @@ export interface Payroll {
   byMonth: { month: string; earned: number; paid: number }[];
 }
 
+export interface SalespersonReport {
+  rows: {
+    salesperson: number | null;
+    name: string;
+    sales: number;
+    bike: number;
+    maintenance: number;
+    stock: number;
+    total: number;
+    collected: number;
+    due: number;
+  }[];
+  totals: { sales: number; total: number };
+}
+
+export interface TechnicianReport {
+  rows: {
+    technician: number;
+    name: string;
+    assigned: number;
+    pending: number;
+    inProgress: number;
+    done: number;
+    normal: number;
+    free: number;
+    accident: number;
+    billed: number;
+    averageHours: number | null;
+  }[];
+  totals: { assigned: number; done: number };
+}
+
 export type ReportData =
   | { id: 'profit-loss'; data: ProfitLoss }
   | { id: 'receivables'; data: Ageing }
@@ -123,6 +159,8 @@ export type ReportData =
   | { id: 'top-products'; data: TopProducts }
   | { id: 'top-customers'; data: TopCustomers }
   | { id: 'top-suppliers'; data: TopSuppliers }
+  | { id: 'technicians'; data: TechnicianReport }
+  | { id: 'salespeople'; data: SalespersonReport }
   | { id: 'payroll-summary'; data: Payroll };
 
 // ---- Mapping -----------------------------------------------------------
@@ -281,6 +319,44 @@ export async function loadReport(id: ReportId, params: ReportParams): Promise<Re
           })),
         },
       };
+    case 'salespeople':
+      return {
+        id,
+        data: {
+          rows: (r.rows as Raw[]).map((p) => ({
+            salesperson: p.salesperson ?? null,
+            name: p.name,
+            sales: p.sales ?? 0,
+            bike: p.bike ?? 0,
+            maintenance: p.maintenance ?? 0,
+            stock: p.stock ?? 0,
+            total: num(p.total),
+            collected: num(p.collected),
+            due: num(p.due),
+          })),
+          totals: { sales: r.totals?.sales ?? 0, total: num(r.totals?.total) },
+        },
+      };
+    case 'technicians':
+      return {
+        id,
+        data: {
+          rows: (r.rows as Raw[]).map((t) => ({
+            technician: t.technician,
+            name: t.name,
+            assigned: t.assigned ?? 0,
+            pending: t.pending ?? 0,
+            inProgress: t.in_progress ?? 0,
+            done: t.done ?? 0,
+            normal: t.normal ?? 0,
+            free: t.free ?? 0,
+            accident: t.accident ?? 0,
+            billed: num(t.billed),
+            averageHours: t.average_hours ?? null,
+          })),
+          totals: { assigned: r.totals?.assigned ?? 0, done: r.totals?.done ?? 0 },
+        },
+      };
     case 'payroll-summary':
       return {
         id,
@@ -318,4 +394,48 @@ export function formatNpr(n: number): string {
 
 export function formatQty(n: number): string {
   return new Intl.NumberFormat('en-NP', { maximumFractionDigits: 3 }).format(n);
+}
+
+// ---------- owner dashboard ----------
+
+export interface DashboardBranch {
+  id: number;
+  name: string;
+  business_code: string;
+  sales_today: string;
+  sales_month: string;
+  purchases_month: string;
+  profit_month: string;
+  receivables: string;
+  low_stock: number;
+}
+
+export interface Dashboard {
+  as_of: string;
+  business: { id: number; name: string; business_type: string };
+  access_mode: 'full' | 'read_only';
+  sales_today: string;
+  sales_month: string;
+  purchases_month: string;
+  profit_month: string;
+  income_month: string;
+  expenses_month: string;
+  receivables: string;
+  payables: string;
+  cash: { cash: string; bank: string; other: string; total: string };
+  stock: { value: string; damaged_value: string };
+  sales_trend: Array<{ date: string; total: string }>;
+  income_expense_by_month: Array<{ month: string; income: string; expenses: string; profit: string }>;
+  top_products: Array<{ name: string; quantity: string; revenue: string }>;
+  low_stock: { count: number; items: Array<{ product: number; name: string; quantity: string; reorder_level: string }> };
+  approvals_pending: number;
+  staff: { total: number; active: number; without_position: number };
+  alerts: Array<{ kind: string; severity: 'info' | 'warning' | 'danger'; message: string }>;
+  /** Head Office only: its branches, read-only. */
+  branches?: DashboardBranch[];
+}
+
+/** One call, real numbers from the API (needs the dashboard.view permission). */
+export function loadDashboard(): Promise<Dashboard> {
+  return api<Dashboard>('/reports/dashboard/');
 }

@@ -1,26 +1,14 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import type { UserRole } from '../../lib/auth';
-
-const role: UserRole = 'owner';
-const activeId = 'servicing';
-const title = 'Servicing';
+// Old address: this now lives inside Sales.
 ---
-
-<AppLayout
-  title={`VGSync | ${title}`}
-  pageTitle={title}
-  breadcrumb={`${title} /`}
-  activeId={activeId}
-  navItems={getNavItemsForRole(role)}
-  bottomItems={BOTTOM_NAV}
-  showBranchSwitcher={true}
->
-  <div class="content-skeleton">
-    <div class="skeleton-placeholder">
-      <p class="skeleton-title">{title} is coming soon</p>
-      <p class="skeleton-hint">This module will be connected to the API in a later update.</p>
-    </div>
-  </div>
-</AppLayout>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>VGSync</title>
+    <meta http-equiv="refresh" content="0; url=/dashboard/sales#followups" />
+    <script>
+      window.location.replace('/dashboard/sales#followups');
+    </script>
+  </head>
+  <body></body>
+</html>

@@ -69,7 +69,7 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession } from '../../lib/auth';
+  import { can, getSession } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
   import {
     REPORTS,
@@ -283,6 +283,28 @@ const navItems = getNavItemsForRole(defaultRole);
           d.suppliers.map((s, i) => [String(i + 1), esc(s.name), String(s.purchases), `<strong>${formatNpr(s.total)}</strong>`]),
         )}<p class="rp-note">Received and part-received purchases only.</p>`;
       }
+      case 'salespeople': {
+        const d = report.data;
+        return `
+          ${kpis([kpi('Sales', String(d.totals.sales)), kpi('Sold', formatNpr(d.totals.total))])}
+          ${table(
+            [{ label: 'Salesperson' }, { label: 'Sales', num: true }, { label: 'Stock / Bike / Service' }, { label: 'Sold', num: true }, { label: 'Collected', num: true }, { label: 'Due', num: true }],
+            d.rows.map((p) => [esc(p.name), String(p.sales), `${p.stock} / ${p.bike} / ${p.maintenance}`, `<strong>${formatNpr(p.total)}</strong>`, formatNpr(p.collected), formatNpr(p.due)]),
+            'No sales were confirmed in this period.',
+          )}
+          <p class="rp-note">Confirmed sales only, counted by sale date. Collected is the money received so far on those sales. Older sales without a recorded seller show as "Not recorded".</p>`;
+      }
+      case 'technicians': {
+        const d = report.data;
+        return `
+          ${kpis([kpi('Jobs given', String(d.totals.assigned)), kpi('Jobs done', String(d.totals.done))])}
+          ${table(
+            [{ label: 'Technician' }, { label: 'Given', num: true }, { label: 'Done', num: true }, { label: 'Open', num: true }, { label: 'Normal / Free / Accident' }, { label: 'Avg hours', num: true }, { label: 'Billed', num: true }],
+            d.rows.map((t) => [esc(t.name), String(t.assigned), `<strong>${t.done}</strong>`, String(t.pending + t.inProgress), `${t.normal} / ${t.free} / ${t.accident}`, t.averageHours === null ? '—' : String(t.averageHours), formatNpr(t.billed)]),
+            'No jobs were given in this period.',
+          )}
+          <p class="rp-note">Jobs are counted by the day they were given. Hours run from when the technician started a job to when he finished it. Billed is the job total of finished jobs.</p>`;
+      }
       case 'payroll-summary': {
         const d = report.data;
         return `
@@ -329,8 +351,13 @@ const navItems = getNavItemsForRole(defaultRole);
     }
   }
 
+  // Payroll is the owner's: other positions never see that report.
+  function visibleReports() {
+    return REPORTS.filter((r) => r.id !== 'payroll-summary' || can(getSession(), 'staff.pay_view'));
+  }
+
   function renderChips(): void {
-    $('rp-chips')!.innerHTML = REPORTS.map(
+    $('rp-chips')!.innerHTML = visibleReports().map(
       (r) => `<button type="button" class="rp-chip ${r.id === current ? 'is-active' : ''}" data-report="${r.id}">${esc(r.label)}</button>`,
     ).join('');
     document.querySelectorAll<HTMLButtonElement>('[data-report]').forEach((b) =>

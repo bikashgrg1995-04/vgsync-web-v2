@@ -1,0 +1,344 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import { PAGE_META } from '../../lib/page-meta';
+import '../../styles/app/purchase-page.css';
+import '../../styles/app/statements-page.css';
+
+const meta = PAGE_META.statements;
+const navItems = getNavItemsForRole();
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="pd-page" id="sm-page">
+    <header class="pd-hero">
+      <div class="pd-hero-text">
+        <div class="pd-hero-icon" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6"></path><path d="M9 17h6"></path></svg>
+        </div>
+        <div>
+          <h2 class="pd-hero-title">Statements</h2>
+          <p class="pd-hero-sub">Every sale, purchase, payment and return with one customer or supplier, with a running balance.</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="sm-kinds" id="sm-kinds" role="tablist" aria-label="Statement for">
+      <button type="button" role="tab" data-kind="customer" id="kind-customer">Customers</button>
+      <button type="button" role="tab" data-kind="supplier" id="kind-supplier">Suppliers</button>
+    </div>
+
+    <div class="sm-filters">
+      <label class="sm-party">
+        <span id="sm-party-label">Customer</span>
+        <select id="sm-party"><option value="">Choose…</option></select>
+      </label>
+      <label><span>From</span><input type="date" id="sm-from" /></label>
+      <label><span>To</span><input type="date" id="sm-to" /></label>
+      <label><span>Type</span><select id="sm-type"><option value="">All</option></select></label>
+    </div>
+
+    <div class="sm-chips" id="sm-chips" aria-label="Quick date ranges">
+      <button type="button" data-range="month">This month</button>
+      <button type="button" data-range="30">Last 30 days</button>
+      <button type="button" data-range="year">This year</button>
+      <button type="button" data-range="all">All time</button>
+    </div>
+
+    <p class="sm-error" id="sm-error" role="alert" hidden></p>
+
+    <div class="pd-kpis" id="sm-kpis" hidden>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-blue" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v8"></path><path d="m8 12 4-4 4 4"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
+        <div class="pd-kpi-body"><span class="pd-kpi-label">Opening balance</span><div class="pd-kpi-row"><strong id="kpi-open">—</strong></div><span class="pd-kpi-sub" id="kpi-open-sub">Before the first date</span></div>
+      </article>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-orange" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg></span>
+        <div class="pd-kpi-body"><span class="pd-kpi-label" id="kpi-debit-label">Billed</span><div class="pd-kpi-row"><strong id="kpi-debit">—</strong></div><span class="pd-kpi-sub">Debit in this period</span></div>
+      </article>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-green" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m11 6-6 6 6 6"></path></svg></span>
+        <div class="pd-kpi-body"><span class="pd-kpi-label" id="kpi-credit-label">Settled</span><div class="pd-kpi-row"><strong id="kpi-credit">—</strong></div><span class="pd-kpi-sub">Credit in this period</span></div>
+      </article>
+      <article class="pd-kpi">
+        <span class="pd-kpi-icon is-purple" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"></rect><path d="M3 10h18"></path></svg></span>
+        <div class="pd-kpi-body"><span class="pd-kpi-label">Closing balance</span><div class="pd-kpi-row"><strong id="kpi-close">—</strong></div><span class="pd-kpi-sub" id="kpi-close-sub">—</span></div>
+      </article>
+    </div>
+
+    <section class="pd-card" id="sm-card">
+      <div class="sm-head">
+        <div>
+          <h3 id="sm-title">Choose a customer or supplier</h3>
+          <p id="sm-sub">Their statement will appear here.</p>
+        </div>
+        <div class="sm-actions">
+          <button type="button" class="sm-btn" id="sm-xlsx" disabled>Excel</button>
+          <button type="button" class="sm-btn" id="sm-pdf" disabled>PDF</button>
+          <button type="button" class="sm-btn" id="sm-print" disabled>Print</button>
+        </div>
+      </div>
+      <div class="sm-wrap">
+        <table class="sm-table">
+          <thead>
+            <tr><th>Date</th><th>Type</th><th>Reference</th><th>Details</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr>
+          </thead>
+          <tbody id="sm-tbody"></tbody>
+        </table>
+      </div>
+      <div class="sm-empty" id="sm-empty">Pick someone above to see every transaction with them.</div>
+      <div class="sm-more"><button type="button" class="sm-btn" id="sm-more" hidden>Load more</button></div>
+      <p class="sm-note" id="sm-note"></p>
+    </section>
+  </div>
+</AppLayout>
+
+<script>
+  import { ApiError } from '../../lib/api';
+  import { can, getSession } from '../../lib/auth';
+  import { listCustomers } from '../../lib/customers';
+  import { listSuppliers } from '../../lib/suppliers';
+  import { formatNpr } from '../../lib/reports';
+  import {
+    STATEMENT_TYPES,
+    downloadPartyStatement,
+    getPartyStatement,
+    type PartyKind,
+    type StatementFilters,
+    type StatementRow,
+  } from '../../lib/statements';
+
+  const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+  const esc = (v: string) =>
+    v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+  const message = (e: unknown) => (e instanceof ApiError ? e.message : 'Something went wrong. Please try again.');
+
+  const session = getSession();
+  const mayCustomer = can(session, 'sales.view');
+  const maySupplier = can(session, 'purchases.view');
+
+  const WORDS: Record<PartyKind, { one: string; debit: string; credit: string; pos: string; neg: string; means: string }> = {
+    customer: {
+      one: 'Customer', debit: 'Sold', credit: 'Received & returned',
+      pos: 'Owes you', neg: 'You owe them',
+      means: 'Debit is what was sold. Credit is what they paid or returned. A positive balance is money the customer still owes you; negative is credit owed back to them.',
+    },
+    supplier: {
+      one: 'Supplier', debit: 'Purchased', credit: 'Paid & returned',
+      pos: 'You owe them', neg: 'They owe you',
+      means: 'Debit is what was bought. Credit is what you paid or returned. A positive balance is money you still owe the supplier; negative is credit they owe you.',
+    },
+  };
+
+  let kind: PartyKind = 'customer';
+  let partyId = 0;
+  let rows: StatementRow[] = [];
+  let page = 1;
+  let token = 0;
+  let opening = 0;
+
+  const input = (id: string) => $<HTMLInputElement>(id);
+  const ymd = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  function filters(): StatementFilters {
+    return { dateFrom: input('sm-from').value, dateTo: input('sm-to').value, type: $<HTMLSelectElement>('sm-type').value };
+  }
+
+  function showError(text: string | null): void {
+    const box = $('sm-error');
+    box.hidden = !text;
+    box.textContent = text ?? '';
+  }
+
+  function setUrl(): void {
+    const url = new URL(window.location.href);
+    url.searchParams.set('kind', kind);
+    if (partyId) url.searchParams.set('id', String(partyId));
+    else url.searchParams.delete('id');
+    window.history.replaceState(null, '', url);
+  }
+
+  function badge(type: string): string {
+    const label = STATEMENT_TYPES[kind][type] ?? type;
+    const cls = type === 'payment' ? 'is-pay' : type === 'return' || type === 'refund' ? 'is-ret' : type === 'adjustment' ? 'is-adj' : '';
+    return `<span class="sm-type ${cls}">${esc(label)}</span>`;
+  }
+
+  const money = (n: number) => (n === 0 ? '—' : formatNpr(n));
+  const signed = (n: number) => `<span class="${n > 0 ? 'sm-pos' : n < 0 ? 'sm-neg' : ''}">${formatNpr(n)}</span>`;
+
+  function renderRows(): void {
+    const body = $('sm-tbody');
+    const w = WORDS[kind];
+    const first = `<tr class="sm-open"><td colspan="6">Opening balance</td><td class="num">${signed(opening)}</td></tr>`;
+    body.innerHTML = first + rows
+      .map(
+        (r) => `<tr>
+          <td>${esc(r.date)}</td><td>${badge(r.type)}</td><td>${esc(r.reference)}</td>
+          <td class="desc">${esc(r.description)}</td>
+          <td class="num">${money(r.debit)}</td><td class="num">${money(r.credit)}</td>
+          <td class="num">${signed(r.balance)}</td></tr>`,
+      )
+      .join('');
+    $('sm-empty').hidden = rows.length > 0;
+    $('sm-empty').textContent = 'No transactions for these filters.';
+    $('sm-note').textContent = w.means;
+  }
+
+  function resetView(): void {
+    rows = [];
+    opening = 0;
+    $('sm-kpis').hidden = true;
+    $('sm-tbody').innerHTML = '';
+    $('sm-more').hidden = true;
+    $('sm-empty').hidden = false;
+    $('sm-empty').textContent = `Pick a ${WORDS[kind].one.toLowerCase()} above to see every transaction with them.`;
+    $('sm-title').textContent = `Choose a ${WORDS[kind].one.toLowerCase()}`;
+    $('sm-sub').textContent = 'Their statement will appear here.';
+    $('sm-note').textContent = '';
+    for (const id of ['sm-xlsx', 'sm-pdf', 'sm-print']) $<HTMLButtonElement>(id).disabled = true;
+  }
+
+  async function load(reset: boolean): Promise<void> {
+    if (!partyId) return resetView();
+    if (reset) {
+      page = 1;
+      rows = [];
+    }
+    showError(null);
+    const mine = ++token;
+    try {
+      const data = await getPartyStatement(kind, partyId, filters(), page);
+      if (mine !== token) return;
+      const w = WORDS[kind];
+      opening = data.openingBalance;
+      rows = rows.concat(data.rows);
+      $('sm-kpis').hidden = false;
+      $('kpi-open').textContent = formatNpr(data.openingBalance);
+      $('kpi-debit-label').textContent = w.debit;
+      $('kpi-credit-label').textContent = w.credit;
+      $('kpi-debit').textContent = formatNpr(data.totalDebit);
+      $('kpi-credit').textContent = formatNpr(data.totalCredit);
+      $('kpi-close').textContent = formatNpr(Math.abs(data.closingBalance));
+      $('kpi-close-sub').textContent = data.closingBalance === 0 ? 'Settled' : data.closingBalance > 0 ? w.pos : w.neg;
+      $('sm-title').textContent = data.party.name;
+      const f = filters();
+      $('sm-sub').textContent = f.dateFrom || f.dateTo ? `${f.dateFrom || 'Start'} to ${f.dateTo || 'today'}` : 'All time';
+      $('sm-more').hidden = !data.hasMore;
+      for (const id of ['sm-xlsx', 'sm-pdf', 'sm-print']) $<HTMLButtonElement>(id).disabled = false;
+      renderRows();
+    } catch (error) {
+      if (mine !== token) return;
+      showError(message(error));
+    }
+  }
+
+  async function fillParties(): Promise<void> {
+    const select = $<HTMLSelectElement>('sm-party');
+    select.innerHTML = '<option value="">Loading…</option>';
+    try {
+      const list = kind === 'customer' ? await listCustomers() : await listSuppliers();
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      select.innerHTML =
+        `<option value="">Choose a ${WORDS[kind].one.toLowerCase()}…</option>` +
+        list.map((p) => `<option value="${p.id}">${esc(p.name)}${p.phone ? ` · ${esc(p.phone)}` : ''}</option>`).join('');
+      select.value = partyId && list.some((p) => p.id === partyId) ? String(partyId) : '';
+      if (!select.value) partyId = 0;
+    } catch (error) {
+      select.innerHTML = '<option value="">Could not load</option>';
+      showError(message(error));
+    }
+  }
+
+  function fillTypes(): void {
+    $<HTMLSelectElement>('sm-type').innerHTML =
+      '<option value="">All</option>' +
+      Object.entries(STATEMENT_TYPES[kind]).map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+  }
+
+  async function setKind(next: PartyKind, keepParty = false): Promise<void> {
+    kind = next;
+    if (!keepParty) partyId = 0;
+    $('kind-customer').classList.toggle('is-active', kind === 'customer');
+    $('kind-supplier').classList.toggle('is-active', kind === 'supplier');
+    $('sm-party-label').textContent = WORDS[kind].one;
+    fillTypes();
+    setUrl();
+    await fillParties();
+    await load(true);
+  }
+
+  function setRange(name: string): void {
+    const now = new Date();
+    let from = '';
+    let to = '';
+    if (name === 'month') { from = ymd(new Date(now.getFullYear(), now.getMonth(), 1)); to = ymd(now); }
+    if (name === '30') { from = ymd(new Date(now.getTime() - 29 * 86400000)); to = ymd(now); }
+    if (name === 'year') { from = ymd(new Date(now.getFullYear(), 0, 1)); to = ymd(now); }
+    input('sm-from').value = from;
+    input('sm-to').value = to;
+    document.querySelectorAll<HTMLElement>('#sm-chips button').forEach((b) => b.classList.toggle('is-active', b.dataset.range === name));
+    void load(true);
+  }
+
+  async function download(file: 'xlsx' | 'pdf'): Promise<void> {
+    const button = $<HTMLButtonElement>(file === 'xlsx' ? 'sm-xlsx' : 'sm-pdf');
+    button.disabled = true;
+    showError(null);
+    try {
+      await downloadPartyStatement(kind, partyId, file, filters());
+    } catch (error) {
+      showError(message(error));
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function init(): void {
+    $('kind-customer').hidden = !mayCustomer;
+    $('kind-supplier').hidden = !maySupplier;
+    $('sm-kinds').hidden = !(mayCustomer && maySupplier);
+    const params = new URLSearchParams(window.location.search);
+    const wanted = params.get('kind') === 'supplier' ? 'supplier' : 'customer';
+    kind = wanted === 'supplier' && maySupplier ? 'supplier' : mayCustomer ? 'customer' : 'supplier';
+    partyId = Number(params.get('id')) || 0;
+
+    document.querySelectorAll<HTMLElement>('#sm-kinds button').forEach((b) =>
+      b.addEventListener('click', () => void setKind(b.dataset.kind as PartyKind)),
+    );
+    document.querySelectorAll<HTMLElement>('#sm-chips button').forEach((b) =>
+      b.addEventListener('click', () => setRange(b.dataset.range!)),
+    );
+    $('sm-party').addEventListener('change', () => {
+      partyId = Number($<HTMLSelectElement>('sm-party').value) || 0;
+      setUrl();
+      void load(true);
+    });
+    for (const id of ['sm-from', 'sm-to', 'sm-type']) {
+      $(id).addEventListener('change', () => {
+        document.querySelectorAll('#sm-chips button').forEach((b) => b.classList.remove('is-active'));
+        void load(true);
+      });
+    }
+    $('sm-more').addEventListener('click', () => { page += 1; void load(false); });
+    $('sm-xlsx').addEventListener('click', () => void download('xlsx'));
+    $('sm-pdf').addEventListener('click', () => void download('pdf'));
+    $('sm-print').addEventListener('click', () => window.print());
+
+    void setKind(kind, true);
+  }
+
+  init();
+</script>

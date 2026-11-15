@@ -1,10 +1,11 @@
 import { ApiError } from '../lib/api';
+import { can, getSession } from '../lib/auth';
 import type { Customer } from '../lib/customers';
 import type { StockItem } from '../lib/inventory';
 import {
-  createSale, updateSale, addPayment, createReturn,
-  previewTotals, previewFinance, formatNpr, formatQty,
-  type Sale, type SaleType, type BikeUnit, type LocalProduct, type PayMethod, type SaleLineInput,
+  createSale, updateSale, listSales, listTechnicians, type Technician, addPayment, createReturn,
+  previewTotals, previewEmi, formatNpr, formatQty,
+  type Sale, type SaleType, type ServiceKind, type PaymentMode, type Payer, type BikeUnit, type LocalProduct, type PayMethod, type SaleLineInput,
 } from '../lib/sales';
 
 /**
@@ -45,7 +46,7 @@ export function esc(s: string): string {
 
 const FIELD_LABELS: Record<string, string> = {
   customer: 'Customer', sale_date: 'Date', discount_amount: 'Discount', vat_rate: 'VAT',
-  down_payment: 'Down payment', emi_months: 'Months', emi_amount: 'EMI', first_emi_due: 'First EMI due',
+  down_payment: 'Down payment', emi_months: 'Months', interest_rate: 'Interest', first_emi_due: 'First EMI due',
   due_date: 'Due date', amount: 'Amount', method: 'Method', reason: 'Reason', paid_on: 'Paid on',
   chassis_no: 'Chassis no', engine_no: 'Engine no', name: 'Name', sale: 'Sale', note: 'Note',
   refund_method: 'Refund method',
@@ -220,6 +221,16 @@ export function readSaleLines(container: HTMLElement): SaleLineInput[] {
 
 const formType = () => val('sf-type') as SaleType;
 
+// Bike sales (and EMI) are for the owner and staff given that permission.
+{
+  const bike = document.querySelector<HTMLOptionElement>('#sf-type option[value="bike"]');
+  const session = getSession();
+  if (bike && session && !can(session, 'bike_sales.create')) {
+    bike.hidden = true;
+    bike.disabled = true;
+  }
+}
+
 export function updateTotals(): void {
   const lines = readSaleLines($('sf-lines')!).map((l) => ({ quantity: l.quantity ?? 1, unitPrice: l.unitPrice ?? 0 }));
   const t = previewTotals(lines, Number(val('sf-discount')) || 0, Number(val('sf-vat')) || 0);
@@ -228,21 +239,93 @@ export function updateTotals(): void {
     <div><dt>VAT</dt><dd>${formatNpr(t.vat)}</dd></div>
     <div class="strong"><dt>Net total (preview)</dt><dd>${formatNpr(t.net)}</dd></div>`;
   if (formType() === 'bike' && val('sf-mode') === 'emi') {
-    const fc = previewFinance(t.net, Number(val('sf-down')) || 0, Number(val('sf-months')) || 0, Number(val('sf-emi')) || 0);
-    html += `<div><dt>Finance charge (preview)</dt><dd>${formatNpr(fc)}</dd></div>
-             <div class="strong"><dt>Amount due (preview)</dt><dd>${formatNpr(t.net + fc)}</dd></div>`;
+    const months = Number(val('sf-months')) || 0;
+    const e = previewEmi(t.net, Number(val('sf-down')) || 0, months, Number(val('sf-rate')) || 0);
+    html += `<div><dt>Left after down payment</dt><dd>${formatNpr(e.left)}</dd></div>
+             <div><dt>Interest (preview)</dt><dd>${formatNpr(e.charge)}</dd></div>
+             <div class="strong"><dt>Monthly installment (${months || 0} months)</dt><dd>${formatNpr(e.monthly)}</dd></div>
+             <div class="strong"><dt>Amount due (preview)</dt><dd>${formatNpr(e.due)}</dd></div>`;
   }
   $('sf-totals')!.innerHTML = html;
 }
 
+let bikeSalesWithFree: Sale[] | null = null;
+
+async function loadFreeBikeSales(selectedId?: number | null): Promise<void> {
+  try {
+    bikeSalesWithFree ??= (await listSales({ saleType: 'bike', status: 'confirmed' })).filter((b) => b.freeServicesLeft > 0);
+  } catch {
+    bikeSalesWithFree = [];
+  }
+  const rows = bikeSalesWithFree.filter((b) => b.freeServicesLeft > 0 || b.id === selectedId);
+  $('sf-fs-sale')!.innerHTML =
+    `<option value="">Choose the bike sale</option>` +
+    rows.map((b) => `<option value="${b.id}">${esc(b.invoiceNo || b.saleNo)} · ${customerLabel(b)} · ${b.freeServicesLeft} left</option>`).join('');
+  $<HTMLSelectElement>('sf-fs-sale')!.value = selectedId ? String(selectedId) : '';
+  showCovers();
+}
+
+function showCovers(): void {
+  const id = Number(val('sf-fs-sale'));
+  const covers = bikeSalesWithFree?.find((b) => b.id === id)?.freeServiceCovers ?? '';
+  $('sf-covers-note')!.textContent = `${covers ? `This free service covers: ${covers}. ` : ''}Covered work: price 0. Extra parts or extra work: enter the price and the customer pays it.`;
+}
+
+let technicianList: Technician[] | null = null;
+
+// A manager (sales.view_all) can credit a sale to another salesperson.
+async function loadSellers(selected: number | null): Promise<void> {
+  const box = $('sf-seller-box')!;
+  box.hidden = !can(getSession(), 'sales.view_all');
+  if (box.hidden) return;
+  try {
+    technicianList ??= await listTechnicians();
+  } catch {
+    technicianList = [];
+  }
+  const sel = $<HTMLSelectElement>('sf-seller')!;
+  sel.innerHTML = `<option value="">Me</option>` + technicianList
+    .map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  sel.value = selected ? String(selected) : '';
+}
+
+async function loadTechnicians(): Promise<void> {
+  try {
+    technicianList ??= await listTechnicians();
+  } catch {
+    technicianList = [];
+  }
+  const sel = $<HTMLSelectElement>('sf-tech')!;
+  const keep = sel.value;
+  sel.innerHTML = `<option value="">Not assigned yet</option>` + technicianList
+    .map((t) => `<option value="${t.id}">${esc(t.name)}${t.position ? ` · ${esc(t.position)}` : ''}</option>`).join('');
+  sel.value = keep;
+}
+
+export function syncKind(selectedFor?: number | null): void {
+  const type = formType();
+  const kind = val('sf-kind');
+  const editing = Boolean(Number(val('sf-id')));
+  $('sf-kind-box')!.hidden = type !== 'maintenance';
+  $('sf-fs-box')!.hidden = !(type === 'maintenance' && kind === 'free');
+  $('sf-adv-box')!.hidden = !(type === 'maintenance' && kind === 'accident' && !editing);
+  $<HTMLSelectElement>('sf-kind')!.disabled = editing;
+  $('sf-tech')!.closest<HTMLElement>('.sa-grid')!.hidden = editing;
+  if (type === 'maintenance' && !editing) void loadTechnicians();
+  if (type === 'maintenance' && kind === 'free') void loadFreeBikeSales(selectedFor);
+}
+
 export function syncFormType(resetLines: boolean): void {
   const type = formType();
+  if (type !== 'maintenance') $<HTMLSelectElement>('sf-kind')!.value = 'paid';
+  syncKind();
   $('sf-due-wrap')!.hidden = type === 'bike';
   $('sf-chassis-wrap')!.hidden = type !== 'maintenance';
   $('sf-reg-wrap')!.hidden = type !== 'maintenance';
   $('sf-emi-box')!.hidden = type !== 'bike';
   $('sf-add-line')!.hidden = type === 'bike';
   $('sf-emi-fields')!.hidden = !(type === 'bike' && val('sf-mode') === 'emi');
+  $('sf-fin-fields')!.hidden = !(type === 'bike' && val('sf-mode') === 'financed');
   if (resetLines) {
     const box = $('sf-lines')!;
     box.innerHTML = '';
@@ -272,9 +355,21 @@ export function openForm(s?: Sale): void {
   $<HTMLInputElement>('sf-discount')!.value = String(s?.discount ?? 0);
   $<HTMLInputElement>('sf-vat')!.value = String(s?.vatRate ?? 0);
   $<HTMLSelectElement>('sf-mode')!.value = s?.paymentMode ?? 'full';
-  $<HTMLInputElement>('sf-down')!.value = String(s?.downPayment ?? 0);
+  $<HTMLInputElement>('sf-down')!.value = String(s?.paymentMode === 'emi' ? s.downPayment : 0);
+  $<HTMLInputElement>('sf-fin-down')!.value = String(s?.paymentMode === 'financed' ? s.downPayment : 0);
+  $<HTMLInputElement>('sf-fin-name')!.value = s?.financerName ?? '';
+  $<HTMLInputElement>('sf-fin-ref')!.value = s?.financerRef ?? '';
+  $<HTMLInputElement>('sf-fin-due')!.value = s?.financerDueDate ?? '';
   $<HTMLInputElement>('sf-months')!.value = String(s?.emiMonths || 12);
-  $<HTMLInputElement>('sf-emi')!.value = String(s?.emiAmount ?? 0);
+  $<HTMLInputElement>('sf-free')!.value = String(s?.freeServices ?? 0);
+  $<HTMLInputElement>('sf-covers')!.value = s?.freeServiceCovers ?? '';
+  $<HTMLSelectElement>('sf-kind')!.value = s?.serviceKind ?? 'paid';
+  $<HTMLSelectElement>('sf-tech')!.value = '';
+  void loadSellers(s?.salespersonId ?? null);
+  $<HTMLInputElement>('sf-km')!.value = s?.odometerKm != null ? String(s.odometerKm) : '';
+  $<HTMLInputElement>('sf-adv')!.value = '';
+  $<HTMLSelectElement>('sf-adv-method')!.value = 'cash';
+  $<HTMLInputElement>('sf-rate')!.value = s?.interestRate ? String(s.interestRate) : '';
   $<HTMLInputElement>('sf-first')!.value = s?.firstEmiDue ?? '';
   $<HTMLInputElement>('sf-notes')!.value = s?.notes ?? '';
 
@@ -287,6 +382,7 @@ export function openForm(s?: Sale): void {
     });
   }
   syncFormType(!s);
+  syncKind(s?.freeServiceFor);
   syncWalkIn();
   showError('sf-error', null);
   dlg('dlg-form').showModal();
@@ -294,19 +390,34 @@ export function openForm(s?: Sale): void {
 
 $('sf-type')?.addEventListener('change', () => syncFormType(true));
 $('sf-mode')?.addEventListener('change', () => syncFormType(false));
+$('sf-kind')?.addEventListener('change', () => syncKind());
+$('sf-fs-sale')?.addEventListener('change', showCovers);
 $('sf-customer')?.addEventListener('change', syncWalkIn);
 $('sf-add-line')?.addEventListener('click', () => addSaleLine($('sf-lines')!, formType(), {}, updateTotals));
-for (const id of ['sf-discount', 'sf-vat', 'sf-down', 'sf-months', 'sf-emi']) $(id)?.addEventListener('input', updateTotals);
+for (const id of ['sf-discount', 'sf-vat', 'sf-down', 'sf-months', 'sf-rate']) $(id)?.addEventListener('input', updateTotals);
 
 $('form-sale')?.addEventListener('submit', (e) => {
   e.preventDefault();
   const lines = readSaleLines($('sf-lines')!);
-  if (lines.length === 0) {
+  const id = Number(val('sf-id')) || 0;
+  const type = formType();
+  const kind = (type === 'maintenance' ? val('sf-kind') : 'paid') as ServiceKind;
+  if (type === 'bike' && val('sf-mode') === 'financed' && !val('sf-fin-name').trim()) {
+    showError('sf-error', 'Enter the finance company.');
+    return;
+  }
+  if (lines.length === 0 && kind !== 'accident') {
     showError('sf-error', 'Add at least one item.');
     return;
   }
-  const id = Number(val('sf-id')) || 0;
-  const type = formType();
+  if (kind === 'accident' && !id && !(Number(val('sf-adv')) > 0)) {
+    showError('sf-error', 'An accident case starts with an advance. Enter the amount taken.');
+    return;
+  }
+  if (kind === 'free' && (!Number(val('sf-fs-sale')) || val('sf-km') === '')) {
+    showError('sf-error', 'Choose the bike sale and enter the bike km.');
+    return;
+  }
   const customerId = Number(val('sf-customer')) || null;
   const input = {
     saleType: type,
@@ -315,11 +426,23 @@ $('form-sale')?.addEventListener('submit', (e) => {
     saleDate: val('sf-date'),
     discount: Number(val('sf-discount')) || 0,
     vatRate: Number(val('sf-vat')) || 0,
-    paymentMode: (val('sf-mode') || 'full') as 'full' | 'emi',
-    downPayment: Number(val('sf-down')) || 0,
+    paymentMode: (val('sf-mode') || 'full') as PaymentMode,
+    downPayment: Number(val(val('sf-mode') === 'financed' ? 'sf-fin-down' : 'sf-down')) || 0,
+    financerName: val('sf-fin-name'),
+    financerRef: val('sf-fin-ref'),
+    financerDueDate: val('sf-fin-due'),
     emiMonths: Number(val('sf-months')) || undefined,
-    emiAmount: Number(val('sf-emi')) || 0,
+    interestRate: Number(val('sf-rate')) || 0,
     firstEmiDue: val('sf-first'),
+    freeServices: Number(val('sf-free')) || 0,
+    freeServiceCovers: val('sf-covers'),
+    serviceKind: kind,
+    technician: Number(val('sf-tech')) || null,
+    salesperson: Number(val('sf-seller')) || null,
+    freeServiceFor: Number(val('sf-fs-sale')) || null,
+    odometerKm: val('sf-km') === '' ? null : Number(val('sf-km')),
+    advanceAmount: Number(val('sf-adv')) || 0,
+    advanceMethod: val('sf-adv-method') as PayMethod,
     dueDate: val('sf-due'),
     vehicleChassisNo: val('sf-chassis'),
     vehicleRegNo: val('sf-reg'),
@@ -340,6 +463,13 @@ export function openPay(s: Sale): void {
   $<HTMLSelectElement>('py-method')!.value = 'cash';
   $<HTMLInputElement>('py-date')!.value = today();
   $<HTMLInputElement>('py-ref')!.value = '';
+  const financed = s.paymentMode === 'financed' && s.status === 'confirmed';
+  $('py-payer-wrap')!.hidden = !financed;
+  $<HTMLSelectElement>('py-payer')!.value = financed && s.financerReceived < s.financerReceivable ? 'financer' : 'customer';
+  if (financed && val('py-payer') === 'financer') {
+    $<HTMLInputElement>('py-amount')!.value = String(Math.max(s.financerReceivable - s.financerReceived, 0));
+    $('py-sub')!.textContent += ` · company still to pay ${formatNpr(Math.max(s.financerReceivable - s.financerReceived, 0))}`;
+  }
   showError('py-error', null);
   $('form-pay')!.dataset.id = String(s.id);
   dlg('dlg-pay').showModal();
@@ -349,7 +479,7 @@ $('form-pay')?.addEventListener('submit', (e) => {
   e.preventDefault();
   const id = Number($('form-pay')!.dataset.id);
   void submit('py-save', 'py-error', 'dlg-pay', async () => {
-    await addPayment({ saleId: id, amount: Number(val('py-amount')), method: val('py-method') as PayMethod, paidOn: val('py-date'), reference: val('py-ref') });
+    await addPayment({ saleId: id, amount: Number(val('py-amount')), method: val('py-method') as PayMethod, paidOn: val('py-date'), reference: val('py-ref'), payer: ($('py-payer-wrap')!.hidden ? 'customer' : val('py-payer')) as Payer });
     await hooks.onChanged(id);
   });
 });

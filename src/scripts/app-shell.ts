@@ -3,15 +3,14 @@ import {
   refreshProfile,
   logout,
   canSwitchBranch,
-  canManageStaff,
   loadBranches,
   switchBranch,
-  type UserRole,
 } from '../lib/auth';
 import { AUTH_STORAGE_KEY } from '../lib/session-store';
 import { redirectToLogin } from '../lib/api';
-import { getNavItemsForRole } from '../lib/navigation';
+import { getNavItemsForRole, navItemVisible, type NavViewer } from '../lib/navigation';
 import { paintAvatar } from '../lib/avatar';
+import './table-cards';
 
 const root = document.documentElement;
 const shell = document.getElementById('app-shell');
@@ -132,7 +131,7 @@ function applySessionUI(): void {
     return;
   }
 
-  const path = window.location.pathname;
+  const path = window.location.pathname.replace(/\/+$/, '');
   if (session.mustChangePassword && path !== '/dashboard/change-password') {
     window.location.replace('/dashboard/change-password');
     return;
@@ -155,9 +154,26 @@ function applySessionUI(): void {
     branchInfo.textContent = `Branch: ${session.activeBranchCode} — ${session.activeBranchName}`;
   }
 
+  const viewer: NavViewer = {
+    isOwner: session.isOwner,
+    permissions: session.permissions,
+    companyOwner: session.isOwner && session.role === 'owner',
+  };
   const allowed = new Set(
-    getNavItemsForRole(session.role as UserRole, canManageStaff(session)).map((i) => i.id),
+    getNavItemsForRole()
+      .filter((item) => navItemVisible(item, viewer))
+      .map((i) => i.id),
   );
+  // Typing the address of a page the menu hides does not open it.
+  const here = window.location.pathname.replace(/\/+$/, '');
+  const blocked = getNavItemsForRole().find(
+    (i) => !allowed.has(i.id) && i.href.split('#')[0] === here && !i.href.includes('#'),
+  );
+  if (blocked && here !== '/dashboard') {
+    window.location.replace('/dashboard');
+    return;
+  }
+
   document.querySelectorAll<HTMLElement>('[data-nav-id]').forEach((el) => {
     const id = el.dataset.navId;
     // Settings, Help & Support and Logout are for every role.
@@ -166,6 +182,16 @@ function applySessionUI(): void {
     const target = (li ?? el) as HTMLElement;
 
     target.style.display = allowed.has(id) ? '' : 'none';
+  });
+
+  // A section heading with nothing under it is hidden too.
+  document.querySelectorAll<HTMLElement>('[data-nav-group]').forEach((label) => {
+    const group = label.dataset.navGroup;
+    const visible = Array.from(
+      document.querySelectorAll<HTMLElement>(`[data-nav-group-item="${group}"]`),
+    ).some((li) => li.style.display !== 'none');
+
+    label.style.display = visible ? '' : 'none';
   });
 
   if (branchSelect) {
@@ -231,3 +257,4 @@ if (getSession()) {
 window.addEventListener('storage', (event) => {
   if (event.key === AUTH_STORAGE_KEY && !getSession()) redirectToLogin('logged-out');
 });
+import './notification-bell';

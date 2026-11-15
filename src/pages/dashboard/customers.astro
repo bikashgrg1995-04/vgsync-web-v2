@@ -135,6 +135,7 @@ const navItems = getNavItemsForRole(defaultRole);
               <span class="cus-badge" id="d-status">—</span>
             </div>
             <div class="cus-detail-actions">
+              <button type="button" class="btn-ghost-sm" id="cus-statement">Statement</button>
               <button type="button" class="btn-ghost-sm" id="cus-edit">Edit</button>
               <button type="button" class="btn-ghost-sm is-danger" id="cus-toggle">Deactivate</button>
             </div>
@@ -266,6 +267,7 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
+  import { statementUrl } from '../../lib/statements';
   import { getSession, refreshProfile } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
   import {
@@ -595,6 +597,10 @@ const navItems = getNavItemsForRole(defaultRole);
   }
 
   $('cus-add')?.addEventListener('click', () => openForm());
+  $('cus-statement')?.addEventListener('click', () => {
+    if (selectedId) window.location.href = statementUrl('customer', selectedId);
+  });
+
   $('cus-edit')?.addEventListener('click', () => {
     const c = selected();
     if (c) openForm(c);

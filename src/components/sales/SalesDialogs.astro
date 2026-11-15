@@ -22,6 +22,35 @@
         <label class="sa-field" id="sf-chassis-wrap" hidden><span>Vehicle chassis no</span><input type="text" id="sf-chassis" maxlength="60" /></label>
         <label class="sa-field" id="sf-reg-wrap" hidden><span>Vehicle reg no</span><input type="text" id="sf-reg" maxlength="30" /></label>
       </div>
+      <div class="sa-grid" id="sf-seller-box" hidden>
+        <label class="sa-field"><span>Sold by (empty = me)</span><select id="sf-seller"><option value="">Me</option></select></label>
+      </div>
+      <div id="sf-kind-box" hidden>
+        <div class="sa-grid">
+          <label class="sa-field"><span>Kind of service</span>
+            <select id="sf-kind">
+              <option value="paid">Normal service (paid)</option>
+              <option value="free">Free service (of a bike sold earlier)</option>
+              <option value="accident">Accident case</option>
+            </select>
+          </label>
+        </div>
+        <div class="sa-grid">
+          <label class="sa-field"><span>Give the job to (technician)</span><select id="sf-tech"><option value="">Not assigned yet</option></select></label>
+        </div>
+        <div class="sa-grid" id="sf-fs-box" hidden>
+          <label class="sa-field"><span>Bike sale *</span><select id="sf-fs-sale"></select></label>
+          <label class="sa-field"><span>Bike km now *</span><input type="number" id="sf-km" min="0" step="1" /></label>
+          <p class="sa-sub" style="grid-column:1/-1" id="sf-covers-note">Confirming this job logs it as the next free service of that bike sale. Covered work: price 0. Extra parts or extra work: enter the price and the customer pays it.</p>
+        </div>
+        <div class="sa-grid" id="sf-adv-box" hidden>
+          <label class="sa-field"><span>Advance taken now *</span><input type="number" id="sf-adv" min="0" step="0.01" /></label>
+          <label class="sa-field"><span>Advance paid by</span>
+            <select id="sf-adv-method"><option value="cash">Cash</option><option value="bank">Bank transfer</option><option value="online">Online</option><option value="cheque">Cheque</option></select>
+          </label>
+          <p class="sa-sub" style="grid-column:1/-1">The final total is not known yet: leave the item price 0 and set it when the repair is done. Upload and verify the papers (police report, insurance, licence, blue book) on the sale page. Billing will remind you if they are not verified.</p>
+        </div>
+      </div>
       <div class="sa-lines-head"><strong>Items</strong><button type="button" class="btn-ghost-sm" id="sf-add-line">+ Add item</button></div>
       <div id="sf-lines" class="sa-lines"></div>
       <div class="sa-grid">
@@ -31,13 +60,22 @@
       <div id="sf-emi-box" hidden>
         <div class="sa-grid sa-grid-3">
           <label class="sa-field"><span>Payment</span>
-            <select id="sf-mode"><option value="full">Full payment</option><option value="emi">EMI</option></select>
+            <select id="sf-mode"><option value="full">Full payment</option><option value="emi">Own EMI (dealer collects)</option><option value="financed">Financed by company</option></select>
           </label>
+          <label class="sa-field"><span>Free services included</span><input type="number" id="sf-free" min="0" max="20" step="1" value="0" /></label>
+        </div>
+        <label class="sa-field"><span>What a free service covers (told to the customer)</span><input type="text" id="sf-covers" maxlength="500" placeholder="e.g. Labour, engine oil, chain lube, wash. Extra parts and extra work are charged." /></label>
+        <div class="sa-grid sa-grid-3" id="sf-fin-fields" hidden>
+          <label class="sa-field"><span>Finance / insurance company *</span><input type="text" id="sf-fin-name" maxlength="120" /></label>
+          <label class="sa-field"><span>Loan / policy no</span><input type="text" id="sf-fin-ref" maxlength="60" /></label>
+          <label class="sa-field"><span>Customer pays now (down payment)</span><input type="number" id="sf-fin-down" min="0" step="0.01" value="0" /></label>
+          <label class="sa-field"><span>Company to pay dealer by</span><input type="date" id="sf-fin-due" /></label>
+          <p class="sa-sub" style="grid-column:1/-1">The company pays the rest to you and runs the customer's instalments itself. You keep a follow-up for the company's payment, and record it when it arrives.</p>
         </div>
         <div class="sa-grid sa-grid-3" id="sf-emi-fields" hidden>
           <label class="sa-field"><span>Down payment</span><input type="number" id="sf-down" min="0" step="0.01" value="0" /></label>
           <label class="sa-field"><span>Months</span><input type="number" id="sf-months" min="1" max="120" step="1" value="12" /></label>
-          <label class="sa-field"><span>Monthly EMI</span><input type="number" id="sf-emi" min="0" step="0.01" value="0" /></label>
+          <label class="sa-field"><span>Yearly interest % (optional, reducing balance)</span><input type="number" id="sf-rate" min="0" max="100" step="0.01" placeholder="No interest" /></label>
           <label class="sa-field"><span>First EMI due</span><input type="date" id="sf-first" /></label>
         </div>
       </div>
@@ -64,6 +102,9 @@
             <option value="online">Online</option><option value="cheque">Cheque</option>
           </select>
         </label>
+        <label class="sa-field" id="py-payer-wrap" hidden><span>Received from</span>
+          <select id="py-payer"><option value="customer">Customer</option><option value="financer">Finance company</option></select>
+        </label>
         <label class="sa-field"><span>Paid on</span><input type="date" id="py-date" /></label>
         <label class="sa-field"><span>Reference</span><input type="text" id="py-ref" maxlength="100" /></label>
       </div>
@@ -71,6 +112,52 @@
       <div class="sa-actions">
         <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
         <button type="submit" class="btn-primary-sm" id="py-save">Save payment</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Accident paper -->
+  <dialog class="sa-dialog" id="dlg-doc">
+    <form method="dialog" class="sa-dialog-inner" id="form-doc">
+      <h2 class="sa-dialog-title">Upload paper</h2>
+      <div class="sa-grid">
+        <label class="sa-field"><span>Type</span>
+          <select id="doc-cat">
+            <option value="police_report">Police report</option>
+            <option value="insurance">Insurance</option>
+            <option value="license">Driving licence</option>
+            <option value="bluebook">Blue book</option>
+            <option value="photo">Photo of damage</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label class="sa-field"><span>Title (optional)</span><input type="text" id="doc-title" maxlength="150" /></label>
+      </div>
+      <label class="sa-field"><span>File * (PDF, image, Word, Excel; up to 10 MB)</span><input type="file" id="doc-file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt" /></label>
+      <p class="sa-error" id="doc-error" hidden></p>
+      <div class="sa-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-doc">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="doc-save">Upload</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Free service -->
+  <dialog class="sa-dialog" id="dlg-fs">
+    <form method="dialog" class="sa-dialog-inner" id="form-fs">
+      <h2 class="sa-dialog-title" id="fs-title">Record free service</h2>
+      <p class="sa-sub" id="fs-sub"></p>
+      <div class="sa-grid">
+        <label class="sa-field"><span>Service date</span><input type="date" id="fs-date" /></label>
+        <label class="sa-field"><span>Km at service *</span><input type="number" id="fs-km" required min="0" step="1" /></label>
+        <label class="sa-field"><span>Technician</span><input type="text" id="fs-tech" maxlength="120" /></label>
+      </div>
+      <label class="sa-field"><span>Bike performance</span><textarea id="fs-perf" rows="2" maxlength="2000" placeholder="Engine, brakes, mileage, any complaint…"></textarea></label>
+      <label class="sa-field"><span>Work done</span><textarea id="fs-work" rows="2" maxlength="2000" placeholder="Oil change, chain adjust…"></textarea></label>
+      <p class="sa-error" id="fs-error" hidden></p>
+      <div class="sa-actions">
+        <button type="button" class="btn-ghost-sm" data-close="dlg-fs">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="fs-save">Save service</button>
       </div>
     </form>
   </dialog>

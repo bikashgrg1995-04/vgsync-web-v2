@@ -110,6 +110,7 @@ const navItems = getNavItemsForRole(defaultRole);
               <div><dt>Supplier</dt><dd id="inf-supplier">—</dd></div>
               <div><dt>Bill No</dt><dd id="inf-bill">—</dd></div>
               <div><dt>Purchase Date</dt><dd id="inf-date">—</dd></div>
+              <div><dt>Payment due</dt><dd><span id="inf-due-date">—</span> <button type="button" class="btn-link" id="inf-due-edit" hidden>Change</button></dd></div>
               <div><dt>Payment</dt><dd id="inf-pay">—</dd></div>
             </dl>
             <dl class="invd-dl">
@@ -275,6 +276,20 @@ const navItems = getNavItemsForRole(defaultRole);
   </div>
 
   <PurchaseDialogs />
+
+  <dialog class="pu-dialog" id="dlg-due">
+    <form method="dialog" class="pu-dialog-inner" id="form-due">
+      <h2 class="pu-dialog-title">Payment due date</h2>
+      <p class="pu-sub">When the supplier expects to be paid. You are reminded 3 days before.</p>
+      <label class="pu-field"><span>Due date</span><input type="date" id="due-input" /></label>
+      <p class="pu-error" id="due-error" hidden></p>
+      <div class="pu-actions">
+        <button type="button" class="btn-ghost-sm" id="due-clear">Clear</button>
+        <button type="button" class="btn-ghost-sm" id="due-cancel">Cancel</button>
+        <button type="submit" class="btn-primary-sm" id="due-save">Save</button>
+      </div>
+    </form>
+  </dialog>
 </AppLayout>
 
 <script>
