@@ -1153,5 +1153,13 @@ const navItems = getNavItemsForRole(defaultRole);
     }
   });
 
+  // The menu opens a tab through the address (#returns), like the Sales page.
+  function panelFromHash(): void {
+    const name = window.location.hash.slice(1);
+    if (name && document.querySelector(`.pu-panel[data-panel="${name}"]`)) showPanel(name);
+  }
+  window.addEventListener('hashchange', panelFromHash);
+  panelFromHash();
+
   void init();
 </script>
