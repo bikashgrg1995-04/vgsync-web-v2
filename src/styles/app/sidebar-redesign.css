@@ -359,3 +359,24 @@
   color: var(--text-muted);
 }
 .sidebar-list > .sidebar-group-label:first-child { padding-top: 4px; }
+.sidebar-group-label { padding: 6px 4px 0; }
+.sidebar-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.sidebar-group-toggle:hover { background: rgba(255, 255, 255, 0.06); }
+.sidebar-group-chevron { transition: transform 0.18s ease; }
+.sidebar-group-toggle[aria-expanded="true"] .sidebar-group-chevron { transform: rotate(180deg); }
+/* A folded section hides its items; the permission rules use inline display, which this does not touch. */
+.sidebar-list > li.is-folded { display: none; }
