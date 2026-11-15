@@ -74,12 +74,15 @@ const initials = displayName
         return (
           <>
             {group.label && (
-              <li class="sidebar-group-label" data-nav-group={group.id} aria-hidden="true">
-                {group.label}
+              <li class="sidebar-group-label" data-nav-group={group.id}>
+                <button type="button" class="sidebar-group-toggle" data-group-toggle={group.id} aria-expanded="false">
+                  <span>{group.label}</span>
+                  <svg class="sidebar-group-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
               </li>
             )}
             {groupItems.map((item) => (
-              <li data-nav-group-item={group.id}>
+              <li data-nav-group-item={group.id} class={group.label ? "is-folded" : undefined}>
                 <a
                   href={item.href}
                   class:list={['sidebar-link', { 'is-active': item.id === activeId }]}
