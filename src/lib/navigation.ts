@@ -2,7 +2,7 @@
  * Navigation menu definitions.
  *
  * Eight areas for the owner: Dashboard, Sales, Purchases & Orders, Finance,
- * Inventory, Reports & Analytics, Staff Management and Settings (the last
+ * Inventory, Reports & Analytics, People (customers, suppliers, staff) and Settings (the last
  * one lives in the sidebar footer). What each person sees follows their
  * permissions: an item shows when the person holds its `perm`. The API
  * enforces the same rules; this only decides what is shown.
@@ -33,8 +33,8 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: 'purchases', label: 'Purchases & Orders' },
   { id: 'finance', label: 'Finance' },
   { id: 'inventory', label: 'Inventory' },
+  { id: 'people', label: 'People' },
   { id: 'reports', label: 'Reports & Analytics' },
-  { id: 'staff', label: 'Staff Management' },
 ];
 
 const ALL_ITEMS: NavItem[] = [
@@ -47,12 +47,12 @@ const ALL_ITEMS: NavItem[] = [
 
   { id: 'sales', label: 'Sales', href: '/dashboard/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },
   { id: 'returns', label: 'Returns', href: '/dashboard/sales#returns', icon: 'returns', group: 'sales', perm: 'sales.view' },
-  { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users', group: 'sales', perm: 'sales.view' },
+  { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users', group: 'people', perm: 'sales.view' },
   { id: 'servicing', label: 'Follow-ups', href: '/dashboard/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
 
   { id: 'purchase', label: 'Purchase', href: '/dashboard/purchase', icon: 'clipboard', group: 'purchases', perm: 'purchases.view' },
   { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'purchases', perm: 'orders.view' },
-  { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck', group: 'purchases', perm: 'purchases.view' },
+  { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck', group: 'people', perm: 'purchases.view' },
 
   { id: 'payments', label: 'Payments', href: '/dashboard/payments', icon: 'wallet', group: 'finance', perm: 'finance.view' },
   { id: 'statements', label: 'Statements', href: '/dashboard/statements', icon: 'clipboard', group: 'finance', rule: 'statements' },
@@ -62,7 +62,7 @@ const ALL_ITEMS: NavItem[] = [
 
   { id: 'reports', label: 'Reports', href: '/dashboard/reports', icon: 'chart', group: 'reports', perm: 'reports.view' },
 
-  { id: 'staff', label: 'Staff', href: '/dashboard/staff', icon: 'users', group: 'staff', perm: 'staff.view' },
+  { id: 'staff', label: 'Staff', href: '/dashboard/staff', icon: 'users', group: 'people', perm: 'staff.view' },
 ];
 
 /** Codes that let a person decide an approval request. */
