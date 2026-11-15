@@ -1153,7 +1153,65 @@ export interface MyJob {
   startedAt: string | null;
   doneAt: string | null;
   jobNotes: string;
+  /** Parts and work asked for on this job (the office prices them). */
+  lines: JobLine[];
+  canAddLines: boolean;
 }
+
+export type JobLineStatus = 'requested' | 'approved' | 'rejected' | 'withdrawn';
+
+export interface JobLine {
+  id: number;
+  kind: 'part' | 'work';
+  productId: number | null;
+  name: string;
+  unit: string;
+  quantity: number;
+  note: string;
+  status: JobLineStatus;
+  rejectReason: string;
+  requestedByName: string;
+  /** Office only. */
+  unitPrice: number | null;
+  defaultPrice: number | null;
+}
+
+export const JOB_LINE_STATUS_LABEL: Record<JobLineStatus, string> = {
+  requested: 'Waiting for the office',
+  approved: 'Added to the job',
+  rejected: 'Turned down',
+  withdrawn: 'Withdrawn',
+};
+
+interface RawJobLine {
+  id: number;
+  kind: 'part' | 'work';
+  product: number | null;
+  name: string;
+  unit: string;
+  quantity: string;
+  note: string;
+  status: JobLineStatus;
+  reject_reason: string;
+  requested_by_name: string;
+  unit_price?: string | null;
+  default_price?: string | null;
+}
+
+const jobLineOf = (l: RawJobLine): JobLine => ({
+  id: l.id,
+  kind: l.kind,
+  productId: l.product,
+  name: l.name,
+  unit: l.unit ?? '',
+  quantity: Number(l.quantity),
+  note: l.note,
+  status: l.status,
+  rejectReason: l.reject_reason,
+  requestedByName: l.requested_by_name,
+  unitPrice: l.unit_price == null ? null : Number(l.unit_price),
+  defaultPrice: l.default_price == null ? null : Number(l.default_price),
+});
 
 interface RawMyJob {
   id: number;
@@ -1173,6 +1231,8 @@ interface RawMyJob {
   job_started_at: string | null;
   job_done_at: string | null;
   job_notes: string;
+  lines?: RawJobLine[];
+  can_add_lines?: boolean;
 }
 
 const myJobOf = (j: RawMyJob): MyJob => ({
@@ -1193,10 +1253,46 @@ const myJobOf = (j: RawMyJob): MyJob => ({
   startedAt: j.job_started_at,
   doneAt: j.job_done_at,
   jobNotes: j.job_notes,
+  lines: (j.lines ?? []).map(jobLineOf),
+  canAddLines: !!j.can_add_lines,
 });
 
 export async function listMyJobs(): Promise<MyJob[]> {
   return (await api<RawMyJob[]>('/sales/my-jobs/')).map(myJobOf);
+}
+
+/** Ask for a part (``productId``) or list work to charge for (``description``). */
+export async function requestJobLine(jobId: number, input: { kind: 'part' | 'work'; productId?: number; description?: string; quantity: number; note?: string }): Promise<void> {
+  await api(`/sales/my-jobs/${jobId}/lines/`, {
+    method: 'POST',
+    body: {
+      kind: input.kind,
+      product: input.productId ?? null,
+      description: (input.description ?? '').trim(),
+      quantity: input.quantity,
+      note: (input.note ?? '').trim(),
+    },
+  });
+}
+
+export async function withdrawJobLine(jobId: number, lineId: number): Promise<void> {
+  await api(`/sales/my-jobs/${jobId}/lines/${lineId}/`, { method: 'DELETE' });
+}
+
+/** The office's view of what the technician asked for on a sale. */
+export async function listJobLines(saleId: number): Promise<JobLine[]> {
+  return (await api<RawJobLine[]>(`/sales/${saleId}/job-lines/`)).map(jobLineOf);
+}
+
+export async function approveJobLine(saleId: number, lineId: number, unitPrice?: number): Promise<void> {
+  await api(`/sales/${saleId}/job-lines/${lineId}/approve/`, {
+    method: 'POST',
+    body: unitPrice === undefined ? {} : { unit_price: unitPrice.toFixed(2) },
+  });
+}
+
+export async function rejectJobLine(saleId: number, lineId: number, reason: string): Promise<void> {
+  await api(`/sales/${saleId}/job-lines/${lineId}/reject/`, { method: 'POST', body: { reason: reason.trim() } });
 }
 
 export async function startMyJob(id: number): Promise<void> {

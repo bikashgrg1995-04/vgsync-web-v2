@@ -269,6 +269,16 @@ const navItems = getNavItemsForRole(defaultRole);
           <div class="invd-stat"><strong id="job-time">—</strong><span>Time taken</span></div>
         </div>
         <p class="sad-emi-sum" id="job-notes" style="margin-top:10px"></p>
+        <div id="job-lines-box" hidden>
+          <h4 class="inv-card-title" style="margin-top:16px">Parts and work asked for by the technician</h4>
+          <p class="inv-empty" id="job-lines-error" hidden></p>
+          <div class="inv-table-wrap">
+            <table class="inv-table">
+              <thead><tr><th>Asked for</th><th class="num">Qty</th><th>Note</th><th>Status</th><th class="num">Price each</th><th></th></tr></thead>
+              <tbody id="job-lines"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 

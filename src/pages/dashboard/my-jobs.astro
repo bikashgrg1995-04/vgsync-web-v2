@@ -39,12 +39,28 @@ const navItems = getNavItemsForRole(defaultRole);
     <p class="pu-error" id="mj-error" role="alert" hidden></p>
     <p class="pu-empty" id="mj-none" hidden>No job is given to you right now.</p>
     <div id="mj-list" style="display:grid;gap:14px"></div>
+
+    <dialog class="pu-dialog" id="mj-dlg" style="padding:18px;max-width:420px;width:92vw">
+      <form method="dialog" id="mj-form" style="display:grid;gap:10px">
+        <strong id="mj-dlg-title">Ask for a part</strong>
+        <label id="mj-part-wrap" style="display:grid;gap:4px"><span>Part</span><select id="mj-part"></select></label>
+        <label id="mj-work-wrap" style="display:grid;gap:4px" hidden><span>What work was done</span><input id="mj-work" maxlength="200" /></label>
+        <label style="display:grid;gap:4px"><span>Quantity</span><input id="mj-qty" type="number" min="0.001" step="any" value="1" /></label>
+        <label style="display:grid;gap:4px"><span>Note (optional)</span><input id="mj-note" maxlength="300" /></label>
+        <p class="pu-error" id="mj-dlg-error" role="alert" hidden></p>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button type="button" class="btn-ghost-sm" id="mj-cancel">Cancel</button>
+          <button type="submit" class="btn-primary-sm">Send to office</button>
+        </div>
+      </form>
+    </dialog>
   </div>
 </AppLayout>
 
 <script>
   import { getSession } from '../../lib/auth';
-  import { listMyJobs, startMyJob, finishMyJob, JOB_STATUS_LABEL, SERVICE_KIND_LABEL, type MyJob } from '../../lib/sales';
+  import { listMyJobs, startMyJob, finishMyJob, requestJobLine, withdrawJobLine, JOB_STATUS_LABEL, JOB_LINE_STATUS_LABEL, SERVICE_KIND_LABEL, type MyJob } from '../../lib/sales';
+  import { listStock, type StockItem } from '../../lib/inventory';
 
   const $ = (id: string) => document.getElementById(id)!;
   const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -64,6 +80,10 @@ const navItems = getNavItemsForRole(defaultRole);
     const bike = [j.regNo, j.chassisNo].filter(Boolean).join(' · ');
     const work = j.work.map((w) => `<li>${esc(w.description)}${Number(w.quantity) !== 1 ? ` × ${esc(w.quantity)}` : ''}</li>`).join('');
     const kind = j.serviceKind === 'paid' ? '' : ` · ${SERVICE_KIND_LABEL[j.serviceKind]}${j.freeServiceForNo ? ` of ${esc(j.freeServiceForNo)}` : ''}`;
+    const lines = (j.lines.filter((l) => l.status !== 'withdrawn').map((l) => `<li>${l.kind === 'part' ? 'Part' : 'Work'}: ${esc(l.name)}${l.quantity !== 1 ? ` × ${l.quantity}` : ''} — <em>${JOB_LINE_STATUS_LABEL[l.status]}</em>${l.status === 'rejected' && l.rejectReason ? ` (${esc(l.rejectReason)})` : ''}${l.status === 'requested' ? ` <button type="button" class="btn-link is-danger" data-withdraw="${j.id}:${l.id}">Withdraw</button>` : ''}</li>`).join(''));
+    const askButtons = j.canAddLines
+      ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button type="button" class="btn-ghost-sm" data-ask="part:${j.id}">+ Ask for a part</button><button type="button" class="btn-ghost-sm" data-ask="work:${j.id}">+ Add work</button></div>`
+      : '';
     const action =
       j.jobStatus === 'pending'
         ? `<button type="button" class="btn-primary-sm" data-start="${j.id}">Start job</button>`
@@ -81,6 +101,8 @@ const navItems = getNavItemsForRole(defaultRole);
       ${j.notes ? `<p style="margin:6px 0">Note: ${esc(j.notes)}</p>` : ''}
       <p class="pu-count" style="margin:6px 0">Given ${when(j.assignedAt)}${j.startedAt ? ` · started ${when(j.startedAt)}` : ''}${j.doneAt ? ` · done ${when(j.doneAt)}` : ''}</p>
       ${j.jobNotes ? `<p style="margin:6px 0">Your notes: ${esc(j.jobNotes)}</p>` : ''}
+      ${lines ? `<ul style="margin:6px 0 6px 18px">${lines}</ul>` : ''}
+      ${askButtons}
       ${action}
     </article>`;
   }
@@ -91,6 +113,20 @@ const navItems = getNavItemsForRole(defaultRole);
       const jobs = await listMyJobs();
       $('mj-none').hidden = jobs.length > 0;
       $('mj-list').innerHTML = jobs.map(card).join('');
+      document.querySelectorAll<HTMLButtonElement>('[data-ask]').forEach((b) =>
+        b.addEventListener('click', () => void openAsk(b.dataset.ask!)),
+      );
+      document.querySelectorAll<HTMLButtonElement>('[data-withdraw]').forEach((b) =>
+        b.addEventListener('click', async () => {
+          const [job, line] = b.dataset.withdraw!.split(':').map(Number);
+          try {
+            await withdrawJobLine(job, line);
+            await load();
+          } catch (e) {
+            showError(failure(e));
+          }
+        }),
+      );
       document.querySelectorAll<HTMLButtonElement>('[data-start]').forEach((b) =>
         b.addEventListener('click', async () => {
           try {
@@ -117,6 +153,55 @@ const navItems = getNavItemsForRole(defaultRole);
       showError(failure(e));
     }
   }
+
+  // ---- Ask for a part / add work -----------------------------------------
+
+  let askKind: 'part' | 'work' = 'part';
+  let askJob = 0;
+  let stock: StockItem[] | null = null;
+
+  async function openAsk(spec: string): Promise<void> {
+    const [kind, job] = spec.split(':');
+    askKind = kind as 'part' | 'work';
+    askJob = Number(job);
+    $('mj-dlg-title').textContent = askKind === 'part' ? 'Ask for a part' : 'Add work';
+    $('mj-part-wrap').hidden = askKind !== 'part';
+    $('mj-work-wrap').hidden = askKind !== 'work';
+    ($('mj-qty') as HTMLInputElement).value = '1';
+    ($('mj-note') as HTMLInputElement).value = '';
+    ($('mj-work') as HTMLInputElement).value = '';
+    $('mj-dlg-error').hidden = true;
+    if (askKind === 'part') {
+      try {
+        stock ??= await listStock();
+      } catch {
+        stock = [];
+      }
+      $('mj-part').innerHTML = stock
+        .map((s) => `<option value="${s.productId}">${esc(s.name)} (${esc(s.stockNo)}) · ${s.quantity} in stock · Rs ${s.salePrice}</option>`)
+        .join('');
+    }
+    ($('mj-dlg') as HTMLDialogElement).showModal();
+  }
+
+  $('mj-cancel').addEventListener('click', () => ($('mj-dlg') as HTMLDialogElement).close());
+  $('mj-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await requestJobLine(askJob, {
+        kind: askKind,
+        productId: askKind === 'part' ? Number(($('mj-part') as HTMLSelectElement).value) : undefined,
+        description: askKind === 'work' ? ($('mj-work') as HTMLInputElement).value : '',
+        quantity: Number(($('mj-qty') as HTMLInputElement).value),
+        note: ($('mj-note') as HTMLInputElement).value,
+      });
+      ($('mj-dlg') as HTMLDialogElement).close();
+      await load();
+    } catch (err) {
+      $('mj-dlg-error').textContent = failure(err);
+      $('mj-dlg-error').hidden = false;
+    }
+  });
 
   $('mj-refresh').addEventListener('click', () => void load());
   void load();
