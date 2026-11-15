@@ -283,6 +283,17 @@ const navItems = getNavItemsForRole(defaultRole);
           d.suppliers.map((s, i) => [String(i + 1), esc(s.name), String(s.purchases), `<strong>${formatNpr(s.total)}</strong>`]),
         )}<p class="rp-note">Received and part-received purchases only.</p>`;
       }
+      case 'salespeople': {
+        const d = report.data;
+        return `
+          ${kpis([kpi('Sales', String(d.totals.sales)), kpi('Sold', formatNpr(d.totals.total))])}
+          ${table(
+            [{ label: 'Salesperson' }, { label: 'Sales', num: true }, { label: 'Stock / Bike / Service' }, { label: 'Sold', num: true }, { label: 'Collected', num: true }, { label: 'Due', num: true }],
+            d.rows.map((p) => [esc(p.name), String(p.sales), `${p.stock} / ${p.bike} / ${p.maintenance}`, `<strong>${formatNpr(p.total)}</strong>`, formatNpr(p.collected), formatNpr(p.due)]),
+            'No sales were confirmed in this period.',
+          )}
+          <p class="rp-note">Confirmed sales only, counted by sale date. Collected is the money received so far on those sales. Older sales without a recorded seller show as "Not recorded".</p>`;
+      }
       case 'technicians': {
         const d = report.data;
         return `

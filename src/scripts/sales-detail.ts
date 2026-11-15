@@ -245,6 +245,7 @@ function renderInfo(s: Sale): void {
   setText("inf-invoice", s.invoiceNo || "Not issued yet");
   setText("inf-no", s.saleNo);
   setText("inf-customer", customerName(s));
+  setText("inf-seller", s.salespersonName || "—");
   setText("inf-date", fmtDate(s.saleDate));
   setText("inf-kind", kindLabel(s));
   const financed = s.paymentMode === "financed";
