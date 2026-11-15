@@ -176,7 +176,9 @@ const navItems = getNavItemsForRole(defaultRole);
   const me = Number((session as unknown as { userId?: number; id?: number })?.userId ?? (session as unknown as { id?: number })?.id ?? 0);
 
   type Tab = 'mine' | 'by-me' | 'team';
-  let tab: Tab = 'mine';
+  // The owner has no tasks of their own: they hand work out and watch the team.
+  const ownerView = session?.isOwner === true;
+  let tab: Tab = ownerView ? 'team' : 'mine';
   let personFilter: number | null = null;
   let tasks: Task[] = [];
   let summary: TaskSummary | null = null;
@@ -231,6 +233,10 @@ const navItems = getNavItemsForRole(defaultRole);
       $('tk-k-team').hidden = false;
       $('tk-k-topen').textContent = String(summary.team.open);
       $('tk-k-tsub').textContent = `${summary.team.overdue} overdue`;
+    }
+    for (const id of ['tk-k-open', 'tk-k-over', 'tk-k-done']) {
+      const kpi = $(id).closest<HTMLElement>('.pd-kpi');
+      if (kpi) kpi.hidden = ownerView;
     }
     const card = $('tk-people-card');
     card.hidden = !(tab === 'team' && summary.team);
@@ -473,7 +479,12 @@ const navItems = getNavItemsForRole(defaultRole);
   $('tk-new').hidden = !canAssign;
   document.querySelector<HTMLElement>('[data-tab="by-me"]')!.hidden = !canAssign;
   document.querySelector<HTMLElement>('[data-tab="team"]')!.hidden = !canSeeAll;
-  if (canSeeAll) $('tk-sub').textContent = 'Work handed to you, and (under Everyone) what the whole team is doing.';
+  if (ownerView) {
+    document.querySelector<HTMLElement>('[data-tab="mine"]')!.hidden = true;
+    document.querySelector<HTMLElement>('[data-tab="team"]')!.classList.add('is-active');
+    document.querySelector<HTMLElement>('[data-tab="mine"]')!.classList.remove('is-active');
+    $('tk-sub').textContent = 'Assign work to your staff and see how each task is going.';
+  } else if (canSeeAll) $('tk-sub').textContent = 'Work handed to you, and (under Everyone) what the whole team is doing.';
 
   void load().then(() => {
     const id = Number(new URLSearchParams(window.location.search).get('id'));
