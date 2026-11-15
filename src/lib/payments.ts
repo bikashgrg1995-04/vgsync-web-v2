@@ -7,7 +7,7 @@
  * payment instead.
  */
 
-import { api } from './api';
+import { api, ApiError } from './api';
 
 export type PayMethod = 'cash' | 'bank' | 'online' | 'cheque';
 export type LedgerStatus = 'active' | 'void';
@@ -326,6 +326,136 @@ export async function listStatement(staffId: number, dateFrom = '', dateTo = '')
   }));
 }
 
+// ---- Daily sheet ------------------------------------------------------------
+
+export type WorkStatus = 'present' | 'half' | 'absent';
+
+export interface WorkRow {
+  staffId: number;
+  name: string;
+  rate: number;
+  /** ``null`` when the day has not been marked yet. */
+  status: WorkStatus | null;
+  extra: number;
+  note: string;
+  amount: number;
+  month: { present: number; half: number; absent: number; earned: number };
+}
+
+export interface WorkMark {
+  staff: number;
+  status: WorkStatus;
+  extra?: number;
+  note?: string;
+  /** The day's wage when it is not the usual rate; empty uses the rate. */
+  amount?: number;
+}
+
+function workRows(r: Raw): WorkRow[] {
+  return (r.staff as Raw[]).map((w) => ({
+    staffId: w.staff,
+    name: w.staff_name,
+    rate: num(w.rate),
+    status: w.status ?? null,
+    extra: num(w.extra),
+    note: w.note ?? '',
+    amount: num(w.amount),
+    month: {
+      present: w.month.present,
+      half: w.month.half,
+      absent: w.month.absent,
+      earned: num(w.month.earned),
+    },
+  }));
+}
+
+export async function getWorkSheet(date: string): Promise<WorkRow[]> {
+  return workRows(await api<Raw>(`/payroll/workdays/?date=${encodeURIComponent(date)}`));
+}
+
+export interface Attendance {
+  month: string;
+  present: number;
+  half: number;
+  absent: number;
+  earned: number;
+  days: { date: string; status: WorkStatus; extra: number; note: string; amount: number }[];
+}
+
+/** One person's marks for a month (``YYYY-MM``). Owner only. */
+export async function getAttendance(staffId: number, month: string): Promise<Attendance> {
+  const r = await api<Raw>(`/payroll/workdays/staff/${staffId}/?month=${encodeURIComponent(month)}`);
+  return {
+    month: r.month,
+    present: r.present,
+    half: r.half,
+    absent: r.absent,
+    earned: num(r.earned),
+    days: (r.days as Raw[]).map((d) => ({
+      date: d.date,
+      status: d.status,
+      extra: num(d.extra),
+      note: d.note ?? '',
+      amount: num(d.amount),
+    })),
+  };
+}
+
+export async function saveWorkSheet(date: string, marks: WorkMark[]): Promise<WorkRow[]> {
+  const body = {
+    date,
+    marks: marks.map((m) => ({
+      staff: m.staff,
+      status: m.status,
+      extra: (m.extra ?? 0).toFixed(2),
+      note: m.note ?? '',
+      // Typed in when the day's wage is not the usual rate.
+      ...(m.amount ? { amount: m.amount.toFixed(2) } : {}),
+    })),
+  };
+  return workRows(await api<Raw>('/payroll/workdays/', { method: 'POST', body }));
+}
+
+/** The signed-in person's own pay. ``null`` when the owner has not set it up. */
+export async function getMyPay(): Promise<{ balance: PayBalance; unsettled: Unsettled[]; payType: PayType } | null> {
+  try {
+    const r = await api<Raw>('/payroll/me/');
+    return {
+      balance: balanceFromApi(r),
+      payType: r.pay_type,
+      unsettled: (r.unsettled as Raw[]).map((u) => ({
+        id: u.id,
+        kind: u.kind,
+        date: u.entry_date,
+        description: u.description,
+        amount: num(u.amount),
+        paid: num(u.paid),
+        remaining: num(u.remaining),
+        carriedOver: Boolean(u.carried_over),
+      })),
+    };
+  } catch (e) {
+    if (e instanceof ApiError && e.code === 'no_salary') return null;
+    throw e;
+  }
+}
+
+export function listMyStatement(): Promise<StatementRow[]> {
+  return allPages<Raw, StatementRow>('/payroll/me/statement/', (s) => ({
+    id: s.id,
+    date: s.date,
+    type: s.type,
+    direction: s.direction,
+    description: s.description,
+    amount: num(s.amount),
+    method: s.method,
+    reference: s.reference,
+    advancePart: num(s.advance_part),
+    owedAfter: num(s.owed_after),
+    advanceAfter: num(s.advance_after),
+  }));
+}
+
 function salaryFromApi(r: Raw): SalaryProfile {
   return {
     staffId: r.staff,
@@ -344,6 +474,10 @@ export async function listSalaries(): Promise<SalaryProfile[]> {
 
 export async function saveSalary(staffId: number, input: SalaryInput): Promise<SalaryProfile> {
   const body: Record<string, unknown> = { pay_type: input.payType };
+  if (input.payType === 'daily') {
+    // The usual wage for a full day; empty means each day's amount is typed in.
+    body.rate = input.rate ? input.rate.toFixed(2) : null;
+  }
   if (input.payType === 'monthly') {
     body.rate = (input.rate ?? 0).toFixed(2);
     body.allowances = (input.allowances ?? 0).toFixed(2);
@@ -399,6 +533,114 @@ export async function voidPayrollPayment(id: number, reason: string): Promise<vo
   await api(`/payroll/payments/${id}/void/`, { method: 'POST', body: { reason } });
 }
 
+// ---- Incentives -------------------------------------------------------
+
+export type IncentiveBasis = 'sale_percent' | 'bike_fixed' | 'job_fixed' | 'job_percent';
+
+export const INCENTIVE_BASIS_LABEL: Record<IncentiveBasis, string> = {
+  sale_percent: '% of the value of sales they made',
+  bike_fixed: 'Fixed amount per bike sold',
+  job_fixed: 'Fixed amount per service job finished',
+  job_percent: '% of the value of service jobs finished',
+};
+
+export interface IncentiveRule {
+  id: number;
+  name: string;
+  basis: IncentiveBasis;
+  value: number;
+  staffId: number | null;
+  staffName: string;
+  positionId: number | null;
+  positionName: string;
+  isActive: boolean;
+}
+
+export interface IncentiveRow {
+  staffId: number;
+  name: string;
+  lines: { name: string; basis: IncentiveBasis; base: number; rate: number; amount: number }[];
+  total: number;
+  hasPayProfile: boolean;
+  entryId: number | null;
+  appliedAmount: number | null;
+}
+
+function ruleFromApi(r: Raw): IncentiveRule {
+  return {
+    id: r.id,
+    name: r.name,
+    basis: r.basis,
+    value: num(r.value),
+    staffId: r.staff ?? null,
+    staffName: r.staff_name ?? '',
+    positionId: r.position ?? null,
+    positionName: r.position_name ?? '',
+    isActive: !!r.is_active,
+  };
+}
+
+export async function listIncentiveRules(): Promise<IncentiveRule[]> {
+  return allPages<Raw, IncentiveRule>('/payroll/incentive-rules/', ruleFromApi);
+}
+
+export async function saveIncentiveRule(input: {
+  id?: number;
+  name: string;
+  basis: IncentiveBasis;
+  value: number;
+  staffId?: number | null;
+  positionId?: number | null;
+  isActive?: boolean;
+}): Promise<void> {
+  const body: Record<string, unknown> = {
+    name: input.name.trim(),
+    basis: input.basis,
+    value: input.value.toFixed(2),
+    staff: input.staffId ?? null,
+    position: input.positionId ?? null,
+  };
+  if (input.isActive !== undefined) body.is_active = input.isActive;
+  if (input.id) await api(`/payroll/incentive-rules/${input.id}/`, { method: 'PATCH', body });
+  else await api('/payroll/incentive-rules/', { method: 'POST', body });
+}
+
+export async function deleteIncentiveRule(id: number): Promise<void> {
+  await api(`/payroll/incentive-rules/${id}/`, { method: 'DELETE' });
+}
+
+function incentiveLines(lines: Raw[]): IncentiveRow['lines'] {
+  return lines.map((l) => ({ name: l.name, basis: l.basis, base: num(l.base), rate: num(l.rate), amount: num(l.amount) }));
+}
+
+/** What each person earned as incentive in a month (``YYYY-MM``). */
+export async function getIncentives(month: string): Promise<IncentiveRow[]> {
+  const r = await api<Raw>(`/payroll/incentives/?month=${encodeURIComponent(month)}`);
+  return (r.rows as Raw[]).map((x) => ({
+    staffId: x.staff,
+    name: x.name,
+    lines: incentiveLines(x.lines),
+    total: num(x.total),
+    hasPayProfile: !!x.has_pay_profile,
+    entryId: x.entry ?? null,
+    appliedAmount: x.applied_amount == null ? null : num(x.applied_amount),
+  }));
+}
+
+/** Put the month's incentive in pay as a bonus. Nobody is paid twice for a month. */
+export async function applyIncentives(month: string, staffIds?: number[]): Promise<{ applied: number; skipped: { staff: number; reason: string }[] }> {
+  const body: Record<string, unknown> = { month };
+  if (staffIds) body.staff = staffIds;
+  const r = await api<Raw>('/payroll/incentives/', { method: 'POST', body });
+  return { applied: (r.applied as Raw[]).length, skipped: r.skipped };
+}
+
+/** The signed-in person's own incentive so far this month. */
+export async function getMyIncentive(month?: string): Promise<{ total: number; lines: IncentiveRow['lines'] }> {
+  const r = await api<Raw>(`/payroll/me/incentive/${month ? `?month=${month}` : ''}`);
+  return { total: num(r.total), lines: incentiveLines(r.lines) };
+}
+
 export function formatNpr(n: number): string {
   return new Intl.NumberFormat('en-NP', {
     style: 'currency',
@@ -406,4 +648,86 @@ export function formatNpr(n: number): string {
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
   }).format(n);
+}
+
+
+// ---- Cash and bank ----------------------------------------------------------
+
+export interface MethodCheck {
+  id: number;
+  method: PayMethod;
+  asOf: string;
+  expected: number;
+  counted: number;
+  difference: number;
+  note: string;
+  adjusted: boolean;
+  createdBy: string;
+}
+
+export interface MethodBalance {
+  method: PayMethod;
+  label: string;
+  opening: number;
+  openingAsOf: string | null;
+  received: number;
+  paid: number;
+  expected: number;
+  lastCheck: MethodCheck | null;
+}
+
+const toCheck = (r: any): MethodCheck => ({
+  id: r.id,
+  method: r.method,
+  asOf: r.as_of,
+  expected: Number(r.expected),
+  counted: Number(r.counted),
+  difference: Number(r.difference),
+  note: r.note ?? '',
+  adjusted: Boolean(r.adjusted),
+  createdBy: r.created_by ?? '',
+});
+
+/** What the books say is held in each payment method on a date (owner only). */
+export async function getBalances(
+  asOf?: string,
+): Promise<{ asOf: string; methods: MethodBalance[]; withoutMethod: number }> {
+  const r = await api<any>(`/finance/balances/${asOf ? `?as_of=${asOf}` : ''}`);
+  return {
+    asOf: r.as_of,
+    withoutMethod: r.without_method,
+    methods: r.methods.map((m: any) => ({
+      method: m.method,
+      label: m.label,
+      opening: Number(m.opening),
+      openingAsOf: m.opening_as_of,
+      received: Number(m.received),
+      paid: Number(m.paid),
+      expected: Number(m.expected),
+      lastCheck: m.last_check ? toCheck(m.last_check) : null,
+    })),
+  };
+}
+
+export async function setOpeningBalance(method: PayMethod, amount: number, asOf: string): Promise<void> {
+  await api(`/finance/opening-balances/${method}/`, { method: 'PUT', body: { amount: amount.toFixed(2), as_of: asOf } });
+}
+
+export async function listChecks(): Promise<MethodCheck[]> {
+  return (await api<any[]>('/finance/reconciliations/')).map(toCheck);
+}
+
+export async function saveCheck(input: {
+  method: PayMethod;
+  asOf: string;
+  counted: number;
+  note: string;
+  adjust: boolean;
+}): Promise<MethodCheck> {
+  return toCheck(
+    await api('/finance/reconciliations/', {
+      method: 'POST',
+      body: { method: input.method, as_of: input.asOf, counted: input.counted.toFixed(2), note: input.note, adjust: input.adjust },
+    }),
+  );
 }

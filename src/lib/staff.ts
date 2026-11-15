@@ -7,7 +7,7 @@
  * back once as `temporaryPassword`; it cannot be looked up again.
  */
 
-import { api } from './api';
+import { api, apiDownload } from './api';
 
 export type StaffRole = 'admin' | 'accountant' | 'staff';
 
@@ -26,7 +26,9 @@ export const MODULES: Array<{ id: string; label: string }> = [
   { id: 'orders', label: 'Orders' },
   { id: 'finance', label: 'Finance' },
   { id: 'staff', label: 'Staff & payroll' },
+  { id: 'reports', label: 'Reports' },
   { id: 'reminders', label: 'Reminders' },
+  { id: 'backup', label: 'Backup & restore' },
 ];
 
 export interface StaffMember {
@@ -40,10 +42,20 @@ export interface StaffMember {
   role: StaffRole;
   positionId: number | null;
   positionName: string;
+  /** More positions held at the same time; access is the union of all. */
+  extraPositionIds: number[];
+  extraPositionNames: string[];
   isActive: boolean;
   mustChangePassword: boolean;
+  /** False for someone kept only in the records (never signs in). */
+  canSignIn: boolean;
   lastLogin: string | null;
   dateJoined: string;
+}
+
+/** "Seller, Buyer": the main position first, then the extra ones. */
+export function positionLabel(m: Pick<StaffMember, 'positionName' | 'extraPositionNames'>): string {
+  return [m.positionName, ...m.extraPositionNames].filter(Boolean).join(', ');
 }
 
 export interface StaffInput {
@@ -54,8 +66,11 @@ export interface StaffInput {
   phone: string;
   role: StaffRole;
   positionId: number | null;
+  extraPositionIds?: number[];
   /** Leave empty to have the server generate a temporary password. */
   password?: string;
+  /** Default true. False: no login, no password, position optional. */
+  canSignIn?: boolean;
 }
 
 export interface PositionPermission {
@@ -70,16 +85,56 @@ export interface Position {
   id: number;
   name: string;
   description: string;
+  department: string;
   isActive: boolean;
   staffCount: number;
   permissions: PositionPermission[];
+  /** Every `module.action` code the position grants. */
+  granted: string[];
 }
 
 export interface PositionInput {
   name: string;
   description: string;
+  department?: string;
   isActive?: boolean;
-  permissions: PositionPermission[];
+  /** The full list of `module.action` codes the position grants. */
+  codes: string[];
+  /** On create only: the preset this position started from. */
+  preset?: string;
+}
+
+export interface CatalogueAction {
+  action: string;
+  code: string;
+  label: string;
+  /** Reserved codes belong to the owner and can never be handed out. */
+  reserved: boolean;
+}
+
+export interface CatalogueModule {
+  module: string;
+  label: string;
+  actions: CatalogueAction[];
+}
+
+export interface Preset {
+  key: string;
+  label: string;
+  department: string;
+  permissions: string[];
+}
+
+export type OverrideEffect = 'inherit' | 'allow' | 'deny';
+
+export interface StaffAccess {
+  /** What the position gives. */
+  inherited: string[];
+  /** The person's own exceptions, by code. */
+  overrides: Record<string, 'allow' | 'deny'>;
+  /** The result. */
+  effective: string[];
+  positionId: number | null;
 }
 
 interface ApiStaff {
@@ -92,8 +147,11 @@ interface ApiStaff {
   role: StaffRole;
   position: number | null;
   position_name: string | null;
+  extra_positions?: number[];
+  extra_position_names?: string[];
   is_active: boolean;
   must_change_password: boolean;
+  can_sign_in?: boolean;
   last_login: string | null;
   date_joined: string;
   temporary_password?: string;
@@ -103,6 +161,8 @@ interface ApiPosition {
   id: number;
   name: string;
   description: string;
+  department?: string;
+  granted?: string[];
   is_active: boolean;
   staff_count: number;
   permissions: Array<{
@@ -132,8 +192,11 @@ function staffFromApi(s: ApiStaff): StaffMember {
     role: s.role,
     positionId: s.position,
     positionName: s.position_name ?? '',
+    extraPositionIds: s.extra_positions ?? [],
+    extraPositionNames: s.extra_position_names ?? [],
     isActive: s.is_active,
     mustChangePassword: s.must_change_password,
+    canSignIn: s.can_sign_in !== false,
     lastLogin: s.last_login,
     dateJoined: s.date_joined,
   };
@@ -144,6 +207,8 @@ function positionFromApi(p: ApiPosition): Position {
     id: p.id,
     name: p.name,
     description: p.description,
+    department: p.department ?? '',
+    granted: p.granted ?? [],
     isActive: p.is_active,
     staffCount: p.staff_count,
     permissions: p.permissions.map((x) => ({
@@ -182,16 +247,19 @@ export async function getStaff(id: number): Promise<StaffMember> {
 export async function createStaff(
   input: StaffInput,
 ): Promise<{ member: StaffMember; temporaryPassword: string | null }> {
+  const signsIn = input.canSignIn !== false;
   const body: Record<string, unknown> = {
-    username: (input.username ?? '').trim(),
+    can_sign_in: signsIn,
     first_name: input.firstName.trim(),
     last_name: input.lastName.trim(),
     email: input.email.trim(),
     phone: input.phone.trim(),
     role: input.role,
     position: input.role === 'staff' ? input.positionId : null,
+    extra_positions: input.role === 'staff' ? input.extraPositionIds ?? [] : [],
   };
-  if (input.password) body.password = input.password;
+  if (signsIn) body.username = (input.username ?? '').trim();
+  if (signsIn && input.password) body.password = input.password;
 
   const data = await api<ApiStaff>('/staff/', { method: 'POST', body });
   return { member: staffFromApi(data), temporaryPassword: data.temporary_password ?? null };
@@ -207,9 +275,22 @@ export async function updateStaff(id: number, input: StaffInput): Promise<StaffM
       phone: input.phone.trim(),
       role: input.role,
       position: input.role === 'staff' ? input.positionId : null,
+      extra_positions: input.role === 'staff' ? input.extraPositionIds ?? [] : [],
     },
   });
   return staffFromApi(data);
+}
+
+/** Give or take away the right to sign in. Giving it returns a one-time password. */
+export async function setSignIn(
+  id: number,
+  canSignIn: boolean,
+  positionId?: number | null,
+): Promise<{ member: StaffMember; temporaryPassword: string | null }> {
+  const body: Record<string, unknown> = { can_sign_in: canSignIn };
+  if (positionId) body.position = positionId;
+  const data = await api<ApiStaff>(`/staff/${id}/`, { method: 'PATCH', body });
+  return { member: staffFromApi(data), temporaryPassword: data.temporary_password ?? null };
 }
 
 export async function deactivateStaff(id: number): Promise<void> {
@@ -239,15 +320,11 @@ function positionBody(input: PositionInput): Record<string, unknown> {
   const body: Record<string, unknown> = {
     name: input.name.trim(),
     description: input.description.trim(),
-    // Send every module so unticked boxes are really switched off.
-    permissions: input.permissions.map((p) => ({
-      module: p.module,
-      can_view: p.canView,
-      can_create: p.canCreate,
-      can_update: p.canUpdate,
-      can_delete: p.canDelete,
-    })),
+    // The full list, so unticked boxes are really switched off.
+    codes: input.codes,
   };
+  if (input.department !== undefined) body.department = input.department.trim();
+  if (input.preset) body.preset = input.preset;
   if (input.isActive !== undefined) body.is_active = input.isActive;
   return body;
 }
@@ -271,4 +348,106 @@ export async function setPositionActive(id: number, isActive: boolean): Promise<
 /** A position in use cannot be deleted; the API answers 409 with the reason. */
 export async function deletePosition(id: number): Promise<void> {
   await api(`/positions/${id}/`, { method: 'DELETE' });
+}
+
+// ---------- permissions ----------
+
+/** Every module and action a position can grant (what the API understands). */
+export async function loadCatalogue(): Promise<CatalogueModule[]> {
+  return api<CatalogueModule[]>('/positions/catalogue/');
+}
+
+/** Starting templates for a new position. Picking one only copies its grants. */
+export async function loadPresets(): Promise<Preset[]> {
+  return api<Preset[]>('/positions/presets/');
+}
+
+interface ApiAccess {
+  inherited: string[];
+  overrides: Record<string, 'allow' | 'deny'>;
+  effective: string[];
+  position: number | null;
+}
+
+function accessFromApi(a: ApiAccess): StaffAccess {
+  return {
+    inherited: a.inherited,
+    overrides: a.overrides,
+    effective: a.effective,
+    positionId: a.position,
+  };
+}
+
+export async function getAccess(id: number): Promise<StaffAccess> {
+  return accessFromApi(await api<ApiAccess>(`/staff/${id}/access/`));
+}
+
+/** Owner only. Sets, changes or clears one person's own exceptions. */
+export async function saveOverrides(
+  id: number,
+  changes: Array<{ permission: string; effect: OverrideEffect }>,
+): Promise<StaffAccess> {
+  return accessFromApi(
+    await api<ApiAccess>(`/staff/${id}/access/`, { method: 'PUT', body: { overrides: changes } }),
+  );
+}
+
+
+// ---- Documents kept on a staff record ---------------------------------------
+
+export interface StaffDocument {
+  id: number;
+  title: string;
+  category: 'identity' | 'contract' | 'cv' | 'other';
+  fileName: string;
+  size: number;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+export const DOCUMENT_CATEGORIES: Record<StaffDocument['category'], string> = {
+  identity: 'Identity',
+  contract: 'Contract',
+  cv: 'CV / Certificate',
+  other: 'Other',
+};
+
+type RawDoc = Record<string, any>;
+
+function docFromApi(d: RawDoc): StaffDocument {
+  return {
+    id: d.id,
+    title: d.title,
+    category: d.category,
+    fileName: d.original_name,
+    size: d.size,
+    uploadedBy: d.uploaded_by_name ?? '',
+    createdAt: d.created_at,
+  };
+}
+
+export async function listDocuments(staffId: number): Promise<StaffDocument[]> {
+  const rows = await api<RawDoc[]>(`/staff/${staffId}/documents/`);
+  return rows.map(docFromApi);
+}
+
+export async function uploadDocument(
+  staffId: number,
+  file: File,
+  title: string,
+  category: StaffDocument['category'],
+): Promise<StaffDocument> {
+  const form = new FormData();
+  form.append('file', file);
+  if (title.trim()) form.append('title', title.trim());
+  form.append('category', category);
+  return docFromApi(await api<RawDoc>(`/staff/${staffId}/documents/`, { method: 'POST', body: form }));
+}
+
+export function downloadDocument(staffId: number, doc: StaffDocument): Promise<void> {
+  return apiDownload(`/staff/${staffId}/documents/${doc.id}/`, doc.fileName);
+}
+
+export async function deleteDocument(staffId: number, id: number): Promise<void> {
+  await api(`/staff/${staffId}/documents/${id}/`, { method: 'DELETE' });
 }

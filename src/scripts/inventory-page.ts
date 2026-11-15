@@ -2,8 +2,10 @@
 import { getSession } from "../lib/auth";
 import { ApiError } from "../lib/api";
 import { openProductDialog } from "./product-dialog";
+import { openProductImport } from "./product-import";
 import {
   listStock,
+  downloadProducts,
   listMovements,
   deactivateProduct,
   addStockAdjustment,
@@ -783,6 +785,13 @@ $("inv-status")?.addEventListener("change", () => {
 });
 
 $("inv-add")?.addEventListener("click", () => openProduct());
+$("inv-import")?.addEventListener("click", () => openProductImport("products", () => void reload()));
+$("inv-mrp")?.addEventListener("click", () => openProductImport("prices", () => void reload()));
+$("inv-export")?.addEventListener("click", () => {
+  downloadProducts().catch((e) =>
+    showNotice(e instanceof ApiError ? e.message : "Could not download the file."),
+  );
+});
 
 $("inv-low-filter")?.addEventListener("click", () => {
   const sel = $<HTMLSelectElement>("inv-status");
@@ -958,6 +967,14 @@ try {
   if (addBtn) {
     addBtn.hidden = !canEditCatalog;
   }
+
+  // Only a Head Office or independent business keeps a catalogue.
+  const keepsCatalogue = canEditCatalog && session?.businessType !== "branch";
+  const importBtn = $("inv-import");
+  const mrpBtn = $("inv-mrp");
+
+  if (importBtn) importBtn.hidden = !keepsCatalogue;
+  if (mrpBtn) mrpBtn.hidden = !keepsCatalogue;
 } catch {
   /* ignore */
 }

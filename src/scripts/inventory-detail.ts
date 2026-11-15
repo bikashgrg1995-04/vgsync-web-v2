@@ -247,6 +247,10 @@ function renderProduct(p: StockItem): void {
   setText("invd-stat-qty", `${formatQty(p.quantity)} ${unit}`);
   setText("invd-stat-sale", formatNpr(p.salePrice));
   setText("invd-stat-cost", formatNpr(p.purchasePrice));
+  // Without inventory.view_cost the cost and the stock value stay out of sight.
+  const costOff = !!p.costHidden;
+  $("invd-stat-cost")?.closest<HTMLElement>(".invd-stat")?.toggleAttribute("hidden", costOff);
+  $("invd-value")?.parentElement?.toggleAttribute("hidden", costOff);
 
   setText("inf-name", p.name);
   setText("inf-stock-no", p.stockNo);
@@ -281,7 +285,7 @@ function renderRelated(p: StockItem): void {
     ["Category", p.category || "—"],
     ["Group", p.group || "—"],
     ["Unit", p.unit || "pcs"],
-    ["Purchase price", formatNpr(p.purchasePrice)],
+    ...(p.costHidden ? [] : [["Purchase price", formatNpr(p.purchasePrice)] as [string, string]]),
     ["Selling price", formatNpr(p.salePrice)],
     ["MRP", formatNpr(p.mrp)],
     [

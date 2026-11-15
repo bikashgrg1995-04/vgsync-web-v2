@@ -60,7 +60,10 @@ const navItems = getNavItemsForRole(defaultRole);
   import { getCompanyName } from '../../lib/settings';
   import { listBusinesses, TYPE_LABEL, type BusinessRow } from '../../lib/branches';
 
-  if (!getSession()) window.location.replace('/');
+  const session = getSession();
+  if (!session) window.location.replace('/');
+  // Only the company owner manages the list of branches.
+  else if (!(session.isOwner && session.role === 'owner')) window.location.replace('/dashboard');
 
   let rows: BusinessRow[] = [];
 

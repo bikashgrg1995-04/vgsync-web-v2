@@ -7,15 +7,34 @@
  * helpers here only preview totals while the form is open.
  */
 
-import { api } from './api';
+import { api, apiDownload } from './api';
 
 export type SaleStatus = 'draft' | 'confirmed' | 'cancelled';
 export type SaleType = 'stock' | 'bike' | 'maintenance';
-export type PaymentMode = 'full' | 'emi';
+export type ServiceKind = 'paid' | 'free' | 'accident';
+export type JobStatus = 'pending' | 'in_progress' | 'done';
+export const JOB_STATUS_LABEL: Record<JobStatus, string> = {
+  pending: 'Not started',
+  in_progress: 'In progress',
+  done: 'Done',
+};
+export type PaymentMode = 'full' | 'emi' | 'financed';
+export type Payer = 'customer' | 'financer';
+export const PAYMENT_MODE_LABEL: Record<PaymentMode, string> = {
+  full: 'Full payment',
+  emi: 'Own EMI',
+  financed: 'Financed by company',
+};
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 export type PayMethod = 'cash' | 'bank' | 'online' | 'cheque';
 export type CreditKind = 'refund' | 'adjustment' | 'replacement';
-export type FollowupKind = 'maintenance_post' | 'maintenance_due' | 'emi_due' | 'credit_due';
+export type FollowupKind =
+  | 'maintenance_post'
+  | 'maintenance_due'
+  | 'emi_due'
+  | 'credit_due'
+  | 'financer_due'
+  | 'free_service_due';
 export type FollowupStatus = 'pending' | 'done' | 'skipped';
 
 export interface SaleLine {
@@ -39,6 +58,7 @@ export interface SalePayment {
   amount: number;
   paidOn: string;
   method: PayMethod;
+  payer: Payer;
   reference: string;
   status: 'active' | 'void';
   voidReason: string;
@@ -70,11 +90,38 @@ export interface Sale {
   vatAmount: number;
   netTotal: number;
   paymentMode: PaymentMode;
+  financerName: string;
+  financerRef: string;
+  financerDueDate: string | null;
+  financerReceivable: number;
+  financerReceived: number;
   downPayment: number;
   emiMonths: number;
   emiAmount: number;
   firstEmiDue: string;
+  interestRate: number | null;
   financeCharge: number;
+  technicianId: number | null;
+  technicianName: string;
+  salespersonId: number | null;
+  salespersonName: string;
+  jobStatus: JobStatus;
+  jobNotes: string;
+  jobStartedAt: string | null;
+  jobDoneAt: string | null;
+  serviceKind: ServiceKind;
+  freeServiceFor: number | null;
+  freeServiceForNo: string;
+  odometerKm: number | null;
+  documentsIgnored: boolean;
+  documentsTotal: number;
+  documentsVerified: number;
+  freeServices: number;
+  freeServiceCovers: string;
+  freeServiceForCovers: string;
+  freeServicesUsed: number;
+  freeServicesLeft: number;
+  freeServiceRecords: FreeService[];
   amountDue: number;
   dueDate: string;
   vehicleChassisNo: string;
@@ -91,6 +138,17 @@ export interface Sale {
   createdAt: string | null;
   confirmedAt: string | null;
   cancelledAt: string | null;
+}
+
+export interface FreeService {
+  id: number;
+  number: number;
+  serviceDate: string;
+  odometerKm: number;
+  performance: string;
+  workDone: string;
+  technician: string;
+  recordedBy: string;
 }
 
 export interface SaleLineInput {
@@ -111,10 +169,28 @@ export interface SaleInput {
   discount?: number;
   vatRate?: number;
   paymentMode?: PaymentMode;
+  financerName?: string;
+  financerRef?: string;
+  financerDueDate?: string;
   downPayment?: number;
   emiMonths?: number;
-  emiAmount?: number;
+  /** Yearly interest in percent; 0 or empty means none. */
+  interestRate?: number;
   firstEmiDue?: string;
+  /** Bike sales: how many free services come with the bike. */
+  freeServices?: number;
+  freeServiceCovers?: string;
+  /** Maintenance: normal, free (of a bike sold earlier) or accident case. */
+  serviceKind?: ServiceKind;
+  /** Who sold it. Empty = the signed-in person; naming someone else needs sales.view_all. */
+  salesperson?: number | null;
+  /** Maintenance: hand the job to this technician when it is opened. */
+  technician?: number | null;
+  freeServiceFor?: number | null;
+  odometerKm?: number | null;
+  /** Accident case, when it is opened. */
+  advanceAmount?: number;
+  advanceMethod?: PayMethod;
   dueDate?: string;
   vehicleChassisNo?: string;
   vehicleRegNo?: string;
@@ -128,6 +204,7 @@ export interface SaleFilters {
   saleType?: SaleType | '';
   paymentStatus?: PaymentStatus | '';
   customerId?: number;
+  salespersonId?: number;
   dateFrom?: string;
   dateTo?: string;
 }
@@ -174,6 +251,7 @@ export interface Followup {
   vehicleChassisNo: string;
   vehicleRegNo: string;
   installmentNumber: number | null;
+  serviceNumber: number | null;
   dueDate: string;
   amount: number;
   status: FollowupStatus;
@@ -211,6 +289,12 @@ export const STATUS_LABEL: Record<SaleStatus, string> = {
   cancelled: 'Cancelled',
 };
 
+export const SERVICE_KIND_LABEL: Record<ServiceKind, string> = {
+  paid: 'Normal service',
+  free: 'Free service',
+  accident: 'Accident case',
+};
+
 export const TYPE_LABEL: Record<SaleType, string> = {
   stock: 'Stock sale',
   bike: 'Bike sale',
@@ -241,6 +325,8 @@ export const FOLLOWUP_LABEL: Record<FollowupKind, string> = {
   maintenance_due: 'Maintenance follow-up (90 days)',
   emi_due: 'EMI instalment',
   credit_due: 'Credit to receive',
+  financer_due: 'Payment due from finance company',
+  free_service_due: 'Free service due',
 };
 
 // ---- API shapes --------------------------------------------------------
@@ -261,11 +347,23 @@ interface ApiLine {
   returnable_quantity: string;
 }
 
+interface ApiFreeService {
+  id: number;
+  number: number;
+  service_date: string;
+  odometer_km: number;
+  performance: string;
+  work_done: string;
+  technician: string;
+  recorded_by_name: string;
+}
+
 interface ApiPayment {
   id: number;
   amount: string;
   paid_on: string;
   method: PayMethod;
+  payer?: Payer;
   reference: string;
   status: 'active' | 'void';
   void_reason: string;
@@ -296,12 +394,39 @@ interface ApiSale {
   vat_rate: string;
   vat_amount: string;
   net_total: string;
+  financer_name?: string;
+  financer_ref?: string;
+  financer_due_date?: string | null;
+  financer_receivable?: string;
+  financer_received?: string;
   payment_mode: PaymentMode;
   down_payment: string;
   emi_months: number | null;
   emi_amount: string | null;
   first_emi_due: string | null;
+  interest_rate: string | null;
   finance_charge: string;
+  technician?: number | null;
+  technician_name?: string;
+  salesperson?: number | null;
+  salesperson_name?: string;
+  job_status?: JobStatus;
+  job_notes?: string;
+  job_started_at?: string | null;
+  job_done_at?: string | null;
+  service_kind?: ServiceKind;
+  free_service_for?: number | null;
+  free_service_for_no?: string | null;
+  odometer_km?: number | null;
+  documents_ignored?: boolean;
+  documents_total?: number;
+  documents_verified?: number;
+  free_services?: number;
+  free_service_covers?: string;
+  free_service_for_covers?: string | null;
+  free_services_used?: number;
+  free_services_left?: number;
+  free_service_records?: ApiFreeService[];
   amount_due: string;
   due_date: string | null;
   vehicle_chassis_no: string;
@@ -360,11 +485,47 @@ function saleFromApi(s: ApiSale): Sale {
     vatAmount: num(s.vat_amount),
     netTotal: num(s.net_total),
     paymentMode: s.payment_mode,
+    financerName: s.financer_name ?? '',
+    financerRef: s.financer_ref ?? '',
+    financerDueDate: s.financer_due_date ?? null,
+    financerReceivable: num(s.financer_receivable ?? 0),
+    financerReceived: num(s.financer_received ?? 0),
     downPayment: num(s.down_payment),
     emiMonths: s.emi_months ?? 0,
     emiAmount: num(s.emi_amount),
     firstEmiDue: s.first_emi_due ?? '',
+    interestRate: s.interest_rate === null || s.interest_rate === undefined ? null : num(s.interest_rate),
     financeCharge: num(s.finance_charge),
+    technicianId: s.technician ?? null,
+    technicianName: s.technician_name ?? '',
+    salespersonId: s.salesperson ?? null,
+    salespersonName: s.salesperson_name ?? '',
+    jobStatus: s.job_status ?? 'pending',
+    jobNotes: s.job_notes ?? '',
+    jobStartedAt: s.job_started_at ?? null,
+    jobDoneAt: s.job_done_at ?? null,
+    serviceKind: s.service_kind ?? 'paid',
+    freeServiceFor: s.free_service_for ?? null,
+    freeServiceForNo: s.free_service_for_no ?? '',
+    odometerKm: s.odometer_km ?? null,
+    documentsIgnored: s.documents_ignored ?? false,
+    documentsTotal: s.documents_total ?? 0,
+    documentsVerified: s.documents_verified ?? 0,
+    freeServices: s.free_services ?? 0,
+    freeServiceCovers: s.free_service_covers ?? '',
+    freeServiceForCovers: s.free_service_for_covers ?? '',
+    freeServicesUsed: s.free_services_used ?? 0,
+    freeServicesLeft: s.free_services_left ?? 0,
+    freeServiceRecords: (s.free_service_records ?? []).map((r) => ({
+      id: r.id,
+      number: r.number,
+      serviceDate: r.service_date,
+      odometerKm: r.odometer_km,
+      performance: r.performance,
+      workDone: r.work_done,
+      technician: r.technician,
+      recordedBy: r.recorded_by_name,
+    })),
     amountDue: num(s.amount_due),
     dueDate: s.due_date ?? '',
     vehicleChassisNo: s.vehicle_chassis_no,
@@ -384,6 +545,7 @@ function saleFromApi(s: ApiSale): Sale {
       amount: num(p.amount),
       paidOn: p.paid_on,
       method: p.method,
+      payer: p.payer ?? 'customer',
       reference: p.reference,
       status: p.status,
       voidReason: p.void_reason,
@@ -419,6 +581,7 @@ export function listSales(filters: SaleFilters = {}): Promise<Sale[]> {
   if (filters.saleType) q.set('sale_type', filters.saleType);
   if (filters.paymentStatus) q.set('payment_status', filters.paymentStatus);
   if (filters.customerId) q.set('customer', String(filters.customerId));
+  if (filters.salespersonId) q.set('salesperson', String(filters.salespersonId));
   if (filters.dateFrom) q.set('sale_date__gte', filters.dateFrom);
   if (filters.dateTo) q.set('sale_date__lte', filters.dateTo);
   const qs = q.toString();
@@ -452,15 +615,33 @@ function saleBody(input: SaleInput, isEdit: boolean): Record<string, unknown> {
   if (input.saleDate) body.sale_date = input.saleDate;
   if (input.saleType === 'bike') {
     body.payment_mode = input.paymentMode ?? 'full';
+    body.free_services = input.freeServices ?? 0;
+    body.free_service_covers = (input.freeServiceCovers ?? '').trim();
+    if (input.paymentMode === 'financed') {
+      body.down_payment = String(input.downPayment ?? 0);
+      body.financer_name = (input.financerName ?? '').trim();
+      body.financer_ref = (input.financerRef ?? '').trim();
+      body.financer_due_date = input.financerDueDate || null;
+    }
     if (input.paymentMode === 'emi') {
       body.down_payment = String(input.downPayment ?? 0);
       body.emi_months = input.emiMonths;
-      body.emi_amount = (input.emiAmount ?? 0).toFixed(2);
+      // The monthly amount is worked out by the server from the interest.
+      body.interest_rate = String(input.interestRate ?? 0);
       if (input.firstEmiDue) body.first_emi_due = input.firstEmiDue;
     }
   }
+  if (input.salesperson) body.salesperson = input.salesperson;
   if (input.saleType !== 'bike') body.due_date = input.dueDate || null;
   if (input.saleType === 'maintenance') {
+    body.service_kind = input.serviceKind ?? 'paid';
+    if (!isEdit && input.technician) body.technician = input.technician;
+    body.free_service_for = input.serviceKind === 'free' ? input.freeServiceFor ?? null : null;
+    body.odometer_km = input.serviceKind === 'free' ? input.odometerKm ?? null : null;
+    if (!isEdit && input.serviceKind === 'accident') {
+      body.advance_amount = (input.advanceAmount ?? 0).toFixed(2);
+      body.advance_method = input.advanceMethod ?? 'cash';
+    }
     body.vehicle_chassis_no = (input.vehicleChassisNo ?? '').trim();
     body.vehicle_reg_no = (input.vehicleRegNo ?? '').trim();
   }
@@ -475,8 +656,13 @@ export async function updateSale(id: number, input: SaleInput): Promise<Sale> {
   return saleFromApi(await api<ApiSale>(`/sales/${id}/`, { method: 'PATCH', body: saleBody(input, true) }));
 }
 
-export async function confirmSale(id: number): Promise<Sale> {
-  return saleFromApi(await api<ApiSale>(`/sales/${id}/confirm/`, { method: 'POST', body: {} }));
+export async function confirmSale(id: number, ignoreDocuments = false): Promise<Sale> {
+  return saleFromApi(
+    await api<ApiSale>(`/sales/${id}/confirm/`, {
+      method: 'POST',
+      body: ignoreDocuments ? { ignore_documents: true } : {},
+    }),
+  );
 }
 
 export async function cancelSale(id: number, reason: string): Promise<Sale> {
@@ -489,12 +675,14 @@ export async function addPayment(input: {
   method: PayMethod;
   paidOn?: string;
   reference?: string;
+  payer?: Payer;
 }): Promise<void> {
   const body: Record<string, unknown> = {
     sale: input.saleId,
     amount: input.amount.toFixed(2),
     method: input.method,
     reference: (input.reference ?? '').trim(),
+    payer: input.payer ?? 'customer',
   };
   if (input.paidOn) body.paid_on = input.paidOn;
   await api('/sales/payments/', { method: 'POST', body });
@@ -636,6 +824,7 @@ interface ApiFollowup {
   vehicle_chassis_no: string;
   vehicle_reg_no: string;
   installment_number: number | null;
+  service_number?: number | null;
   due_date: string;
   amount: string | null;
   status: FollowupStatus;
@@ -663,6 +852,7 @@ export function listFollowups(filters: { status?: FollowupStatus | ''; kind?: Fo
     vehicleChassisNo: f.vehicle_chassis_no,
     vehicleRegNo: f.vehicle_reg_no,
     installmentNumber: f.installment_number,
+    serviceNumber: f.service_number ?? null,
     dueDate: f.due_date,
     amount: num(f.amount),
     status: f.status,
@@ -780,9 +970,20 @@ export function previewTotals(lines: { quantity: number; unitPrice: number }[], 
   return { subtotal, vat, net: taxable + vat };
 }
 
-/** Same rule as the server: finance charge = down + months x EMI - net total (never negative). */
-export function previewFinance(net: number, down: number, months: number, emi: number): number {
-  return Math.max(0, down + months * emi - net);
+/**
+ * Same rule as the server: reducing-balance EMI on what is left after the
+ * down payment, EMI = P r (1+r)^n / ((1+r)^n - 1) with r the yearly rate / 12,
+ * rounded up to the paisa.
+ */
+export function previewEmi(net: number, down: number, months: number, yearlyRate: number) {
+  const left = Math.max(0, net - down);
+  const n = Math.max(1, months || 1);
+  const r = (yearlyRate || 0) / 12 / 100;
+  const each = r === 0 ? left / n : (left * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+  const monthly = Math.ceil(each * 100 - 1e-6) / 100;
+  const payable = down + monthly * n;
+
+  return { left, monthly, charge: Math.max(0, payable - net), due: Math.max(net, payable) };
 }
 
 export function summarize(list: Sale[]) {
@@ -806,4 +1007,298 @@ export function formatNpr(n: number): string {
 
 export function formatQty(n: number): string {
   return new Intl.NumberFormat('en-NP', { maximumFractionDigits: 3 }).format(n);
+}
+
+export interface FreeServiceInput {
+  serviceDate?: string;
+  odometerKm: number;
+  performance?: string;
+  workDone?: string;
+  technician?: string;
+}
+
+export async function addFreeService(saleId: number, input: FreeServiceInput): Promise<void> {
+  await api(`/sales/${saleId}/free-services/`, {
+    method: 'POST',
+    body: {
+      ...(input.serviceDate ? { service_date: input.serviceDate } : {}),
+      odometer_km: input.odometerKm,
+      performance: (input.performance ?? '').trim(),
+      work_done: (input.workDone ?? '').trim(),
+      technician: (input.technician ?? '').trim(),
+    },
+  });
+}
+
+export async function removeFreeService(saleId: number, recordId: number): Promise<void> {
+  await api(`/sales/${saleId}/free-services/${recordId}/`, { method: 'DELETE' });
+}
+
+export async function setFreeServiceCount(saleId: number, count: number, covers?: string): Promise<void> {
+  await api(`/sales/${saleId}/free-service-count/`, {
+    method: 'POST',
+    body: { free_services: count, ...(covers === undefined ? {} : { free_service_covers: covers.trim() }) },
+  });
+}
+
+export interface SaleDocument {
+  id: number;
+  title: string;
+  category: string;
+  fileName: string;
+  size: number;
+  uploadedBy: string;
+  createdAt: string;
+  verified: boolean;
+  verifiedBy: string;
+  verifiedAt: string | null;
+}
+
+export const DOC_CATEGORY_LABEL: Record<string, string> = {
+  police_report: 'Police report',
+  insurance: 'Insurance',
+  license: 'Driving licence',
+  bluebook: 'Blue book',
+  photo: 'Photo of damage',
+  other: 'Other',
+};
+
+interface RawSaleDoc {
+  id: number;
+  title: string;
+  category: string;
+  original_name: string;
+  size: number;
+  uploaded_by_name: string;
+  created_at: string;
+  verified: boolean;
+  verified_by_name: string;
+  verified_at: string | null;
+}
+
+const docOf = (d: RawSaleDoc): SaleDocument => ({
+  id: d.id,
+  title: d.title,
+  category: d.category,
+  fileName: d.original_name,
+  size: d.size,
+  uploadedBy: d.uploaded_by_name,
+  createdAt: d.created_at,
+  verified: d.verified,
+  verifiedBy: d.verified_by_name,
+  verifiedAt: d.verified_at,
+});
+
+export async function listSaleDocuments(saleId: number): Promise<SaleDocument[]> {
+  return (await api<RawSaleDoc[]>(`/sales/${saleId}/documents/`)).map(docOf);
+}
+
+export async function uploadSaleDocument(saleId: number, file: File, title: string, category: string): Promise<void> {
+  const form = new FormData();
+  form.append('file', file);
+  if (title.trim()) form.append('title', title.trim());
+  form.append('category', category);
+  await api(`/sales/${saleId}/documents/`, { method: 'POST', body: form });
+}
+
+export function downloadSaleDocument(saleId: number, doc: SaleDocument): Promise<void> {
+  return apiDownload(`/sales/${saleId}/documents/${doc.id}/`, doc.fileName);
+}
+
+export async function verifySaleDocument(saleId: number, id: number, verified: boolean): Promise<void> {
+  await api(`/sales/${saleId}/documents/${id}/verify/`, { method: 'POST', body: { verified } });
+}
+
+export async function deleteSaleDocument(saleId: number, id: number): Promise<void> {
+  await api(`/sales/${saleId}/documents/${id}/`, { method: 'DELETE' });
+}
+
+export interface Technician {
+  id: number;
+  name: string;
+  position: string;
+}
+
+export async function listTechnicians(): Promise<Technician[]> {
+  return api<Technician[]>('/sales/technicians/');
+}
+
+export async function assignTechnician(saleId: number, technicianId: number | null): Promise<void> {
+  await api(`/sales/${saleId}/assign-technician/`, { method: 'POST', body: { technician: technicianId } });
+}
+
+export async function officeStartJob(saleId: number): Promise<void> {
+  await api(`/sales/${saleId}/job-start/`, { method: 'POST', body: {} });
+}
+
+export async function officeFinishJob(saleId: number, notes: string): Promise<void> {
+  await api(`/sales/${saleId}/job-done/`, { method: 'POST', body: { notes: notes.trim() } });
+}
+
+export interface MyJob {
+  id: number;
+  saleNo: string;
+  saleDate: string;
+  serviceKind: ServiceKind;
+  freeServiceForNo: string;
+  customerName: string;
+  customerPhone: string;
+  chassisNo: string;
+  regNo: string;
+  odometerKm: number | null;
+  notes: string;
+  work: { description: string; quantity: string }[];
+  jobStatus: JobStatus;
+  assignedAt: string | null;
+  startedAt: string | null;
+  doneAt: string | null;
+  jobNotes: string;
+  /** Parts and work asked for on this job (the office prices them). */
+  lines: JobLine[];
+  canAddLines: boolean;
+}
+
+export type JobLineStatus = 'requested' | 'approved' | 'rejected' | 'withdrawn';
+
+export interface JobLine {
+  id: number;
+  kind: 'part' | 'work';
+  productId: number | null;
+  name: string;
+  unit: string;
+  quantity: number;
+  note: string;
+  status: JobLineStatus;
+  rejectReason: string;
+  requestedByName: string;
+  /** Office only. */
+  unitPrice: number | null;
+  defaultPrice: number | null;
+}
+
+export const JOB_LINE_STATUS_LABEL: Record<JobLineStatus, string> = {
+  requested: 'Waiting for the office',
+  approved: 'Added to the job',
+  rejected: 'Turned down',
+  withdrawn: 'Withdrawn',
+};
+
+interface RawJobLine {
+  id: number;
+  kind: 'part' | 'work';
+  product: number | null;
+  name: string;
+  unit: string;
+  quantity: string;
+  note: string;
+  status: JobLineStatus;
+  reject_reason: string;
+  requested_by_name: string;
+  unit_price?: string | null;
+  default_price?: string | null;
+}
+
+const jobLineOf = (l: RawJobLine): JobLine => ({
+  id: l.id,
+  kind: l.kind,
+  productId: l.product,
+  name: l.name,
+  unit: l.unit ?? '',
+  quantity: Number(l.quantity),
+  note: l.note,
+  status: l.status,
+  rejectReason: l.reject_reason,
+  requestedByName: l.requested_by_name,
+  unitPrice: l.unit_price == null ? null : Number(l.unit_price),
+  defaultPrice: l.default_price == null ? null : Number(l.default_price),
+});
+
+interface RawMyJob {
+  id: number;
+  sale_no: string;
+  sale_date: string;
+  service_kind: ServiceKind;
+  free_service_for_no: string | null;
+  customer_name: string;
+  customer_phone: string;
+  vehicle_chassis_no: string;
+  vehicle_reg_no: string;
+  odometer_km: number | null;
+  notes: string;
+  work: { description: string; quantity: string }[];
+  job_status: JobStatus;
+  job_assigned_at: string | null;
+  job_started_at: string | null;
+  job_done_at: string | null;
+  job_notes: string;
+  lines?: RawJobLine[];
+  can_add_lines?: boolean;
+}
+
+const myJobOf = (j: RawMyJob): MyJob => ({
+  id: j.id,
+  saleNo: j.sale_no,
+  saleDate: j.sale_date,
+  serviceKind: j.service_kind,
+  freeServiceForNo: j.free_service_for_no ?? '',
+  customerName: j.customer_name,
+  customerPhone: j.customer_phone,
+  chassisNo: j.vehicle_chassis_no,
+  regNo: j.vehicle_reg_no,
+  odometerKm: j.odometer_km,
+  notes: j.notes,
+  work: j.work,
+  jobStatus: j.job_status,
+  assignedAt: j.job_assigned_at,
+  startedAt: j.job_started_at,
+  doneAt: j.job_done_at,
+  jobNotes: j.job_notes,
+  lines: (j.lines ?? []).map(jobLineOf),
+  canAddLines: !!j.can_add_lines,
+});
+
+export async function listMyJobs(): Promise<MyJob[]> {
+  return (await api<RawMyJob[]>('/sales/my-jobs/')).map(myJobOf);
+}
+
+/** Ask for a part (``productId``) or list work to charge for (``description``). */
+export async function requestJobLine(jobId: number, input: { kind: 'part' | 'work'; productId?: number; description?: string; quantity: number; note?: string }): Promise<void> {
+  await api(`/sales/my-jobs/${jobId}/lines/`, {
+    method: 'POST',
+    body: {
+      kind: input.kind,
+      product: input.productId ?? null,
+      description: (input.description ?? '').trim(),
+      quantity: input.quantity,
+      note: (input.note ?? '').trim(),
+    },
+  });
+}
+
+export async function withdrawJobLine(jobId: number, lineId: number): Promise<void> {
+  await api(`/sales/my-jobs/${jobId}/lines/${lineId}/`, { method: 'DELETE' });
+}
+
+/** The office's view of what the technician asked for on a sale. */
+export async function listJobLines(saleId: number): Promise<JobLine[]> {
+  return (await api<RawJobLine[]>(`/sales/${saleId}/job-lines/`)).map(jobLineOf);
+}
+
+export async function approveJobLine(saleId: number, lineId: number, unitPrice?: number): Promise<void> {
+  await api(`/sales/${saleId}/job-lines/${lineId}/approve/`, {
+    method: 'POST',
+    body: unitPrice === undefined ? {} : { unit_price: unitPrice.toFixed(2) },
+  });
+}
+
+export async function rejectJobLine(saleId: number, lineId: number, reason: string): Promise<void> {
+  await api(`/sales/${saleId}/job-lines/${lineId}/reject/`, { method: 'POST', body: { reason: reason.trim() } });
+}
+
+export async function startMyJob(id: number): Promise<void> {
+  await api(`/sales/my-jobs/${id}/start/`, { method: 'POST', body: {} });
+}
+
+export async function finishMyJob(id: number, notes: string): Promise<void> {
+  await api(`/sales/my-jobs/${id}/done/`, { method: 'POST', body: { notes: notes.trim() } });
 }

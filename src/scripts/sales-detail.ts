@@ -1,4 +1,4 @@
-import { getSession } from "../lib/auth";
+import { can, getSession } from "../lib/auth";
 import { ApiError } from "../lib/api";
 import { listCustomers, type Customer } from "../lib/customers";
 import { listStock, type StockItem } from "../lib/inventory";
@@ -11,10 +11,26 @@ import {
   listFollowups,
   listBikes,
   listLocalProducts,
+  addFreeService,
+  listTechnicians,
+  assignTechnician,
+  officeStartJob,
+  officeFinishJob,
+  JOB_STATUS_LABEL,
+  removeFreeService,
+  setFreeServiceCount,
   formatNpr,
   formatQty,
   STATUS_LABEL,
   TYPE_LABEL,
+  SERVICE_KIND_LABEL,
+  DOC_CATEGORY_LABEL,
+  listSaleDocuments,
+  downloadSaleDocument,
+  verifySaleDocument,
+  deleteSaleDocument,
+  uploadSaleDocument,
+  type SaleDocument,
   PAYMENT_LABEL,
   METHOD_LABEL,
   FOLLOWUP_LABEL,
@@ -23,6 +39,10 @@ import {
   type Followup,
   type BikeUnit,
   type LocalProduct,
+  listJobLines,
+  approveJobLine,
+  rejectJobLine,
+  JOB_LINE_STATUS_LABEL,
 } from "../lib/sales";
 import {
   configureSalesDialogs,
@@ -32,6 +52,11 @@ import {
   openReason,
   describe,
   esc,
+  submit,
+  showError,
+  dlg,
+  val,
+  today,
 } from "./sales-dialogs";
 
 if (!getSession()) window.location.replace("/");
@@ -156,7 +181,7 @@ function renderHeader(s: Sale): void {
 
   if (kind) {
     kind.hidden = false;
-    kind.textContent = `${TYPE_LABEL[s.saleType]}${s.paymentMode === "emi" ? " · EMI" : ""}`;
+    kind.textContent = kindLabel(s);
   }
 
   const vehicle = $("sad-vehicle");
@@ -180,16 +205,27 @@ function renderHeader(s: Sale): void {
   setText("sad-stat-due", cancelled ? "—" : formatNpr(s.remaining));
 }
 
+function mayCollect(): boolean {
+  const me = getSession();
+
+  return (
+    canWrite &&
+    (can(me, "sales.collect") || can(me, "sales.update") || can(me, "sales.create"))
+  );
+}
+
 function renderActions(s: Sale): void {
+  // Recording money needs sales.collect (accountant) or the right to edit sales.
+  const canCollect = mayCollect();
   const allowed: Record<string, boolean> = {
     confirm: canWrite && s.status === "draft",
-    edit: canWrite && s.status === "draft",
-    pay: canWrite && s.status !== "cancelled" && s.remaining > 0,
+    edit: canWrite && can(getSession(), "sales.update") && s.status === "draft",
+    pay: canCollect && s.status !== "cancelled" && s.remaining > 0,
     return:
       canWrite &&
       s.status === "confirmed" &&
       s.lines.some((l) => l.returnableQuantity > 0),
-    cancel: canWrite && s.status === "draft",
+    cancel: canWrite && can(getSession(), "sales.cancel") && s.status === "draft",
   };
 
   let any = false;
@@ -213,10 +249,19 @@ function renderInfo(s: Sale): void {
   setText("inf-invoice", s.invoiceNo || "Not issued yet");
   setText("inf-no", s.saleNo);
   setText("inf-customer", customerName(s));
+  setText("inf-seller", s.salespersonName || "—");
   setText("inf-date", fmtDate(s.saleDate));
-  setText("inf-kind", `${TYPE_LABEL[s.saleType]}${emi ? " · EMI" : ""}`);
-  setText("inf-due-label", emi ? "First EMI Due" : "Pay By");
-  setText("inf-due", fmtDate(emi ? s.firstEmiDue : s.dueDate));
+  setText("inf-kind", kindLabel(s));
+  const financed = s.paymentMode === "financed";
+  setText("inf-due-label", emi ? "First EMI Due" : financed ? "Company Pays By" : "Pay By");
+  setText("inf-due", fmtDate(emi ? s.firstEmiDue : financed ? s.financerDueDate : s.dueDate));
+  setHidden("inf-fin-row", !financed);
+  setHidden("inf-fin-recv-row", !financed);
+  setText("inf-fin", [s.financerName, s.financerRef].filter(Boolean).join(" · "));
+  setText(
+    "inf-fin-recv",
+    `${formatNpr(s.financerReceived)} of ${formatNpr(s.financerReceivable)} received from company`,
+  );
 
   setText("inf-subtotal", formatNpr(s.subtotal));
   setText("inf-discount", s.discount > 0 ? `− ${formatNpr(s.discount)}` : formatNpr(0));
@@ -226,6 +271,11 @@ function renderInfo(s: Sale): void {
 
   setHidden("inf-finance-row", !emi);
   setHidden("inf-amountdue-row", !emi);
+  setHidden("inf-rate-row", !emi || s.interestRate === null);
+  setText("inf-rate", `${formatQty(s.interestRate ?? 0)}%`);
+  setHidden("inf-monthly-row", !emi);
+  setText("inf-monthly-label", `Monthly Installment (${s.emiMonths} months)`);
+  setText("inf-monthly", formatNpr(s.emiAmount));
   setText("inf-finance", formatNpr(s.financeCharge));
   setText("inf-amountdue", formatNpr(s.amountDue));
 
@@ -334,7 +384,7 @@ function renderPayments(s: Sale): void {
 
       return `<tr class="${voided ? "is-void" : ""}">
         <td class="pud-nowrap">${esc(fmtDate(x.paidOn))}</td>
-        <td>${esc(METHOD_LABEL[x.method] ?? x.method)}</td>
+        <td>${esc(METHOD_LABEL[x.method] ?? x.method)}${x.payer === "financer" ? " · from company" : ""}</td>
         <td class="hide-sm mono">${esc(x.reference || "—")}</td>
         <td class="num"><strong>${formatNpr(x.amount)}</strong></td>
         <td>${
@@ -343,7 +393,7 @@ function renderPayments(s: Sale): void {
             : `<span class="pd-pill pd-pill-received">Paid</span>`
         }</td>
         <td class="actions">${
-          !voided && canWrite
+          !voided && mayCollect()
             ? `<button type="button" class="btn-link is-danger" data-void-pay="${x.id}">Void</button>`
             : ""
         }</td>
@@ -362,6 +412,253 @@ function renderPayments(s: Sale): void {
         saleId,
       ),
     );
+  });
+}
+
+function kindLabel(s: Sale): string {
+  const base =
+    s.saleType === "maintenance" && s.serviceKind !== "paid"
+      ? `Maintenance · ${SERVICE_KIND_LABEL[s.serviceKind]}${s.freeServiceForNo ? ` of ${s.freeServiceForNo}` : ""}`
+      : TYPE_LABEL[s.saleType];
+
+  return `${base}${s.paymentMode === "emi" ? " · Own EMI" : s.paymentMode === "financed" ? " · Financed" : ""}`;
+}
+
+const sizeText = (n: number): string => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+async function renderDocuments(s: Sale): Promise<void> {
+  const show = s.saleType === "maintenance" && s.serviceKind === "accident";
+
+  setHidden("sad-doc-tab", !show);
+  if (!show) return;
+
+  const open = s.status === "draft";
+  setHidden("sad-doc-add-btn", !(canWrite && s.status !== "cancelled"));
+  setText(
+    "doc-note",
+    s.documentsIgnored
+      ? "The bill was made without all papers verified."
+      : s.documentsTotal === 0
+        ? "No papers uploaded yet. Upload and verify them before billing."
+        : s.documentsVerified === s.documentsTotal
+          ? "All papers are verified."
+          : `${s.documentsTotal - s.documentsVerified} of ${s.documentsTotal} papers still to verify.`,
+  );
+
+  const tbody = $("sad-docs");
+  if (!tbody) return;
+
+  let docs: SaleDocument[] = [];
+
+  try {
+    docs = await listSaleDocuments(s.id);
+  } catch (error) {
+    showNotice(describe(error));
+  }
+
+  if (!docs.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="inv-empty">No papers yet</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = docs
+    .map(
+      (d) => `<tr>
+        <td><button type="button" class="btn-link" data-dl-doc="${d.id}">${esc(d.title)}</button><br /><small>${esc(d.fileName)} · ${sizeText(d.size)}</small></td>
+        <td>${esc(DOC_CATEGORY_LABEL[d.category] ?? d.category)}</td>
+        <td>${esc(d.uploadedBy || "—")}<br /><small>${esc(fmtDate(d.createdAt.slice(0, 10)))}</small></td>
+        <td>${d.verified ? `<strong>Verified</strong><br /><small>${esc(d.verifiedBy)} · ${esc(fmtDate((d.verifiedAt ?? "").slice(0, 10)))}</small>` : "Not verified"}</td>
+        <td class="actions">${
+          canWrite && s.status !== "cancelled"
+            ? `<button type="button" class="btn-link" data-vf-doc="${d.id}" data-to="${d.verified ? "0" : "1"}">${d.verified ? "Unverify" : "Mark verified"}</button>`
+            : ""
+        }${open && canWrite ? ` <button type="button" class="btn-link is-danger" data-rm-doc="${d.id}">Remove</button>` : ""}</td>
+      </tr>`,
+    )
+    .join("");
+
+  const byId = (id: string) => docs.find((d) => d.id === Number(id));
+  const run = async (fn: () => Promise<unknown>, reload = true) => {
+    try {
+      await fn();
+      if (reload) await load();
+    } catch (error) {
+      showNotice(describe(error));
+    }
+  };
+
+  tbody.querySelectorAll<HTMLButtonElement>("[data-dl-doc]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const d = byId(b.dataset.dlDoc ?? "");
+      if (d) void run(() => downloadSaleDocument(s.id, d), false);
+    }),
+  );
+  tbody.querySelectorAll<HTMLButtonElement>("[data-vf-doc]").forEach((b) =>
+    b.addEventListener("click", () => void run(() => verifySaleDocument(s.id, Number(b.dataset.vfDoc), b.dataset.to === "1"))),
+  );
+  tbody.querySelectorAll<HTMLButtonElement>("[data-rm-doc]").forEach((b) =>
+    b.addEventListener("click", () => {
+      if (confirm("Remove this paper?")) void run(() => deleteSaleDocument(s.id, Number(b.dataset.rmDoc)));
+    }),
+  );
+}
+
+function hoursText(from: string | null, to: string | null): string {
+  if (!from || !to) return "—";
+  const mins = Math.max(Math.round((new Date(to).getTime() - new Date(from).getTime()) / 60000), 0);
+  return mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60} m` : `${mins} min`;
+}
+
+function renderJob(s: Sale): void {
+  const show = s.saleType === "maintenance" && s.status !== "cancelled";
+
+  setHidden("sad-job-tab", !show);
+  if (!show) return;
+
+  setText("job-tech", s.technicianName || "Not given yet");
+  setText("job-status", s.technicianId ? JOB_STATUS_LABEL[s.jobStatus] : "—");
+  setText("job-time", hoursText(s.jobStartedAt, s.jobDoneAt));
+  setText("job-notes", s.jobNotes ? `Technician's notes: ${s.jobNotes}` : "");
+  setHidden("sad-job-assign-btn", !(canWrite && s.jobStatus !== "done"));
+  setHidden("sad-job-start-btn", !(canWrite && s.technicianId && s.jobStatus === "pending"));
+  setHidden("sad-job-done-btn", !(canWrite && s.technicianId && s.jobStatus !== "done"));
+  void renderJobLines(s);
+}
+
+/** What the technician asked for; the office prices it and adds it, or turns it down. */
+async function renderJobLines(s: Sale): Promise<void> {
+  const box = $("job-lines-box");
+  const body = $("job-lines");
+
+  if (!box || !body) return;
+
+  box.hidden = !s.technicianId;
+  if (!s.technicianId) return;
+
+  try {
+    const lines = await listJobLines(s.id);
+    const mayDecide = canWrite && can(getSession(), "sales.update") && s.status === "draft";
+
+    box.hidden = lines.length === 0;
+    body.innerHTML = lines
+      .map((l) => {
+        const pending = l.status === "requested";
+        const price = pending
+          ? mayDecide
+            ? `<input type="number" min="0" step="0.01" class="inv-input" style="width:100px" data-line-price="${l.id}" value="${l.defaultPrice ?? ""}" placeholder="Price" />`
+            : "—"
+          : l.unitPrice != null ? formatNpr(l.unitPrice) : "—";
+        const acts = pending && mayDecide
+          ? `<button type="button" class="btn-link" data-line-approve="${l.id}">Add to job</button> <button type="button" class="btn-link is-danger" data-line-reject="${l.id}">Turn down</button>`
+          : "";
+
+        return `<tr><td>${l.kind === "part" ? "Part" : "Work"}: ${esc(l.name)}</td><td class="num">${l.quantity}</td><td>${esc(l.note)}</td><td>${JOB_LINE_STATUS_LABEL[l.status]}${l.rejectReason ? ` (${esc(l.rejectReason)})` : ""}</td><td class="num">${price}</td><td>${acts}</td></tr>`;
+      })
+      .join("");
+  } catch (error) {
+    // Someone who cannot see sales lines simply gets no box.
+    box.hidden = !(error instanceof ApiError && error.status !== 403);
+    const err = $("job-lines-error");
+
+    if (err && !box.hidden) {
+      err.textContent = describe(error);
+      err.hidden = false;
+    }
+  }
+}
+
+document.addEventListener("click", async (event) => {
+  const target = event.target as HTMLElement;
+  const approve = target.closest<HTMLElement>("[data-line-approve]");
+  const reject = target.closest<HTMLElement>("[data-line-reject]");
+
+  if (!approve && !reject) return;
+
+  try {
+    if (approve) {
+      const id = Number(approve.dataset.lineApprove);
+      const raw = (document.querySelector<HTMLInputElement>(`[data-line-price="${id}"]`)?.value ?? "").trim();
+
+      await approveJobLine(saleId, id, raw === "" ? undefined : Number(raw));
+    } else if (reject) {
+      const reason = prompt("Why is it turned down?", "");
+
+      if (!reason?.trim()) return;
+      await rejectJobLine(saleId, Number(reject.dataset.lineReject), reason);
+    }
+
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
+
+function renderFreeService(s: Sale): void {
+  const show = s.saleType === "bike" && s.status === "confirmed";
+
+  setHidden("sad-fs-tab", !show);
+
+  if (!show) {
+    if (document.querySelector('.invd-tab.is-active[data-tab="freeservice"]')) showTab("details");
+    return;
+  }
+
+  setText("fs-total", String(s.freeServices));
+  setText("fs-used", String(s.freeServicesUsed));
+  setText("fs-left", String(s.freeServicesLeft));
+  setText(
+    "fs-note",
+    s.freeServices === 0
+      ? "No free service was included with this bike. Use Change count to add some."
+      : s.freeServicesLeft === 0
+        ? "All free services are done."
+        : `${s.freeServicesLeft} free service${s.freeServicesLeft === 1 ? "" : "s"} still to give.`,
+  );
+  setText("fs-covers", s.freeServiceCovers ? `Free service covers: ${s.freeServiceCovers}. Extra parts or extra work are charged.` : "Extra parts or extra work in a free service are charged.");
+  setHidden("sad-fs-add-btn", !(canWrite && s.freeServicesLeft > 0));
+  setHidden("sad-fs-count-btn", !canWrite);
+
+  const tbody = $("sad-fs");
+  if (!tbody) return;
+
+  const records = s.freeServiceRecords;
+
+  if (!records.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="inv-empty">No free service done yet</td></tr>`;
+    return;
+  }
+
+  const last = records[records.length - 1].id;
+
+  tbody.innerHTML = records
+    .map(
+      (r) => `<tr>
+        <td><strong>${r.number}</strong></td>
+        <td class="pud-nowrap">${esc(fmtDate(r.serviceDate))}</td>
+        <td class="num">${r.odometerKm.toLocaleString("en-US")} km</td>
+        <td>${esc(r.performance || "—")}</td>
+        <td>${esc(r.workDone || "—")}</td>
+        <td class="hide-sm">${esc(r.technician || "—")}</td>
+        <td class="actions">${
+          canWrite && r.id === last
+            ? `<button type="button" class="btn-link is-danger" data-rm-fs="${r.id}">Remove</button>`
+            : ""
+        }</td>
+      </tr>`,
+    )
+    .join("");
+
+  tbody.querySelectorAll<HTMLButtonElement>("[data-rm-fs]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (!confirm("Remove this free service record?")) return;
+
+      try {
+        await removeFreeService(s.id, Number(btn.dataset.rmFs));
+        await load();
+      } catch (error) {
+        showNotice(describe(error));
+      }
+    });
   });
 }
 
@@ -578,7 +875,7 @@ function renderFollowups(list: Followup[]): void {
 
       return `<tr>
         <td class="pud-nowrap">${esc(fmtDate(f.dueDate))}</td>
-        <td>${esc(FOLLOWUP_LABEL[f.kind])}${f.installmentNumber ? ` #${f.installmentNumber}` : ""}</td>
+        <td>${esc(FOLLOWUP_LABEL[f.kind])}${f.installmentNumber ? ` #${f.installmentNumber}` : f.serviceNumber ? ` #${f.serviceNumber}` : ""}</td>
         <td class="num">${f.amount > 0 ? formatNpr(f.amount) : "—"}</td>
         <td><span class="pd-pill ${cls}">${esc(label)}</span></td>
       </tr>`;
@@ -619,11 +916,31 @@ async function doConfirm(s: Sale): Promise<void> {
 
   try {
     await confirmSale(s.id);
-    await load();
-    void refreshChoices();
   } catch (error) {
-    showNotice(describe(error));
+    if (error instanceof ApiError && error.code === "documents_unverified") {
+      if (
+        !confirm(
+          `${error.message}\n\nOpen the Documents tab to upload and verify them first. Bill anyway without verified papers?`,
+        )
+      ) {
+        showTab("documents");
+        return;
+      }
+
+      try {
+        await confirmSale(s.id, true);
+      } catch (again) {
+        showNotice(describe(again));
+        return;
+      }
+    } else {
+      showNotice(describe(error));
+      return;
+    }
   }
+
+  await load();
+  void refreshChoices();
 }
 
 function runAction(act: string): void {
@@ -654,6 +971,131 @@ document
 
 $("sad-pay-btn")?.addEventListener("click", () => runAction("pay"));
 
+$("sad-job-assign-btn")?.addEventListener("click", async () => {
+  const s = sale;
+  if (!s) return;
+
+  try {
+    const people = await listTechnicians();
+    const list = people.map((p, i) => `${i + 1}. ${p.name}${p.position ? ` (${p.position})` : ""}`).join("\n");
+    const answer = prompt(`Give the job to (type the number, or 0 to take it back):\n${list}`, "");
+    if (answer === null || answer.trim() === "") return;
+
+    const n = Number(answer);
+    if (!Number.isInteger(n) || n < 0 || n > people.length) {
+      showNotice("Type a number from the list.");
+      return;
+    }
+
+    await assignTechnician(s.id, n === 0 ? null : people[n - 1].id);
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
+
+$("sad-job-start-btn")?.addEventListener("click", async () => {
+  if (!sale) return;
+  try {
+    await officeStartJob(sale.id);
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
+
+$("sad-job-done-btn")?.addEventListener("click", async () => {
+  if (!sale) return;
+  const notes = prompt("Notes on the work done / how the bike runs (optional):", sale.jobNotes);
+  if (notes === null) return;
+  try {
+    await officeFinishJob(sale.id, notes);
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
+
+$("sad-doc-add-btn")?.addEventListener("click", () => {
+  showError("doc-error", null);
+  ($("form-doc") as HTMLFormElement).reset();
+  dlg("dlg-doc").showModal();
+});
+
+$("form-doc")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const s = sale;
+  const file = ($("doc-file") as HTMLInputElement).files?.[0];
+  if (!s || !file) return;
+
+  void submit("doc-save", "doc-error", "dlg-doc", async () => {
+    await uploadSaleDocument(s.id, file, val("doc-title"), val("doc-cat"));
+    await load();
+  });
+});
+
+$("sad-fs-add-btn")?.addEventListener("click", () => {
+  const s = sale;
+  if (!s) return;
+
+  const last = s.freeServiceRecords[s.freeServiceRecords.length - 1];
+
+  $("fs-title")!.textContent = `Record free service ${s.freeServicesUsed + 1} of ${s.freeServices}`;
+  $("fs-sub")!.textContent = last
+    ? `Previous: ${last.odometerKm.toLocaleString("en-US")} km on ${fmtDate(last.serviceDate)}`
+    : "";
+  ($("fs-date") as HTMLInputElement).value = today();
+  ($("fs-date") as HTMLInputElement).min = s.saleDate;
+  ($("fs-km") as HTMLInputElement).value = "";
+  ($("fs-tech") as HTMLInputElement).value = "";
+  ($("fs-perf") as HTMLTextAreaElement).value = "";
+  ($("fs-work") as HTMLTextAreaElement).value = "";
+  showError("fs-error", null);
+  dlg("dlg-fs").showModal();
+});
+
+$("form-fs")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const s = sale;
+  if (!s) return;
+
+  void submit("fs-save", "fs-error", "dlg-fs", async () => {
+    await addFreeService(s.id, {
+      serviceDate: val("fs-date"),
+      odometerKm: Number(val("fs-km")),
+      performance: val("fs-perf"),
+      workDone: val("fs-work"),
+      technician: val("fs-tech"),
+    });
+    await load();
+  });
+});
+
+$("sad-fs-count-btn")?.addEventListener("click", async () => {
+  const s = sale;
+  if (!s) return;
+
+  const answer = prompt(`How many free services does this bike include? (${s.freeServicesUsed} already done)`, String(s.freeServices));
+  if (answer === null) return;
+
+  const count = Number(answer);
+
+  if (!Number.isInteger(count) || count < 0 || count > 20) {
+    showNotice("Enter a whole number from 0 to 20.");
+    return;
+  }
+
+  const covers = prompt("What does a free service cover? (e.g. Labour, oil change, wash). Extra parts and extra work are charged.", s.freeServiceCovers);
+  if (covers === null) return;
+
+  try {
+    await setFreeServiceCount(s.id, count, covers);
+    await load();
+  } catch (error) {
+    showNotice(describe(error));
+  }
+});
+
 // ==================================================
 // LOAD
 // ==================================================
@@ -677,6 +1119,9 @@ async function load(): Promise<void> {
   renderLines(sale);
   renderPayments(sale);
   renderEmi(sale);
+  renderFreeService(sale);
+  renderJob(sale);
+  void renderDocuments(sale);
   renderRelated(sale);
 
   if (!canWrite) {

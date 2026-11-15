@@ -26,6 +26,8 @@ export interface PurchaseLine {
   remainingQuantity: number;
   returnedQuantity: number;
   returnableQuantity: number;
+  /** Arrived damaged and not yet sent back. */
+  damagedQuantity: number;
 }
 
 export interface PurchasePayment {
@@ -55,6 +57,8 @@ export interface Purchase {
   supplierName: string;
   billNo: string;
   purchaseDate: string;
+  /** When the supplier expects to be paid. */
+  dueDate: string | null;
   status: PurchaseStatus;
   lines: PurchaseLine[];
   subtotal: number;
@@ -80,6 +84,7 @@ export interface PurchaseInput {
   supplierId: number;
   billNo?: string;
   purchaseDate?: string;
+  dueDate?: string | null;
   discount?: number;
   vatRate?: number;
   freight?: number;
@@ -169,6 +174,7 @@ interface ApiLine {
   remaining_quantity: string;
   returned_quantity: string;
   returnable_quantity: string;
+  damaged_quantity?: string;
 }
 
 interface ApiPayment {
@@ -198,6 +204,7 @@ interface ApiPurchase {
   supplier_name: string;
   bill_no: string;
   purchase_date: string;
+  due_date?: string | null;
   status: PurchaseStatus;
   items: ApiLine[];
   subtotal: string;
@@ -282,6 +289,7 @@ function purchaseFromApi(p: ApiPurchase): Purchase {
     supplierName: p.supplier_name,
     billNo: p.bill_no,
     purchaseDate: p.purchase_date,
+    dueDate: p.due_date ?? null,
     status: p.status,
     lines: (p.items ?? []).map((l) => ({
       id: l.id,
@@ -296,6 +304,7 @@ function purchaseFromApi(p: ApiPurchase): Purchase {
       remainingQuantity: num(l.remaining_quantity),
       returnedQuantity: num(l.returned_quantity),
       returnableQuantity: num(l.returnable_quantity),
+      damagedQuantity: num(l.damaged_quantity),
     })),
     subtotal: num(p.subtotal),
     discount: num(p.discount_amount),
@@ -411,6 +420,7 @@ function purchaseBody(input: PurchaseInput): Record<string, unknown> {
     })),
   };
   if (input.purchaseDate) body.purchase_date = input.purchaseDate;
+  if (input.dueDate !== undefined) body.due_date = input.dueDate || null;
   return body;
 }
 
@@ -576,4 +586,40 @@ export function formatNpr(n: number): string {
 
 export function formatQty(n: number): string {
   return new Intl.NumberFormat('en-NP', { maximumFractionDigits: 3 }).format(n);
+}
+
+/** Set or clear when the supplier expects to be paid (also after the goods arrived). */
+export async function setPurchaseDueDate(id: number, dueDate: string | null): Promise<Purchase> {
+  return purchaseFromApi(await api<ApiPurchase>(`/purchases/${id}/due-date/`, { method: 'POST', body: { due_date: dueDate } }));
+}
+
+
+export interface ImportedLine {
+  productId: number;
+  stockNo: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+/** Read order lines from an Excel or CSV file. Nothing is saved. */
+export async function readPurchaseFile(
+  file: File,
+): Promise<{ lines: ImportedLine[]; errors: { row: number; message: string }[] }> {
+  const form = new FormData();
+  form.append('file', file);
+  const r = await api<{ lines: any[]; errors: { row: number; message: string }[] }>(
+    '/purchases/import-lines/',
+    { method: 'POST', body: form },
+  );
+  return {
+    errors: r.errors,
+    lines: r.lines.map((l) => ({
+      productId: l.product,
+      stockNo: l.stock_no,
+      name: l.name,
+      quantity: Number(l.quantity),
+      unitPrice: Number(l.unit_price),
+    })),
+  };
 }

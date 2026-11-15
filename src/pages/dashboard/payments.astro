@@ -29,6 +29,9 @@ const navItems = getNavItemsForRole(defaultRole);
           <button type="button" class="py-tab is-active" data-tab="expenses">Expenses</button>
           <button type="button" class="py-tab" data-tab="income">Income</button>
           <button type="button" class="py-tab" data-tab="payroll">Staff pay</button>
+          <button type="button" class="py-tab" data-tab="daily">Daily sheet</button>
+          <button type="button" class="py-tab" data-tab="incentives">Incentives</button>
+          <button type="button" class="py-tab" data-tab="cash">Cash &amp; bank</button>
         </div>
       </div>
       <div class="py-toolbar-right">
@@ -58,10 +61,126 @@ const navItems = getNavItemsForRole(defaultRole);
             <thead>
               <tr><th>Date</th><th>Category</th><th>Details</th><th>Method</th><th class="num">Amount</th><th>Status</th><th></th></tr>
             </thead>
-            <tbody id="lg-tbody"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
+            <tbody id="lg-tbody"><tr><td colspan="8" class="py-empty">Loading…</td></tr></tbody>
           </table>
         </div>
         <p class="py-foot" id="lg-foot"></p>
+      </div>
+    </section>
+
+    <!-- Cash and bank -->
+    <section class="py-panel" data-panel="cash">
+      <div class="py-card">
+        <div class="py-filters">
+          <label class="py-field"><span>As at</span><input type="date" id="cb-date" /></label>
+        </div>
+        <div class="py-table-wrap">
+          <table class="py-table">
+            <thead><tr><th>Method</th><th class="num">Opening</th><th class="num">Received</th><th class="num">Paid</th><th class="num">Books say</th><th>Last check</th><th></th></tr></thead>
+            <tbody id="cb-rows"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="py-hint" id="cb-hint"></p>
+        <p class="py-hint">Set the opening balance once (what you held at the end of a date), then check against the cash in the drawer or your bank statement. Money received and paid after the opening date is added automatically from sales, purchases, salaries, expenses and income.</p>
+      </div>
+      <div class="py-card">
+        <h3 class="py-h">Past checks</h3>
+        <div class="py-table-wrap">
+          <table class="py-table">
+            <thead><tr><th>Date</th><th>Method</th><th class="num">Books said</th><th class="num">Counted</th><th class="num">Difference</th><th>Note</th><th>By</th></tr></thead>
+            <tbody id="cb-history"><tr><td colspan="7" class="py-empty">No checks yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <dialog class="py-dialog" id="dlg-open-bal">
+      <form method="dialog" class="py-dialog-inner" id="form-open-bal">
+        <h2 class="py-dialog-title" id="ob-title">Opening balance</h2>
+        <label class="py-field"><span>Held at the end of *</span><input type="date" id="ob-date" required /></label>
+        <label class="py-field"><span>Amount *</span><input type="number" id="ob-amount" step="0.01" required /></label>
+        <p class="py-error" id="ob-error" hidden></p>
+        <div class="py-actions">
+          <button type="button" class="btn-ghost-sm" data-close="dlg-open-bal">Cancel</button>
+          <button type="submit" class="btn-primary-sm">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="py-dialog" id="dlg-check">
+      <form method="dialog" class="py-dialog-inner" id="form-check">
+        <h2 class="py-dialog-title" id="ck-title">Check</h2>
+        <p class="py-hint" id="ck-expected"></p>
+        <label class="py-field"><span>Date *</span><input type="date" id="ck-date" required /></label>
+        <label class="py-field"><span>Counted / bank statement balance *</span><input type="number" id="ck-counted" step="0.01" required /></label>
+        <label class="py-field"><span>Note</span><input type="text" id="ck-note" maxlength="200" /></label>
+        <label class="py-field py-check"><input type="checkbox" id="ck-adjust" /> <span>Record any difference in the books (adds an income or expense entry)</span></label>
+        <p class="py-error" id="ck-error" hidden></p>
+        <div class="py-actions">
+          <button type="button" class="btn-ghost-sm" data-close="dlg-check">Cancel</button>
+          <button type="submit" class="btn-primary-sm">Save check</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Incentives -->
+    <section class="py-panel" data-panel="incentives">
+      <div class="py-card">
+        <div class="py-filters"><strong>How incentive is worked out</strong><span class="py-hint">Each rule pays on what a person did in the month.</span></div>
+        <form id="ir-form" class="py-filters" hidden>
+          <input id="ir-name" placeholder="Rule name" maxlength="100" required />
+          <select id="ir-basis"></select>
+          <input id="ir-value" type="number" min="0.01" step="0.01" placeholder="% or amount" required />
+          <select id="ir-target"></select>
+          <button type="submit" class="btn-primary-sm">Add rule</button>
+        </form>
+        <p class="py-error" id="ir-error" role="alert" hidden></p>
+        <div class="py-table-wrap">
+          <table class="py-table">
+            <thead><tr><th>Rule</th><th>Pays on</th><th class="num">Rate</th><th>For</th><th></th></tr></thead>
+            <tbody id="ir-rules"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="py-card">
+        <div class="py-filters">
+          <input type="month" id="in-month" />
+          <button type="button" class="btn-ghost-sm" id="in-refresh">Refresh</button>
+          <span class="py-hint" id="in-sum"></span>
+          <button type="button" class="btn-primary-sm" id="in-apply-all" hidden>Add all to pay</button>
+        </div>
+        <p class="py-error" id="in-error" role="alert" hidden></p>
+        <div class="py-table-wrap">
+          <table class="py-table">
+            <thead><tr><th>Person</th><th>What it comes from</th><th class="num">Incentive</th><th>Status</th><th></th></tr></thead>
+            <tbody id="in-rows"></tbody>
+          </table>
+        </div>
+        <p class="py-hint">Adding puts the amount in the person's pay as a bonus, once per month. Void that bonus on Staff pay to redo a month. Returns are not taken off.</p>
+      </div>
+    </section>
+
+    <!-- Daily sheet -->
+    <section class="py-panel" data-panel="daily">
+      <div class="py-card">
+        <div class="py-filters">
+          <button type="button" class="btn-ghost-sm" id="ds-prev" aria-label="Previous day">‹</button>
+          <input type="date" id="ds-date" />
+          <button type="button" class="btn-ghost-sm" id="ds-next" aria-label="Next day">›</button>
+          <button type="button" class="btn-ghost-sm" id="ds-all">Everyone present</button>
+          <span class="py-hint" id="ds-sum"></span>
+          <button type="button" class="btn-primary-sm" id="ds-save">Save day</button>
+        </div>
+        <p class="py-error" id="ds-error" role="alert" hidden></p>
+        <div class="py-table-wrap">
+          <table class="py-table">
+            <thead>
+              <tr><th>Staff</th><th class="num">Daily rate</th><th>Today</th><th class="num">Day's wage</th><th class="num">Extra</th><th>Note</th><th class="num">Day's pay</th><th>This month</th></tr>
+            </thead>
+            <tbody id="ds-tbody"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+        <p class="py-note">Present pays the full daily rate, Half pays half, Absent pays nothing. If the wage is different that day (or there is no fixed rate), type it in Day's wage. Marking a day again changes the wage already recorded. Only people on daily pay are listed.</p>
       </div>
     </section>
 
@@ -125,7 +244,7 @@ const navItems = getNavItemsForRole(defaultRole);
         <label class="py-field"><span>Pay type *</span>
           <select id="sl-type"><option value="monthly">Monthly salary</option><option value="daily">Daily wage</option></select>
         </label>
-        <label class="py-field" data-monthly><span>Monthly salary *</span><input type="number" id="sl-rate" min="0" step="0.01" value="0" /></label>
+        <label class="py-field"><span id="sl-rate-label">Monthly salary *</span><input type="number" id="sl-rate" min="0" step="0.01" value="0" /></label>
         <label class="py-field" data-monthly><span>Allowances</span><input type="number" id="sl-allow" min="0" step="0.01" value="0" /></label>
         <label class="py-field" data-monthly><span>Salary day (1–31)</span><input type="number" id="sl-day" min="1" max="31" step="1" value="1" /></label>
         <label class="py-field" id="sl-start-wrap"><span>Starts on</span><input type="date" id="sl-start" /></label>
@@ -196,9 +315,9 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession } from '../../lib/auth';
+  import { can, getSession } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
-  import { listStaff, type StaffMember } from '../../lib/staff';
+  import { listPositions, listStaff, type StaffMember } from '../../lib/staff';
   import {
     listLedger,
     ledgerSummary,
@@ -206,10 +325,16 @@ const navItems = getNavItemsForRole(defaultRole);
     updateLedger,
     voidLedger,
     listBalances,
+    getIncentives, applyIncentives, listIncentiveRules, saveIncentiveRule, deleteIncentiveRule, INCENTIVE_BASIS_LABEL,
+    type IncentiveRow, type IncentiveRule, type IncentiveBasis,
     getBalance,
     listStatement,
     listSalaries,
     saveSalary,
+    getWorkSheet,
+    saveWorkSheet,
+    type WorkRow,
+    type WorkStatus,
     addEntry,
     voidEntry,
     addPayrollPayment,
@@ -227,13 +352,29 @@ const navItems = getNavItemsForRole(defaultRole);
     type PayType,
     type EntryKind,
     type SalaryProfile,
+    type MethodBalance,
+    getBalances,
+    listChecks,
+    saveCheck,
+    setOpeningBalance,
   } from '../../lib/payments';
 
   if (!getSession()) window.location.replace('/');
 
-  type Tab = 'expenses' | 'income' | 'payroll';
+  // Pay and cash tabs follow the permission (the owner holds all); others see their own pay on My pay.
+  {
+    const me = getSession();
+    const tabCode: Record<string, string> = { payroll: 'staff.pay_view', daily: 'staff.pay_view', incentives: 'staff.pay_view', cash: 'finance.reconcile' };
+    for (const [t, code] of Object.entries(tabCode)) {
+      if (!can(me, code)) document.querySelector<HTMLElement>(`[data-tab="${t}"]`)?.setAttribute('hidden', '');
+    }
+  }
+
+  type Tab = 'expenses' | 'income' | 'payroll' | 'daily' | 'incentives' | 'cash';
   let tab: Tab = 'expenses';
   let canWrite = true;
+  let canPay = true; // record salary payments, wages, bonuses (staff.pay)
+  let canSetup = true; // set salary rates: owner only
   let entries: LedgerEntry[] = [];
   let balances: PayBalance[] = [];
   let staff: StaffMember[] = [];
@@ -492,7 +633,7 @@ const navItems = getNavItemsForRole(defaultRole);
     const el = $('pr-setup')!;
     const have = new Set(salaries.map((s) => s.staffId));
     const missing = staff.filter((s) => s.isActive && !have.has(s.id));
-    el.hidden = missing.length === 0 || !canWrite;
+    el.hidden = missing.length === 0 || !canSetup;
     if (el.hidden) return;
     el.innerHTML =
       `<strong>No pay set up yet:</strong> ` +
@@ -522,10 +663,125 @@ const navItems = getNavItemsForRole(defaultRole);
     );
   }
 
+  // ---- Incentives ------------------------------------------------------
+
+  const g = <T extends HTMLElement = HTMLElement>(id: string): T => document.getElementById(id) as T;
+
+  let incentiveRows: IncentiveRow[] = [];
+
+  function incentiveMonth(): string {
+    const el = g<HTMLInputElement>('in-month');
+    if (!el.value) el.value = new Date().toISOString().slice(0, 7);
+    return el.value;
+  }
+
+  function ruleFor(r: IncentiveRule): string {
+    return r.staffName || r.positionName || 'Everyone';
+  }
+
+  function ruleRate(r: IncentiveRule): string {
+    return r.basis.endsWith('percent') ? `${r.value}%` : formatNpr(r.value);
+  }
+
+  async function loadIncentives(): Promise<void> {
+    const owner = canSetup;
+    g('ir-form').hidden = !owner;
+    const err = g('ir-error');
+    err.hidden = true;
+    try {
+      const [rules, rows] = await Promise.all([listIncentiveRules(), getIncentives(incentiveMonth())]);
+      incentiveRows = rows;
+      if (owner && !g('ir-basis').childElementCount) {
+        g('ir-basis').innerHTML = (Object.keys(INCENTIVE_BASIS_LABEL) as IncentiveBasis[]).map((b) => `<option value="${b}">${esc(INCENTIVE_BASIS_LABEL[b])}</option>`).join('');
+        const [people, positions] = await Promise.all([listStaff().catch(() => [] as StaffMember[]), listPositions().catch(() => [])]);
+        g('ir-target').innerHTML = '<option value="">Everyone</option>'
+          + positions.map((p) => `<option value="p:${p.id}">Position: ${esc(p.name)}</option>`).join('')
+          + people.filter((m) => m.isActive).map((m) => `<option value="s:${m.id}">${esc(m.name || m.username)}</option>`).join('');
+      }
+      g('ir-rules').innerHTML = rules.length
+        ? rules.map((r) => `<tr><td>${esc(r.name)}${r.isActive ? '' : ' <span class="py-hint">(off)</span>'}</td><td>${esc(INCENTIVE_BASIS_LABEL[r.basis])}</td><td class="num">${ruleRate(r)}</td><td>${esc(ruleFor(r))}</td><td>${owner ? `<button class="btn-link" data-ir-toggle="${r.id}" data-on="${r.isActive ? 1 : 0}">${r.isActive ? 'Turn off' : 'Turn on'}</button> <button class="btn-link is-danger" data-ir-del="${r.id}">Delete</button>` : ''}</td></tr>`).join('')
+        : '<tr><td colspan="5" class="py-hint">No rules yet.</td></tr>';
+      const total = rows.reduce((t, r) => t + r.total, 0);
+      g('in-sum').textContent = `${rows.length} ${rows.length === 1 ? 'person' : 'people'} · ${formatNpr(total)}`;
+      g('in-rows').innerHTML = rows.length
+        ? rows.map((r) => {
+            const status = r.entryId ? `Added to pay (${formatNpr(r.appliedAmount ?? 0)})` : r.hasPayProfile ? 'Not added yet' : 'No salary set up';
+            const act = canPay && !r.entryId && r.hasPayProfile && r.total > 0 ? `<button class="btn-ghost-sm" data-in-apply="${r.staffId}">Add to pay</button>` : '';
+            const parts = r.lines.map((l) => `${esc(l.name)}: ${formatNpr(l.amount)}`).join('<br>') || '—';
+            return `<tr><td>${esc(r.name)}</td><td>${parts}</td><td class="num"><strong>${formatNpr(r.total)}</strong></td><td>${status}</td><td>${act}</td></tr>`;
+          }).join('')
+        : '<tr><td colspan="5" class="py-hint">Nobody earned an incentive this month.</td></tr>';
+      g('in-apply-all').hidden = !(canPay && rows.some((r) => !r.entryId && r.hasPayProfile && r.total > 0));
+    } catch (error) {
+      err.textContent = describe(error);
+      err.hidden = false;
+    }
+  }
+
+  g('in-refresh').addEventListener('click', () => void loadIncentives());
+  g('in-month').addEventListener('change', () => void loadIncentives());
+
+  async function runApply(ids?: number[]): Promise<void> {
+    try {
+      const r = await applyIncentives(incentiveMonth(), ids);
+      const noProfile = r.skipped.filter((s) => s.reason === 'no_pay_profile').length;
+      if (noProfile) g('in-error').textContent = `${noProfile} not added: no salary set up.`;
+      g('in-error').hidden = !noProfile;
+      await loadIncentives();
+    } catch (error) {
+      g('in-error').textContent = describe(error);
+      g('in-error').hidden = false;
+    }
+  }
+
+  g('in-apply-all').addEventListener('click', () => {
+    if (confirm('Add every listed incentive to pay as a bonus for this month?')) void runApply();
+  });
+  g('in-rows').addEventListener('click', (e) => {
+    const id = Number((e.target as HTMLElement).closest<HTMLElement>('[data-in-apply]')?.dataset.inApply);
+    if (id) void runApply([id]);
+  });
+
+  g('ir-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const target = val('ir-target');
+    try {
+      await saveIncentiveRule({
+        name: val('ir-name'),
+        basis: val('ir-basis') as IncentiveBasis,
+        value: Number(val('ir-value')),
+        staffId: target.startsWith('s:') ? Number(target.slice(2)) : null,
+        positionId: target.startsWith('p:') ? Number(target.slice(2)) : null,
+      });
+      (g('ir-form') as HTMLFormElement).reset();
+      await loadIncentives();
+    } catch (error) {
+      g('ir-error').textContent = describe(error);
+      g('ir-error').hidden = false;
+    }
+  });
+  g('ir-rules').addEventListener('click', async (e) => {
+    const t = e.target as HTMLElement;
+    const toggle = t.closest<HTMLElement>('[data-ir-toggle]');
+    const del = t.closest<HTMLElement>('[data-ir-del]');
+    try {
+      if (toggle) {
+        const r = (await listIncentiveRules()).find((x) => x.id === Number(toggle.dataset.irToggle));
+        if (r) await saveIncentiveRule({ ...r, isActive: toggle.dataset.on !== '1' });
+      } else if (del && confirm('Delete this rule? Bonuses already added to pay stay.')) {
+        await deleteIncentiveRule(Number(del.dataset.irDel));
+      } else return;
+      await loadIncentives();
+    } catch (error) {
+      g('ir-error').textContent = describe(error);
+      g('ir-error').hidden = false;
+    }
+  });
+
   async function loadPayroll(): Promise<void> {
     const mine = ++token;
     try {
-      const [b, s, st] = await Promise.all([listBalances(val('pr-search').trim()), listSalaries(), listStaff()]);
+      const [b, s, st] = await Promise.all([listBalances(val('pr-search').trim()), listSalaries(), listStaff().catch(() => [] as StaffMember[])]);
       if (mine !== token) return;
       balances = b;
       salaries = s;
@@ -550,11 +806,11 @@ const navItems = getNavItemsForRole(defaultRole);
       const [{ balance: b, unsettled }, statement] = await Promise.all([getBalance(id), listStatement(id)]);
       const profile = salaries.find((s) => s.staffId === id);
       const acts: string[] = [];
-      if (canWrite) {
+      if (canPay) {
         acts.push(`<button class="btn-primary-sm" data-act="pay">Pay</button>`);
         acts.push(`<button class="btn-ghost-sm" data-act="entry">${b.payType === 'daily' ? 'Add wage / bonus' : 'Add bonus / deduction'}</button>`);
-        acts.push(`<button class="btn-ghost-sm" data-act="setup">Pay setup</button>`);
       }
+      if (canSetup) acts.push(`<button class="btn-ghost-sm" data-act="setup">Pay setup</button>`);
       el.innerHTML = `
         <div class="py-detail-head">
           <h3>${esc(b.name)}</h3>
@@ -583,7 +839,7 @@ const navItems = getNavItemsForRole(defaultRole);
             return `<tr><td>${esc(s.date)}</td><td>${what}${note ? `<br /><span class="muted">${note}</span>` : ''}</td>
               <td class="num">${sign}${formatNpr(s.amount)}</td>
               <td class="num">${s.advanceAfter > 0 ? `<span class="muted">adv ${formatNpr(s.advanceAfter)}</span>` : formatNpr(s.owedAfter)}</td>
-              <td>${canWrite ? `<button class="btn-link is-danger" data-void-${s.type === 'payment' ? 'pay' : 'entry'}="${s.id}">Void</button>` : ''}</td></tr>`;
+              <td>${canPay ? `<button class="btn-link is-danger" data-void-${s.type === 'payment' ? 'pay' : 'entry'}="${s.id}">Void</button>` : ''}</td></tr>`;
           }).join('')}</tbody></table></div>
         ${statement.length > 60 ? `<p class="muted small">Showing the latest 60 of ${statement.length}.</p>` : ''}`}`;
 
@@ -627,7 +883,7 @@ const navItems = getNavItemsForRole(defaultRole);
     $('sl-start-wrap')!.hidden = Boolean(profile);
     $('sl-note')!.textContent = profile
       ? 'Changing the pay applies to future months only. Switching between monthly and daily starts the new type from today.'
-      : 'Monthly salary is recorded by the system on the salary day. Daily wages are entered each day.';
+      : 'Monthly salary is recorded by the system on the salary day. For daily wage, mark each day on the Daily sheet; the wage is worked out from the daily rate.';
     syncSalaryType();
     showError('sl-error', null);
     dlg('dlg-salary').showModal();
@@ -636,6 +892,7 @@ const navItems = getNavItemsForRole(defaultRole);
   function syncSalaryType(): void {
     const monthly = val('sl-type') === 'monthly';
     document.querySelectorAll<HTMLElement>('[data-monthly]').forEach((el) => (el.hidden = !monthly));
+    $('sl-rate-label')!.textContent = monthly ? 'Monthly salary *' : 'Daily wage for a full day (optional)';
   }
   $('sl-type')?.addEventListener('change', syncSalaryType);
 
@@ -713,27 +970,255 @@ const navItems = getNavItemsForRole(defaultRole);
     });
   });
 
+  // ---- Daily sheet -----------------------------------------------------
+
+  let sheet: WorkRow[] = [];
+  const todayIso = (): string => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const shiftDay = (iso: string, by: number): string => {
+    const d = new Date(`${iso}T00:00:00`);
+    d.setDate(d.getDate() + by);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  };
+  const STATES: [WorkStatus, string][] = [['present', 'Present'], ['half', 'Half'], ['absent', 'Absent']];
+
+  // `typed` is the day's wage entered by hand; empty uses the usual rate.
+  function dayPay(r: WorkRow, status: WorkStatus | null, extra: number, typed = 0): number {
+    if (!status || status === 'absent') return 0;
+    return (typed > 0 ? typed : r.rate * (status === 'half' ? 0.5 : 1)) + extra;
+  }
+
+  /** What was typed on a marked day: the saved wage when it differs from the usual rate. */
+  function typedWage(r: WorkRow): string {
+    if (!r.status || r.status === 'absent') return '';
+    const usual = r.rate * (r.status === 'half' ? 0.5 : 1);
+    const saved = r.amount - r.extra;
+    return Math.abs(saved - usual) > 0.004 ? String(saved) : '';
+  }
+
+  function showDaily(): void {
+    const body = $('ds-tbody');
+    if (!sheet.length) {
+      body.innerHTML = '<tr><td colspan="8" class="py-empty">Nobody is on daily pay. Set someone\'s pay to "Daily wage" on the Staff pay tab.</td></tr>';
+      $('ds-sum').textContent = '';
+      return;
+    }
+    body.innerHTML = sheet.map((r) => `<tr data-staff="${r.staffId}">
+      <td><strong>${esc(r.name)}</strong></td>
+      <td class="num">${formatNpr(r.rate)}</td>
+      <td><div class="py-seg" role="group">${STATES.map(([v, l]) => `<button type="button" class="py-seg-btn${r.status === v ? ' is-on' : ''}" data-set="${v}">${l}</button>`).join('')}</div></td>
+      <td class="num"><input type="number" class="ds-amt" min="0" step="0.01" value="${typedWage(r)}" placeholder="${r.rate ? 'Usual' : 'Amount'}" style="width:92px" /></td>
+      <td class="num"><input type="number" class="ds-extra" min="0" step="0.01" value="${r.extra || ''}" placeholder="0" style="width:84px" /></td>
+      <td><input type="text" class="ds-note" maxlength="150" value="${esc(r.note)}" placeholder="Note" /></td>
+      <td class="num ds-pay">${formatNpr(dayPay(r, r.status, r.extra))}</td>
+      <td class="py-hint">${r.month.present} present · ${r.month.half} half · ${r.month.absent} absent<br />${formatNpr(r.month.earned)} earned</td>
+    </tr>`).join('');
+    updateDailySum();
+  }
+
+  function updateDailySum(): void {
+    const rows = [...document.querySelectorAll<HTMLElement>('#ds-tbody tr[data-staff]')];
+    let total = 0;
+    let marked = 0;
+    for (const tr of rows) {
+      const r = sheet.find((x) => x.staffId === Number(tr.dataset.staff))!;
+      const status = (tr.querySelector<HTMLElement>('.is-on')?.dataset.set ?? null) as WorkStatus | null;
+      const extra = Number(tr.querySelector<HTMLInputElement>('.ds-extra')!.value) || 0;
+      const typed = Number(tr.querySelector<HTMLInputElement>('.ds-amt')!.value) || 0;
+      const pay = dayPay(r, status, extra, typed);
+      tr.querySelector('.ds-pay')!.textContent = formatNpr(pay);
+      total += pay;
+      if (status) marked += 1;
+    }
+    $('ds-sum').textContent = `${marked} of ${rows.length} marked · ${formatNpr(total)} for the day`;
+  }
+
+  async function loadDaily(): Promise<void> {
+    const input = $<HTMLInputElement>('ds-date')!;
+    if (!input.value) input.value = todayIso();
+    input.max = todayIso();
+    ($('ds-next') as HTMLButtonElement).disabled = input.value >= todayIso();
+    $('ds-error').hidden = true;
+    try {
+      sheet = await getWorkSheet(input.value);
+      showDaily();
+    } catch (e) {
+      $('ds-tbody').innerHTML = `<tr><td colspan="8" class="py-empty">${esc(e instanceof Error ? e.message : 'Could not load the sheet.')}</td></tr>`;
+    }
+  }
+
+  $('ds-tbody').addEventListener('click', (ev) => {
+    const btn = (ev.target as HTMLElement).closest<HTMLElement>('[data-set]');
+    if (!btn) return;
+    btn.parentElement!.querySelectorAll('.is-on').forEach((b) => b.classList.remove('is-on'));
+    btn.classList.add('is-on');
+    updateDailySum();
+  });
+  $('ds-tbody').addEventListener('input', () => updateDailySum());
+  $('ds-all').addEventListener('click', () => {
+    document.querySelectorAll('#ds-tbody tr[data-staff]').forEach((tr) => {
+      tr.querySelectorAll('.is-on').forEach((b) => b.classList.remove('is-on'));
+      tr.querySelector('[data-set="present"]')?.classList.add('is-on');
+    });
+    updateDailySum();
+  });
+  for (const [id, by] of [['ds-prev', -1], ['ds-next', 1]] as const) {
+    $(id).addEventListener('click', () => {
+      const input = $<HTMLInputElement>('ds-date')!;
+      input.value = shiftDay(input.value || todayIso(), by);
+      void loadDaily();
+    });
+  }
+  $('ds-date').addEventListener('change', () => void loadDaily());
+  $('ds-save').addEventListener('click', async () => {
+    const marks = [...document.querySelectorAll<HTMLElement>('#ds-tbody tr[data-staff]')]
+      .map((tr) => ({
+        staff: Number(tr.dataset.staff),
+        status: tr.querySelector<HTMLElement>('.is-on')?.dataset.set as WorkStatus | undefined,
+        extra: Number(tr.querySelector<HTMLInputElement>('.ds-extra')!.value) || 0,
+        amount: Number(tr.querySelector<HTMLInputElement>('.ds-amt')!.value) || 0,
+        note: tr.querySelector<HTMLInputElement>('.ds-note')!.value.trim(),
+      }))
+      .filter((m): m is { staff: number; status: WorkStatus; extra: number; amount: number; note: string } => Boolean(m.status));
+    const err = $('ds-error');
+    err.hidden = true;
+    if (!marks.length) {
+      err.textContent = 'Mark at least one person first.';
+      err.hidden = false;
+      return;
+    }
+    const button = $<HTMLButtonElement>('ds-save')!;
+    button.disabled = true;
+    try {
+      sheet = await saveWorkSheet($<HTMLInputElement>('ds-date')!.value, marks);
+      showDaily();
+      notice(`Saved ${marks.length} ${marks.length === 1 ? 'person' : 'people'} for ${$<HTMLInputElement>('ds-date')!.value}.`);
+    } catch (e) {
+      err.textContent = e instanceof Error && e.message ? e.message : 'Could not save. Please try again.';
+      err.hidden = false;
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  // ---- Cash and bank ------------------------------------------------------
+
+  let cashRows: MethodBalance[] = [];
+  const cashDate = () => $<HTMLInputElement>('cb-date')!;
+
+  async function loadCash(): Promise<void> {
+    if (!cashDate().value) cashDate().value = today();
+    const body = $('cb-rows')!;
+    try {
+      const [b, checks] = await Promise.all([getBalances(cashDate().value), listChecks()]);
+      cashRows = b.methods;
+      body.innerHTML = b.methods
+        .map((m) => {
+          const last = m.lastCheck;
+          const lastText = last
+            ? `${esc(last.asOf)}: ${last.difference === 0 ? 'matched' : `${last.difference > 0 ? 'over' : 'short'} ${esc(formatNpr(Math.abs(last.difference)))}`}${last.adjusted ? ' (adjusted)' : ''}`
+            : 'Never';
+          const open = m.openingAsOf ? `${esc(formatNpr(m.opening))}<br><small>at ${esc(m.openingAsOf)}</small>` : '<small>not set</small>';
+          return `<tr><td>${esc(m.label)}</td><td class="num">${open}</td><td class="num">${esc(formatNpr(m.received))}</td><td class="num">${esc(formatNpr(m.paid))}</td><td class="num"><strong>${esc(formatNpr(m.expected))}</strong></td><td>${lastText}</td><td class="num">${canWrite ? `<button type="button" class="btn-ghost-sm" data-cb-open="${m.method}">Opening</button> <button type="button" class="btn-primary-sm" data-cb-check="${m.method}">Check</button>` : ''}</td></tr>`;
+        })
+        .join('');
+      $('cb-hint')!.textContent = b.withoutMethod
+        ? `${b.withoutMethod} entr${b.withoutMethod === 1 ? 'y has' : 'ies have'} no payment method, so they are in none of these balances.`
+        : '';
+      $('cb-history')!.innerHTML = checks.length
+        ? checks
+            .map((c) => `<tr><td>${esc(c.asOf)}</td><td>${esc(pretty(c.method))}</td><td class="num">${esc(formatNpr(c.expected))}</td><td class="num">${esc(formatNpr(c.counted))}</td><td class="num">${c.difference === 0 ? 'Matched' : esc(formatNpr(c.difference))}${c.adjusted ? ' <small>adjusted</small>' : ''}</td><td>${esc(c.note) || '—'}</td><td>${esc(c.createdBy)}</td></tr>`)
+            .join('')
+        : '<tr><td colspan="7" class="py-empty">No checks yet.</td></tr>';
+    } catch (e) {
+      body.innerHTML = `<tr><td colspan="7" class="py-empty">${esc(e instanceof Error ? e.message : 'Could not load.')}</td></tr>`;
+    }
+  }
+
+  cashDate().addEventListener('change', () => void loadCash());
+
+  let cashMethod: PayMethod = 'cash';
+
+  $('cb-rows')?.addEventListener('click', (e) => {
+    const t = e.target as HTMLElement;
+    const open = t.closest<HTMLElement>('[data-cb-open]');
+    const check = t.closest<HTMLElement>('[data-cb-check]');
+    if (open) {
+      cashMethod = open.dataset.cbOpen as PayMethod;
+      const row = cashRows.find((r) => r.method === cashMethod)!;
+      $('ob-title')!.textContent = `${row.label}: opening balance`;
+      $<HTMLInputElement>('ob-date')!.value = row.openingAsOf ?? today();
+      $<HTMLInputElement>('ob-date')!.max = today();
+      $<HTMLInputElement>('ob-amount')!.value = row.openingAsOf ? String(row.opening) : '';
+      showError('ob-error', null);
+      dlg('dlg-open-bal').showModal();
+    } else if (check) {
+      cashMethod = check.dataset.cbCheck as PayMethod;
+      const row = cashRows.find((r) => r.method === cashMethod)!;
+      $('ck-title')!.textContent = `Check ${row.label.toLowerCase()}`;
+      $('ck-expected')!.textContent = `The books say ${formatNpr(row.expected)} as at ${cashDate().value}.`;
+      $<HTMLInputElement>('ck-date')!.value = cashDate().value;
+      $<HTMLInputElement>('ck-date')!.max = today();
+      $<HTMLInputElement>('ck-counted')!.value = '';
+      $<HTMLInputElement>('ck-note')!.value = '';
+      $<HTMLInputElement>('ck-adjust')!.checked = false;
+      showError('ck-error', null);
+      dlg('dlg-check').showModal();
+    }
+  });
+
+  $('form-open-bal')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await setOpeningBalance(cashMethod, Number(val('ob-amount')), val('ob-date'));
+      dlg('dlg-open-bal').close();
+      await loadCash();
+    } catch (err) {
+      showError('ob-error', err instanceof Error ? err.message : 'Could not save.');
+    }
+  });
+
+  $('form-check')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const r = await saveCheck({
+        method: cashMethod,
+        asOf: val('ck-date'),
+        counted: Number(val('ck-counted')),
+        note: val('ck-note'),
+        adjust: $<HTMLInputElement>('ck-adjust')!.checked,
+      });
+      dlg('dlg-check').close();
+      notice(r.difference === 0 ? 'Matched: the books and the count agree.' : `Saved. Difference: ${formatNpr(r.difference)}${r.adjusted ? ' (recorded in the books)' : ''}.`);
+      await loadCash();
+    } catch (err) {
+      showError('ck-error', err instanceof Error ? err.message : 'Could not save.');
+    }
+  });
+
   // ---- Tabs and load ---------------------------------------------------
 
   function syncTab(): void {
     document.querySelectorAll('[data-tab]').forEach((b) => b.classList.toggle('is-active', (b as HTMLElement).dataset.tab === tab));
     document.querySelectorAll('[data-panel]').forEach((p) => p.classList.remove('is-active'));
-    document.querySelector(`[data-panel="${tab === 'payroll' ? 'payroll' : 'ledger'}"]`)?.classList.add('is-active');
+    document.querySelector(`[data-panel="${tab === 'payroll' || tab === 'daily' || tab === 'incentives' || tab === 'cash' ? tab : 'ledger'}"]`)?.classList.add('is-active');
     const add = $<HTMLButtonElement>('py-add')!;
-    add.hidden = !canWrite || tab === 'payroll';
+    add.hidden = !canWrite || tab === 'payroll' || tab === 'daily' || tab === 'incentives' || tab === 'cash';
     add.textContent = tab === 'income' ? '+ Add income' : '+ Add expense';
   }
 
   async function refresh(): Promise<void> {
     syncTab();
-    if (tab === 'payroll') await loadPayroll();
+    if (tab === 'cash') await loadCash();
+    else if (tab === 'daily') await loadDaily();
+    else if (tab === 'incentives') await loadIncentives();
+    else if (tab === 'payroll') await loadPayroll();
     else await loadLedger();
   }
 
   document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((b) =>
     b.addEventListener('click', () => {
       tab = b.dataset.tab as Tab;
-      if (tab !== 'payroll') fillCategoryFilter();
+      if (tab === 'expenses' || tab === 'income') fillCategoryFilter();
       void refresh();
     }),
   );
@@ -752,6 +1237,10 @@ const navItems = getNavItemsForRole(defaultRole);
     const s = getSession();
     if (s) $('py-scope')!.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
     canWrite = s?.accessMode !== 'read_only';
+    canPay = canWrite && can(s, 'staff.pay');
+    canSetup = canWrite && !!s?.isOwner;
+    const dsSave = $<HTMLButtonElement>('ds-save');
+    if (dsSave) dsSave.hidden = !canPay;
     fillCategoryFilter();
     void refresh();
   }
@@ -844,6 +1333,18 @@ const navItems = getNavItemsForRole(defaultRole);
   #pr-detail h4 { margin: 14px 0 6px; font-size: 0.74rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
   .py-list { list-style: none; margin: 0; padding: 0; font-size: 0.8rem; }
   .py-list li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .py-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+  .py-seg-btn { border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--text-secondary); padding: 6px 11px; font: inherit; font-size: 0.76rem; cursor: pointer; }
+  .py-seg-btn:last-child { border-right: 0; }
+  .py-seg-btn:hover { background: var(--surface-hover); }
+  .py-seg-btn.is-on[data-set="present"] { background: #16a34a; color: #fff; }
+  .py-seg-btn.is-on[data-set="half"] { background: #d97706; color: #fff; }
+  .py-seg-btn.is-on[data-set="absent"] { background: #dc2626; color: #fff; }
+  .py-hint { font-size: 0.74rem; color: var(--text-muted); }
+  .py-h { margin: 0 0 8px; font-size: 0.9rem; font-weight: 650; }
+  .py-check { flex-direction: row; align-items: center; gap: 8px; }
+  .ds-note { width: 100%; min-width: 120px; }
+  #ds-sum { margin-left: auto; }
   .py-note { margin: 10px 0 0; font-size: 0.74rem; color: var(--text-muted); }
   .py-note.is-warn { color: #d97706; }
 

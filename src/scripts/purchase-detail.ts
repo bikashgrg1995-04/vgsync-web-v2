@@ -14,6 +14,7 @@ import {
   METHOD_LABEL,
   type Purchase,
   type PurchaseReturn,
+  setPurchaseDueDate,
 } from "../lib/purchases";
 import {
   configurePurchaseDialogs,
@@ -203,6 +204,10 @@ function renderInfo(p: Purchase): void {
   setText("inf-supplier", p.supplierName);
   setText("inf-bill", p.billNo || "—");
   setText("inf-date", fmtDate(p.purchaseDate));
+  const late = p.dueDate && p.remaining > 0 && p.dueDate < new Date().toISOString().slice(0, 10);
+  setText("inf-due-date", p.dueDate ? `${fmtDate(p.dueDate)}${late ? " (late)" : ""}` : "Not set");
+  const dueEdit = $("inf-due-edit");
+  if (dueEdit) dueEdit.hidden = !canWrite || cancelled;
   setText("inf-pay", cancelled ? "—" : PAYMENT_LABEL[p.paymentStatus]);
 
   setText("inf-subtotal", formatNpr(p.subtotal));
@@ -528,6 +533,36 @@ document
   });
 
 $("pud-pay-btn")?.addEventListener("click", () => runAction("pay"));
+
+// Payment due date: when the supplier expects to be paid.
+const dueDialog = $<HTMLDialogElement>("dlg-due");
+
+async function saveDue(value: string | null): Promise<void> {
+  const err = $("due-error");
+  if (err) err.hidden = true;
+  try {
+    await setPurchaseDueDate(purchaseId, value);
+    dueDialog?.close();
+    await load();
+  } catch (error) {
+    if (err) {
+      err.textContent = describe(error);
+      err.hidden = false;
+    }
+  }
+}
+
+$("inf-due-edit")?.addEventListener("click", () => {
+  ($("due-input") as HTMLInputElement).value = purchase?.dueDate ?? "";
+  $("due-error")!.hidden = true;
+  dueDialog?.showModal();
+});
+$("form-due")?.addEventListener("submit", (e) => {
+  e.preventDefault();
+  void saveDue(($("due-input") as HTMLInputElement).value || null);
+});
+$("due-clear")?.addEventListener("click", () => void saveDue(null));
+$("due-cancel")?.addEventListener("click", () => dueDialog?.close());
 $("pud-receive-btn")?.addEventListener("click", () => runAction("receive"));
 
 // ==================================================
