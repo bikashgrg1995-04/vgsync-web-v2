@@ -533,6 +533,114 @@ export async function voidPayrollPayment(id: number, reason: string): Promise<vo
   await api(`/payroll/payments/${id}/void/`, { method: 'POST', body: { reason } });
 }
 
+// ---- Incentives -------------------------------------------------------
+
+export type IncentiveBasis = 'sale_percent' | 'bike_fixed' | 'job_fixed' | 'job_percent';
+
+export const INCENTIVE_BASIS_LABEL: Record<IncentiveBasis, string> = {
+  sale_percent: '% of the value of sales they made',
+  bike_fixed: 'Fixed amount per bike sold',
+  job_fixed: 'Fixed amount per service job finished',
+  job_percent: '% of the value of service jobs finished',
+};
+
+export interface IncentiveRule {
+  id: number;
+  name: string;
+  basis: IncentiveBasis;
+  value: number;
+  staffId: number | null;
+  staffName: string;
+  positionId: number | null;
+  positionName: string;
+  isActive: boolean;
+}
+
+export interface IncentiveRow {
+  staffId: number;
+  name: string;
+  lines: { name: string; basis: IncentiveBasis; base: number; rate: number; amount: number }[];
+  total: number;
+  hasPayProfile: boolean;
+  entryId: number | null;
+  appliedAmount: number | null;
+}
+
+function ruleFromApi(r: Raw): IncentiveRule {
+  return {
+    id: r.id,
+    name: r.name,
+    basis: r.basis,
+    value: num(r.value),
+    staffId: r.staff ?? null,
+    staffName: r.staff_name ?? '',
+    positionId: r.position ?? null,
+    positionName: r.position_name ?? '',
+    isActive: !!r.is_active,
+  };
+}
+
+export async function listIncentiveRules(): Promise<IncentiveRule[]> {
+  return allPages<Raw, IncentiveRule>('/payroll/incentive-rules/', ruleFromApi);
+}
+
+export async function saveIncentiveRule(input: {
+  id?: number;
+  name: string;
+  basis: IncentiveBasis;
+  value: number;
+  staffId?: number | null;
+  positionId?: number | null;
+  isActive?: boolean;
+}): Promise<void> {
+  const body: Record<string, unknown> = {
+    name: input.name.trim(),
+    basis: input.basis,
+    value: input.value.toFixed(2),
+    staff: input.staffId ?? null,
+    position: input.positionId ?? null,
+  };
+  if (input.isActive !== undefined) body.is_active = input.isActive;
+  if (input.id) await api(`/payroll/incentive-rules/${input.id}/`, { method: 'PATCH', body });
+  else await api('/payroll/incentive-rules/', { method: 'POST', body });
+}
+
+export async function deleteIncentiveRule(id: number): Promise<void> {
+  await api(`/payroll/incentive-rules/${id}/`, { method: 'DELETE' });
+}
+
+function incentiveLines(lines: Raw[]): IncentiveRow['lines'] {
+  return lines.map((l) => ({ name: l.name, basis: l.basis, base: num(l.base), rate: num(l.rate), amount: num(l.amount) }));
+}
+
+/** What each person earned as incentive in a month (``YYYY-MM``). */
+export async function getIncentives(month: string): Promise<IncentiveRow[]> {
+  const r = await api<Raw>(`/payroll/incentives/?month=${encodeURIComponent(month)}`);
+  return (r.rows as Raw[]).map((x) => ({
+    staffId: x.staff,
+    name: x.name,
+    lines: incentiveLines(x.lines),
+    total: num(x.total),
+    hasPayProfile: !!x.has_pay_profile,
+    entryId: x.entry ?? null,
+    appliedAmount: x.applied_amount == null ? null : num(x.applied_amount),
+  }));
+}
+
+/** Put the month's incentive in pay as a bonus. Nobody is paid twice for a month. */
+export async function applyIncentives(month: string, staffIds?: number[]): Promise<{ applied: number; skipped: { staff: number; reason: string }[] }> {
+  const body: Record<string, unknown> = { month };
+  if (staffIds) body.staff = staffIds;
+  const r = await api<Raw>('/payroll/incentives/', { method: 'POST', body });
+  return { applied: (r.applied as Raw[]).length, skipped: r.skipped };
+}
+
+/** The signed-in person's own incentive so far this month. */
+export async function getMyIncentive(month?: string): Promise<{ total: number; lines: IncentiveRow['lines'] }> {
+  const r = await api<Raw>(`/payroll/me/incentive/${month ? `?month=${month}` : ''}`);
+  return { total: num(r.total), lines: incentiveLines(r.lines) };
+}
+
 export function formatNpr(n: number): string {
   return new Intl.NumberFormat('en-NP', {
     style: 'currency',
