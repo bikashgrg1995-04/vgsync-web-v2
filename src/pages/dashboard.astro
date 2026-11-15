@@ -165,7 +165,7 @@ const navItems = getNavItemsForRole(defaultRole);
     ]);
     if (mine !== run) return;
 
-    $('ov-mytasks-card').hidden = myTasks === null;
+    $('ov-mytasks-card').hidden = myTasks === null || session?.isOwner === true;
     if (myTasks) $('ov-mytasks').innerHTML = myTasksHtml(myTasks);
 
     const kpis: string[] = [];
