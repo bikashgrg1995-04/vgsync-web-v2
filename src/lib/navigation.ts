@@ -1,7 +1,7 @@
 /**
  * Navigation menu definitions.
  *
- * Eight areas for the owner: Dashboard, Sales, Purchases & Orders, Finance,
+ * Eight areas for the owner: Dashboard, Sales, Purchases, Orders, Finance,
  * Inventory, Reports & Analytics, People (customers, suppliers, staff) and Settings (the last
  * one lives in the sidebar footer). What each person sees follows their
  * permissions: an item shows when the person holds its `perm`. The API
@@ -30,7 +30,8 @@ export interface NavItem {
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'main', label: null },
   { id: 'sales', label: 'Sales' },
-  { id: 'purchases', label: 'Purchases & Orders' },
+  { id: 'purchases', label: 'Purchases' },
+  { id: 'orders', label: 'Orders' },
   { id: 'finance', label: 'Finance' },
   { id: 'inventory', label: 'Inventory' },
   { id: 'people', label: 'People' },
@@ -51,7 +52,8 @@ const ALL_ITEMS: NavItem[] = [
   { id: 'servicing', label: 'Follow-ups', href: '/dashboard/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
 
   { id: 'purchase', label: 'Purchase', href: '/dashboard/purchase', icon: 'clipboard', group: 'purchases', perm: 'purchases.view' },
-  { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'purchases', perm: 'orders.view' },
+  { id: 'purchase-returns', label: 'Purchase Return', href: '/dashboard/purchase#returns', icon: 'returns', group: 'purchases', perm: 'purchases.view' },
+  { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'orders', perm: 'orders.view' },
   { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck', group: 'people', perm: 'purchases.view' },
 
   { id: 'payments', label: 'Payments', href: '/dashboard/payments', icon: 'wallet', group: 'finance', perm: 'finance.view' },
