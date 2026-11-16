@@ -326,6 +326,9 @@ const navItems = getNavItemsForRole(defaultRole);
   }
   $('tab-team')?.addEventListener('click', () => selectTab('team'));
   $('tab-positions')?.addEventListener('click', () => selectTab('positions'));
+  // The menu opens a tab through the address (#team, #positions).
+  const tabFromHash = () => selectTab(window.location.hash === '#positions' ? 'positions' : 'team');
+  window.addEventListener('hashchange', tabFromHash);
   if (window.location.hash === '#positions') selectTab('positions');
 
   // ---------- team table ----------
