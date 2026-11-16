@@ -1,8 +1,8 @@
 /**
  * Navigation menu definitions.
  *
- * Eight areas for the owner: Dashboard, Sales, Purchases, Orders, Finance,
- * Inventory, Reports & Analytics, Staff Management (staffs, positions, tasks) and Settings (the last
+ * Areas, in order: Dashboard, Inventory, Sales, Purchases, Orders, Staff
+ * Management (staffs, positions, tasks), Finance, Reports & Analytics and Settings (the last
  * one lives in the sidebar footer). What each person sees follows their
  * permissions: an item shows when the person holds its `perm`. The API
  * enforces the same rules; this only decides what is shown.
@@ -29,12 +29,12 @@ export interface NavItem {
 
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'main', label: null },
+  { id: 'inventory', label: 'Inventory' },
   { id: 'sales', label: 'Sales' },
   { id: 'purchases', label: 'Purchases' },
   { id: 'orders', label: 'Orders' },
-  { id: 'finance', label: 'Finance' },
-  { id: 'inventory', label: 'Inventory' },
   { id: 'staffmgmt', label: 'Staff Management' },
+  { id: 'finance', label: 'Finance' },
   { id: 'reports', label: 'Reports & Analytics' },
 ];
 
