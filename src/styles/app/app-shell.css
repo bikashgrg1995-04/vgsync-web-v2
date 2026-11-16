@@ -727,4 +727,16 @@ body:has(.app-shell) {
 .notif-foot { display: block; text-align: center; padding: 10px; font-size: 0.78rem; color: var(--accent); text-decoration: none; border-top: 1px solid var(--border); }
 
 /* While another page is being fetched, the content dims; the menu stays put. */
-.app-shell.is-navigating .app-content-inner { opacity: 0.55; transition: opacity 0.15s ease; pointer-events: none; }
+.app-shell.is-navigating::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  z-index: 9999;
+  background: var(--primary, #3b82f6);
+  transform-origin: left;
+  animation: nav-progress 1.2s ease-out forwards;
+}
+@keyframes nav-progress { from { transform: scaleX(0.05); } to { transform: scaleX(0.9); } }
