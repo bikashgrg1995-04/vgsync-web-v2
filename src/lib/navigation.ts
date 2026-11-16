@@ -2,7 +2,7 @@
  * Navigation menu definitions.
  *
  * Eight areas for the owner: Dashboard, Sales, Purchases, Orders, Finance,
- * Inventory, Reports & Analytics, People (customers, suppliers, staff) and Settings (the last
+ * Inventory, Reports & Analytics, Staff Management (staffs, positions, tasks) and Settings (the last
  * one lives in the sidebar footer). What each person sees follows their
  * permissions: an item shows when the person holds its `perm`. The API
  * enforces the same rules; this only decides what is shown.
@@ -34,13 +34,12 @@ export const NAV_GROUPS: NavGroup[] = [
   { id: 'orders', label: 'Orders' },
   { id: 'finance', label: 'Finance' },
   { id: 'inventory', label: 'Inventory' },
-  { id: 'people', label: 'People' },
+  { id: 'staffmgmt', label: 'Staff Management' },
   { id: 'reports', label: 'Reports & Analytics' },
 ];
 
 const ALL_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Dashboard', href: '/dashboard', icon: 'home', group: 'main' },
-  { id: 'tasks', label: 'Tasks', href: '/dashboard/tasks', icon: 'clipboard', group: 'main' },
   // Everyone on the team can see their own pay; the owner has the Staff pay screen instead.
   { id: 'my-jobs', label: 'My jobs', href: '/dashboard/my-jobs', icon: 'wrench', group: 'main', rule: 'not_owner' },
   { id: 'my-pay', label: 'My pay', href: '/dashboard/my-pay', icon: 'wallet', group: 'main', rule: 'not_owner' },
@@ -48,13 +47,13 @@ const ALL_ITEMS: NavItem[] = [
 
   { id: 'sales', label: 'Sales', href: '/dashboard/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },
   { id: 'returns', label: 'Returns', href: '/dashboard/sales#returns', icon: 'returns', group: 'sales', perm: 'sales.view' },
-  { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users', group: 'people', perm: 'sales.view' },
+  { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users', group: 'sales', perm: 'sales.view' },
   { id: 'servicing', label: 'Follow-ups', href: '/dashboard/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
 
   { id: 'purchase', label: 'Purchase', href: '/dashboard/purchase', icon: 'clipboard', group: 'purchases', perm: 'purchases.view' },
   { id: 'purchase-returns', label: 'Purchase Return', href: '/dashboard/purchase#returns', icon: 'returns', group: 'purchases', perm: 'purchases.view' },
   { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'orders', perm: 'orders.view' },
-  { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck', group: 'people', perm: 'purchases.view' },
+  { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck', group: 'purchases', perm: 'purchases.view' },
 
   { id: 'payments', label: 'Payments', href: '/dashboard/payments', icon: 'wallet', group: 'finance', perm: 'finance.view' },
   { id: 'statements', label: 'Statements', href: '/dashboard/statements', icon: 'clipboard', group: 'finance', rule: 'statements' },
@@ -64,7 +63,9 @@ const ALL_ITEMS: NavItem[] = [
 
   { id: 'reports', label: 'Reports', href: '/dashboard/reports', icon: 'chart', group: 'reports', perm: 'reports.view' },
 
-  { id: 'staff', label: 'Staff', href: '/dashboard/staff', icon: 'users', group: 'people', perm: 'staff.view' },
+  { id: 'staff', label: 'Staffs', href: '/dashboard/staff#team', icon: 'users', group: 'staffmgmt', perm: 'staff.view' },
+  { id: 'positions', label: 'Position / Role', href: '/dashboard/staff#positions', icon: 'shield', group: 'staffmgmt', perm: 'staff.view' },
+  { id: 'tasks', label: 'Tasks', href: '/dashboard/tasks', icon: 'clipboard', group: 'staffmgmt' },
 ];
 
 /** Codes that let a person decide an approval request. */
