@@ -18,6 +18,18 @@ let tracked: Tracked[] = [];
 let counter = 0;
 let token = 0;
 
+// Page scripts that have already run (the one this page loaded with counts).
+const executed = new Set<string>();
+// Pages fetched ahead of the click (on hover or touch), kept briefly.
+const prefetched = new Map<string, { at: number; html: Promise<string> }>();
+const FRESH_MS = 20_000;
+
+const keyOf = (url: string) => {
+  const u = new URL(url, window.location.href);
+
+  return u.pathname + u.search;
+};
+
 const content = () => document.querySelector<HTMLElement>('.app-content-inner');
 
 // Listeners a page puts on the document, window or the shared header would
@@ -77,8 +89,12 @@ async function runScripts(scripts: HTMLScriptElement[]): Promise<void> {
 
     if (src) {
       const url = new URL(src, window.location.origin);
+      const plain = url.pathname + url.search;
 
-      url.searchParams.set('soft', String(++counter));
+      // First run uses the plain address, which the browser has usually
+      // preloaded; running it again needs a fresh copy of the module.
+      if (executed.has(plain)) url.searchParams.set('soft', String(++counter));
+      else executed.add(plain);
       await import(/* @vite-ignore */ url.pathname + url.search);
     } else {
       const el = document.createElement('script');
@@ -114,6 +130,42 @@ function syncChrome(next: Document): void {
   refreshMenuGroups();
 }
 
+async function fetchHtml(url: string): Promise<string> {
+  const res = await fetch(url, { credentials: 'same-origin' });
+
+  if (!res.ok || !(res.headers.get('content-type') ?? '').includes('text/html')) throw new Error('not a page');
+
+  return res.text();
+}
+
+function preloadScripts(html: string): void {
+  const next = new DOMParser().parseFromString(html, 'text/html');
+
+  for (const s of pageScripts(next)) {
+    const src = s.getAttribute('src');
+
+    if (!src || document.querySelector(`link[rel="modulepreload"][href="${src}"]`)) continue;
+
+    const link = document.createElement('link');
+
+    link.rel = 'modulepreload';
+    link.href = src;
+    document.head.appendChild(link);
+  }
+}
+
+function prefetch(url: string): void {
+  const key = keyOf(url);
+  const hit = prefetched.get(key);
+
+  if (hit && Date.now() - hit.at < FRESH_MS) return;
+
+  const html = fetchHtml(url);
+
+  html.then(preloadScripts, () => prefetched.delete(key));
+  prefetched.set(key, { at: Date.now(), html });
+}
+
 async function go(url: string, push: boolean): Promise<void> {
   const mine = ++token;
   const shell = document.getElementById('app-shell');
@@ -121,12 +173,12 @@ async function go(url: string, push: boolean): Promise<void> {
   shell?.classList.add('is-navigating');
 
   try {
-    const res = await fetch(url, { credentials: 'same-origin' });
-    const type = res.headers.get('content-type') ?? '';
+    const hit = prefetched.get(keyOf(url));
+    const html = await (hit && Date.now() - hit.at < FRESH_MS ? hit.html : fetchHtml(url));
 
-    if (!res.ok || !type.includes('text/html')) throw new Error('not a page');
+    prefetched.delete(keyOf(url));
 
-    const next = new DOMParser().parseFromString(await res.text(), 'text/html');
+    const next = new DOMParser().parseFromString(html, 'text/html');
     const incoming = next.querySelector('.app-content-inner');
 
     if (!incoming || !next.getElementById('app-shell')) throw new Error('not a dashboard page');
@@ -168,12 +220,38 @@ document.addEventListener('click', (e) => {
   if (!a || !eligible(a, e)) return;
 
   e.preventDefault();
+  markActive(a);
   void go(a.href, true);
 });
+
+// Reach for the page as soon as a link is pointed at or touched.
+const warm = (e: Event) => {
+  const a = (e.target as Element | null)?.closest?.('.app-sidebar a[href]') as HTMLAnchorElement | null;
+
+  if (a && eligible(a, new MouseEvent('click'))) prefetch(a.href);
+};
+
+document.addEventListener('mouseover', warm, { passive: true });
+document.addEventListener('touchstart', warm, { passive: true });
+document.addEventListener('focusin', warm);
+
+// Highlight the clicked item at once; the real highlight follows the page.
+function markActive(a: HTMLAnchorElement): void {
+  const id = a.dataset.navId;
+
+  if (!id || !a.closest('.app-sidebar')) return;
+  document.querySelectorAll('.app-sidebar .sidebar-link').forEach((x) => x.classList.toggle('is-active', x === a));
+}
 
 window.addEventListener('popstate', () => {
   void go(window.location.href, false);
 });
+
+for (const s of pageScripts(document)) {
+  const src = s.getAttribute('src');
+
+  if (src) executed.add(new URL(src, window.location.origin).pathname + new URL(src, window.location.origin).search);
+}
 
 // From here on, whatever a page registers is the page's own.
 tracking = true;
