@@ -99,8 +99,26 @@ const initials = displayName
       })}
     </ul>
   </nav>
+  <style is:inline>.sidebar-list > li.is-folded { display: none; }</style>
+  <script is:inline>
+    // Unfold the section that holds this page, and the ones left open before,
+    // before the first paint so the menu does not jump.
+    (function () {
+      try {
+        var open = JSON.parse(localStorage.getItem('vgsync.menu.open') || '[]');
+        var active = document.querySelector('.app-sidebar .sidebar-link.is-active');
+        var ag = active && active.parentElement && active.parentElement.getAttribute('data-nav-group-item');
+        document.querySelectorAll('.app-sidebar [data-group-toggle]').forEach(function (t) {
+          var g = t.getAttribute('data-group-toggle');
+          if (g === ag || (Array.isArray(open) && open.indexOf(g) !== -1)) {
+            t.setAttribute('aria-expanded', 'true');
+            document.querySelectorAll('.app-sidebar [data-nav-group-item="' + g + '"]').forEach(function (li) { li.classList.remove('is-folded'); });
+          }
+        });
+      } catch (e) {}
+    })();
+  </script>
 
- 
 
     <div class="sidebar-profile-card" id="sidebar-profile">
       <span class="sidebar-profile-avatar" aria-hidden="true" id="sidebar-profile-initials">{initials}</span>
