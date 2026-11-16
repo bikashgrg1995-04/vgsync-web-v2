@@ -24,6 +24,9 @@ const executed = new Set<string>();
 const prefetched = new Map<string, { at: number; html: Promise<string> }>();
 const FRESH_MS = 20_000;
 
+// The page (path and query, no #fragment) on screen now.
+let shown = window.location.pathname + window.location.search;
+
 const keyOf = (url: string) => {
   const u = new URL(url, window.location.href);
 
@@ -208,6 +211,7 @@ async function go(url: string, push: boolean): Promise<void> {
     syncStyles(next);
     content()!.innerHTML = incoming.innerHTML;
     if (push) window.history.pushState({ soft: true }, '', url);
+    shown = keyOf(window.location.href);
     syncChrome(next);
     window.scrollTo({ top: 0 });
     document.getElementById('app-content')?.scrollTo({ top: 0 });
@@ -263,7 +267,10 @@ function markActive(a: HTMLAnchorElement): void {
   document.querySelectorAll('.app-sidebar .sidebar-link').forEach((x) => x.classList.toggle('is-active', x === a));
 }
 
+// Back/forward. A change of #fragment alone also raises popstate; that stays
+// on the same page, so there is nothing to load.
 window.addEventListener('popstate', () => {
+  if (keyOf(window.location.href) === shown) return;
   void go(window.location.href, false);
 });
 
