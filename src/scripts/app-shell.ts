@@ -294,6 +294,10 @@ function setGroupOpen(group: string, open: boolean): void {
     ?.setAttribute('aria-expanded', String(open));
 }
 
+export function refreshMenuGroups(): void {
+  setupMenuGroups();
+}
+
 function setupMenuGroups(): void {
   const stored = readOpenGroups();
   const groups = Array.from(document.querySelectorAll<HTMLElement>('[data-group-toggle]'));

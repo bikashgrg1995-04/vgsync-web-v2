@@ -725,3 +725,6 @@ body:has(.app-shell) {
 .notif-when { display: block; font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; }
 .notif-empty { padding: 22px 14px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
 .notif-foot { display: block; text-align: center; padding: 10px; font-size: 0.78rem; color: var(--accent); text-decoration: none; border-top: 1px solid var(--border); }
+
+/* While another page is being fetched, the content dims; the menu stays put. */
+.app-shell.is-navigating .app-content-inner { opacity: 0.55; transition: opacity 0.15s ease; pointer-events: none; }
