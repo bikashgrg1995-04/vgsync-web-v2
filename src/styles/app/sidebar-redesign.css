@@ -380,3 +380,11 @@
 .sidebar-group-toggle[aria-expanded="true"] .sidebar-group-chevron { transform: rotate(180deg); }
 /* A folded section hides its items; the permission rules use inline display, which this does not touch. */
 .sidebar-list > li.is-folded { display: none; }
+
+/* Profile sits under the brand; Settings, Help and Logout are packed closer. */
+.sidebar-profile-card { margin: 10px 0 6px; }
+.sidebar-bottom { gap: 0; margin-top: 6px; padding-top: 6px; }
+.sidebar-footer-links { gap: 0; }
+.app-sidebar { box-sizing: border-box; }
+.sidebar-footer-links .sidebar-link { box-sizing: border-box; min-height: 32px; padding-top: 5px; padding-bottom: 5px; }
+.sidebar-logout-btn { box-sizing: border-box; min-height: 32px; padding: 5px 12px; }
