@@ -388,3 +388,6 @@
 .app-sidebar { box-sizing: border-box; }
 .sidebar-footer-links .sidebar-link { box-sizing: border-box; min-height: 32px; padding-top: 5px; padding-bottom: 5px; }
 .sidebar-logout-btn { box-sizing: border-box; min-height: 32px; padding: 5px 12px; }
+
+/* Settings, Help and Logout sit a little above the bottom edge. */
+.app-sidebar { padding-bottom: 22px; }
