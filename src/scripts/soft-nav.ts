@@ -69,8 +69,18 @@ function syncStyles(next: Document): void {
   const wanted = new Map(headStyles(next.head).map((n) => [headKey(n), n]));
   const have = new Map(headStyles(document.head).map((n) => [headKey(n), n]));
 
-  for (const [key, node] of have) if (!wanted.has(key)) node.remove();
-  for (const [key, node] of wanted) if (!have.has(key)) document.head.appendChild(document.importNode(node, true));
+  // Never remove what the page came with (the dev server also adds the shared
+  // styles from script, so they may be missing from a fetched copy); only
+  // drop styles an earlier soft navigation added that this page does not use.
+  for (const [key, node] of have) if (node.hasAttribute('data-soft') && !wanted.has(key)) node.remove();
+  for (const [key, node] of wanted) {
+    if (have.has(key)) continue;
+
+    const copy = document.importNode(node, true) as Element;
+
+    copy.setAttribute('data-soft', '');
+    document.head.appendChild(copy);
+  }
 }
 
 function isLayoutScript(el: HTMLScriptElement): boolean {
@@ -79,8 +89,18 @@ function isLayoutScript(el: HTMLScriptElement): boolean {
   return src.includes('AppLayout.astro') || (!src && /app-shell|sidebar-toggle/.test(el.textContent ?? ''));
 }
 
+// The dev server also lists stylesheets and its own client as module scripts;
+// those are not page code (the styles come across with the head).
+function isTooling(el: HTMLScriptElement): boolean {
+  const path = (el.getAttribute('src') ?? '').split('?')[0];
+
+  return path.endsWith('.css') || path.startsWith('/@');
+}
+
 function pageScripts(next: Document): HTMLScriptElement[] {
-  return Array.from(next.querySelectorAll<HTMLScriptElement>('script[type="module"]')).filter((s) => !isLayoutScript(s));
+  return Array.from(next.querySelectorAll<HTMLScriptElement>('script[type="module"]')).filter(
+    (s) => !isLayoutScript(s) && !isTooling(s),
+  );
 }
 
 async function runScripts(scripts: HTMLScriptElement[]): Promise<void> {
