@@ -661,8 +661,10 @@ export interface ImportResult {
 }
 
 export const downloadProducts = () => apiDownload('/inventory/products/export/', 'products.xlsx');
-export const downloadImportTemplate = () =>
-  apiDownload('/inventory/products/import-template/', 'product-import-template.xlsx');
+export const downloadImportTemplate = (mode: 'products' | 'prices' | 'stock' = 'products') =>
+  mode === 'stock'
+    ? apiDownload('/inventory/products/import-template/?mode=stock', 'stock-import-template.xlsx')
+    : apiDownload('/inventory/products/import-template/', 'product-import-template.xlsx');
 
 /**
  * Check a product file (or save it with ``apply``). ``prices`` changes MRP and
@@ -670,7 +672,7 @@ export const downloadImportTemplate = () =>
  */
 export async function importProducts(
   file: File,
-  mode: 'products' | 'prices',
+  mode: 'products' | 'prices' | 'stock',
   apply: boolean,
 ): Promise<ImportResult> {
   const form = new FormData();

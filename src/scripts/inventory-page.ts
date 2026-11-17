@@ -786,6 +786,7 @@ $("inv-status")?.addEventListener("change", () => {
 
 $("inv-add")?.addEventListener("click", () => openProduct());
 $("inv-import")?.addEventListener("click", () => openProductImport("products", () => void reload()));
+$("inv-import-stock")?.addEventListener("click", () => openProductImport("stock", () => void reload()));
 $("inv-mrp")?.addEventListener("click", () => openProductImport("prices", () => void reload()));
 $("inv-export")?.addEventListener("click", () => {
   downloadProducts().catch((e) =>
@@ -973,6 +974,9 @@ try {
   const importBtn = $("inv-import");
   const mrpBtn = $("inv-mrp");
 
+  const stockBtn = $("inv-import-stock");
+
+  if (stockBtn) stockBtn.hidden = !canAdjust;
   if (importBtn) importBtn.hidden = !keepsCatalogue;
   if (mrpBtn) mrpBtn.hidden = !keepsCatalogue;
 } catch {
