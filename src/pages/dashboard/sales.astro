@@ -245,7 +245,7 @@ const navItems = getNavItemsForRole(defaultRole);
             <tbody id="ret-tbody"><tr><td colspan="10" class="sa-empty">Loading…</td></tr></tbody>
           </table>
         </div>
-        <p class="sa-foot">Returns are made from a confirmed sale (open it and press Return goods). The value first reduces what the customer still owes; the rest becomes credit to pay. Bikes and service charges cannot be returned.</p>
+        <p class="sa-foot">Returns are made from a confirmed sale (open it and press Return goods). The value first reduces what the customer still owes; the rest becomes credit to pay. Only stock sales take goods back; servicing and bike sales cannot be returned.</p>
       </div>
     </section>
 
@@ -1186,8 +1186,32 @@ const navItems = getNavItemsForRole(defaultRole);
     if (tab === 'bikes') return loadBikes();
   }
 
+
+  // A menu link that opens one list (Returns, Follow-ups) shows just that
+  // list under its own title, not the whole Sales page around it.
+  const FOCUS: Record<string, { title: string; sub: string; nav: string }> = { returns: { title: 'Sales Returns', sub: 'Goods customers brought back from stock sales.', nav: 'returns' }, followups: { title: 'Follow-ups', sub: 'Calls and visits that are due: service checks, instalments and credit.', nav: 'servicing' } };
+  const heroTitle = document.querySelector<HTMLElement>('.pd-hero-title');
+  const heroSub = document.querySelector<HTMLElement>('.pd-hero-sub');
+  const headerTitle = document.querySelector<HTMLElement>('.header-title');
+  const first = {
+    title: heroTitle?.textContent ?? '',
+    sub: heroSub?.textContent ?? '',
+    header: headerTitle?.textContent ?? '',
+    nav: document.querySelector('.app-sidebar .sidebar-link.is-active')?.getAttribute('data-nav-id') ?? '',
+  };
+  function applyFocus(name: string): void {
+    const f = FOCUS[name];
+    document.querySelector('.sa-page')?.classList.toggle('is-focus', !!f);
+    if (heroTitle) heroTitle.textContent = f ? f.title : first.title;
+    if (heroSub) heroSub.textContent = f ? f.sub : first.sub;
+    if (headerTitle) headerTitle.textContent = f ? f.title : first.header;
+    const nav = f ? f.nav : first.nav;
+    document.querySelectorAll<HTMLElement>('.app-sidebar .sidebar-link').forEach((a) => a.classList.toggle('is-active', a.dataset.navId === nav));
+  }
+
   function showPanel(name: string): void {
     activePanel = name;
+    applyFocus(name);
     document.querySelectorAll<HTMLElement>('[data-panel]').forEach((p) => p.classList.toggle('is-active', p.dataset.panel === name));
     void loadTab(name);
     window.scrollTo({ top: 0 });
@@ -1199,6 +1223,7 @@ const navItems = getNavItemsForRole(defaultRole);
   function panelFromHash(): void {
     const name = window.location.hash.slice(1);
     if (name && panelNames.has(name) && name !== activePanel) showPanel(name);
+    else if (!name && activePanel !== 'overview') showPanel('overview');
   }
   window.addEventListener('hashchange', panelFromHash);
 

@@ -740,3 +740,8 @@ body:has(.app-shell) {
   animation: nav-progress 1.2s ease-out forwards;
 }
 @keyframes nav-progress { from { transform: scaleX(0.05); } to { transform: scaleX(0.9); } }
+
+/* A page opened on one list (Returns, Follow-ups) hides the page's own buttons and back link. */
+.pd-page.is-focus .pd-hero-actions,
+.pd-page.is-focus .pd-back,
+.pd-page.is-focus .sa-scope { display: none; }

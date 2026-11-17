@@ -1029,8 +1029,32 @@ const navItems = getNavItemsForRole(defaultRole);
 
   let activeTab = 'overview';
 
+
+  // A menu link that opens one list (Returns, Follow-ups) shows just that
+  // list under its own title, not the whole Purchase page around it.
+  const FOCUS: Record<string, { title: string; sub: string; nav: string }> = { returns: { title: 'Purchase Returns', sub: 'Goods sent back to suppliers.', nav: 'purchase-returns' } };
+  const heroTitle = document.querySelector<HTMLElement>('.pd-hero-title');
+  const heroSub = document.querySelector<HTMLElement>('.pd-hero-sub');
+  const headerTitle = document.querySelector<HTMLElement>('.header-title');
+  const first = {
+    title: heroTitle?.textContent ?? '',
+    sub: heroSub?.textContent ?? '',
+    header: headerTitle?.textContent ?? '',
+    nav: document.querySelector('.app-sidebar .sidebar-link.is-active')?.getAttribute('data-nav-id') ?? '',
+  };
+  function applyFocus(name: string): void {
+    const f = FOCUS[name];
+    document.querySelector('.pu-page')?.classList.toggle('is-focus', !!f);
+    if (heroTitle) heroTitle.textContent = f ? f.title : first.title;
+    if (heroSub) heroSub.textContent = f ? f.sub : first.sub;
+    if (headerTitle) headerTitle.textContent = f ? f.title : first.header;
+    const nav = f ? f.nav : first.nav;
+    document.querySelectorAll<HTMLElement>('.app-sidebar .sidebar-link').forEach((a) => a.classList.toggle('is-active', a.dataset.navId === nav));
+  }
+
   function showPanel(name: string): void {
     activeTab = name;
+    applyFocus(name);
     document.querySelectorAll('.pu-panel').forEach((p) => p.classList.toggle('is-active', (p as HTMLElement).dataset.panel === name));
     if (name === 'returns' && !loaded.returns) void loadReturns();
     if (name === 'credits' && !loaded.credits) void loadCredits();
@@ -1157,6 +1181,7 @@ const navItems = getNavItemsForRole(defaultRole);
   function panelFromHash(): void {
     const name = window.location.hash.slice(1);
     if (name && document.querySelector(`.pu-panel[data-panel="${name}"]`)) showPanel(name);
+    else if (!name && activeTab !== 'overview') showPanel('overview');
   }
   window.addEventListener('hashchange', panelFromHash);
   panelFromHash();

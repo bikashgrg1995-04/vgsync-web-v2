@@ -241,7 +241,24 @@ function eligible(a: HTMLAnchorElement, e: MouseEvent): boolean {
 document.addEventListener('click', (e) => {
   const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
 
-  if (!a || !eligible(a, e)) return;
+  if (!a) return;
+
+  // Back to this page's plain address from one of its #tabs: stay on the page
+  // and let it return to its first view.
+  const to = new URL(a.href, window.location.href);
+
+  if (
+    !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey &&
+    (!a.target || a.target === '_self') && to.origin === window.location.origin && !to.hash &&
+    to.pathname === window.location.pathname && to.search === window.location.search && window.location.hash
+  ) {
+    e.preventDefault();
+    window.history.pushState({ soft: true }, '', to.pathname + to.search);
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    return;
+  }
+
+  if (!eligible(a, e)) return;
 
   e.preventDefault();
   markActive(a);
