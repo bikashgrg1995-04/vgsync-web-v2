@@ -25,13 +25,13 @@ const navItems = getNavItemsForRole(defaultRole);
       <div class="pd-hero-text">
         <div class="pd-hero-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></div>
         <div>
-          <h2 class="pd-hero-title">Staff Management</h2>
-          <p class="pd-hero-sub">Manage your team, positions, salary and access.</p>
+          <h2 class="pd-hero-title" id="st-title">Staffs</h2>
+          <p class="pd-hero-sub" id="st-sub">Manage your team, salary and access.</p>
           <p class="st-scope" id="st-scope">Team</p>
         </div>
       </div>
       <div class="pd-hero-actions">
-        <div class="st-tabs" role="tablist" aria-label="Staff sections">
+        <div class="st-tabs" role="tablist" aria-label="Staff sections" hidden>
           <button type="button" role="tab" id="tab-team" aria-selected="true" aria-controls="panel-team">Team</button>
           <button type="button" role="tab" id="tab-positions" aria-selected="false" aria-controls="panel-positions">Positions</button>
         </div>
@@ -317,19 +317,35 @@ const navItems = getNavItemsForRole(defaultRole);
 
   // ---------- tabs ----------
 
+  const header = document.querySelector<HTMLElement>('.header-title');
+  const pageLooks = {
+    team: { title: 'Staffs', sub: 'Manage your team, salary and access.', nav: 'staff' },
+    positions: { title: 'Position / Role', sub: 'A position decides what a staff member can see and do.', nav: 'positions' },
+  } as const;
+
+  // Staffs and Position / Role are two menu items; each shows only its own list.
   function selectTab(name: 'team' | 'positions'): void {
     for (const t of ['team', 'positions'] as const) {
       $(`tab-${t}`)?.setAttribute('aria-selected', String(t === name));
       const panel = $(`panel-${t}`);
       if (panel) panel.hidden = t !== name;
     }
+    const look = pageLooks[name];
+    $('st-title')!.textContent = look.title;
+    $('st-sub')!.textContent = look.sub;
+    if (header) header.textContent = look.title;
+    for (const id of ['st-kpis', 'member-add', 'st-scope']) {
+      const el = $(id);
+      if (el) el.style.display = name === 'positions' ? 'none' : '';
+    }
+    document.querySelectorAll<HTMLElement>('.app-sidebar .sidebar-link').forEach((a) => a.classList.toggle('is-active', a.dataset.navId === look.nav));
   }
   $('tab-team')?.addEventListener('click', () => selectTab('team'));
   $('tab-positions')?.addEventListener('click', () => selectTab('positions'));
   // The menu opens a tab through the address (#team, #positions).
   const tabFromHash = () => selectTab(window.location.hash === '#positions' ? 'positions' : 'team');
   window.addEventListener('hashchange', tabFromHash);
-  if (window.location.hash === '#positions') selectTab('positions');
+  tabFromHash();
 
   // ---------- team table ----------
 
