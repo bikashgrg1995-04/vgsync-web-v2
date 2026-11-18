@@ -306,6 +306,26 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
                 <p class="se-hint" id="bk-chint"></p>
               </div>
             </article>
+            <article class="se-card se-u-wide" id="lg-card" hidden>
+              <header class="se-card-head">
+                <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path><path d="M12 7v5l3 2"></path></svg></span>
+                <div><h3>Import old VGSync data</h3><p>Bring in stock, suppliers, purchases, sales, follow-ups and expenses from the old system</p></div>
+              </header>
+              <p class="se-hint">Upload the old system's data file (<code>data.json</code>, a Django dump). Stock comes in with its current quantity and prices; purchases, sales, payments, follow-ups and expenses come in as history and never move stock again. Old logins, staff, salary sheets and customer orders are not imported. This works only for a Head Office or independent business that has no sales or purchases yet, so nothing is entered twice. A safety copy is kept first, so it can be undone with a restore.</p>
+              <div class="bk-row">
+                <input type="file" id="lg-file" accept=".json,application/json" />
+                <button type="button" class="se-btn is-outline" id="lg-check">Check file</button>
+              </div>
+              <p class="se-hint is-error" id="lg-error" hidden></p>
+              <div id="lg-preview" hidden>
+                <p class="se-hint" id="lg-info"></p>
+                <div class="bk-row">
+                  <input type="text" id="lg-confirm" autocomplete="off" aria-label="Type the business code to confirm" />
+                  <button type="button" class="se-btn is-primary" id="lg-import" disabled>Import now</button>
+                </div>
+                <p class="se-hint" id="lg-hint"></p>
+              </div>
+            </article>
           </div>
         </section>
 
@@ -579,6 +599,68 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
     }
   }
 
+
+  // ---- Old VGSync data: check the file, then confirm by typing the business code.
+  type LegacyReport = { counts: Record<string, number>; not_imported: Array<{ what: string; count: number }>; warnings: string[]; created: Record<string, number>; safety_copy?: boolean };
+  const lgErr = (text: string | null) => { const el = $('lg-error')!; el.textContent = text ?? ''; el.hidden = !text; };
+  const lgPost = <T,>(path: string, extra: Record<string, string> = {}): Promise<T> => {
+    const file = ($('lg-file') as HTMLInputElement).files?.[0];
+    if (!file) return Promise.reject(new Error('Choose the data file first.'));
+    const form = new FormData();
+    form.append('file', file);
+    Object.entries(extra).forEach(([k, v]) => form.append(k, v));
+    return api<T>(path, { method: 'POST', body: form });
+  };
+  const lgSummary = (c: Record<string, number>) =>
+    `${(c.products ?? 0).toLocaleString()} products (${(c.products_with_stock ?? 0).toLocaleString()} with stock), ${c.suppliers ?? 0} suppliers, ${c.purchases ?? 0} purchases, ${(c.sales ?? 0).toLocaleString()} sales, ${c.followups ?? 0} follow-ups, ${c.expenses ?? 0} expenses`;
+
+  async function lgCheck(): Promise<void> {
+    lgErr(null);
+    $('lg-preview')!.hidden = true;
+    const btn = $('lg-check') as HTMLButtonElement;
+    btn.disabled = true;
+    try {
+      const r = await lgPost<LegacyReport>('/backups/legacy-preview/');
+      const skipped = r.not_imported.map((n) => `${n.count} ${n.what}`).join('; ');
+      $('lg-info')!.textContent = `Will import: ${lgSummary(r.created)}.` + (skipped ? ` Not imported: ${skipped}.` : '') + (r.warnings.length ? ` ${r.warnings.length} note(s), for example: ${r.warnings[0]}` : '');
+      $('lg-hint')!.textContent = `To go ahead, type ${restoreCode} and press Import now.`;
+      ($('lg-confirm') as HTMLInputElement).value = '';
+      ($('lg-import') as HTMLButtonElement).disabled = true;
+      $('lg-preview')!.hidden = false;
+    } catch (error) {
+      lgErr(apiMessage(error));
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function lgImport(): Promise<void> {
+    lgErr(null);
+    const btn = $('lg-import') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Importing…';
+    try {
+      const r = await lgPost<LegacyReport>('/backups/legacy-import/', { confirm: ($('lg-confirm') as HTMLInputElement).value.trim() });
+      $('lg-preview')!.hidden = true;
+      ($('lg-file') as HTMLInputElement).value = '';
+      const msg = $('bk-msg')!;
+      msg.textContent = `Imported ${lgSummary(r.created)}. A safety copy from before the import is in the list below.`;
+      msg.hidden = false;
+      await loadBackups();
+    } catch (error) {
+      lgErr(apiMessage(error));
+      btn.disabled = false;
+    } finally {
+      btn.textContent = 'Import now';
+    }
+  }
+
+  $('lg-check')?.addEventListener('click', () => void lgCheck());
+  $('lg-import')?.addEventListener('click', () => void lgImport());
+  $('lg-confirm')?.addEventListener('input', () => {
+    ($('lg-import') as HTMLButtonElement).disabled = ($('lg-confirm') as HTMLInputElement).value.trim() !== restoreCode;
+  });
+
   $('bk-check')?.addEventListener('click', () => void checkFile());
   $('bk-restore')?.addEventListener('click', () => void doRestore());
   $('bk-confirm')?.addEventListener('input', () => {
@@ -715,6 +797,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
       canRestoreNow = can(session, 'backup.restore');
       restoreCode = me.activeBranchCode;
       $('bk-restore-card')!.hidden = !canRestoreNow;
+      $('lg-card')!.hidden = !canRestoreNow;
     }
 
     // ---- Business details: owners can look, only VGSync support changes them.
