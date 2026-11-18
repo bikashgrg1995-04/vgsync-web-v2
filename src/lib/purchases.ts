@@ -293,7 +293,8 @@ function purchaseFromApi(p: ApiPurchase): Purchase {
     status: p.status,
     lines: (p.items ?? []).map((l) => ({
       id: l.id,
-      productId: l.product,
+      productId: l.product ?? 0,
+      isNew: Boolean(l.is_new),
       stockNo: l.stock_no,
       productName: l.product_name,
       unit: l.unit,
@@ -595,7 +596,9 @@ export async function setPurchaseDueDate(id: number, dueDate: string | null): Pr
 
 
 export interface ImportedLine {
+  /** 0 for a product that does not exist yet and is created on confirmation. */
   productId: number;
+  isNew: boolean;
   stockNo: string;
   name: string;
   quantity: number;
@@ -615,7 +618,8 @@ export async function readPurchaseFile(
   return {
     errors: r.errors,
     lines: r.lines.map((l) => ({
-      productId: l.product,
+      productId: l.product ?? 0,
+      isNew: Boolean(l.is_new),
       stockNo: l.stock_no,
       name: l.name,
       quantity: Number(l.quantity),
