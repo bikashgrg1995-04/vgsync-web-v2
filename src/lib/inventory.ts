@@ -471,6 +471,15 @@ export async function createProduct(input: ProductInput): Promise<void> {
   });
 }
 
+/** Create a product and return its id (used when a purchase file brings in new stock). */
+export async function createProductReturningId(input: ProductInput): Promise<number> {
+  const made = await api<{ id: number }>('/inventory/products/', {
+    method: 'POST',
+    body: productBody(input),
+  });
+  return made.id;
+}
+
 export async function updateProduct(
   productId: number,
   input: ProductInput,
