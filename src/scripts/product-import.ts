@@ -19,11 +19,16 @@ const COPY = {
   prices: {
     title: 'Update MRP',
     help:
-      'Change prices in bulk. The file needs Stock No and MRP; Purchase Price and Sale Price are optional. Use Export to get the current list, edit the prices, and upload it again. Names and stock are not changed.',
+      'Update prices from a new price list. Columns: Stock No, Stock Name, Purchase Price, Selling Price (MRP is optional and follows the Selling Price when left out). Products are matched by Stock No, so the name may differ: the name and prices in your inventory are changed to the file\'s. Stock quantity is not changed. Head Office and independent businesses only; branches get the new prices from Head Office.',
+  },
+  stock: {
+    title: 'Import current stock',
+    help:
+      'Set stock from a count sheet. The file needs two columns: Stock No and Quantity (the quantity you have now). Each product is brought to that quantity and the change is recorded in the stock history. Products must already exist; use Import products to add new ones.',
   },
 } as const;
 
-let mode: 'products' | 'prices' = 'products';
+let mode: 'products' | 'prices' | 'stock' = 'products';
 let onSaved: () => void = () => {};
 
 function reset(): void {
@@ -65,6 +70,7 @@ function show(result: ImportResult): void {
 function summary(r: ImportResult): string {
   const parts: string[] = [];
   if (mode === 'products') parts.push(`${r.created} new`);
+  if (mode === 'stock') return `${r.updated} stock changed · ${r.unchanged} already correct.`;
   parts.push(`${r.updated} changed`, `${r.unchanged} already up to date`);
   return parts.join(' · ') + '.';
 }
@@ -92,7 +98,7 @@ async function send(apply: boolean): Promise<void> {
   }
 }
 
-export function openProductImport(which: 'products' | 'prices', saved: () => void): void {
+export function openProductImport(which: 'products' | 'prices' | 'stock', saved: () => void): void {
   mode = which;
   onSaved = saved;
   $('imp-title')!.textContent = COPY[which].title;
@@ -112,5 +118,5 @@ $('imp-form')?.addEventListener('submit', (e) => {
   void send(true);
 });
 $('imp-template')?.addEventListener('click', () => {
-  downloadImportTemplate().catch((e) => showError(e instanceof ApiError ? e.message : 'Download failed.'));
+  downloadImportTemplate(mode).catch((e) => showError(e instanceof ApiError ? e.message : 'Download failed.'));
 });

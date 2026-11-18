@@ -262,10 +262,15 @@ const navItems = getNavItemsForRole(defaultRole);
   <dialog class="pu-dialog pu-wide" id="dlg-po-import">
     <form method="dialog" class="pu-dialog-inner" id="form-po-import">
       <h2 class="pu-dialog-title">Import purchase order from Excel</h2>
-      <p class="pu-hint">One row per item. Columns: Stock No, Quantity and Unit Price (optional; the product's purchase price is used if left empty). A draft purchase is created, which you can still edit before the goods arrive.</p>
+      <p class="pu-hint">One row per item. Columns: Stock No, Quantity and Unit Price (optional; the product's purchase price is used if left empty). A Stock No that is not in your inventory is shown as NEW if the row has a Stock Name and Unit Price, and is added only after you confirm. A draft purchase is created, which you can still edit before the goods arrive. Prefer typing items one by one? Close this and use New Purchase. <button type="button" class="btn-ghost-sm" id="poi-template">Download template</button></p>
       <div class="pu-grid">
         <label class="pu-field"><span>Supplier *</span><select id="poi-supplier" required></select></label>
         <label class="pu-field"><span>File (.xlsx or .csv) *</span><input type="file" id="poi-file" accept=".xlsx,.csv" required /></label>
+        <label class="pu-field"><span>Bill no</span><input type="text" id="poi-bill" maxlength="60" /></label>
+        <label class="pu-field"><span>Purchase date</span><input type="date" id="poi-date" /></label>
+        <label class="pu-field"><span>Discount (Rs)</span><input type="number" id="poi-discount" min="0" step="0.01" value="0" /></label>
+        <label class="pu-field"><span>VAT %</span><input type="number" id="poi-vat" min="0" max="100" step="0.01" value="0" /></label>
+        <label class="pu-field"><span>Freight (Rs)</span><input type="number" id="poi-freight" min="0" step="0.01" value="0" /></label>
       </div>
       <div id="poi-preview"></div>
       <p class="pu-error" id="poi-error" hidden></p>
@@ -314,6 +319,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
 <script>
   import { getSession } from '../../lib/auth';
+  import { apiDownload } from '../../lib/api';
   import {
     $,
     val,
@@ -330,7 +336,7 @@ const navItems = getNavItemsForRole(defaultRole);
     readLines,
   } from '../../scripts/purchase-dialogs';
   import { listSuppliers, type Supplier } from '../../lib/suppliers';
-  import { listStock, type StockItem } from '../../lib/inventory';
+  import { listStock, createProductReturningId, type StockItem } from '../../lib/inventory';
   import {
     listPurchases,
     createPurchase,
@@ -1029,8 +1035,32 @@ const navItems = getNavItemsForRole(defaultRole);
 
   let activeTab = 'overview';
 
+
+  // A menu link that opens one list (Returns, Follow-ups) shows just that
+  // list under its own title, not the whole Purchase page around it.
+  const FOCUS: Record<string, { title: string; sub: string; nav: string }> = { returns: { title: 'Purchase Returns', sub: 'Goods sent back to suppliers.', nav: 'purchase-returns' } };
+  const heroTitle = document.querySelector<HTMLElement>('.pd-hero-title');
+  const heroSub = document.querySelector<HTMLElement>('.pd-hero-sub');
+  const headerTitle = document.querySelector<HTMLElement>('.header-title');
+  const first = {
+    title: heroTitle?.textContent ?? '',
+    sub: heroSub?.textContent ?? '',
+    header: headerTitle?.textContent ?? '',
+    nav: document.querySelector('.app-sidebar .sidebar-link.is-active')?.getAttribute('data-nav-id') ?? '',
+  };
+  function applyFocus(name: string): void {
+    const f = FOCUS[name];
+    document.querySelector('.pu-page')?.classList.toggle('is-focus', !!f);
+    if (heroTitle) heroTitle.textContent = f ? f.title : first.title;
+    if (heroSub) heroSub.textContent = f ? f.sub : first.sub;
+    if (headerTitle) headerTitle.textContent = f ? f.title : first.header;
+    const nav = f ? f.nav : first.nav;
+    document.querySelectorAll<HTMLElement>('.app-sidebar .sidebar-link').forEach((a) => a.classList.toggle('is-active', a.dataset.navId === nav));
+  }
+
   function showPanel(name: string): void {
     activeTab = name;
+    applyFocus(name);
     document.querySelectorAll('.pu-panel').forEach((p) => p.classList.toggle('is-active', (p as HTMLElement).dataset.panel === name));
     if (name === 'returns' && !loaded.returns) void loadReturns();
     if (name === 'credits' && !loaded.credits) void loadCredits();
@@ -1087,6 +1117,8 @@ const navItems = getNavItemsForRole(defaultRole);
     $<HTMLSelectElement>('poi-supplier')!.innerHTML =
       `<option value="">Choose supplier…</option>` + suppliers.map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('');
     $<HTMLInputElement>('poi-file')!.value = '';
+    ['poi-bill', 'poi-date'].forEach((id) => ($<HTMLInputElement>(id)!.value = ''));
+    ['poi-discount', 'poi-vat', 'poi-freight'].forEach((id) => ($<HTMLInputElement>(id)!.value = '0'));
     $('poi-preview')!.innerHTML = '';
     $('poi-error')!.hidden = true;
     $<HTMLButtonElement>('poi-save')!.disabled = true;
@@ -1116,10 +1148,20 @@ const navItems = getNavItemsForRole(defaultRole);
       }
       poLines = r.lines;
       const total = poLines.reduce((a, l) => a + l.quantity * l.unitPrice, 0);
+      const fresh = poLines.filter((l) => l.isNew);
       $('poi-preview')!.innerHTML =
         `<table class="pu-table"><thead><tr><th>Stock No</th><th>Item</th><th>Qty</th><th>Unit price</th></tr></thead><tbody>` +
-        poLines.map((l) => `<tr><td>${esc(l.stockNo)}</td><td>${esc(l.name)}</td><td>${formatQty(l.quantity)}</td><td>${formatNpr(l.unitPrice)}</td></tr>`).join('') +
-        `</tbody></table><p>${poLines.length} item${poLines.length === 1 ? '' : 's'} · ${esc(formatNpr(total))} before discount and VAT</p>`;
+        poLines.map((l) => `<tr${l.isNew ? ' style="background:rgba(245,158,11,.14)"' : ''}><td>${esc(l.stockNo)}${l.isNew ? ' <strong style="color:#b45309">NEW</strong>' : ''}</td><td>${esc(l.name)}</td><td>${formatQty(l.quantity)}</td><td>${formatNpr(l.unitPrice)}</td></tr>`).join('') +
+        `</tbody></table><p>${poLines.length} item${poLines.length === 1 ? '' : 's'} · ${esc(formatNpr(total))} before discount and VAT</p>` +
+        (fresh.length
+          ? `<p><strong>${fresh.length} stock number${fresh.length === 1 ? ' is' : 's are'} not in your inventory yet</strong> (marked NEW). They will be added as new products with the unit price above as their purchase price; set the selling price later in Update MRP.</p>` +
+            `<label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" id="poi-confirm-new" /> <span>Yes, add ${fresh.length === 1 ? 'this' : 'these'} ${fresh.length} new product${fresh.length === 1 ? '' : 's'} to my inventory and create the purchase.</span></label>`
+          : '');
+      const box = document.getElementById('poi-confirm-new') as HTMLInputElement | null;
+      if (box) {
+        box.addEventListener('change', () => ($<HTMLButtonElement>('poi-save')!.disabled = !box.checked));
+        return;
+      }
       $<HTMLButtonElement>('poi-save')!.disabled = false;
     } catch (error) {
       poError(describe(error));
@@ -1129,6 +1171,9 @@ const navItems = getNavItemsForRole(defaultRole);
   $('pu-import')?.addEventListener('click', openPoImport);
   $('qa-import')?.addEventListener('click', openPoImport);
   $('poi-check')?.addEventListener('click', () => void checkPoFile());
+  $('poi-template')?.addEventListener('click', () => {
+    apiDownload('/purchases/import-template/', 'purchase-import-template.xlsx').catch((e) => poError(describe(e)));
+  });
   $('poi-file')?.addEventListener('change', () => {
     poLines = [];
     $('poi-preview')!.innerHTML = '';
@@ -1141,8 +1186,20 @@ const navItems = getNavItemsForRole(defaultRole);
     if (!poLines.length) return poError('Check the file first.');
     $<HTMLButtonElement>('poi-save')!.disabled = true;
     try {
+      // Confirmed new stock is added to the inventory first.
+      for (const l of poLines) {
+        if (l.isNew) {
+          l.productId = await createProductReturningId({ stockNo: l.stockNo, name: l.name, purchasePrice: l.unitPrice });
+          l.isNew = false;
+        }
+      }
       const made = await createPurchase({
         supplierId,
+        billNo: $<HTMLInputElement>('poi-bill')!.value,
+        purchaseDate: $<HTMLInputElement>('poi-date')!.value || undefined,
+        discount: Number($<HTMLInputElement>('poi-discount')!.value) || 0,
+        vatRate: Number($<HTMLInputElement>('poi-vat')!.value) || 0,
+        freight: Number($<HTMLInputElement>('poi-freight')!.value) || 0,
         lines: poLines.map((l) => ({ productId: l.productId, quantity: l.quantity, unitPrice: l.unitPrice })),
       });
       $<HTMLDialogElement>('dlg-po-import').close();
@@ -1157,6 +1214,7 @@ const navItems = getNavItemsForRole(defaultRole);
   function panelFromHash(): void {
     const name = window.location.hash.slice(1);
     if (name && document.querySelector(`.pu-panel[data-panel="${name}"]`)) showPanel(name);
+    else if (!name && activeTab !== 'overview') showPanel('overview');
   }
   window.addEventListener('hashchange', panelFromHash);
   panelFromHash();
