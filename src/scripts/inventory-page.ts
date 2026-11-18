@@ -947,7 +947,12 @@ try {
   const session = getSession();
   const role = session?.role;
 
-  canEditCatalog = role === "owner" || role === "headoffice";
+  // An independent business keeps its own catalogue too: its owner (scope
+  // "business") is a branch_owner by role but is not a branch.
+  canEditCatalog =
+    role === "owner" ||
+    role === "headoffice" ||
+    (role === "branch_owner" && session?.businessType === "independent");
 
   const viewingBranchAsHO =
     role === "owner" &&

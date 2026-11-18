@@ -19,7 +19,7 @@ const COPY = {
   prices: {
     title: 'Update MRP',
     help:
-      'Change prices in bulk. The file needs Stock No and MRP; Purchase Price and Sale Price are optional. Use Export to get the current list, edit the prices, and upload it again. Names and stock are not changed.',
+      'Update prices from a new price list. Columns: Stock No, Stock Name, Purchase Price, Selling Price (MRP is optional and follows the Selling Price when left out). Products are matched by Stock No, so the name may differ: the name and prices in your inventory are changed to the file\'s. Stock quantity is not changed. Head Office and independent businesses only; branches get the new prices from Head Office.',
   },
   stock: {
     title: 'Import current stock',

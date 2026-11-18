@@ -664,6 +664,8 @@ export const downloadProducts = () => apiDownload('/inventory/products/export/',
 export const downloadImportTemplate = (mode: 'products' | 'prices' | 'stock' = 'products') =>
   mode === 'stock'
     ? apiDownload('/inventory/products/import-template/?mode=stock', 'stock-import-template.xlsx')
+    : mode === 'prices'
+    ? apiDownload('/inventory/products/import-template/?mode=prices', 'update-prices-template.xlsx')
     : apiDownload('/inventory/products/import-template/', 'product-import-template.xlsx');
 
 /**
