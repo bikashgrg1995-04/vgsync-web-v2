@@ -471,6 +471,15 @@ export async function createProduct(input: ProductInput): Promise<void> {
   });
 }
 
+/** Create a product and return its id (used when a purchase file brings in new stock). */
+export async function createProductReturningId(input: ProductInput): Promise<number> {
+  const made = await api<{ id: number }>('/inventory/products/', {
+    method: 'POST',
+    body: productBody(input),
+  });
+  return made.id;
+}
+
 export async function updateProduct(
   productId: number,
   input: ProductInput,
@@ -661,8 +670,12 @@ export interface ImportResult {
 }
 
 export const downloadProducts = () => apiDownload('/inventory/products/export/', 'products.xlsx');
-export const downloadImportTemplate = () =>
-  apiDownload('/inventory/products/import-template/', 'product-import-template.xlsx');
+export const downloadImportTemplate = (mode: 'products' | 'prices' | 'stock' = 'products') =>
+  mode === 'stock'
+    ? apiDownload('/inventory/products/import-template/?mode=stock', 'stock-import-template.xlsx')
+    : mode === 'prices'
+    ? apiDownload('/inventory/products/import-template/?mode=prices', 'update-prices-template.xlsx')
+    : apiDownload('/inventory/products/import-template/', 'product-import-template.xlsx');
 
 /**
  * Check a product file (or save it with ``apply``). ``prices`` changes MRP and
@@ -670,7 +683,7 @@ export const downloadImportTemplate = () =>
  */
 export async function importProducts(
   file: File,
-  mode: 'products' | 'prices',
+  mode: 'products' | 'prices' | 'stock',
   apply: boolean,
 ): Promise<ImportResult> {
   const form = new FormData();

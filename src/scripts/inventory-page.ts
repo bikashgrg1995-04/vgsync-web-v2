@@ -786,6 +786,7 @@ $("inv-status")?.addEventListener("change", () => {
 
 $("inv-add")?.addEventListener("click", () => openProduct());
 $("inv-import")?.addEventListener("click", () => openProductImport("products", () => void reload()));
+$("inv-import-stock")?.addEventListener("click", () => openProductImport("stock", () => void reload()));
 $("inv-mrp")?.addEventListener("click", () => openProductImport("prices", () => void reload()));
 $("inv-export")?.addEventListener("click", () => {
   downloadProducts().catch((e) =>
@@ -946,7 +947,12 @@ try {
   const session = getSession();
   const role = session?.role;
 
-  canEditCatalog = role === "owner" || role === "headoffice";
+  // An independent business keeps its own catalogue too: its owner (scope
+  // "business") is a branch_owner by role but is not a branch.
+  canEditCatalog =
+    role === "owner" ||
+    role === "headoffice" ||
+    (role === "branch_owner" && session?.businessType === "independent");
 
   const viewingBranchAsHO =
     role === "owner" &&
@@ -973,6 +979,9 @@ try {
   const importBtn = $("inv-import");
   const mrpBtn = $("inv-mrp");
 
+  const stockBtn = $("inv-import-stock");
+
+  if (stockBtn) stockBtn.hidden = !canAdjust;
   if (importBtn) importBtn.hidden = !keepsCatalogue;
   if (mrpBtn) mrpBtn.hidden = !keepsCatalogue;
 } catch {

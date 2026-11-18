@@ -37,6 +37,27 @@ const {
 ---
 
 <Layout title={title}>
+  <!-- Nobody signed in: go to the login page before anything of the page is drawn. -->
+  <style is:inline>html:not([data-authed]) .app-shell { visibility: hidden; }</style>
+  <script is:inline>
+    (function () {
+      var has = false;
+      try {
+        var raw = window.sessionStorage.getItem('vgsync-auth') || window.localStorage.getItem('vgsync-auth');
+        if (raw) {
+          // A sign-in whose refresh token has run out is as good as none.
+          var payload = JSON.parse(raw).refresh.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+          has = JSON.parse(window.atob(payload)).exp * 1000 > Date.now();
+          if (!has) {
+            window.sessionStorage.removeItem('vgsync-auth');
+            window.localStorage.removeItem('vgsync-auth');
+          }
+        }
+      } catch (e) {}
+      if (has) document.documentElement.setAttribute('data-authed', '');
+      else window.location.replace('/');
+    })();
+  </script>
   <div class="app-shell" id="app-shell">
     <AppSidebar
       items={navItems}
