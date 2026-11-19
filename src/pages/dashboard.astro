@@ -22,37 +22,87 @@ const navItems = getNavItemsForRole(defaultRole);
   showBranchSwitcher={true}
 >
   <div class="ov-page">
-    <div class="ov-head">
-      <div>
-        <p class="ov-scope" id="ov-scope">Overview</p>
-        <h2 class="ov-title" id="ov-title">Today</h2>
+    <section class="ov-hero" aria-label="Welcome">
+      <svg class="ov-hero-art" viewBox="0 0 700 180" preserveAspectRatio="xMaxYMax slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="hg-sky" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#bcd9f7" stop-opacity="0"/><stop offset=".45" stop-color="#cfe4fa" stop-opacity=".8"/><stop offset="1" stop-color="#e9f3fd"/></linearGradient>
+          <linearGradient id="hg-snow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#b9cde6"/></linearGradient>
+        </defs>
+        <rect width="700" height="180" fill="url(#hg-sky)"/>
+        <ellipse cx="300" cy="40" rx="60" ry="12" fill="#fff" opacity=".7"/><ellipse cx="560" cy="28" rx="50" ry="9" fill="#fff" opacity=".7"/>
+        <path d="M120 180 L250 70 L290 100 L350 40 L430 120 L470 90 L540 140 L560 180Z" fill="url(#hg-snow)" opacity=".9"/>
+        <path d="M350 40 L330 70 L350 62 L365 78 L380 60Z" fill="#fff"/>
+        <path d="M380 180 L470 100 L520 130 L580 95 L700 150 V180Z" fill="#8fb0d4" opacity=".75"/>
+        <path d="M0 180 L0 168 Q150 150 300 166 T700 160 V180Z" fill="#6aa17a" opacity=".55"/>
+        <g transform="translate(540 18)" fill="#b4472c">
+          <rect x="30" y="118" width="80" height="26" fill="#d9a05b"/>
+          <path d="M10 120 H130 L118 106 H22Z"/>
+          <rect x="38" y="84" width="64" height="22" fill="#d9a05b"/>
+          <path d="M18 88 H122 L108 74 H32Z"/>
+          <rect x="48" y="52" width="44" height="20" fill="#d9a05b"/>
+          <path d="M30 56 H110 L96 40 H44Z"/>
+          <path d="M70 12 L82 40 H58Z" fill="#e2b04a"/><rect x="69" y="4" width="2" height="10" fill="#e2b04a"/>
+          <rect x="56" y="124" width="10" height="20" fill="#7a2f1d"/><rect x="74" y="124" width="10" height="20" fill="#7a2f1d"/>
+          <rect x="0" y="144" width="140" height="8" fill="#c9bfae"/>
+        </g>
+      </svg>
+      <div class="ov-hero-text">
+        <h2 class="ov-hero-title"><span id="ov-title">Welcome back!</span> <span aria-hidden="true">👋</span></h2>
+        <p class="ov-hero-sub" id="ov-sub">Here's what's happening with your business today.</p>
+        <p class="ov-hero-date"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span id="ov-now"></span></p>
       </div>
       <button type="button" class="ov-refresh" id="ov-refresh">Refresh</button>
-    </div>
+    </section>
 
     <div class="ov-kpis" id="ov-kpis"></div>
 
     <section class="ov-owner" id="ov-owner" hidden>
       <div class="ov-alerts" id="ov-alerts"></div>
+      <div class="ov-due" id="ov-due"></div>
+
+      <div class="ov-main">
+        <section class="ov-card ov-overview">
+          <header class="ov-card-head">
+            <h3><span class="ov-ico" aria-hidden="true">▥</span> Overview</h3>
+            <select id="ov-range" class="ov-select" aria-label="Period">
+              <option value="7">Last 7 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+            </select>
+          </header>
+          <div class="ov-tiles" id="ov-tiles"></div>
+          <div id="ov-linechart"></div>
+        </section>
+
+        <div class="ov-side">
+          <section class="ov-card">
+            <h3><span class="ov-ico" aria-hidden="true">▦</span> Installments Overview <a href="/dashboard/sales#followups" class="ov-more">View All →</a></h3>
+            <div id="ov-installments"></div>
+          </section>
+          <section class="ov-card">
+            <h3><span class="ov-ico" aria-hidden="true">⚖</span> Credit Overview <a href="/dashboard/reports" class="ov-more">View All →</a></h3>
+            <div id="ov-credit"></div>
+          </section>
+        </div>
+      </div>
+
       <div class="ov-kpis" id="ov-owner-kpis"></div>
-      <div class="ov-grid">
+
+      <div class="ov-trio">
         <section class="ov-card">
-          <h3>Sales, last 30 days <span class="ov-hint">confirmed, less returns</span></h3>
-          <div id="ov-trend"></div>
-        </section>
-        <section class="ov-card">
-          <h3>Top products <span class="ov-hint">this month, by value</span> <a href="/dashboard/reports" class="ov-more">Reports</a></h3>
-          <div id="ov-top"></div>
-        </section>
-        <section class="ov-card">
-          <h3>Low stock <a href="/dashboard/inventory" class="ov-more">Open</a></h3>
+          <h3><span class="ov-ico" aria-hidden="true">⬢</span> Stock Alerts <a href="/dashboard/inventory" class="ov-more">View Details →</a></h3>
           <div id="ov-low"></div>
         </section>
         <section class="ov-card">
-          <h3>Team and approvals</h3>
-          <div id="ov-team"></div>
+          <h3><span class="ov-ico" aria-hidden="true">🔧</span> Servicing Follow-ups <a href="/dashboard/sales#followups" class="ov-more">View All →</a></h3>
+          <div id="ov-servicing"></div>
+        </section>
+        <section class="ov-card">
+          <h3><span class="ov-ico" aria-hidden="true">◷</span> Recent Activities</h3>
+          <div id="ov-activity"></div>
         </section>
       </div>
+
       <section class="ov-card" id="ov-branches" hidden>
         <h3>Branch overview <span class="ov-hint">read-only · this month</span></h3>
         <div class="ov-table-wrap"><table class="ov-table">
@@ -62,7 +112,7 @@ const navItems = getNavItemsForRole(defaultRole);
       </section>
     </section>
 
-    <div class="ov-grid">
+    <div class="ov-grid" id="ov-legacy">
       <section class="ov-card" id="ov-mytasks-card">
         <h3>My tasks <a href="/dashboard/tasks" class="ov-more">Open</a></h3>
         <div id="ov-mytasks"></div>
@@ -146,8 +196,8 @@ const navItems = getNavItemsForRole(defaultRole);
     const mine = ++run;
     const s = getSession();
     if (!s) return;
-    $('ov-scope').textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
-    $('ov-title').textContent = `Hello, ${s.displayName.split(' ')[0]}`;
+    $('ov-title').textContent = `Welcome back, ${s.displayName.split(' ')[0]}!`;
+    $('ov-sub').textContent = `Here's what's happening with ${s.activeBranchName} today.`;
     const month = iso(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
     const from14 = iso(daysAgo(13));
     const from = month < from14 ? month : from14;
@@ -216,18 +266,81 @@ const navItems = getNavItemsForRole(defaultRole);
   }
 
   // The owner dashboard: real numbers from one API call (needs dashboard.view).
+  const SPARK = { sales: '#2563eb', purchases: '#16a34a', income: '#7c3aed', expenses: '#f59e0b' } as const;
+  const spark = (values: number[], color: string): string => {
+    const max = Math.max(...values, 1);
+    const pts = values.map((v, i) => `${(i / Math.max(values.length - 1, 1)) * 100},${28 - (v / max) * 26}`).join(' ');
+    return `<svg class="ov-spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts}"/></svg>`;
+  };
+  const n = (v: string | number) => Number(v);
+  const short = (v: number) => (v >= 1e7 ? `${+(v / 1e7).toFixed(1)}Cr` : v >= 1e5 ? `${+(v / 1e5).toFixed(1)}L` : v >= 1e3 ? `${+(v / 1e3).toFixed(0)}k` : String(Math.round(v)));
+  const inDays = (d: number | null) => (d === null ? '' : d < 0 ? `overdue ${-d} day${d === -1 ? '' : 's'}` : d === 0 ? 'due today' : `due in ${d} day${d === 1 ? '' : 's'}`);
+
+  function lineChart(o: Dashboard['overview']): string {
+    const series = [
+      { name: 'Sales', color: SPARK.sales, v: o.sales.series.map(n) },
+      { name: 'Purchase', color: SPARK.purchases, v: o.purchases.series.map(n) },
+      { name: 'Expenses', color: SPARK.expenses, v: o.expenses.series.map(n) },
+    ];
+    const max = Math.max(...series.flatMap((x) => x.v), 1);
+    const step = Math.pow(10, Math.floor(Math.log10(max)));
+    const top = Math.ceil(max / step) * step;
+    const W = 640, H = 210, L = 44, R = 8, T = 8, B = 24;
+    const x = (i: number) => L + (i / Math.max(o.days - 1, 1)) * (W - L - R);
+    const y = (v: number) => T + (1 - v / top) * (H - T - B);
+    const grid = [0, 1, 2, 3, 4].map((k) => {
+      const val = (top / 4) * k;
+      return `<line x1="${L}" x2="${W - R}" y1="${y(val)}" y2="${y(val)}" class="ov-grid-line"/><text x="${L - 6}" y="${y(val) + 3}" text-anchor="end" class="ov-axis">${short(val)}</text>`;
+    }).join('');
+    const every = Math.ceil(o.days / 8);
+    const ticks = o.labels.map((d, i) => (i % every === 0 ? `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" class="ov-axis">${new Date(d + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</text>` : '')).join('');
+    const lines = series.map((sr) => {
+      const pts = sr.v.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+      const dots = o.days <= 31 ? sr.v.map((v, i) => (v > 0 ? `<circle cx="${x(i)}" cy="${y(v)}" r="2.6" fill="${sr.color}"><title>${esc(sr.name)} ${esc(o.labels[i])}: ${esc(formatNpr(v))}</title></circle>` : '')).join('') : '';
+      return `<polyline fill="none" stroke="${sr.color}" stroke-width="2.2" stroke-linejoin="round" points="${pts}"/>${dots}`;
+    }).join('');
+    const legend = series.map((sr) => `<span><i style="background:${sr.color}"></i>${sr.name}</span>`).join('');
+    return `<div class="ov-legend">${legend}</div><svg class="ov-line" viewBox="0 0 ${W} ${H}" role="img" aria-label="Sales, purchase and expenses over the period">${grid}${ticks}${lines}</svg>`;
+  }
+
+  function tiles(o: Dashboard['overview']): string {
+    const defs: Array<[string, string, 'sales' | 'purchases' | 'income' | 'expenses', string]> = [
+      ['Total Sales', '🛒', 'sales', 'tile-sales'],
+      ['Total Purchase', '📦', 'purchases', 'tile-purchases'],
+      ['Income', '📈', 'income', 'tile-income'],
+      ['Expenses', '👛', 'expenses', 'tile-expenses'],
+    ];
+    return defs.map(([label, icon, key, cls]) => {
+      const b = o[key];
+      const pct = b.change_pct;
+      const good = key === 'expenses' || key === 'purchases' ? (pct ?? 0) <= 0 : (pct ?? 0) >= 0;
+      const change = pct === null ? '<em class="ov-pct">no earlier data</em>' : `<em class="ov-pct ${good ? 'up' : 'down'}">${pct >= 0 ? '↑' : '↓'} ${Math.abs(pct)}%</em>`;
+      return `<article class="ov-tile ${cls}"><div class="ov-tile-top"><span class="ov-tile-ico" aria-hidden="true">${icon}</span><span>${label}</span></div><strong>${esc(formatNpr(n(b.total)))}</strong>${change}${spark(b.series.map(n), SPARK[key])}</article>`;
+    }).join('');
+  }
+
+  const alertCard = (cls: string, icon: string, title: string, value: string, sub: string, href: string) =>
+    `<a class="ov-due-card ${cls}" href="${href}"><span class="ov-due-ico" aria-hidden="true">${icon}</span><span class="ov-due-body"><b>${esc(title)}</b><strong>${esc(value)}</strong><em>${esc(sub)}</em></span><span class="ov-due-view">View →</span></a>`;
+
+  let range = 30;
+
   async function loadOwner(mine: number, s: NonNullable<ReturnType<typeof getSession>>): Promise<void> {
     const block = $('ov-owner');
-    if (!can(s, 'dashboard.view')) {
+    const full = can(s, 'dashboard.view');
+    // The full dashboard replaces the simple widgets below.
+    $('ov-legacy').hidden = full;
+    $('ov-kpis').hidden = full;
+    if (!full) {
       block.hidden = true;
       return;
     }
     let d: Dashboard;
     try {
-      d = await loadDashboard();
+      d = await loadDashboard(range);
     } catch {
       block.hidden = false;
       $('ov-alerts').innerHTML = '';
+      $('ov-due').innerHTML = '';
       $('ov-owner-kpis').innerHTML = empty('Dashboard figures are not available right now.');
       return;
     }
@@ -235,49 +348,53 @@ const navItems = getNavItemsForRole(defaultRole);
     block.hidden = false;
 
     $('ov-alerts').innerHTML = d.alerts
+      .filter((a) => a.kind !== 'low_stock')
       .map((a) => `<p class="ov-alert is-${a.severity}">${esc(a.message)}</p>`)
       .join('');
 
-    const n = (v: string) => Number(v);
-    $('ov-owner-kpis').innerHTML = [
-      kpi('Sales today', formatNpr(n(d.sales_today))),
-      kpi('Sales this month', formatNpr(n(d.sales_month)), '', 'strong', '/dashboard/sales'),
-      kpi('Purchases this month', formatNpr(n(d.purchases_month)), '', '', '/dashboard/purchase'),
-      kpi('Money in', formatNpr(n(d.income_month)), 'this month'),
-      kpi('Money out', formatNpr(n(d.expenses_month)), 'this month'),
-      kpi('Profit (cash)', formatNpr(n(d.profit_month)), 'this month', n(d.profit_month) < 0 ? 'danger' : 'strong', '/dashboard/reports'),
-      kpi('Customers owe you', formatNpr(n(d.receivables)), '', '', '/dashboard/reports'),
-      kpi('You owe suppliers', formatNpr(n(d.payables)), '', '', '/dashboard/reports'),
-      kpi('Cash in hand', formatNpr(n(d.cash.cash))),
-      kpi('In the bank', formatNpr(n(d.cash.bank)), d.cash.other !== '0.00' ? `+ ${formatNpr(n(d.cash.other))} other` : ''),
-      kpi('Stock value', formatNpr(n(d.stock.value)), d.stock.damaged_value !== '0.00' ? `${formatNpr(n(d.stock.damaged_value))} damaged` : '', '', '/dashboard/inventory'),
+    const due = d.due;
+    $('ov-due').innerHTML = [
+      alertCard('is-emi', '🗓', 'Installment Due Soon', `${due.installments.count} installment${due.installments.count === 1 ? '' : 's'}`, due.installments.count ? 'are due within 3 days' : 'none due within 3 days', '/dashboard/sales#followups'),
+      alertCard('is-pay', '💳', 'Purchase Credit Due', formatNpr(n(due.purchase_credit.amount)), inDays(due.purchase_credit.days) || 'nothing due this week', '/dashboard/purchase'),
+      alertCard('is-recv', '💰', 'Sales Credit Due', formatNpr(n(due.sales_credit.amount)), inDays(due.sales_credit.days) || 'nothing due this week', '/dashboard/sales#followups'),
+      alertCard('is-serv', '🔧', 'Servicing Follow-ups', `${due.servicing.count} customer${due.servicing.count === 1 ? '' : 's'}`, due.servicing.count ? 'need follow-up' : 'all caught up', '/dashboard/sales#followups'),
     ].join('');
 
-    // Thirty days, empty days shown as zero.
-    const byDay = new Map(d.sales_trend.map((r) => [r.date, n(r.total)]));
-    const days = Array.from({ length: 30 }, (_, i) => {
-      const day = daysAgo(29 - i);
-      return { key: iso(day), label: day.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), total: byDay.get(iso(day)) ?? 0 };
-    });
-    const max = Math.max(...days.map((x) => x.total), 1);
-    $('ov-trend').innerHTML = days.every((x) => x.total === 0)
-      ? empty('No confirmed sales in the last 30 days.')
-      : `<div class="ov-bars">${days
-          .map((x, i) => `<div class="ov-bar" title="${esc(x.label)}: ${esc(formatNpr(x.total))}"><i style="height:${Math.max((x.total / max) * 100, x.total ? 3 : 0)}%"></i><span>${i % 5 === 0 ? x.label.split(' ')[0] : ''}</span></div>`)
-          .join('')}</div>`;
+    $('ov-tiles').innerHTML = tiles(d.overview);
+    $('ov-linechart').innerHTML = lineChart(d.overview);
 
-    $('ov-top').innerHTML = d.top_products.length
-      ? `<ul class="ov-list">${d.top_products.map((p) => `<li><span>${esc(p.name)}<em>${esc(String(Number(p.quantity)))} sold</em></span><strong>${esc(formatNpr(n(p.revenue)))}</strong></li>`).join('')}</ul>`
-      : empty('No sales this month yet.');
+    $('ov-installments').innerHTML = d.installments.length
+      ? `<ul class="ov-list">${d.installments.map((i) => `<li><span class="ov-bikeico" aria-hidden="true">🏍</span><span class="ov-grow"><b>${esc(i.customer || i.sale)}</b><em>${esc(i.sale)} · Installment ${i.number}${i.of ? ' of ' + i.of : ''}</em></span><span class="ov-right"><span class="ov-chip ${i.days <= 2 ? 'hot' : ''}">${esc(inDays(i.days))}</span><em>${esc(new Date(i.due_date + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }))}</em></span></li>`).join('')}</ul>`
+      : empty('No installments are waiting.');
+
+    $('ov-credit').innerHTML = `<ul class="ov-list ov-credit">
+      <li><span class="ov-credit-ico is-pay" aria-hidden="true">🛒</span><span class="ov-grow">Purchase Credit <em>(To Give)</em></span><strong>${esc(formatNpr(n(d.payables)))}</strong>${due.purchase_credit.days !== null ? `<span class="ov-chip ${due.purchase_credit.days < 0 ? 'hot' : 'good'}">${esc(inDays(due.purchase_credit.days))}</span>` : ''}</li>
+      <li><span class="ov-credit-ico is-recv" aria-hidden="true">🛍</span><span class="ov-grow">Sales Credit <em>(To Receive)</em></span><strong>${esc(formatNpr(n(d.receivables)))}</strong>${due.sales_credit.days !== null ? `<span class="ov-chip ${due.sales_credit.days < 0 ? 'hot' : 'soft'}">${esc(inDays(due.sales_credit.days))}</span>` : ''}</li></ul>`;
+
+    const m = (v: string) => n(v);
+    $('ov-owner-kpis').innerHTML = [
+      kpi('Profit (cash)', formatNpr(m(d.profit_month)), 'this month', m(d.profit_month) < 0 ? 'danger' : 'strong', '/dashboard/reports'),
+      kpi('Cash in hand', formatNpr(m(d.cash.cash))),
+      kpi('In the bank', formatNpr(m(d.cash.bank)), d.cash.other !== '0.00' ? `+ ${formatNpr(m(d.cash.other))} other` : ''),
+      kpi('Stock value', formatNpr(m(d.stock.value)), d.stock.damaged_value !== '0.00' ? `${formatNpr(m(d.stock.damaged_value))} damaged` : '', '', '/dashboard/inventory'),
+      kpi('Approvals waiting', String(d.approvals_pending), `${d.staff.active} active staff`, d.approvals_pending ? 'strong' : '', '/dashboard/approvals'),
+    ].join('');
 
     $('ov-low').innerHTML = d.low_stock.items.length
-      ? `<ul class="ov-list">${d.low_stock.items.map((p) => `<li><span>${esc(p.name)}<em>reorder at ${esc(String(Number(p.reorder_level)))}</em></span><span class="ov-tag">${esc(String(Number(p.quantity)))} left</span></li>`).join('')}</ul>`
+      ? `<ul class="ov-list">${d.low_stock.items.slice(0, 5).map((p) => `<li><span class="ov-warn" aria-hidden="true">⚠</span><span class="ov-grow">${esc(p.name)}</span><span class="ov-stock-n">Stock: ${esc(String(Number(p.quantity)))}</span><span class="ov-chip hot">${Number(p.quantity) <= 0 ? 'Out' : 'Low Stock'}</span></li>`).join('')}</ul>`
       : empty('Nothing is below its reorder level.');
 
-    const team = [`<li><span>Active staff</span><strong>${d.staff.active} of ${d.staff.total}</strong></li>`];
-    if (d.staff.without_position) team.push(`<li><span>Active staff without a position</span><strong>${d.staff.without_position}</strong></li>`);
-    team.push(`<li><span><a href="/dashboard/approvals">Approvals waiting</a></span><strong>${d.approvals_pending}</strong></li>`);
-    $('ov-team').innerHTML = `<ul class="ov-list">${team.join('')}</ul>`;
+    $('ov-servicing').innerHTML = d.servicing.length
+      ? `<ul class="ov-list">${d.servicing.map((f) => `<li><span class="ov-grow"><b>${esc(f.customer || '—')}</b><em>${esc(f.kind === 'maintenance_post' ? 'Post-service check' : 'Maintenance follow-up')}</em></span><span class="ov-right"><em class="${f.overdue ? 'neg' : ''}">${esc(new Date(f.due_date + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }))}</em></span>${f.phone ? `<a class="ov-contact" href="tel:${esc(f.phone.split('/')[0].trim())}">Contact</a>` : ''}</li>`).join('')}</ul>`
+      : empty('No servicing follow-ups pending.');
+
+    const ago = (iso: string) => {
+      const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+      return mins < 1 ? 'just now' : mins < 60 ? `${mins} min ago` : mins < 1440 ? `${Math.round(mins / 60)} hr ago` : `${Math.round(mins / 1440)} d ago`;
+    };
+    $('ov-activity').innerHTML = d.activity.length
+      ? `<ul class="ov-timeline">${d.activity.map((a) => `<li class="k-${esc(a.kind)}"><span>${esc(a.text)}</span><em>${esc(ago(a.at))}</em></li>`).join('')}</ul>`
+      : empty('Nothing has happened yet.');
 
     const branches = d.branches ?? [];
     $('ov-branches').hidden = branches.length === 0;
@@ -288,8 +405,18 @@ const navItems = getNavItemsForRole(defaultRole);
       .join('');
   }
 
+  $('ov-range').addEventListener('change', (e) => {
+    range = Number((e.target as HTMLSelectElement).value) || 30;
+    void load();
+  });
+
   $('ov-refresh').addEventListener('click', () => void load());
   document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => void load(), 300));
+  const tick = () => {
+    $('ov-now').textContent = new Date().toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) + ' • ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  };
+  tick();
+  setInterval(tick, 30000);
   void load();
 </script>
 
@@ -341,4 +468,73 @@ const navItems = getNavItemsForRole(defaultRole);
   .ov-table td { padding: 9px 10px; border-top: 1px solid var(--border); white-space: nowrap; }
   .ov-table td em { display: block; font-style: normal; font-size: 0.72rem; color: var(--text-muted); }
   .ov-table .neg { color: #ef334e; }
+
+  /* ---- redesigned overview ---- */
+  .ov-hero { position: relative; overflow: hidden; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 24px 26px 22px; min-height: 150px; border-radius: 16px; border: 1px solid var(--border); background: linear-gradient(100deg, #a9cdf2 0%, #c9e0f8 45%, #e9f3fd 100%); color: #0f1f3d; }
+  .ov-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .ov-hero-text, .ov-hero .ov-refresh { position: relative; z-index: 1; }
+  .ov-hero .ov-refresh { margin-right: 190px; }
+  @media (max-width: 700px) { .ov-hero .ov-refresh { margin-right: 0; } }
+  :root[data-theme="dark"] .ov-hero { color: #eaf1ff; background: linear-gradient(100deg, #17306b 0%, #1d3f86 55%, #3a4f7a 100%); }
+  :root[data-theme="dark"] .ov-hero-art { opacity: .55; filter: saturate(.8) brightness(.8); }
+  @media (max-width: 700px) { .ov-hero-art { opacity: .35; } }
+  .ov-hero-title { margin: 0; font-size: 1.7rem; font-weight: 750; letter-spacing: -0.02em; }
+  .ov-hero-sub { margin: 4px 0 14px; font-size: 0.95rem; opacity: .85; }
+  .ov-hero-date { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 7px 14px; border-radius: 12px; background: rgba(255,255,255,.75); color: #0f1f3d; font-size: 0.82rem; font-weight: 650; backdrop-filter: blur(6px); }
+  .ov-hero .ov-refresh { background: rgba(255,255,255,.7); color: #0f1f3d; border-color: rgba(255,255,255,.8); }
+  .ov-main { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 12px; }
+  .ov-side { display: flex; flex-direction: column; gap: 12px; }
+  .ov-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 1100px) { .ov-main, .ov-trio { grid-template-columns: 1fr; } }
+  .ov-card h3 { font-size: 0.95rem; }
+  .ov-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .ov-card-head h3 { margin: 0; }
+  .ov-ico { color: var(--accent); }
+  .ov-select { height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--panel-bg); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; font-weight: 600; }
+  .ov-due { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .ov-due:empty { display: none; }
+  @media (max-width: 1100px) { .ov-due { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .ov-due { grid-template-columns: 1fr; } }
+  .ov-due-card { display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 12px; border-radius: 14px; border: 1px solid var(--border); border-left-width: 4px; background: var(--panel-bg); color: inherit; text-decoration: none; position: relative; }
+  .ov-due-card:hover { box-shadow: 0 6px 18px rgba(15, 31, 61, .08); }
+  .ov-due-ico { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; font-size: 1.15rem; }
+  .ov-due-body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .ov-due-body b { font-size: 0.86rem; font-weight: 700; }
+  .ov-due-body strong { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
+  .ov-due-body em { font-style: normal; font-size: 0.74rem; color: var(--text-muted); }
+  .ov-due-view { align-self: flex-end; font-size: 0.74rem; font-weight: 650; color: var(--accent); white-space: nowrap; }
+  .ov-due-card.is-emi { border-left-color: #7c3aed; background: color-mix(in srgb, #7c3aed 6%, var(--panel-bg)); } .is-emi .ov-due-ico { background: rgba(124,58,237,.15); }
+  .ov-due-card.is-pay { border-left-color: #16a34a; background: color-mix(in srgb, #16a34a 6%, var(--panel-bg)); } .is-pay .ov-due-ico { background: rgba(22,163,74,.15); }
+  .ov-due-card.is-recv { border-left-color: #f59e0b; background: color-mix(in srgb, #f59e0b 7%, var(--panel-bg)); } .is-recv .ov-due-ico { background: rgba(245,158,11,.18); }
+  .ov-due-card.is-serv { border-left-color: #ef334e; background: color-mix(in srgb, #ef334e 6%, var(--panel-bg)); } .is-serv .ov-due-ico { background: rgba(239,51,78,.14); }
+  .ov-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+  @media (max-width: 700px) { .ov-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .ov-tile { padding: 12px 12px 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel-bg); min-width: 0; }
+  .ov-tile-top { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); }
+  .ov-tile-ico { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; font-size: 0.95rem; }
+  .tile-sales .ov-tile-ico { background: rgba(37,99,235,.14); } .tile-purchases .ov-tile-ico { background: rgba(22,163,74,.14); } .tile-income .ov-tile-ico { background: rgba(124,58,237,.14); } .tile-expenses .ov-tile-ico { background: rgba(245,158,11,.18); }
+  .ov-tile strong { display: block; margin: 8px 0 2px; font-size: 1.1rem; font-weight: 750; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .ov-pct { font-style: normal; font-size: 0.74rem; font-weight: 650; } .ov-pct.up { color: #16a34a; } .ov-pct.down { color: #ef334e; }
+  .ov-spark { display: block; width: 100%; height: 30px; margin-top: 4px; }
+  .ov-legend { display: flex; justify-content: center; gap: 16px; font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 4px; }
+  .ov-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+  .ov-line { display: block; width: 100%; height: auto; }
+  .ov-grid-line { stroke: var(--border); stroke-width: 1; }
+  .ov-axis { fill: var(--text-muted); font-size: 10px; }
+  .ov-grow { flex: 1; min-width: 0; }
+  .ov-grow b { display: block; font-weight: 650; }
+  .ov-right { text-align: right; } .ov-right em { display: block; }
+  .ov-chip { display: inline-block; padding: 3px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 650; background: rgba(245,158,11,.15); color: #b45309; white-space: nowrap; }
+  .ov-chip.hot { background: rgba(239,51,78,.12); color: #ef334e; } .ov-chip.good { background: rgba(22,163,74,.14); color: #15803d; } .ov-chip.soft { background: rgba(124,58,237,.12); color: #6d28d9; }
+  .ov-bikeico, .ov-credit-ico { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); }
+  .ov-credit-ico.is-pay { background: rgba(22,163,74,.14); } .ov-credit-ico.is-recv { background: rgba(124,58,237,.14); }
+  .ov-credit li { gap: 12px; } .ov-credit strong { font-size: 0.95rem; }
+  .ov-warn { color: #ef334e; font-size: 1rem; }
+  .ov-stock-n { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; }
+  .ov-contact { padding: 6px 14px; border-radius: 8px; background: var(--accent); color: #fff; font-size: 0.76rem; font-weight: 650; text-decoration: none; }
+  .ov-timeline { list-style: none; margin: 0; padding: 0 0 0 6px; font-size: 0.82rem; }
+  .ov-timeline li { position: relative; display: flex; justify-content: space-between; gap: 10px; padding: 8px 0 8px 18px; border-left: 2px solid var(--border); }
+  .ov-timeline li::before { content: ""; position: absolute; left: -6px; top: 13px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel-bg); }
+  .ov-timeline li.k-purchase::before { background: #16a34a; } .ov-timeline li.k-payment::before { background: #7c3aed; }
+  .ov-timeline em { font-style: normal; color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; }
 </style>
