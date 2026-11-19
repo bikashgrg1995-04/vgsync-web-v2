@@ -337,11 +337,13 @@ const navItems = getNavItemsForRole(defaultRole);
     let d: Dashboard;
     try {
       d = await loadDashboard(range);
+      // An older backend answers without the new blocks.
+      if (!d.due || !d.installments || !d.overview) throw new Error('outdated backend');
     } catch {
       block.hidden = false;
       $('ov-alerts').innerHTML = '';
       $('ov-due').innerHTML = '';
-      $('ov-owner-kpis').innerHTML = empty('Dashboard figures are not available right now.');
+      $('ov-owner-kpis').innerHTML = empty('Dashboard figures are not available right now. If this keeps happening, update the backend (git pull, migrate) and restart it.');
       return;
     }
     if (mine !== run) return;
