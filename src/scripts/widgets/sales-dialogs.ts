@@ -1,12 +1,12 @@
-import { ApiError } from '../lib/api';
-import { can, getSession } from '../lib/auth';
-import type { Customer } from '../lib/customers';
-import type { StockItem } from '../lib/inventory';
+import { ApiError } from '../../lib/api';
+import { can, getSession } from '../../lib/auth';
+import type { Customer } from '../../lib/customers';
+import type { StockItem } from '../../lib/inventory';
 import {
   createSale, updateSale, listSales, listTechnicians, type Technician, addPayment, createReturn,
   previewTotals, previewEmi, formatNpr, formatQty,
   type Sale, type SaleType, type ServiceKind, type PaymentMode, type Payer, type BikeUnit, type LocalProduct, type PayMethod, type SaleLineInput,
-} from '../lib/sales';
+} from '../../lib/sales';
 
 /**
  * Dialogs shared by the sales list and detail pages (new/edit sale, record

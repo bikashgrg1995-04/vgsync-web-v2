@@ -4,12 +4,12 @@ import SalesDialogs from "../../components/sales/SalesDialogs.astro";
 import { getNavItemsForRole, BOTTOM_NAV } from "../../lib/navigation";
 import { PAGE_META } from "../../lib/page-meta";
 import type { UserRole } from "../../lib/auth";
-import "../../styles/app/inventory-page.css";
-import "../../styles/app/inventory-detail.css";
-import "../../styles/app/sales-shared.css";
-import "../../styles/app/purchase-page.css";
-import "../../styles/app/purchase-detail.css";
-import "../../styles/app/sales-detail.css";
+import "../../styles/widgets/inventory-page.css";
+import "../../styles/widgets/inventory-detail.css";
+import "../../styles/widgets/sales-shared.css";
+import "../../styles/widgets/purchase-page.css";
+import "../../styles/widgets/purchase-detail.css";
+import "../../styles/pages/sales-detail.css";
 
 const meta = PAGE_META.sales;
 const defaultRole: UserRole = "owner";
@@ -402,5 +402,5 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import "../../scripts/sales-detail.ts";
+  import "../../scripts/pages/sales-detail.ts";
 </script>

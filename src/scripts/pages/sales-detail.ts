@@ -1,7 +1,7 @@
-import { can, getSession } from "../lib/auth";
-import { ApiError } from "../lib/api";
-import { listCustomers, type Customer } from "../lib/customers";
-import { listStock, type StockItem } from "../lib/inventory";
+import { can, getSession } from "../../lib/auth";
+import { ApiError } from "../../lib/api";
+import { listCustomers, type Customer } from "../../lib/customers";
+import { listStock, type StockItem } from "../../lib/inventory";
 import {
   getSale,
   confirmSale,
@@ -43,7 +43,7 @@ import {
   approveJobLine,
   rejectJobLine,
   JOB_LINE_STATUS_LABEL,
-} from "../lib/sales";
+} from "../../lib/sales";
 import {
   configureSalesDialogs,
   openForm,
@@ -57,7 +57,7 @@ import {
   dlg,
   val,
   today,
-} from "./sales-dialogs";
+} from "../widgets/sales-dialogs";
 
 if (!getSession()) window.location.replace("/");
 

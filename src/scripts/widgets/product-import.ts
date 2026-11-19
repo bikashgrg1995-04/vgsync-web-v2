@@ -1,9 +1,9 @@
-import { ApiError } from '../lib/api';
+import { ApiError } from '../../lib/api';
 import {
   downloadImportTemplate,
   importProducts,
   type ImportResult,
-} from '../lib/inventory';
+} from '../../lib/inventory';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
 
