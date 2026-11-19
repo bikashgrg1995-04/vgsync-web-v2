@@ -9,7 +9,7 @@ import {
   voidLedger,
   listBalances,
   getIncentives, applyIncentives, listIncentiveRules, saveIncentiveRule, deleteIncentiveRule, INCENTIVE_BASIS_LABEL,
-  type IncentiveRow, type IncentiveRule, type IncentiveBasis,
+  type IncentiveRule, type IncentiveBasis,
   getBalance,
   listStatement,
   listSalaries,
@@ -66,6 +66,8 @@ let selectedId: number | null = null;
 let token = 0;
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T | null;
+/** An element the page markup always has. */
+const must = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const val = (id: string) => $<HTMLInputElement>(id)?.value ?? '';
 const today = () => new Date().toLocaleDateString('en-CA');
 const esc = (s: string) =>
@@ -350,7 +352,6 @@ function renderBalances(): void {
 
 const g = <T extends HTMLElement = HTMLElement>(id: string): T => document.getElementById(id) as T;
 
-let incentiveRows: IncentiveRow[] = [];
 
 function incentiveMonth(): string {
   const el = g<HTMLInputElement>('in-month');
@@ -373,7 +374,6 @@ async function loadIncentives(): Promise<void> {
   err.hidden = true;
   try {
     const [rules, rows] = await Promise.all([listIncentiveRules(), getIncentives(incentiveMonth())]);
-    incentiveRows = rows;
     if (owner && !g('ir-basis').childElementCount) {
       g('ir-basis').innerHTML = (Object.keys(INCENTIVE_BASIS_LABEL) as IncentiveBasis[]).map((b) => `<option value="${b}">${esc(INCENTIVE_BASIS_LABEL[b])}</option>`).join('');
       const [people, positions] = await Promise.all([listStaff().catch(() => [] as StaffMember[]), listPositions().catch(() => [])]);
@@ -679,10 +679,10 @@ function typedWage(r: WorkRow): string {
 }
 
 function showDaily(): void {
-  const body = $('ds-tbody');
+  const body = must('ds-tbody');
   if (!sheet.length) {
     body.innerHTML = '<tr><td colspan="8" class="py-empty">Nobody is on daily pay. Set someone\'s pay to "Daily wage" on the Staff pay tab.</td></tr>';
-    $('ds-sum').textContent = '';
+    must('ds-sum').textContent = '';
     return;
   }
   body.innerHTML = sheet.map((r) => `<tr data-staff="${r.staffId}">
@@ -712,32 +712,32 @@ function updateDailySum(): void {
     total += pay;
     if (status) marked += 1;
   }
-  $('ds-sum').textContent = `${marked} of ${rows.length} marked · ${formatNpr(total)} for the day`;
+  must('ds-sum').textContent = `${marked} of ${rows.length} marked · ${formatNpr(total)} for the day`;
 }
 
 async function loadDaily(): Promise<void> {
   const input = $<HTMLInputElement>('ds-date')!;
   if (!input.value) input.value = todayIso();
   input.max = todayIso();
-  ($('ds-next') as HTMLButtonElement).disabled = input.value >= todayIso();
-  $('ds-error').hidden = true;
+  (must('ds-next') as HTMLButtonElement).disabled = input.value >= todayIso();
+  must('ds-error').hidden = true;
   try {
     sheet = await getWorkSheet(input.value);
     showDaily();
   } catch (e) {
-    $('ds-tbody').innerHTML = `<tr><td colspan="8" class="py-empty">${esc(e instanceof Error ? e.message : 'Could not load the sheet.')}</td></tr>`;
+    must('ds-tbody').innerHTML = `<tr><td colspan="8" class="py-empty">${esc(e instanceof Error ? e.message : 'Could not load the sheet.')}</td></tr>`;
   }
 }
 
-$('ds-tbody').addEventListener('click', (ev) => {
+must('ds-tbody').addEventListener('click', (ev) => {
   const btn = (ev.target as HTMLElement).closest<HTMLElement>('[data-set]');
   if (!btn) return;
   btn.parentElement!.querySelectorAll('.is-on').forEach((b) => b.classList.remove('is-on'));
   btn.classList.add('is-on');
   updateDailySum();
 });
-$('ds-tbody').addEventListener('input', () => updateDailySum());
-$('ds-all').addEventListener('click', () => {
+must('ds-tbody').addEventListener('input', () => updateDailySum());
+must('ds-all').addEventListener('click', () => {
   document.querySelectorAll('#ds-tbody tr[data-staff]').forEach((tr) => {
     tr.querySelectorAll('.is-on').forEach((b) => b.classList.remove('is-on'));
     tr.querySelector('[data-set="present"]')?.classList.add('is-on');
@@ -745,14 +745,14 @@ $('ds-all').addEventListener('click', () => {
   updateDailySum();
 });
 for (const [id, by] of [['ds-prev', -1], ['ds-next', 1]] as const) {
-  $(id).addEventListener('click', () => {
+  must(id).addEventListener('click', () => {
     const input = $<HTMLInputElement>('ds-date')!;
     input.value = shiftDay(input.value || todayIso(), by);
     void loadDaily();
   });
 }
-$('ds-date').addEventListener('change', () => void loadDaily());
-$('ds-save').addEventListener('click', async () => {
+must('ds-date').addEventListener('change', () => void loadDaily());
+must('ds-save').addEventListener('click', async () => {
   const marks = [...document.querySelectorAll<HTMLElement>('#ds-tbody tr[data-staff]')]
     .map((tr) => ({
       staff: Number(tr.dataset.staff),
@@ -762,7 +762,7 @@ $('ds-save').addEventListener('click', async () => {
       note: tr.querySelector<HTMLInputElement>('.ds-note')!.value.trim(),
     }))
     .filter((m): m is { staff: number; status: WorkStatus; extra: number; amount: number; note: string } => Boolean(m.status));
-  const err = $('ds-error');
+  const err = must('ds-error');
   err.hidden = true;
   if (!marks.length) {
     err.textContent = 'Mark at least one person first.';
