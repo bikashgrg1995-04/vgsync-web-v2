@@ -264,7 +264,7 @@ const navItems = getNavItemsForRole(defaultRole);
     const max = Math.max(...series.flatMap((x) => x.v), 1);
     const step = Math.pow(10, Math.floor(Math.log10(max)));
     const top = Math.ceil(max / step) * step;
-    const W = 640, H = 210, L = 44, R = 8, T = 8, B = 24;
+    const W = 640, H = 165, L = 44, R = 8, T = 8, B = 24;
     const x = (i: number) => L + (i / Math.max(o.days - 1, 1)) * (W - L - R);
     const y = (v: number) => T + (1 - v / top) * (H - T - B);
     const grid = [0, 1, 2, 3, 4].map((k) => {
@@ -598,4 +598,31 @@ const navItems = getNavItemsForRole(defaultRole);
   .ov-timeline li::before { content: ""; position: absolute; left: -6px; top: 13px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel-bg); }
   .ov-timeline li.k-purchase::before { background: #16a34a; } .ov-timeline li.k-payment::before { background: #7c3aed; }
   .ov-timeline em { font-style: normal; color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; }
+
+  /* ---- compact density ---- */
+  .ov-page { gap: 10px; }
+  .ov-hero { min-height: 84px; padding: 12px 16px; border-radius: 12px; }
+  .ov-hero-title { font-size: 1.15rem; }
+  .ov-hero-sub { margin: 2px 0 7px; font-size: 0.8rem; }
+  .ov-hero-date { padding: 3px 9px; font-size: 0.7rem; }
+  .ov-hero .ov-refresh { padding: 5px 10px; font-size: 0.75rem; }
+  .ov-due { gap: 8px; }
+  .ov-due-card { padding: 9px 11px 9px 10px; gap: 9px; border-radius: 11px; }
+  .ov-due-ico { width: 34px; height: 34px; border-radius: 10px; font-size: 1rem; }
+  .ov-due-body b { font-size: 0.78rem; }
+  .ov-due-body strong { font-size: 0.95rem; margin-top: 0; }
+  .ov-due-body em, .ov-due-view { font-size: 0.68rem; }
+  .ov-main, .ov-side, .ov-trio { gap: 8px; }
+  .ov-card { padding: 10px 12px; border-radius: 11px; }
+  .ov-card h3 { font-size: 0.86rem; }
+  .ov-card-head { margin-bottom: 8px; }
+  .ov-tiles { gap: 8px; margin-bottom: 8px; }
+  .ov-tile { padding: 8px 10px 5px; border-radius: 10px; }
+  .ov-tile-ico { width: 24px; height: 24px; font-size: 0.8rem; border-radius: 7px; }
+  .ov-tile-top { font-size: 0.72rem; gap: 6px; }
+  .ov-tile strong { margin: 4px 0 1px; font-size: 1rem; }
+  .ov-spark { height: 22px; margin-top: 2px; }
+  .ov-kpi { padding: 8px 11px; border-radius: 10px; }
+  .ov-kpi strong { font-size: 1rem; }
+  .ov-select, .ov-refresh { height: 28px; }
 </style>
