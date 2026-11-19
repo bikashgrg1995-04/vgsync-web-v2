@@ -81,37 +81,11 @@ const initials = displayName
 
         return (
           <>
-            {group.label && (
-              <li class="sidebar-group-label" data-nav-group={group.id}>
-                <button
-                  type="button"
-                  class="sidebar-group-toggle"
-                  data-group-toggle={group.id}
-                  aria-expanded="false"
-                >
-                  <span>{group.label}</span>
-                  <svg
-                    class="sidebar-group-chevron"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.4"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="m6 9 6 6 6-6"/>
-                  </svg>
-                </button>
-              </li>
+            {group.id !== 'main' && (
+              <li class="sidebar-divider" data-nav-group={group.id} aria-hidden="true"></li>
             )}
             {groupItems.map((item) => (
-              <li
-                data-nav-group-item={group.id}
-                class={group.label ? 'is-folded' : undefined}
-              >
+              <li data-nav-group-item={group.id}>
                 <a
                   href={item.href}
                   class:list={['sidebar-link', { 'is-active': item.id === activeId }]}
@@ -132,33 +106,6 @@ const initials = displayName
       })}
     </ul>
   </nav>
-
-  <style is:inline>
-    .sidebar-list > li.is-folded {
-      display: none;
-    }
-  </style>
-
-  <script is:inline>
-    // Unfold the section that holds this page, and any sections left open before,
-    // before the first paint so the menu does not jump.
-    (function () {
-      try {
-        var open = JSON.parse(localStorage.getItem('vgsync.menu.open') || '[]');
-        var active = document.querySelector('.app-sidebar .sidebar-link.is-active');
-        var ag = active && active.parentElement && active.parentElement.getAttribute('data-nav-group-item');
-        document.querySelectorAll('.app-sidebar [data-group-toggle]').forEach(function (t) {
-          var g = t.getAttribute('data-group-toggle');
-          if (g === ag || (Array.isArray(open) && open.indexOf(g) !== -1)) {
-            t.setAttribute('aria-expanded', 'true');
-            document.querySelectorAll('.app-sidebar [data-nav-group-item="' + g + '"]').forEach(function (li) {
-              li.classList.remove('is-folded');
-            });
-          }
-        });
-      } catch (e) {}
-    })();
-  </script>
 
   <div class="sidebar-bottom">
     <div class="sidebar-footer-links">
