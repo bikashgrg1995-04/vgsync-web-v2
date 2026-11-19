@@ -1,8 +1,8 @@
 ---
-import AppLayout from '../../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../../lib/navigation';
-import type { UserRole } from '../../../lib/auth';
-import '../../../styles/app/staff-detail.css';
+import AppLayout from '../../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
+import type { UserRole } from '../../lib/auth';
+import '../../styles/app/staff-detail.css';
 
 const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
@@ -40,8 +40,8 @@ const ic = {
 >
   <div class="sd-page" id="sd-page">
     <nav class="sd-crumb" aria-label="Breadcrumb">
-      <a href="/dashboard/staff" aria-label="Back to staff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg></a>
-      <a href="/dashboard/staff">Staff</a><span>/</span><strong>Staff Detail</strong>
+      <a href="/staff" aria-label="Back to staff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg></a>
+      <a href="/staff">Staff</a><span>/</span><strong>Staff Detail</strong>
     </nav>
 
     <p class="sd-error" id="sd-error" role="alert" hidden></p>
@@ -81,7 +81,7 @@ const ic = {
           <div class="sd-card">
             <div class="sd-card-head">
               <h3>Staff Overview</h3>
-              <a class="sd-btn" id="sd-edit" href="/dashboard/staff" hidden><Fragment set:html={I(ic.edit, 14)} />Edit Staff</a>
+              <a class="sd-btn" id="sd-edit" href="/staff" hidden><Fragment set:html={I(ic.edit, 14)} />Edit Staff</a>
             </div>
             <div class="sd-tiles">
               <div class="sd-tile"><span class="sd-tile-ico"><Fragment set:html={I(ic.cal, 18)} /></span><div><small>Join Date</small><strong id="sd-t-joined">—</strong></div></div>
@@ -122,7 +122,7 @@ const ic = {
         <!-- SALARY -->
         <section class="sd-panel" data-panel="salary">
           <div class="sd-card">
-            <div class="sd-card-head"><h3>Salary Records</h3><a class="sd-btn" href="/dashboard/payments">Manage in Payments</a></div>
+            <div class="sd-card-head"><h3>Salary Records</h3><a class="sd-btn" href="/payments">Manage in Payments</a></div>
             <div class="sd-kpis" id="sd-pay-kpis"></div>
             <div class="sd-table-wrap">
               <table class="sd-table">
@@ -208,9 +208,9 @@ const ic = {
 </AppLayout>
 
 <script>
-  import { getSession, canManageStaff, refreshProfile } from '../../../lib/auth';
-  import { api, ApiError } from '../../../lib/api';
-  import { paintAvatar } from '../../../lib/avatar';
+  import { getSession, canManageStaff, refreshProfile } from '../../lib/auth';
+  import { api, ApiError } from '../../lib/api';
+  import { paintAvatar } from '../../lib/avatar';
   import {
     getAccess,
     getStaff,
@@ -230,7 +230,7 @@ const ic = {
     downloadDocument,
     deleteDocument,
     positionLabel,
-  } from '../../../lib/staff';
+  } from '../../lib/staff';
   import {
     getAttendance,
     getBalance,
@@ -240,7 +240,7 @@ const ic = {
     type PayBalance,
     type SalaryProfile,
     type StatementRow,
-  } from '../../../lib/payments';
+  } from '../../lib/payments';
 
   const session = getSession();
   if (!session) window.location.replace('/');
@@ -411,7 +411,7 @@ const ic = {
     document.title = `VGSync | ${m.name}`;
     const edit = $<HTMLAnchorElement>('sd-edit');
     if (edit && getSession()?.accessMode !== 'read_only') {
-      edit.href = `/dashboard/staff?edit=${m.id}`;
+      edit.href = `/staff?edit=${m.id}`;
       edit.hidden = false;
     }
   }

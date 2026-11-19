@@ -1,9 +1,9 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import { PAGE_META } from '../../lib/page-meta';
-import '../../styles/app/purchase-page.css';
-import '../../styles/app/approvals-page.css';
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import { PAGE_META } from '../lib/page-meta';
+import '../styles/app/purchase-page.css';
+import '../styles/app/approvals-page.css';
 
 const meta = PAGE_META.approvals;
 const navItems = getNavItemsForRole();
@@ -79,9 +79,9 @@ const navItems = getNavItemsForRole();
 </AppLayout>
 
 <script>
-  import { ApiError } from '../../lib/api';
-  import { can, getSession } from '../../lib/auth';
-  import { APPROVER_CODES } from '../../lib/navigation';
+  import { ApiError } from '../lib/api';
+  import { can, getSession } from '../lib/auth';
+  import { APPROVER_CODES } from '../lib/navigation';
   import {
     KIND_LABEL,
     approve,
@@ -91,8 +91,8 @@ const navItems = getNavItemsForRole();
     saveRule,
     type ApprovalRequest,
     type ApprovalRule,
-  } from '../../lib/approvals';
-  import { formatNpr } from '../../lib/reports';
+  } from '../lib/approvals';
+  import { formatNpr } from '../lib/reports';
 
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
   const esc = (v: string) =>

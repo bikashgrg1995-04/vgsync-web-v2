@@ -1,8 +1,8 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import { PAGE_META } from '../../lib/page-meta';
-import type { UserRole } from '../../lib/auth';
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import { PAGE_META } from '../lib/page-meta';
+import type { UserRole } from '../lib/auth';
 
 const meta = PAGE_META.payments;
 const defaultRole: UserRole = 'owner';
@@ -315,9 +315,9 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { can, getSession } from '../../lib/auth';
-  import { ApiError } from '../../lib/api';
-  import { listPositions, listStaff, type StaffMember } from '../../lib/staff';
+  import { can, getSession } from '../lib/auth';
+  import { ApiError } from '../lib/api';
+  import { listPositions, listStaff, type StaffMember } from '../lib/staff';
   import {
     listLedger,
     ledgerSummary,
@@ -357,7 +357,7 @@ const navItems = getNavItemsForRole(defaultRole);
     listChecks,
     saveCheck,
     setOpeningBalance,
-  } from '../../lib/payments';
+  } from '../lib/payments';
 
   if (!getSession()) window.location.replace('/');
 

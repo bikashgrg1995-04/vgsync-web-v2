@@ -1,12 +1,12 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import { PAGE_META } from '../../lib/page-meta';
-import type { UserRole } from '../../lib/auth';
-import SalesDialogs from '../../components/sales/SalesDialogs.astro';
-import '../../styles/app/sales-shared.css';
-import '../../styles/app/purchase-page.css';
-import '../../styles/app/sales-page.css';
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import { PAGE_META } from '../lib/page-meta';
+import type { UserRole } from '../lib/auth';
+import SalesDialogs from '../components/sales/SalesDialogs.astro';
+import '../styles/app/sales-shared.css';
+import '../styles/app/purchase-page.css';
+import '../styles/app/sales-page.css';
 
 const meta = PAGE_META.sales;
 const defaultRole: UserRole = 'owner';
@@ -43,9 +43,9 @@ const navItems = getNavItemsForRole(defaultRole);
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4"></circle><circle cx="18" cy="20" r="1.4"></circle><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"></path></svg>
           New Sale
         </button>
-        <a class="btn-ghost-sm pd-link-btn" href="/dashboard/reports">Sales Report</a>
+        <a class="btn-ghost-sm pd-link-btn" href="/reports">Sales Report</a>
         <button type="button" class="btn-ghost-sm" id="sa-export">Export</button>
-        <a class="btn-ghost-sm pd-link-btn" href="/dashboard/settings">Settings</a>
+        <a class="btn-ghost-sm pd-link-btn" href="/settings">Settings</a>
       </div>
     </header>
 
@@ -141,7 +141,7 @@ const navItems = getNavItemsForRole(defaultRole);
               <button type="button" class="pd-quick-btn" id="qa-export">
                 <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M4 21h16"></path></svg></span>Export Sales
               </button>
-              <a class="pd-quick-btn" href="/dashboard/customers">
+              <a class="pd-quick-btn" href="/customers">
                 <span class="pd-quick-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"></path></svg></span>Manage Customers
               </a>
             </div>
@@ -180,7 +180,7 @@ const navItems = getNavItemsForRole(defaultRole);
         <section class="pd-card sa-area-products">
           <div class="pd-card-head">
             <h3 class="pd-card-title"><span class="pd-title-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v5a5 5 0 0 1-10 0z"></path><path d="M17 5h3v2a3 3 0 0 1-3 3"></path><path d="M7 5H4v2a3 3 0 0 0 3 3"></path></svg></span>Top Selling Products</h3>
-            <a class="btn-link" href="/dashboard/inventory">View All →</a>
+            <a class="btn-link" href="/inventory">View All →</a>
           </div>
           <ol class="sa-products" id="sa-products"></ol>
         </section>
@@ -427,13 +427,13 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { can, getSession } from '../../lib/auth';
-  import { listCustomers, type Customer } from '../../lib/customers';
-  import { listStock, type StockItem } from '../../lib/inventory';
+  import { can, getSession } from '../lib/auth';
+  import { listCustomers, type Customer } from '../lib/customers';
+  import { listStock, type StockItem } from '../lib/inventory';
   import {
     $, val, today, esc, describe, showError, dlg, submit, badge,
     configureSalesDialogs, openForm, openReason, itemOptions,
-  } from '../../scripts/sales-dialogs';
+  } from '../scripts/sales-dialogs';
   import {
     listSales, listReturns, voidReturn,
     listCredits, useCredit, deliverReplacement, voidCredit,
@@ -443,7 +443,7 @@ const navItems = getNavItemsForRole(defaultRole);
     STATUS_LABEL, TYPE_LABEL, PAYMENT_LABEL, METHOD_LABEL, CREDIT_LABEL, FOLLOWUP_LABEL,
     type Sale, type SaleType, type SaleReturn, type SaleCredit, type Followup, type BikeUnit,
     type LocalProduct, type CreditKind, type PayMethod,
-  } from '../../lib/sales';
+  } from '../lib/sales';
 
   if (!getSession()) window.location.replace('/');
 
@@ -897,7 +897,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
   /** A sale opens on its own page. */
   function openDetail(id: number): void {
-    window.location.href = `/dashboard/sales/detail?id=${id}`;
+    window.location.href = `/sales/detail?id=${id}`;
   }
 
   async function refreshAfterChange(_id?: number): Promise<void> {
@@ -1218,7 +1218,7 @@ const navItems = getNavItemsForRole(defaultRole);
   }
   document.querySelectorAll<HTMLElement>('[data-goto]').forEach((btn) => btn.addEventListener('click', () => showPanel(btn.dataset.goto!)));
 
-  // The sidebar links straight to a panel (for example /dashboard/sales#returns).
+  // The sidebar links straight to a panel (for example /sales#returns).
   const panelNames = new Set(Array.from(document.querySelectorAll<HTMLElement>('[data-panel]')).map((p) => p.dataset.panel!));
   function panelFromHash(): void {
     const name = window.location.hash.slice(1);

@@ -1,9 +1,9 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import { PAGE_META } from '../../lib/page-meta';
-import { CATEGORIES } from '../../lib/support';
-import type { UserRole } from '../../lib/auth';
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import { PAGE_META } from '../lib/page-meta';
+import { CATEGORIES } from '../lib/support';
+import type { UserRole } from '../lib/auth';
 
 const meta = PAGE_META.help;
 const defaultRole: UserRole = 'owner';
@@ -138,13 +138,13 @@ const liveChatUrl = (import.meta.env.PUBLIC_LIVE_CHAT_URL ?? '').trim();
 </AppLayout>
 
 <script>
-  import { getSession } from '../../lib/auth';
-  import { ApiError } from '../../lib/api';
+  import { getSession } from '../lib/auth';
+  import { ApiError } from '../lib/api';
   import {
     listFaqs, listTickets, createTicket, getContact,
     formatTicketDate, formatTicketDateTime,
     type Faq, type Ticket, type TicketCategory, type SupportContact,
-  } from '../../lib/support';
+  } from '../lib/support';
 
   if (!getSession()) window.location.replace('/');
 

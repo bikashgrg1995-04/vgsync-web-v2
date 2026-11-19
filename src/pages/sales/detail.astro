@@ -1,15 +1,15 @@
 ---
-import AppLayout from "../../../layouts/AppLayout.astro";
-import SalesDialogs from "../../../components/sales/SalesDialogs.astro";
-import { getNavItemsForRole, BOTTOM_NAV } from "../../../lib/navigation";
-import { PAGE_META } from "../../../lib/page-meta";
-import type { UserRole } from "../../../lib/auth";
-import "../../../styles/app/inventory-page.css";
-import "../../../styles/app/inventory-detail.css";
-import "../../../styles/app/sales-shared.css";
-import "../../../styles/app/purchase-page.css";
-import "../../../styles/app/purchase-detail.css";
-import "../../../styles/app/sales-detail.css";
+import AppLayout from "../../layouts/AppLayout.astro";
+import SalesDialogs from "../../components/sales/SalesDialogs.astro";
+import { getNavItemsForRole, BOTTOM_NAV } from "../../lib/navigation";
+import { PAGE_META } from "../../lib/page-meta";
+import type { UserRole } from "../../lib/auth";
+import "../../styles/app/inventory-page.css";
+import "../../styles/app/inventory-detail.css";
+import "../../styles/app/sales-shared.css";
+import "../../styles/app/purchase-page.css";
+import "../../styles/app/purchase-detail.css";
+import "../../styles/app/sales-detail.css";
 
 const meta = PAGE_META.sales;
 const defaultRole: UserRole = "owner";
@@ -29,7 +29,7 @@ const navItems = getNavItemsForRole(defaultRole);
   showBranchSwitcher={true}
 >
   <div class="inv-page invd-page pud-page sad-page" id="sad-page">
-    <a class="invd-back" href="/dashboard/sales">
+    <a class="invd-back" href="/sales">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
       Back to Sales
     </a>
@@ -402,5 +402,5 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import "../../../scripts/sales-detail.ts";
+  import "../../scripts/sales-detail.ts";
 </script>

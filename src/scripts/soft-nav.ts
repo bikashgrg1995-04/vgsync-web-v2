@@ -231,7 +231,9 @@ function eligible(a: HTMLAnchorElement, e: MouseEvent): boolean {
 
   const u = new URL(a.href, window.location.href);
 
-  if (u.origin !== window.location.origin || !u.pathname.startsWith('/dashboard')) return false;
+  const bare = u.pathname.replace(/\/+$/, '') || '/';
+  // Sign-in and password pages are outside the app shell: load them normally.
+  if (u.origin !== window.location.origin || ['/', '/forgot-password', '/reset-password'].includes(bare)) return false;
   // Only a #fragment change on this page: the browser handles it.
   if (u.pathname === window.location.pathname && u.search === window.location.search) return false;
 

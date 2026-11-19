@@ -128,4 +128,4 @@ export function downloadPartyStatement(
 
 /** Where the statement page for one party lives. */
 export const statementUrl = (kind: PartyKind, id: number): string =>
-  `/dashboard/statements/?kind=${kind}&id=${id}`;
+  `/statements/?kind=${kind}&id=${id}`;

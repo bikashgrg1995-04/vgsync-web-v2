@@ -138,8 +138,8 @@ function applySessionUI(): void {
   }
 
   const path = window.location.pathname.replace(/\/+$/, '');
-  if (session.mustChangePassword && path !== '/dashboard/change-password') {
-    window.location.replace('/dashboard/change-password');
+  if (session.mustChangePassword && path !== '/change-password') {
+    window.location.replace('/change-password');
     return;
   }
 

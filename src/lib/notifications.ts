@@ -18,7 +18,7 @@ const map = (r: any): AppNotification => ({
   kind: r.kind,
   title: r.title,
   body: r.body ?? '',
-  link: r.link || (String(r.kind).startsWith('followup') ? '/dashboard/sales#followups' : ''),
+  link: r.link || (String(r.kind).startsWith('followup') ? '/sales#followups' : ''),
   isRead: Boolean(r.is_read),
   createdAt: r.created_at,
 });
