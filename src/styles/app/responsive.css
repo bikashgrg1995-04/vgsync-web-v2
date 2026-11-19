@@ -206,3 +206,16 @@ html:has(.app-shell) { font-size: 14px; }
 .app-content .pd-table td { padding: 6px 9px; }
 .app-content .cus-table th, .app-content .cus-table td { padding-top: 6px; padding-bottom: 6px; }
 .app-content .cus-page, .app-content .inv-page { gap: 8px; }
+
+/* ---------- 6. Phone fixes ---------- */
+@media (max-width: 560px) {
+  .app-header { gap: 6px; padding: 6px 8px; }
+  .header-left { flex: 1 1 0; min-width: 0; }
+  .header-right { flex: 0 0 auto; gap: 5px; }
+  .header-title { font-size: 0.95rem; }
+  .branch-trigger { max-width: 120px; padding-inline: 8px; }
+  .theme-toggle { transform: scale(0.8); transform-origin: right center; margin-left: -8px; margin-right: -6px; }
+  .app-content .pd-kpi, .app-content .cus-kpis .pd-kpi { flex-direction: row; align-items: center; }
+  .app-content .pd-kpi-icon { width: 30px; height: 30px; }
+  .app-content .pd-hero { gap: 8px; }
+}
