@@ -30,12 +30,12 @@ const navItems = getNavItemsForRole(defaultRole);
         </div>
         <div>
           <h2 class="pd-hero-title">Customers</h2>
-          <p class="pd-hero-sub">Manage your customer directory, dues and statements.</p>
+          <p class="pd-hero-sub">Manage your customers and their information</p>
           <p class="cus-scope" id="cus-scope">Branch customers</p>
         </div>
       </div>
       <div class="pd-hero-actions">
-        <button type="button" class="btn-primary-sm" id="cus-add">+ New customer</button>
+        <button type="button" class="btn-primary-sm" id="cus-add">+ Add Customer</button>
         <a class="btn-ghost-sm pd-link-btn" href="/dashboard/sales">Sales</a>
         <a class="btn-ghost-sm pd-link-btn" href="/dashboard/payments">Payments</a>
       </div>
@@ -49,52 +49,56 @@ const navItems = getNavItemsForRole(defaultRole);
         <div class="pd-kpi-body">
           <span class="pd-kpi-label">Total Customers</span>
           <div class="pd-kpi-row"><strong id="kpi-total">—</strong></div>
-          <span class="pd-kpi-sub">In this branch</span>
+          <span class="pd-kpi-sub" id="kpi-total-sub"></span>
         </div>
       </article>
       <article class="pd-kpi">
         <span class="pd-kpi-icon is-green" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
         <div class="pd-kpi-body">
-          <span class="pd-kpi-label">Active</span>
+          <span class="pd-kpi-label">Active Customers</span>
           <div class="pd-kpi-row"><strong id="kpi-active">—</strong></div>
-          <span class="pd-kpi-sub">Can be billed</span>
+          <span class="pd-kpi-sub" id="kpi-active-sub"></span>
         </div>
       </article>
       <article class="pd-kpi">
-        <span class="pd-kpi-icon is-purple" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"></path><path d="M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.6 7 6.5 9 9.5 12 10s5 1.6 5 3.5-2.2 3-5 3-5-1.1-5-3"></path></svg></span>
+        <span class="pd-kpi-icon is-purple" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M10 9v6M14 9v6"></path></svg></span>
         <div class="pd-kpi-body">
-          <span class="pd-kpi-label">Receivable</span>
-          <div class="pd-kpi-row"><strong id="kpi-recv">—</strong></div>
-          <span class="pd-kpi-sub">Owed to you</span>
+          <span class="pd-kpi-label">Inactive Customers</span>
+          <div class="pd-kpi-row"><strong id="kpi-inactive">—</strong></div>
+          <span class="pd-kpi-sub" id="kpi-inactive-sub"></span>
         </div>
       </article>
-      <article class="pd-kpi is-danger">
+      <article class="pd-kpi  is-danger">
         <span class="pd-kpi-icon is-red" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4"></path><path d="M12 16h.01"></path></svg></span>
         <div class="pd-kpi-body">
-          <span class="pd-kpi-label">With dues</span>
+          <span class="pd-kpi-label">With Dues</span>
           <div class="pd-kpi-row"><strong id="kpi-dues">—</strong></div>
-          <span class="pd-kpi-sub">Customers owing money</span>
+          <span class="pd-kpi-sub" id="kpi-dues-sub"></span>
         </div>
       </article>
     </div>
 
     <div class="cus-layout">
       <section class="cus-list-panel pd-card">
+        <div class="cus-dir-head">
+          <h3>Customer Directory</h3>
+          <span class="cus-count-chip" id="cus-count-chip">0 customers</span>
+        </div>
         <div class="cus-filters">
           <div class="cus-search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="search" id="cus-search" placeholder="Search name, phone, PAN…" autocomplete="off" />
+            <input type="search" id="cus-search" placeholder="Search customer by name, phone or email…" autocomplete="off" />
           </div>
-          <select id="cus-type-filter">
-            <option value="">All types</option>
+          <select id="cus-status-filter" aria-label="Status">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <select id="cus-type-filter" aria-label="Customer type">
+            <option value="">All Customer Type</option>
             <option value="individual">Individual</option>
             <option value="business">Business</option>
             <option value="fleet">Fleet</option>
-          </select>
-          <select id="cus-status-filter">
-            <option value="">All status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
           </select>
           <label class="cus-dues-toggle">
             <input type="checkbox" id="cus-dues-filter" />
@@ -103,22 +107,26 @@ const navItems = getNavItemsForRole(defaultRole);
         </div>
 
         <div class="cus-table-wrap">
-          <table class="cus-table">
+          <table class="cus-table cus-dir">
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Customer</th>
                 <th>Type</th>
-                <th>Phone</th>
+                <th>Contact</th>
                 <th class="num">Owes you</th>
                 <th>Status</th>
+                <th class="cus-actions-h">Actions</th>
               </tr>
             </thead>
             <tbody id="cus-tbody">
-              <tr><td colspan="5">Loading…</td></tr>
+              <tr><td colspan="6">Loading…</td></tr>
             </tbody>
           </table>
         </div>
-        <p class="cus-footnote" id="cus-count"></p>
+        <div class="cus-pager">
+          <p class="cus-footnote" id="cus-count"></p>
+          <nav class="cus-pages" id="cus-pages" aria-label="Pages"></nav>
+        </div>
       </section>
 
       <aside class="cus-detail pd-card" id="cus-detail">
@@ -128,41 +136,87 @@ const navItems = getNavItemsForRole(defaultRole);
         </div>
 
         <div class="cus-detail-body" id="cus-detail-body" hidden>
-          <header class="cus-detail-head">
+          <div class="cus-drawer-top">
+            <h3>Customer Details</h3>
+            <button type="button" class="cus-x" id="cus-close" aria-label="Close details">✕</button>
+          </div>
+
+          <div class="cus-profile">
+            <span class="cus-avatar big" id="d-avatar" aria-hidden="true"></span>
             <div>
+              <div class="cus-profile-name"><h4 id="d-name">—</h4><span class="cus-badge" id="d-status">—</span></div>
               <p class="cus-detail-code" id="d-code">—</p>
-              <h3 id="d-name">—</h3>
-              <span class="cus-badge" id="d-status">—</span>
+              <p class="cus-profile-type" id="d-type-line">—</p>
             </div>
-            <div class="cus-detail-actions">
-              <button type="button" class="btn-ghost-sm" id="cus-statement">Statement</button>
-              <button type="button" class="btn-ghost-sm" id="cus-edit">Edit</button>
-              <button type="button" class="btn-ghost-sm is-danger" id="cus-toggle">Deactivate</button>
-            </div>
-          </header>
+          </div>
+
+          <div class="cus-detail-actions">
+            <button type="button" class="btn-ghost-sm" id="cus-statement">Statement</button>
+            <button type="button" class="btn-ghost-sm is-danger" id="cus-toggle">Deactivate</button>
+          </div>
 
           <p class="cus-limit-warn" id="d-limit-warn" role="status" hidden>
             Owes more than the credit limit. Sales are still allowed.
           </p>
 
-          <dl class="cus-dl">
-            <div><dt>Type</dt><dd id="d-type">—</dd></div>
-            <div><dt>Phone</dt><dd id="d-phone">—</dd></div>
-            <div><dt>Email</dt><dd id="d-email">—</dd></div>
-            <div><dt>PAN</dt><dd id="d-pan">—</dd></div>
-            <div class="span2"><dt>Address</dt><dd id="d-address">—</dd></div>
-            <div><dt>Owes you</dt><dd id="d-owes">—</dd></div>
-            <div><dt>Credit limit</dt><dd id="d-credit">—</dd></div>
-            <div><dt>You owe them</dt><dd id="d-credit-to-pay">—</dd></div>
-            <div><dt>Advance received</dt><dd id="d-advance">—</dd></div>
-            <div><dt>Total sales</dt><dd id="d-total">—</dd></div>
-            <div><dt>Replacement due</dt><dd id="d-stock">—</dd></div>
-            <div class="span2"><dt>Notes</dt><dd id="d-notes">—</dd></div>
-          </dl>
+          <div class="cus-tabs" role="tablist">
+            <button type="button" role="tab" class="is-active" data-tab="overview">Overview</button>
+            <button type="button" role="tab" data-tab="history">Purchase History</button>
+            <button type="button" role="tab" data-tab="statement">Statement</button>
+          </div>
 
-          <p class="cus-detail-meta" id="d-meta"></p>
+          <div class="cus-tabpanel" data-panel="overview">
+            <section class="cus-card">
+              <header><h4>Personal Information</h4><button type="button" class="btn-ghost-sm" id="cus-edit">✎ Edit</button></header>
+              <dl class="cus-kv">
+                <div><dt>Full Name</dt><dd id="d-fullname">—</dd></div>
+                <div><dt>Phone</dt><dd id="d-phone">—</dd></div>
+                <div><dt>Email</dt><dd id="d-email">—</dd></div>
+                <div><dt>Address</dt><dd id="d-address">—</dd></div>
+                <div><dt>PAN</dt><dd id="d-pan">—</dd></div>
+                <div><dt>Customer Type</dt><dd id="d-type">—</dd></div>
+                <div><dt>Created At</dt><dd id="d-created">—</dd></div>
+                <div><dt>Notes</dt><dd id="d-notes">—</dd></div>
+              </dl>
+            </section>
 
-          <section class="cus-stmt" aria-label="Statement">
+            <section class="cus-card">
+              <header><h4>Customer Statistics</h4></header>
+              <div class="cus-stats">
+                <div><span>Total Purchases</span><strong id="d-total">—</strong></div>
+                <div><span>This Year</span><strong id="d-year">—</strong></div>
+                <div><span>Last Purchase</span><strong id="d-last">—</strong></div>
+              </div>
+              <dl class="cus-kv tight">
+                <div><dt>Owes you</dt><dd id="d-owes">—</dd></div>
+                <div><dt>Credit limit</dt><dd id="d-credit">—</dd></div>
+                <div><dt>You owe them</dt><dd id="d-credit-to-pay">—</dd></div>
+                <div><dt>Advance received</dt><dd id="d-advance">—</dd></div>
+                <div><dt>Replacement due</dt><dd id="d-stock">—</dd></div>
+              </dl>
+            </section>
+
+            <section class="cus-card">
+              <header><h4>This Month Purchase</h4><button type="button" class="cus-link" data-goto="history">View All →</button></header>
+              <div id="d-month"></div>
+            </section>
+
+            <section class="cus-card">
+              <header><h4>Recent Purchase Records</h4><button type="button" class="cus-link" data-goto="history">View All →</button></header>
+              <div id="d-recent"></div>
+            </section>
+            <p class="cus-detail-meta" id="d-meta"></p>
+          </div>
+
+          <div class="cus-tabpanel" data-panel="history" hidden>
+            <section class="cus-card">
+              <header><h4>Purchase History</h4></header>
+              <div id="d-history"></div>
+            </section>
+          </div>
+
+          <div class="cus-tabpanel" data-panel="statement" hidden>
+            <section class="cus-stmt" aria-label="Statement">
             <div class="cus-stmt-head">
               <h4>Statement</h4>
               <div class="cus-stmt-actions">
@@ -199,6 +253,7 @@ const navItems = getNavItemsForRole(defaultRole);
             <button type="button" class="btn-ghost-sm" id="stmt-more" hidden>Load more</button>
             <p class="cus-hint" id="stmt-hint">Positive balance: the customer owes you. Negative: you owe the customer.</p>
           </section>
+          </div>
         </div>
       </aside>
     </div>
@@ -270,6 +325,7 @@ const navItems = getNavItemsForRole(defaultRole);
   import { statementUrl } from '../../lib/statements';
   import { getSession, refreshProfile } from '../../lib/auth';
   import { ApiError } from '../../lib/api';
+  import { listSales, type Sale } from '../../lib/sales';
   import {
     listCustomers,
     createCustomer,
@@ -294,6 +350,7 @@ const navItems = getNavItemsForRole(defaultRole);
   let customers: Customer[] = [];
   let selectedId: number | null = null;
   let canWrite = true;
+  let firstLoadDone = false;
 
   let stmtPage = 1;
   let stmtRows: StatementRow[] = [];
@@ -366,47 +423,170 @@ const navItems = getNavItemsForRole(defaultRole);
     });
   }
 
+  const PAGE_SIZE = 10;
+  let page = 1;
+  const salesCache = new Map<number, Sale[]>();
+  let salesToken = 0;
+
+  const initials = (name: string) =>
+    name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '?';
+  const code = (c: Customer) => `CUST-${String(c.id).padStart(3, '0')}`;
+  const dateText = (iso: string) => new Date(iso.length === 10 ? iso + 'T00:00' : iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const AVATAR_TONES = ['#4f46e5', '#0ea5e9', '#16a34a', '#f59e0b', '#db2777', '#7c3aed'];
+  const avatar = (c: Customer, big = false) => `<span class="cus-avatar${big ? ' big' : ''}" style="background:${AVATAR_TONES[c.id % AVATAR_TONES.length]}">${esc(initials(c.name))}</span>`;
+  const statusChip = (paid: string) => `<span class="cus-chip ${paid === 'paid' ? 'ok' : paid === 'partial' ? 'warn' : 'pend'}">${paid === 'paid' ? '✓ Paid' : paid === 'partial' ? 'Part paid' : 'Pending'}</span>`;
+
   function renderKpis(): void {
     const s = getCustomerSummary(customers);
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+    const newThisMonth = customers.filter((c) => new Date(c.createdAt).getTime() >= monthStart);
+    const inactive = customers.filter((c) => !c.isActive);
     setText('kpi-total', String(s.total));
     setText('kpi-active', String(s.active));
-    setText('kpi-recv', formatNpr(s.receivable));
+    setText('kpi-inactive', String(inactive.length));
     setText('kpi-dues', String(s.withDues));
+    const sub = (id: string, text: string, tone = '') => {
+      const el = $(id);
+      if (el) { el.textContent = text; el.className = `pd-kpi-sub ${tone}`; }
+    };
+    sub('kpi-total-sub', `↑ +${newThisMonth.length} this month`, newThisMonth.length ? 'is-up' : '');
+    sub('kpi-active-sub', `↑ +${newThisMonth.filter((c) => c.isActive).length} this month`, 'is-up');
+    sub('kpi-inactive-sub', inactive.length ? 'Not offered on new sales' : 'None', '');
+    sub('kpi-dues-sub', `${formatNpr(s.receivable)} owed to you`, '');
   }
 
-  function renderTable(): void {
+  function renderTable(resetPage = false): void {
     const tbody = $('cus-tbody');
     const count = $('cus-count');
     if (!tbody) return;
+    if (resetPage) page = 1;
     const rows = filtered();
+    const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if (page > pages) page = pages;
+    setText('cus-count-chip', `${customers.length} customer${customers.length === 1 ? '' : 's'}`);
+
     if (rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="cus-empty">No customers found.</td></tr>`;
-      if (count) count.textContent = '0 customers';
+      tbody.innerHTML = `<tr><td colspan="6" class="cus-empty">No customers found.</td></tr>`;
+      if (count) count.textContent = 'Showing 0 customers';
+      $('cus-pages')!.innerHTML = '';
       return;
     }
-    tbody.innerHTML = rows
+    const slice = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    tbody.innerHTML = slice
       .map((c) => {
         const active = c.id === selectedId ? ' is-selected' : '';
         const over = c.overCreditLimit ? ' <span class="cus-over" title="Over credit limit">over limit</span>' : '';
         return `<tr class="cus-row${active}" data-id="${c.id}">
-          <td><strong>${esc(c.name)}</strong></td>
-          <td>${esc(TYPE_LABEL[c.type] ?? c.type)}</td>
-          <td>${esc(c.phone) || '—'}</td>
+          <td><div class="cus-person">${avatar(c)}<div><strong>${esc(c.name)}</strong><em>${code(c)}</em></div></div></td>
+          <td><span class="cus-type cus-type-${c.type}">${esc(TYPE_LABEL[c.type] ?? c.type)}</span></td>
+          <td class="cus-contact">${c.phone ? `<span>☎ ${esc(c.phone)}</span>` : ''}${c.email ? `<span>✉ ${esc(c.email)}</span>` : ''}${!c.phone && !c.email ? '—' : ''}</td>
           <td class="num">${formatNpr(c.creditToReceive)}${over}</td>
-          <td><span class="cus-badge cus-badge-${c.isActive ? 'active' : 'inactive'}">${c.isActive ? 'Active' : 'Inactive'}</span></td>
+          <td><span class="cus-badge cus-badge-${c.isActive ? 'active' : 'inactive'}"><i></i>${c.isActive ? 'Active' : 'Inactive'}</span></td>
+          <td class="cus-actions"><button type="button" class="cus-icon-btn" data-view="${c.id}" aria-label="View ${esc(c.name)}" title="View">👁</button><button type="button" class="cus-icon-btn" data-menu="${c.id}" aria-label="More actions" title="More">⋮</button></td>
         </tr>`;
       })
       .join('');
-    if (count) count.textContent = `${rows.length} customer${rows.length === 1 ? '' : 's'} · active branch only`;
+    const from = (page - 1) * PAGE_SIZE + 1;
+    if (count) count.textContent = `Showing ${from}–${from + slice.length - 1} of ${rows.length} customers`;
 
+    const nums: Array<number | '…'> = [];
+    for (let i = 1; i <= pages; i += 1) {
+      if (i === 1 || i === pages || Math.abs(i - page) <= 1) nums.push(i);
+      else if (nums[nums.length - 1] !== '…') nums.push('…');
+    }
+    $('cus-pages')!.innerHTML = pages === 1 ? '' :
+      `<button type="button" data-page="${page - 1}" ${page === 1 ? 'disabled' : ''} aria-label="Previous">‹</button>` +
+      nums.map((n) => (n === '…' ? '<span>…</span>' : `<button type="button" data-page="${n}" class="${n === page ? 'is-active' : ''}">${n}</button>`)).join('') +
+      `<button type="button" data-page="${page + 1}" ${page === pages ? 'disabled' : ''} aria-label="Next">›</button>`;
+
+    $('cus-pages')!.querySelectorAll<HTMLButtonElement>('[data-page]').forEach((btn) =>
+      btn.addEventListener('click', () => { page = Number(btn.dataset.page) || 1; renderTable(); }),
+    );
     tbody.querySelectorAll<HTMLTableRowElement>('.cus-row').forEach((row) => {
-      row.addEventListener('click', () => {
-        selectedId = Number(row.dataset.id) || null;
-        renderTable();
-        renderDetail();
-        void loadStatement(true);
+      row.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('[data-menu]')) return;
+        select(Number(row.dataset.id) || null);
       });
     });
+    tbody.querySelectorAll<HTMLButtonElement>('[data-menu]').forEach((btn) =>
+      btn.addEventListener('click', (e) => { e.stopPropagation(); rowMenu(Number(btn.dataset.menu), btn); }),
+    );
+  }
+
+  function select(id: number | null): void {
+    selectedId = id;
+    renderTable();
+    renderDetail();
+    void loadStatement(true);
+    void loadSales();
+  }
+
+  /** A small menu on the row: view, edit, activate or deactivate. */
+  function rowMenu(id: number, anchor: HTMLElement): void {
+    document.getElementById('cus-menu')?.remove();
+    const c = customers.find((x) => x.id === id);
+    if (!c) return;
+    const menu = document.createElement('div');
+    menu.id = 'cus-menu';
+    menu.className = 'cus-menu';
+    menu.innerHTML = `<button data-do="view">View details</button>` + (canWrite ? `<button data-do="edit">Edit</button><button data-do="toggle">${c.isActive ? 'Deactivate' : 'Reactivate'}</button>` : '') + `<button data-do="statement">Statement</button>`;
+    document.body.appendChild(menu);
+    const r = anchor.getBoundingClientRect();
+    menu.style.top = `${r.bottom + window.scrollY + 4}px`;
+    menu.style.left = `${Math.max(8, r.right + window.scrollX - 160)}px`;
+    menu.addEventListener('click', (e) => {
+      const what = (e.target as HTMLElement).dataset.do;
+      menu.remove();
+      select(id);
+      if (what === 'edit') openForm(c);
+      else if (what === 'toggle') $('cus-toggle')?.click();
+      else if (what === 'statement') $('cus-statement')?.click();
+    });
+    setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
+  }
+
+  function setTab(next: string): void {
+
+    document.querySelectorAll<HTMLButtonElement>('.cus-tabs [data-tab]').forEach((b) => b.classList.toggle('is-active', b.dataset.tab === next));
+    document.querySelectorAll<HTMLElement>('.cus-tabpanel').forEach((p) => { p.hidden = p.dataset.panel !== next; });
+  }
+
+  async function loadSales(): Promise<void> {
+    const c = selected();
+    if (!c) return;
+    const token = ++salesToken;
+    if (!salesCache.has(c.id)) {
+      ['d-month', 'd-recent', 'd-history'].forEach((id) => { $(id)!.innerHTML = '<p class="cus-muted">Loading…</p>'; });
+      try {
+        salesCache.set(c.id, await listSales({ customerId: c.id, status: 'confirmed' }));
+      } catch {
+        if (token === salesToken) ['d-month', 'd-recent', 'd-history'].forEach((id) => { $(id)!.innerHTML = '<p class="cus-muted">Purchases are not available for you.</p>'; });
+        return;
+      }
+    }
+    if (token !== salesToken) return;
+    renderSales(salesCache.get(c.id)!);
+  }
+
+  function renderSales(all: Sale[]): void {
+    const sales = [...all].sort((a, b) => b.saleDate.localeCompare(a.saleDate) || b.id - a.id);
+    const now = new Date();
+    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const year = String(now.getFullYear());
+    const thisYear = sales.filter((x) => x.saleDate.startsWith(year)).reduce((a, x) => a + x.netTotal, 0);
+    setText('d-year', formatNpr(thisYear));
+    setText('d-last', sales[0] ? formatNpr(sales[0].netTotal) : 'None yet');
+
+    const line = (x: Sale) => `<li><span>${esc(dateText(x.saleDate))}</span><strong>${formatNpr(x.netTotal)}</strong>${statusChip(x.paymentStatus)}</li>`;
+    const month = sales.filter((x) => x.saleDate.startsWith(ym));
+    const monthTotal = month.reduce((a, x) => a + x.netTotal, 0);
+    $('d-month')!.innerHTML = month.length
+      ? `<div class="cus-month"><strong>${formatNpr(monthTotal)}</strong>${statusChip(month[0]!.paymentStatus)}</div><p class="cus-muted">Latest: ${esc(dateText(month[0]!.saleDate))} · ${esc(month[0]!.invoiceNo || month[0]!.saleNo)}${month.length > 1 ? ` · ${month.length} sales this month` : ''}</p>`
+      : '<p class="cus-muted">No purchases this month.</p>';
+    $('d-recent')!.innerHTML = sales.length ? `<ul class="cus-recent">${sales.slice(0, 3).map(line).join('')}</ul>` : '<p class="cus-muted">No purchases yet.</p>';
+    $('d-history')!.innerHTML = sales.length
+      ? `<table class="cus-hist"><thead><tr><th>Date</th><th>Invoice</th><th class="num">Total</th><th>Payment</th></tr></thead><tbody>${sales.map((x) => `<tr><td>${esc(dateText(x.saleDate))}</td><td><a href="/dashboard/sales/detail?id=${x.id}">${esc(x.invoiceNo || x.saleNo)}</a></td><td class="num">${formatNpr(x.netTotal)}</td><td>${statusChip(x.paymentStatus)}</td></tr>`).join('')}</tbody></table>`
+      : '<p class="cus-muted">No purchases yet.</p>';
   }
 
   function renderDetail(): void {
@@ -422,24 +602,27 @@ const navItems = getNavItemsForRole(defaultRole);
     empty?.setAttribute('hidden', '');
     body?.removeAttribute('hidden');
 
-    setText('d-code', `Customer #${c.id}`);
+    $('d-avatar')!.outerHTML = avatar(c, true).replace('<span ', '<span id="d-avatar" aria-hidden="true" ');
+    setText('d-code', code(c));
     setText('d-name', c.name);
+    setText('d-fullname', c.name);
+    setText('d-type-line', `${TYPE_LABEL[c.type] ?? c.type} Customer`);
     setText('d-type', TYPE_LABEL[c.type] ?? c.type);
     setText('d-phone', c.phone);
     setText('d-email', c.email);
     setText('d-pan', c.pan);
     setText('d-address', c.address);
+    setText('d-created', dateText(c.createdAt));
     setText('d-owes', formatNpr(c.creditToReceive));
     setText('d-credit', c.creditLimit > 0 ? formatNpr(c.creditLimit) : 'No limit');
     setText('d-credit-to-pay', formatNpr(c.creditToPay));
     setText('d-advance', formatNpr(c.advanceReceived));
     setText('d-total', formatNpr(c.totalSales));
+    setText('d-year', '…');
+    setText('d-last', '…');
     setText('d-stock', String(c.stockToGive));
     setText('d-notes', c.notes);
-    setText(
-      'd-meta',
-      `Created ${new Date(c.createdAt).toLocaleDateString()} · Updated ${new Date(c.updatedAt).toLocaleDateString()}`,
-    );
+    setText('d-meta', `Updated ${new Date(c.updatedAt).toLocaleDateString()}`);
 
     const warn = $('d-limit-warn');
     if (warn) warn.hidden = !c.overCreditLimit;
@@ -451,7 +634,12 @@ const navItems = getNavItemsForRole(defaultRole);
     }
     const toggle = $('cus-toggle');
     if (toggle) toggle.textContent = c.isActive ? 'Deactivate' : 'Reactivate';
+    if (salesCache.has(c.id)) renderSales(salesCache.get(c.id)!);
   }
+
+  document.querySelectorAll<HTMLButtonElement>('.cus-tabs [data-tab]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab!)));
+  document.querySelectorAll<HTMLButtonElement>('[data-goto]').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.goto!)));
+  $('cus-close')?.addEventListener('click', () => select(null));
 
   // ---------- statement ----------
 
@@ -569,10 +757,16 @@ const navItems = getNavItemsForRole(defaultRole);
       showBox('cus-load-error', describe(error));
     }
 
+    salesCache.clear();
     if (selectedId && !selected()) selectedId = null;
+    // Like the design: the first customer is open when the page loads.
+    if (!selectedId && customers.length && !firstLoadDone) selectedId = customers[0]!.id;
+    firstLoadDone = true;
     renderKpis();
     renderTable();
     renderDetail();
+    void loadSales();
+    void loadStatement(true);
   }
 
   // ---------- form ----------
@@ -662,10 +856,10 @@ const navItems = getNavItemsForRole(defaultRole);
     }
   });
 
-  $('cus-search')?.addEventListener('input', () => renderTable());
-  $('cus-type-filter')?.addEventListener('change', () => renderTable());
-  $('cus-status-filter')?.addEventListener('change', () => renderTable());
-  $('cus-dues-filter')?.addEventListener('change', () => renderTable());
+  $('cus-search')?.addEventListener('input', () => renderTable(true));
+  $('cus-type-filter')?.addEventListener('change', () => renderTable(true));
+  $('cus-status-filter')?.addEventListener('change', () => renderTable(true));
+  $('cus-dues-filter')?.addEventListener('change', () => renderTable(true));
 
   void reload();
   refreshProfile().then(applyWriteAccess).catch(() => {});
@@ -861,4 +1055,70 @@ const navItems = getNavItemsForRole(defaultRole);
   .cus-page .cus-table-wrap { border: 1px solid var(--border); border-radius: 10px; }
   .cus-page .cus-table tr:last-child td { border-bottom: none; }
   @media (max-width: 900px) { .cus-page .cus-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  /* ---- directory + details drawer (mockup layout) ---- */
+  .cus-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 14px; align-items: start; }
+  @media (max-width: 1100px) { .cus-layout { grid-template-columns: 1fr; } }
+  .cus-dir-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .cus-count-chip { padding: 2px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 650; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+  .cus-person { display: flex; align-items: center; gap: 10px; }
+  .cus-person strong { display: block; font-size: 0.85rem; }
+  .cus-person em { font-style: normal; font-size: 0.72rem; color: var(--text-muted); }
+  .cus-avatar { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75rem; font-weight: 700; flex: none; }
+  .cus-avatar.big { width: 52px; height: 52px; font-size: 1rem; }
+  .cus-type { display: inline-block; padding: 2px 9px; border-radius: 6px; font-size: 0.72rem; font-weight: 650; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+  .cus-type-business { background: color-mix(in srgb, #7c3aed 14%, transparent); color: #7c3aed; }
+  .cus-type-wholesale, .cus-type-dealer { background: color-mix(in srgb, #f59e0b 16%, transparent); color: #b45309; }
+  .cus-contact span { display: block; font-size: 0.78rem; color: var(--text-secondary); }
+  .cus-actions { white-space: nowrap; text-align: right; }
+  .cus-icon-btn { width: 28px; height: 28px; border: 1px solid var(--border); background: transparent; border-radius: 7px; cursor: pointer; color: var(--text-secondary); margin-left: 4px; }
+  .cus-icon-btn:hover { background: var(--surface-hover); }
+  .cus-row.is-selected { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .cus-pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 10px; font-size: 0.78rem; color: var(--text-muted); }
+  .cus-pages { display: flex; gap: 4px; align-items: center; }
+  .cus-pages button { min-width: 28px; height: 28px; border: 1px solid var(--border); background: transparent; border-radius: 7px; cursor: pointer; color: var(--text-secondary); font-family: inherit; }
+  .cus-pages button.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .cus-pages button:disabled { opacity: 0.4; cursor: default; }
+  .cus-menu { position: absolute; z-index: 50; width: 160px; background: var(--surface, #fff); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); padding: 4px; display: flex; flex-direction: column; }
+  .cus-menu button { text-align: left; border: none; background: transparent; padding: 8px 10px; border-radius: 7px; font-family: inherit; font-size: 0.8rem; cursor: pointer; color: var(--text-primary); }
+  .cus-menu button:hover { background: var(--surface-hover); }
+  .cus-drawer-top { display: flex; justify-content: flex-end; }
+  .cus-x { border: none; background: transparent; font-size: 1.3rem; line-height: 1; cursor: pointer; color: var(--text-muted); }
+  .cus-profile { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .cus-profile-name { font-size: 1rem; font-weight: 700; margin: 0; }
+  .cus-profile-type { font-size: 0.78rem; color: var(--text-muted); margin: 2px 0; }
+  .cus-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+  .cus-tabs button { border: none; background: transparent; padding: 8px 10px; font-family: inherit; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .cus-tabs button.is-active { color: var(--accent); border-bottom-color: var(--accent); }
+  .cus-card { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+  .cus-card h3 { margin: 0 0 8px; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+  .cus-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: left; }
+  .cus-stats span { display: block; font-size: 0.7rem; color: var(--text-muted); }
+  .cus-stats strong { font-size: 0.85rem; }
+  .cus-month { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .cus-month strong { font-size: 1.1rem; }
+  .cus-muted { margin: 4px 0 0; font-size: 0.78rem; color: var(--text-muted); }
+  .cus-recent { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .cus-recent li { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; font-size: 0.8rem; }
+  .cus-chip { padding: 2px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 650; }
+  .cus-chip.ok { background: color-mix(in srgb, #16a34a 14%, transparent); color: #16a34a; }
+  .cus-chip.warn { background: color-mix(in srgb, #f59e0b 18%, transparent); color: #b45309; }
+  .cus-chip.pend { background: color-mix(in srgb, #ef334e 12%, transparent); color: #ef334e; }
+  .cus-hist { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .cus-hist th, .cus-hist td { padding: 6px 4px; text-align: left; border-bottom: 1px solid var(--border); }
+  .cus-hist .num { text-align: right; }
+  .cus-link { background: none; border: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 0.78rem; padding: 0; }
+
+  .cus-detail h3 { font-size: 0.95rem; margin: 0; }
+  .cus-detail .cus-drawer-top { justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .cus-detail-actions { display: flex; gap: 8px; margin: 10px 0; }
+  .cus-card header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .cus-card h4 { margin: 0; font-size: 0.85rem; }
+  .cus-kv { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .cus-kv > div { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: baseline; }
+  .cus-kv dt { font-size: 0.75rem; color: var(--text-muted); }
+  .cus-kv dd { margin: 0; font-size: 0.8rem; word-break: break-word; }
+  .cus-stats > div { display: block; }
+  .cus-profile .cus-badge { margin: 2px 0; }
+  .cus-dir-head h3 { margin: 0; font-size: 0.95rem; }
 </style>
