@@ -18,6 +18,12 @@ const sidebarToggle = document.getElementById('sidebar-toggle');
 const logoutBtn = document.getElementById('sidebar-logout');
 const themeToggle = document.getElementById('theme-toggle');
 const branchSelect = document.getElementById('branch-select') as HTMLSelectElement | null;
+const branchSwitcher = document.getElementById('branch-switcher');
+const branchTrigger = document.getElementById('branch-trigger');
+const branchTriggerLabel = document.getElementById('branch-trigger-label');
+const branchDropdown = document.getElementById('branch-dropdown');
+const branchSearch = document.getElementById('branch-search') as HTMLInputElement | null;
+const branchList = document.getElementById('branch-list');
 
 const logoutDialog = document.getElementById('logout-dialog') as HTMLDialogElement | null;
 const logoutCancel = document.getElementById('logout-cancel');
@@ -196,28 +202,110 @@ function applySessionUI(): void {
 
   setupMenuGroups();
 
-  if (branchSelect) {
+  if (branchSwitcher || branchSelect) {
     if (!canSwitchBranch(session)) {
-      branchSelect.style.display = 'none';
+      if (branchSwitcher) branchSwitcher.style.display = 'none';
+      if (branchSelect) branchSelect.style.display = 'none';
     } else {
-      branchSelect.style.display = '';
+      if (branchSwitcher) branchSwitcher.style.display = '';
+      if (branchSelect) branchSelect.style.display = 'none'; // keep native hidden
       void fillBranches(session.activeBusinessId);
     }
   }
 }
 
+let cachedBranches: { id: number; name: string; code: string }[] = [];
+
+function branchIcon(name: string): string {
+  const n = name.toLowerCase();
+  if (n.includes('all') || n.includes('every')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>`;
+  }
+  if (n.includes('head') || n.includes('office')) {
+    return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>`;
+  }
+  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`;
+}
+
+function renderBranchList(activeId: number, filter = ''): void {
+  if (!branchList) return;
+  const q = filter.trim().toLowerCase();
+  const items = cachedBranches.filter(
+    (b) => !q || b.name.toLowerCase().includes(q) || b.code.toLowerCase().includes(q),
+  );
+
+  if (items.length === 0) {
+    branchList.innerHTML = `<li class="branch-option-empty">No branches found</li>`;
+    return;
+  }
+
+  branchList.innerHTML = items
+    .map((b) => {
+      const active = b.id === activeId;
+      return `<li>
+        <button type="button" class="branch-option${active ? ' is-active' : ''}" data-branch-id="${b.id}" role="option" aria-selected="${active}">
+          <span class="branch-option-icon">${branchIcon(b.name)}</span>
+          <span>${escapeHtml(b.name)}</span>
+          ${active ? `<svg class="branch-option-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>` : ''}
+        </button>
+      </li>`;
+    })
+    .join('');
+}
+
 async function fillBranches(activeId: number): Promise<void> {
-  if (!branchSelect) return;
+  if (!branchSelect && !branchList) return;
   try {
     const branches = await loadBranches();
-    branchSelect.innerHTML = branches
-      .map(
-        (b) =>
-          `<option value="${b.id}" ${b.id === activeId ? 'selected' : ''}>${escapeHtml(b.name)} (${escapeHtml(b.code)})</option>`,
-      )
-      .join('');
+    cachedBranches = branches.map((b) => ({ id: b.id, name: b.name, code: b.code }));
+
+    // Keep hidden native select in sync (fallback / accessibility)
+    if (branchSelect) {
+      branchSelect.innerHTML = branches
+        .map(
+          (b) =>
+            `<option value="${b.id}" ${b.id === activeId ? 'selected' : ''}>${escapeHtml(b.name)} (${escapeHtml(b.code)})</option>`,
+        )
+        .join('');
+    }
+
+    const current = branches.find((b) => b.id === activeId);
+    if (branchTriggerLabel && current) {
+      branchTriggerLabel.textContent = current.name;
+    }
+
+    renderBranchList(activeId);
   } catch {
     // Keep whatever is shown; the user can reload to try again.
+  }
+}
+
+function openBranchDropdown(): void {
+  if (!branchDropdown || !branchTrigger) return;
+  branchDropdown.hidden = false;
+  branchTrigger.setAttribute('aria-expanded', 'true');
+  branchSearch?.focus();
+}
+
+function closeBranchDropdown(): void {
+  if (!branchDropdown || !branchTrigger) return;
+  branchDropdown.hidden = true;
+  branchTrigger.setAttribute('aria-expanded', 'false');
+  if (branchSearch) branchSearch.value = '';
+  const session = getSession();
+  if (session) renderBranchList(session.activeBusinessId);
+}
+
+async function handleBranchPick(id: number): Promise<void> {
+  closeBranchDropdown();
+  if (branchTrigger) branchTrigger.setAttribute('disabled', 'true');
+  try {
+    await switchBranch(id);
+    window.location.reload();
+  } catch {
+    if (branchTrigger) branchTrigger.removeAttribute('disabled');
+    const current = getSession();
+    if (current) void fillBranches(current.activeBusinessId);
   }
 }
 
@@ -225,19 +313,44 @@ function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+// Custom branch dropdown interactions
+if (branchTrigger) {
+  branchTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (branchDropdown?.hidden) openBranchDropdown();
+    else closeBranchDropdown();
+  });
+}
+
+branchList?.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('[data-branch-id]') as HTMLElement | null;
+  if (!btn) return;
+  const id = Number(btn.dataset.branchId);
+  if (!Number.isFinite(id)) return;
+  void handleBranchPick(id);
+});
+
+branchSearch?.addEventListener('input', () => {
+  const session = getSession();
+  if (session) renderBranchList(session.activeBusinessId, branchSearch.value);
+});
+
+document.addEventListener('click', (e) => {
+  if (!branchSwitcher) return;
+  if (!branchSwitcher.contains(e.target as Node)) {
+    closeBranchDropdown();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeBranchDropdown();
+});
+
+// Fallback: native select change (kept for accessibility tools)
 if (branchSelect) {
   branchSelect.addEventListener('change', async () => {
     const id = Number(branchSelect.value);
-    branchSelect.disabled = true;
-    try {
-      await switchBranch(id);
-      // Pages load their data for the active branch, so reload them.
-      window.location.reload();
-    } catch {
-      branchSelect.disabled = false;
-      const current = getSession();
-      if (current) void fillBranches(current.activeBusinessId);
-    }
+    void handleBranchPick(id);
   });
 }
 
