@@ -30,12 +30,12 @@ export interface NavItem {
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'main', label: null },
   { id: 'inventory', label: 'Inventory' },
-  { id: 'sales', label: 'Sales' },
   { id: 'purchases', label: 'Purchases' },
+  { id: 'sales', label: 'Sales' },
   { id: 'orders', label: 'Orders' },
-  { id: 'staffmgmt', label: 'Staff Management' },
   { id: 'finance', label: 'Finance' },
   { id: 'reports', label: 'Reports & Analytics' },
+  { id: 'staffmgmt', label: 'Staff Management' },
 ];
 
 const ALL_ITEMS: NavItem[] = [
