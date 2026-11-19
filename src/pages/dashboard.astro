@@ -16,8 +16,12 @@ const navItems = getNavItemsForRole(defaultRole);
   activeId={meta.id}
   navItems={navItems}
   bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
 >
-  <div class="ov" id="ov-root">
+  <div class="ov-page">
     <section class="ov-hero" aria-label="Welcome">
       <div class="ov-hero-bg" aria-hidden="true"></div>
       <div class="ov-hero-shade" aria-hidden="true"></div>
@@ -65,30 +69,65 @@ const navItems = getNavItemsForRole(defaultRole);
 
       <div class="ov-trio">
         <section class="ov-card">
-          <h3><span class="ov-ico" aria-hidden="true">◎</span> Sales by Branch</h3>
-          <div id="ov-sales-branch"></div>
+          <h3><span class="ov-ico" aria-hidden="true">⬢</span> Stock Alerts <a href="/dashboard/inventory" class="ov-more">View Details →</a></h3>
+          <div id="ov-low"></div>
         </section>
         <section class="ov-card">
-          <h3><span class="ov-ico" aria-hidden="true">◈</span> Top Models</h3>
-          <div id="ov-top-models"></div>
+          <h3><span class="ov-ico" aria-hidden="true">🔧</span> Servicing Follow-ups <a href="/dashboard/sales#followups" class="ov-more">View All →</a></h3>
+          <div id="ov-servicing"></div>
         </section>
         <section class="ov-card">
-          <h3><span class="ov-ico" aria-hidden="true">▣</span> Recent Activity</h3>
+          <h3><span class="ov-ico" aria-hidden="true">◷</span> Recent Activities</h3>
           <div id="ov-activity"></div>
         </section>
       </div>
+
+      <section class="ov-card" id="ov-branches" hidden>
+        <h3>Branch overview <span class="ov-hint">read-only · this month</span></h3>
+        <div class="ov-table-wrap"><table class="ov-table">
+          <thead><tr><th>Branch</th><th>Sales today</th><th>Sales (month)</th><th>Purchases (month)</th><th>Profit (month)</th><th>Owed by customers</th><th>Low stock</th></tr></thead>
+          <tbody id="ov-branches-body"></tbody>
+        </table></div>
+      </section>
     </section>
 
-    <section class="ov-staff" id="ov-staff" hidden>
-      <div class="ov-card">
-        <h3>Staff Dashboard</h3>
-        <p class="muted">Your daily tasks and targets will appear here.</p>
-      </div>
-    </section>
+    <div class="ov-grid" id="ov-legacy">
+      <section class="ov-card" id="ov-mytasks-card">
+        <h3>My tasks <a href="/dashboard/tasks" class="ov-more">Open</a></h3>
+        <div id="ov-mytasks"></div>
+      </section>
+      <section class="ov-card">
+        <h3>Sales, last 14 days <span class="ov-hint">confirmed sales</span></h3>
+        <div id="ov-sales-chart"></div>
+      </section>
+    </div>
   </div>
 
+  <script>
+  import { can, getSession } from '../lib/auth';
+  import type { Dashboard, Sale, Task } from '../lib/types';
+  // Full dashboard logic is loaded from the shared scripts; this keeps the page structure ready.
+  document.addEventListener('DOMContentLoaded', () => {
+    const nowEl = document.getElementById('ov-now');
+    if (nowEl) {
+      const d = new Date();
+      nowEl.textContent = d.toLocaleDateString(undefined, {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      }) + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
+    // Personalize title if session available
+    try {
+      const s = getSession();
+      if (s?.user?.name) {
+        const titleEl = document.getElementById('ov-title');
+        if (titleEl) titleEl.textContent = `Welcome back, ${s.user.name.split(' ')[0]}!`;
+      }
+    } catch {}
+  });
+  </script>
+
   <style>
-  .ov { display: flex; flex-direction: column; gap: 16px; }
+  .ov-page { display: flex; flex-direction: column; gap: 16px; }
   .ov-hero {
     position: relative;
     overflow: hidden;
@@ -181,15 +220,38 @@ const navItems = getNavItemsForRole(defaultRole);
     color: #e8eefc;
     border-color: rgba(255, 255, 255, 0.12);
   }
+  .ov-main { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 12px; }
+  .ov-side { display: flex; flex-direction: column; gap: 12px; }
+  .ov-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 1100px) { .ov-main, .ov-trio { grid-template-columns: 1fr; } }
+  .ov-card h3 { font-size: 0.95rem; }
+  .ov-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .ov-card-head h3 { margin: 0; }
+  .ov-ico { color: var(--accent); }
+  .ov-select { height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--panel-bg); color: var(--text-primary); font-family: inherit; font-size: 0.8rem; font-weight: 600; }
+  .ov-due { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .ov-due:empty { display: none; }
+  @media (max-width: 1100px) { .ov-due { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .ov-due { grid-template-columns: 1fr; } }
+  .ov-due-card { display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 12px; border-radius: 14px; border: 1px solid var(--border); border-left-width: 4px; background: var(--panel-bg); color: inherit; text-decoration: none; position: relative; }
+  .ov-due-card:hover { box-shadow: 0 6px 18px rgba(15, 31, 61, .08); }
+  .ov-due-ico { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; font-size: 1.15rem; }
+  .ov-due-body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .ov-due-body b { font-size: 0.86rem; font-weight: 700; }
+  .ov-due-body strong { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
+  .ov-due-body em { font-style: normal; font-size: 0.74rem; color: var(--text-muted); }
+  .ov-due-view { align-self: flex-end; font-size: 0.74rem; font-weight: 650; color: var(--accent); white-space: nowrap; }
+  .ov-due-card.is-emi { border-left-color: #7c3aed; background: color-mix(in srgb, #7c3aed 6%, var(--panel-bg)); } .is-emi .ov-due-ico { background: rgba(124,58,237,.15); }
+  .ov-due-card.is-pay { border-left-color: #16a34a; background: color-mix(in srgb, #16a34a 6%, var(--panel-bg)); } .is-pay .ov-due-ico { background: rgba(22,163,74,.15); }
+  .ov-due-card.is-recv { border-left-color: #f59e0b; background: color-mix(in srgb, #f59e0b 7%, var(--panel-bg)); } .is-recv .ov-due-ico { background: rgba(245,158,11,.18); }
+  .ov-due-card.is-serv { border-left-color: #ef334e; background: color-mix(in srgb, #ef334e 6%, var(--panel-bg)); } .is-serv .ov-due-ico { background: rgba(239,51,78,.14); }
+  .ov-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+  @media (max-width: 700px) { .ov-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .ov-tile { padding: 12px 12px 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel-bg); min-width: 0; }
+  .ov-more { font-size: 0.78rem; font-weight: 650; color: var(--accent); text-decoration: none; }
+  .ov-more:hover { text-decoration: underline; }
+  .ov-hint { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+  .ov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 800px) { .ov-grid { grid-template-columns: 1fr; } }
   </style>
-
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const nowEl = document.getElementById('ov-now');
-    if (nowEl) {
-      const d = new Date();
-      nowEl.textContent = d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    }
-  });
-  </script>
 </AppLayout>
