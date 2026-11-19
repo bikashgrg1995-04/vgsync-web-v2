@@ -38,20 +38,50 @@ const {
         type="search"
         class="header-search-input"
         id="header-search"
-        placeholder="Search…"
+        placeholder="Search products, invoices, customers… (Ctrl + K)"
         autocomplete="off"
         aria-label="Search"
       />
     </div>
 
     {showBranchSwitcher && (
-      <select
-        class="branch-select"
-        id="branch-select"
-        aria-label="Switch branch"
-        title="Switch active branch"
-      >
-      </select>
+      <div class="branch-switcher" id="branch-switcher">
+        <button
+          type="button"
+          class="branch-trigger"
+          id="branch-trigger"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-label="Switch branch"
+        >
+          <svg class="branch-trigger-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/>
+          </svg>
+          <span class="branch-trigger-label" id="branch-trigger-label">Branch</span>
+          <svg class="branch-trigger-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m6 9 6 6 6-6"/>
+          </svg>
+        </button>
+
+        <div class="branch-dropdown" id="branch-dropdown" role="listbox" hidden>
+          <div class="branch-dropdown-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+            <input
+              type="search"
+              id="branch-search"
+              placeholder="Search branch…"
+              autocomplete="off"
+              aria-label="Search branches"
+            />
+          </div>
+          <ul class="branch-dropdown-list" id="branch-list"></ul>
+        </div>
+
+        <!-- Hidden native select kept for form/compat fallback -->
+        <select class="branch-select" id="branch-select" aria-hidden="true" tabindex="-1" hidden></select>
+      </div>
     )}
 
     <div class="notif-wrap" id="notif-wrap">
