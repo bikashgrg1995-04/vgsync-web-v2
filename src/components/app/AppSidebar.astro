@@ -3,7 +3,7 @@ import { NAV_GROUPS, type NavItem } from '../../lib/navigation';
 
 interface Props {
   items: NavItem[];
-  bottomItems: NavItem[];
+  bottomItems?: NavItem[];
   activeId?: string;
   displayName?: string;
   roleLabel?: string;
@@ -11,8 +11,8 @@ interface Props {
 }
 
 const {
-  items,
-  bottomItems,
+  items = [],
+  bottomItems = [],
   activeId = 'overview',
   displayName = 'User',
   roleLabel = 'Role',
