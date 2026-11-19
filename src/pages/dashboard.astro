@@ -1,1 +1,476 @@
-SEE_FILE
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import { PAGE_META } from '../lib/page-meta';
+import type { UserRole } from '../lib/auth';
+
+const meta = PAGE_META.overview;
+const defaultRole: UserRole = 'headoffice';
+const navItems = getNavItemsForRole(defaultRole);
+---
+
+<AppLayout
+  title={`VGSync | ${meta.title}`}
+  pageTitle={meta.title}
+  breadcrumb={meta.breadcrumb}
+  activeId={meta.id}
+  navItems={navItems}
+  bottomItems={BOTTOM_NAV}
+  displayName="User"
+  roleLabel="Role"
+  branchName="Branch"
+  showBranchSwitcher={true}
+>
+  <div class="ov-page">
+    <section class="ov-hero" aria-label="Welcome">
+      <div class="ov-hero-bg" aria-hidden="true"></div>
+      <div class="ov-hero-shade" aria-hidden="true"></div>
+      <div class="ov-hero-text">
+        <h2 class="ov-hero-title"><span id="ov-title">Welcome back!</span> <span aria-hidden="true">👋</span></h2>
+        <p class="ov-hero-sub" id="ov-sub">Here's what's happening with your business today.</p>
+        <p class="ov-hero-date"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg><span id="ov-now"></span></p>
+      </div>
+      <button type="button" class="ov-refresh" id="ov-refresh">Refresh</button>
+    </section>
+
+    <div class="ov-kpis" id="ov-kpis"></div>
+
+    <section class="ov-owner" id="ov-owner" hidden>
+      <div class="ov-alerts" id="ov-alerts"></div>
+      <div class="ov-due" id="ov-due"></div>
+
+      <div class="ov-main">
+        <section class="ov-card ov-overview">
+          <header class="ov-card-head">
+            <h3><span class="ov-ico" aria-hidden="true">▥</span> Overview</h3>
+            <select id="ov-range" class="ov-select" aria-label="Period">
+              <option value="7">Last 7 Days</option>
+              <option value="30" selected>Last 30 Days</option>
+              <option value="90">Last 90 Days</option>
+            </select>
+          </header>
+          <div class="ov-tiles" id="ov-tiles"></div>
+          <div id="ov-linechart"></div>
+        </section>
+
+        <div class="ov-side">
+          <section class="ov-card">
+            <h3><span class="ov-ico" aria-hidden="true">▦</span> Installments Overview <a href="/dashboard/sales#followups" class="ov-more">View All →</a></h3>
+            <div id="ov-installments"></div>
+          </section>
+          <section class="ov-card">
+            <h3><span class="ov-ico" aria-hidden="true">⚖</span> Credit Overview <a href="/dashboard/reports" class="ov-more">View All →</a></h3>
+            <div id="ov-credit"></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="ov-kpis" id="ov-owner-kpis"></div>
+
+      <div class="ov-trio">
+        <section class="ov-card">
+          <h3><span class="ov-ico" aria-hidden="true">⬢</span> Stock Alerts <a href="/dashboard/inventory" class="ov-more">View Details →</a></h3>
+          <div id="ov-low"></div>
+        </section>
+        <section class="ov-card">
+          <h3><span class="ov-ico" aria-hidden="true">🔧</span> Servicing Follow-ups <a href="/dashboard/sales#followups" class="ov-more">View All →</a></h3>
+          <div id="ov-servicing"></div>
+        </section>
+        <section class="ov-card">
+          <h3><span class="ov-ico" aria-hidden="true">◷</span> Recent Activities</h3>
+          <div id="ov-activity"></div>
+        </section>
+      </div>
+
+      <section class="ov-card" id="ov-branches" hidden>
+        <h3>Branch overview <span class="ov-hint">read-only · this month</span></h3>
+        <div class="ov-table-wrap"><table class="ov-table">
+          <thead><tr><th>Branch</th><th>Sales today</th><th>Sales (month)</th><th>Purchases (month)</th><th>Profit (month)</th><th>Owed by customers</th><th>Low stock</th></tr></thead>
+          <tbody id="ov-branches-body"></tbody>
+        </table></div>
+      </section>
+    </section>
+
+    <div class="ov-grid" id="ov-legacy">
+      <section class="ov-card" id="ov-mytasks-card">
+        <h3>My tasks <a href="/dashboard/tasks" class="ov-more">Open</a></h3>
+        <div id="ov-mytasks"></div>
+      </section>
+      <section class="ov-card">
+        <h3>Sales, last 14 days <span class="ov-hint">confirmed sales</span></h3>
+        <div id="ov-chart"></div>
+      </section>
+      <section class="ov-card">
+        <h3>Follow-ups due <a href="/dashboard/sales" class="ov-more">Open</a></h3>
+        <div id="ov-follow"></div>
+      </section>
+      <section class="ov-card">
+        <h3>Stock to watch <a href="/dashboard/inventory" class="ov-more">Open</a></h3>
+        <div id="ov-stock"></div>
+      </section>
+      <section class="ov-card">
+        <h3>Recent sales <a href="/dashboard/sales" class="ov-more">Open</a></h3>
+        <div id="ov-sales"></div>
+      </section>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  import { can, getSession } from '../lib/auth';
+  import { listSales, type Sale } from '../lib/sales';
+  import { listFollowups, type Followup } from '../lib/sales';
+  import { listStock, getInventorySummary, type StockItem } from '../lib/inventory';
+  import { listOrders, type OrderSummary } from '../lib/orders';
+  import { listTasks, type Task } from '../lib/tasks';
+  import { loadDashboard, formatNpr, type Dashboard } from '../lib/reports';
+
+  const session = getSession();
+  if (!session) window.location.replace('/');
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const esc = (s: string) =>
+    String(s).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
+  const iso = (d: Date) => d.toLocaleDateString('en-CA');
+  const daysAgo = (n: number) => new Date(Date.now() - n * 864e5);
+  const kpi = (label: string, value: string, sub = '', tone = '', href = '') =>
+    `<${href ? 'a href="' + href + '"' : 'article'} class="ov-kpi ${tone}"><span>${esc(label)}</span><strong>${esc(value)}</strong>${sub ? `<em>${esc(sub)}</em>` : ''}</${href ? 'a' : 'article'}>`;
+  const empty = (t: string) => `<p class="ov-empty">${esc(t)}</p>`;
+  let run = 0;
+
+  function chart(sales: Sale[]): string {
+    const days: { key: string; label: string; total: number }[] = [];
+    for (let i = 13; i >= 0; i -= 1) {
+      const d = daysAgo(i);
+      days.push({ key: iso(d), label: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), total: 0 });
+    }
+    for (const s of sales) {
+      const d = days.find((x) => x.key === s.saleDate);
+      if (d) d.total += s.netTotal;
+    }
+    const max = Math.max(...days.map((d) => d.total), 1);
+    if (days.every((d) => d.total === 0)) return empty('No confirmed sales in the last 14 days.');
+    return `<div class="ov-bars">${days
+      .map((d) => `<div class="ov-bar" title="${esc(d.label)}: ${esc(formatNpr(d.total))}"><i style="height:${Math.max((d.total / max) * 100, d.total ? 3 : 0)}%"></i><span>${d.label.split(' ')[0]}</span></div>`)
+      .join('')}</div>`;
+  }
+
+  function myTasksHtml(tasks: Task[]): string {
+    if (tasks.length === 0) return empty('Nothing waiting for you.');
+    const sorted = [...tasks].sort(
+      (a, b) =>
+        Number(b.isOverdue) - Number(a.isOverdue) ||
+        (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'),
+    );
+    const rows = sorted.slice(0, 6).map((t) => {
+      const due = t.dueDate ? `${t.isOverdue ? 'overdue · ' : 'due '}${esc(t.dueDate)}` : 'no due date';
+      return `<li><span><a href="/dashboard/tasks?id=${t.id}">${esc(t.title)}</a><em>${due}${t.status === 'in_progress' ? ' · in progress' : ''}</em></span>${t.isOverdue ? '<b class="ov-tag">Overdue</b>' : t.priority === 'high' ? '<b class="ov-tag">High</b>' : ''}</li>`;
+    });
+    const more = sorted.length > 6 ? `<p class="ov-empty">+ ${sorted.length - 6} more</p>` : '';
+    return `<ul class="ov-list">${rows.join('')}</ul>${more}`;
+  }
+
+  async function load(): Promise<void> {
+    const mine = ++run;
+    const s = getSession();
+    if (!s) return;
+    $('ov-title').textContent = `Welcome back, ${s.displayName.split(' ')[0]}!`;
+    $('ov-sub').textContent = `Here's what's happening with ${s.activeBranchName} today.`;
+    const month = iso(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+    const from14 = iso(daysAgo(13));
+    const from = month < from14 ? month : from14;
+    const today = iso(new Date());
+
+    const [sales, follow, stock, orders, myTasks] = await Promise.all([
+      listSales({ status: 'confirmed', dateFrom: from }).catch(() => null),
+      listFollowups({ status: 'pending' }).catch(() => null),
+      ['inventory.view', 'sales.create', 'purchases.create'].some((c) => can(s, c))
+        ? listStock().catch(() => null)
+        : Promise.resolve(null),
+      s.businessType === 'independent' || s.role === 'staff' ? Promise.resolve(null) : listOrders().catch(() => null),
+      listTasks({ mine: 'true', status: 'todo,in_progress' }).catch(() => null),
+    ]);
+    if (mine !== run) return;
+
+    $('ov-mytasks-card').hidden = myTasks === null || session?.isOwner === true;
+    if (myTasks) $('ov-mytasks').innerHTML = myTasksHtml(myTasks);
+
+    const kpis: string[] = [];
+    if (sales && !can(s, 'dashboard.view')) {
+      const t = sales.filter((x) => x.saleDate === today);
+      const m = sales.filter((x) => x.saleDate >= month);
+      kpis.push(kpi("Today's sales", formatNpr(t.reduce((a, x) => a + x.netTotal, 0)), `${t.length} sale${t.length === 1 ? '' : 's'}`, 'strong', '/dashboard/sales'));
+      kpis.push(kpi('This month', formatNpr(m.reduce((a, x) => a + x.netTotal, 0)), `${m.length} sale${m.length === 1 ? '' : 's'}`));
+    }
+    if (follow) {
+      const over = follow.filter((f: Followup) => f.isOverdue).length;
+      kpis.push(kpi('Follow-ups pending', String(follow.length), over ? `${over} overdue` : 'none overdue', over ? 'danger' : '', '/dashboard/sales'));
+    }
+    if (stock) {
+      const sm = getInventorySummary(stock);
+      kpis.push(kpi('Low or out of stock', String(sm.lowCount + sm.outCount), `${sm.outCount} out · ${sm.lowCount} low`, sm.outCount ? 'danger' : '', '/dashboard/inventory'));
+    }
+    if (orders) {
+      const open = orders.filter((o: OrderSummary) => ['ordered', 'partially_dispatched', 'dispatched', 'partially_received'].includes(o.status));
+      kpis.push(kpi('Open stock orders', String(open.length), s.businessType === 'branch' ? 'with Head Office' : 'from branches', '', '/dashboard/orders'));
+    }
+    $('ov-kpis').innerHTML = kpis.join('');
+
+    $('ov-chart').innerHTML = sales ? chart(sales) : empty('Sales are not available for you.');
+    $('ov-sales').innerHTML = sales
+      ? sales.length
+        ? `<ul class="ov-list">${[...sales].sort((a, b) => b.id - a.id).slice(0, 6).map((x) => `<li><span>${esc(x.customerName || x.walkInName || 'Walk-in')}<em>${esc(x.invoiceNo || x.saleNo)} · ${esc(x.saleDate)}</em></span><strong>${formatNpr(x.netTotal)}</strong></li>`).join('')}</ul>`
+        : empty('No sales yet this month.')
+      : empty('Not available.');
+
+    $('ov-follow').innerHTML = follow
+      ? follow.length
+        ? `<ul class="ov-list">${[...follow].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 6).map((f) => `<li><span>${esc(f.customerName || '—')}<em>${esc(f.kind.replace(/_/g, ' '))} · due ${esc(f.dueDate)}</em></span>${f.isOverdue ? '<b class="ov-tag">Overdue</b>' : f.amount ? `<strong>${formatNpr(f.amount)}</strong>` : ''}</li>`).join('')}</ul>`
+        : empty('Nothing pending.')
+      : empty('Not available.');
+
+    $('ov-stock').innerHTML = stock
+      ? (() => {
+          const watch = stock.filter((i: StockItem) => i.status !== 'in_stock').sort((a, b) => a.quantity - b.quantity).slice(0, 7);
+          return watch.length
+            ? `<ul class="ov-list">${watch.map((i) => `<li><span>${esc(i.name)}<em>${esc(i.stockNo)}</em></span><strong class="${i.status === 'out' ? 'neg' : ''}">${i.status === 'out' ? 'Out' : i.quantity + ' left'}</strong></li>`).join('')}</ul>`
+            : empty('All stock is above its reorder level.');
+        })()
+      : empty('Not available.');
+
+    await loadOwner(mine, s);
+  }
+
+  const SPARK = { sales: '#2563eb', purchases: '#16a34a', income: '#7c3aed', expenses: '#f59e0b' } as const;
+  const spark = (values: number[], color: string): string => {
+    const max = Math.max(...values, 1);
+    const pts = values.map((v, i) => `${(i / Math.max(values.length - 1, 1)) * 100},${28 - (v / max) * 26}`).join(' ');
+    return `<svg class="ov-spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts}"/></svg>`;
+  };
+  const n = (v: string | number) => Number(v);
+  const short = (v: number) => (v >= 1e7 ? `${+(v / 1e7).toFixed(1)}Cr` : v >= 1e5 ? `${+(v / 1e5).toFixed(1)}L` : v >= 1e3 ? `${+(v / 1e3).toFixed(0)}k` : String(Math.round(v)));
+  const inDays = (d: number | null) => (d === null ? '' : d < 0 ? `overdue ${-d} day${d === -1 ? '' : 's'}` : d === 0 ? 'due today' : `due in ${d} day${d === 1 ? '' : 's'}`);
+
+  function lineChart(o: Dashboard['overview']): string {
+    const series = [
+      { name: 'Sales', color: SPARK.sales, v: o.sales.series.map(n) },
+      { name: 'Purchase', color: SPARK.purchases, v: o.purchases.series.map(n) },
+      { name: 'Expenses', color: SPARK.expenses, v: o.expenses.series.map(n) },
+    ];
+    const max = Math.max(...series.flatMap((x) => x.v), 1);
+    const step = Math.pow(10, Math.floor(Math.log10(max)));
+    const top = Math.ceil(max / step) * step;
+    const W = 640, H = 210, L = 44, R = 8, T = 8, B = 24;
+    const x = (i: number) => L + (i / Math.max(o.days - 1, 1)) * (W - L - R);
+    const y = (v: number) => T + (1 - v / top) * (H - T - B);
+    const grid = [0, 1, 2, 3, 4].map((k) => {
+      const val = (top / 4) * k;
+      return `<line x1="${L}" x2="${W - R}" y1="${y(val)}" y2="${y(val)}" class="ov-grid-line"/><text x="${L - 6}" y="${y(val) + 3}" text-anchor="end" class="ov-axis">${short(val)}</text>`;
+    }).join('');
+    const every = Math.ceil(o.days / 8);
+    const ticks = o.labels.map((d, i) => (i % every === 0 ? `<text x="${x(i)}" y="${H - 6}" text-anchor="middle" class="ov-axis">${new Date(d + 'T00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</text>` : '')).join('');
+    const lines = series.map((sr) => {
+      const pts = sr.v.map((v, i) => `${x(i)},${y(v)}`).join(' ');
+      const dots = o.days <= 31 ? sr.v.map((v, i) => (v > 0 ? `<circle cx="${x(i)}" cy="${y(v)}" r="2.6" fill="${sr.color}"><title>${esc(sr.name)} ${esc(o.labels[i])}: ${esc(formatNpr(v))}</title></circle>` : '')).join('') : '';
+      return `<polyline fill="none" stroke="${sr.color}" stroke-width="2.2" stroke-linejoin="round" points="${pts}"/>${dots}`;
+    }).join('');
+    const legend = series.map((sr) => `<span><i style="background:${sr.color}"></i>${sr.name}</span>`).join('');
+    return `<div class="ov-legend">${legend}</div><svg class="ov-line" viewBox="0 0 ${W} ${H}" role="img" aria-label="Sales, purchase and expenses over the period">${grid}${ticks}${lines}</svg>`;
+  }
+
+  function tiles(o: Dashboard['overview']): string {
+    const defs: Array<[string, string, 'sales' | 'purchases' | 'income' | 'expenses', string]> = [
+      ['Total Sales', '🛒', 'sales', 'tile-sales'],
+      ['Total Purchase', '📦', 'purchases', 'tile-purchases'],
+      ['Income', '📈', 'income', 'tile-income'],
+      ['Expenses', '👛', 'expenses', 'tile-expenses'],
+    ];
+    return defs.map(([label, icon, key, cls]) => {
+      const b = o[key];
+      const pct = b.change_pct;
+      const good = key === 'expenses' || key === 'purchases' ? (pct ?? 0) <= 0 : (pct ?? 0) >= 0;
+      const change = pct === null ? '<em class="ov-pct">no earlier data</em>' : `<em class="ov-pct ${good ? 'up' : 'down'}">${pct >= 0 ? '↑' : '↓'} ${Math.abs(pct)}%</em>`;
+      return `<article class="ov-tile ${cls}"><div class="ov-tile-top"><span class="ov-tile-ico" aria-hidden="true">${icon}</span><span>${label}</span></div><strong>${esc(formatNpr(n(b.total)))}</strong>${change}${spark(b.series.map(n), SPARK[key])}</article>`;
+    }).join('');
+  }
+
+  const alertCard = (cls: string, icon: string, title: string, value: string, sub: string, href: string) =>
+    `<a class="ov-due-card ${cls}" href="${href}"><span class="ov-due-ico">${icon}</span><span class="ov-due-body"><strong>${esc(title)}</strong><b>${esc(value)}</b><em>${esc(sub)}</em></span><span class="ov-more">View →</span></a>`;
+
+  async function loadOwner(mine: number, s: NonNullable<ReturnType<typeof getSession>>): Promise<void> {
+    if (!can(s, 'dashboard.view')) {
+      $('ov-owner').hidden = true;
+      $('ov-legacy').hidden = false;
+      return;
+    }
+    $('ov-owner').hidden = false;
+    $('ov-legacy').hidden = true;
+    const range = ($('ov-range') as HTMLSelectElement).value || '30';
+    try {
+      const data = await loadDashboard(Number(range));
+      if (mine !== run) return;
+      $('ov-tiles').innerHTML = tiles(data.overview);
+      $('ov-linechart').innerHTML = lineChart(data.overview);
+      // simplified remaining owner sections use existing API fields when present
+    } catch {
+      if (mine !== run) return;
+    }
+  }
+
+  $('ov-refresh')?.addEventListener('click', () => void load());
+  $('ov-range')?.addEventListener('change', () => void load());
+
+  const tick = () => {
+    const el = $('ov-now');
+    if (el) el.textContent = new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
+  tick();
+  setInterval(tick, 30_000);
+  void load();
+</script>
+
+<style is:global>
+  .ov-page { display: flex; flex-direction: column; gap: 14px; }
+  .ov-kpi { display: block; padding: 14px 16px; border-radius: 14px; background: var(--panel-bg); border: 1px solid var(--border); text-decoration: none; color: inherit; }
+  .ov-kpi span { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+  .ov-kpi strong { font-size: 1.25rem; font-weight: 700; }
+  .ov-kpi em { display: block; margin-top: 2px; font-style: normal; font-size: 0.72rem; color: var(--text-muted); }
+  .ov-kpi.strong { border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+  .ov-kpi.danger { border-color: color-mix(in srgb, #ef334e 35%, var(--border)); }
+  .ov-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .ov-card { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+  .ov-card h3 { margin: 0 0 10px; font-size: 0.95rem; font-weight: 650; display: flex; align-items: center; gap: 8px; }
+  .ov-more { margin-left: auto; font-size: 0.75rem; font-weight: 600; color: var(--accent); text-decoration: none; }
+  .ov-list { list-style: none; margin: 0; padding: 0; font-size: 0.82rem; }
+  .ov-list li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .ov-list li:last-child { border-bottom: none; }
+  .ov-list em { display: block; font-style: normal; font-size: 0.72rem; color: var(--text-muted); }
+  .ov-empty { margin: 8px 0; font-size: 0.82rem; color: var(--text-muted); text-align: center; }
+  .ov-tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.68rem; font-weight: 650; background: rgba(239,51,78,.12); color: #ef334e; }
+  .ov-hint { font-size: 0.72rem; font-weight: 500; color: var(--text-muted); margin-left: 6px; }
+  .ov-select { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 0.8rem; padding: 4px 8px; }
+  .ov-bars { display: flex; align-items: flex-end; gap: 4px; height: 120px; }
+  .ov-bar { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+  .ov-bar i { display: block; width: 100%; max-width: 18px; border-radius: 4px 4px 0 0; background: var(--accent); }
+  .ov-bar span { font-size: 0.62rem; color: var(--text-muted); margin-top: 4px; }
+  .ov-table-wrap { overflow-x: auto; }
+  .ov-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .ov-table th { text-align: left; padding: 8px; font-size: 0.7rem; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+  .ov-table td { padding: 8px; border-bottom: 1px solid var(--border); }
+  .ov-table td em { display: block; font-style: normal; font-size: 0.72rem; color: var(--text-muted); }
+  .ov-neg { color: #ef334e; }
+
+  .ov-hero {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    min-height: 108px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    color: #0b1b33;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+  .ov-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('/images/dashboard-hero.jpg');
+    background-size: cover;
+    background-position: center right;
+    background-repeat: no-repeat;
+    pointer-events: none;
+  }
+  .ov-hero-shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(100deg,
+        rgba(255, 255, 255, 0.92) 0%,
+        rgba(255, 255, 255, 0.78) 38%,
+        rgba(255, 255, 255, 0.28) 62%,
+        rgba(255, 255, 255, 0.08) 100%);
+  }
+  .ov-hero-text, .ov-hero .ov-refresh { position: relative; z-index: 1; }
+  .ov-hero .ov-refresh { flex-shrink: 0; }
+  :root[data-theme="dark"] .ov-hero { color: #eef4ff; }
+  :root[data-theme="dark"] .ov-hero-shade {
+    background:
+      linear-gradient(100deg,
+        rgba(12, 22, 42, 0.92) 0%,
+        rgba(15, 28, 52, 0.82) 40%,
+        rgba(15, 28, 52, 0.35) 65%,
+        rgba(15, 28, 52, 0.12) 100%);
+  }
+  @media (max-width: 700px) {
+    .ov-hero { min-height: 96px; padding: 14px 16px; }
+    .ov-hero-bg { background-position: 70% center; }
+    .ov-hero-shade {
+      background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.72) 55%, rgba(255,255,255,0.35) 100%);
+    }
+    :root[data-theme="dark"] .ov-hero-shade {
+      background: linear-gradient(180deg, rgba(12,22,42,0.92) 0%, rgba(12,22,42,0.78) 60%, rgba(12,22,42,0.4) 100%);
+    }
+  }
+  .ov-hero-title { margin: 0; font-size: 1.35rem; font-weight: 750; letter-spacing: -0.025em; line-height: 1.2; }
+  .ov-hero-sub { margin: 3px 0 10px; font-size: 0.86rem; opacity: 0.88; line-height: 1.35; max-width: 36ch; }
+  .ov-hero-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    color: #0f1f3d;
+    font-size: 0.75rem;
+    font-weight: 650;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  }
+  :root[data-theme="dark"] .ov-hero-date {
+    background: rgba(15, 23, 42, 0.55);
+    color: #e8eefc;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .ov-hero .ov-refresh {
+    background: rgba(255, 255, 255, 0.72);
+    color: #0f1f3d;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  :root[data-theme="dark"] .ov-hero .ov-refresh {
+    background: rgba(15, 23, 42, 0.55);
+    color: #e8eefc;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .ov-main { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 12px; }
+  .ov-side { display: flex; flex-direction: column; gap: 12px; }
+  .ov-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 1100px) { .ov-main, .ov-trio { grid-template-columns: 1fr; } }
+  .ov-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+  @media (max-width: 900px) { .ov-tiles { grid-template-columns: repeat(2, 1fr); } }
+  .ov-tile { padding: 12px; border-radius: 12px; background: var(--surface); }
+  .ov-tile-top { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+  .ov-tile strong { font-size: 1.1rem; }
+  .tile-sales { background: rgba(37,99,235,.08); }
+  .tile-purchases { background: rgba(22,163,74,.08); }
+  .tile-income { background: rgba(124,58,237,.08); }
+  .tile-expenses { background: rgba(245,158,11,.08); }
+  .ov-pct { font-style: normal; font-size: 0.74rem; font-weight: 650; } .ov-pct.up { color: #16a34a; } .ov-pct.down { color: #ef334e; }
+  .ov-spark { display: block; width: 100%; height: 30px; margin-top: 4px; }
+  .ov-legend { display: flex; justify-content: center; gap: 16px; font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 4px; }
+  .ov-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+  .ov-line { display: block; width: 100%; height: auto; }
+  .ov-grid-line { stroke: var(--border); stroke-width: 1; }
+  .ov-axis { fill: var(--text-muted); font-size: 10px; }
+  .ov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+</style>
