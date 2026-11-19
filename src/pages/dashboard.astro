@@ -103,30 +103,175 @@ const navItems = getNavItemsForRole(defaultRole);
     </div>
   </div>
 
-  <script>
+<script>
   import { can, getSession } from '../lib/auth';
-  import type { Dashboard, Sale, Task } from '../lib/types';
-  // Full dashboard logic is loaded from the shared scripts; this keeps the page structure ready.
-  document.addEventListener('DOMContentLoaded', () => {
-    const nowEl = document.getElementById('ov-now');
+  import { listSales, type Sale } from '../lib/sales';
+  import { listFollowups, type Followup } from '../lib/sales';
+  import { listStock, getInventorySummary, type StockItem } from '../lib/inventory';
+  import { listOrders, type OrderSummary } from '../lib/orders';
+  import { listTasks, type Task } from '../lib/tasks';
+  import { loadDashboard, formatNpr, type Dashboard } from '../lib/reports';
+
+  const session = getSession();
+  if (!session) window.location.replace('/');
+
+  const $ = (id: string) => document.getElementById(id)!;
+  const esc = (s: string) =>
+    String(s).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
+  const iso = (d: Date) => d.toLocaleDateString('en-CA');
+  const daysAgo = (n: number) => new Date(Date.now() - n * 864e5);
+  const kpi = (label: string, value: string, sub = '', tone = '', href = '') =>
+    `<${href ? 'a href="' + href + '"' : 'article'} class="ov-kpi ${tone}"><span>${esc(label)}</span><strong>${esc(value)}</strong>${sub ? `<em>${esc(sub)}</em>` : ''}</${href ? 'a' : 'article'}>`;
+  const empty = (t: string) => `<p class="ov-empty">${esc(t)}</p>`;
+  let run = 0;
+
+  function chart(sales: Sale[]): string {
+    const days: { key: string; label: string; total: number }[] = [];
+    for (let i = 13; i >= 0; i -= 1) {
+      const d = daysAgo(i);
+      days.push({ key: iso(d), label: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }), total: 0 });
+    }
+    for (const s of sales) {
+      const d = days.find((x) => x.key === s.saleDate);
+      if (d) d.total += s.netTotal;
+    }
+    const max = Math.max(...days.map((d) => d.total), 1);
+    if (days.every((d) => d.total === 0)) return empty('No confirmed sales in the last 14 days.');
+    return `<div class="ov-bars">${days
+      .map((d) => `<div class="ov-bar" title="${esc(d.label)}: ${esc(formatNpr(d.total))}"><i style="height:${Math.max((d.total / max) * 100, d.total ? 3 : 0)}%"></i><span>${d.label.split(' ')[0]}</span></div>`)
+      .join('')}</div>`;
+  }
+
+  function myTasksHtml(tasks: Task[]): string {
+    if (tasks.length === 0) return empty('Nothing waiting for you.');
+    const sorted = [...tasks].sort(
+      (a, b) =>
+        Number(b.isOverdue) - Number(a.isOverdue) ||
+        (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'),
+    );
+    const rows = sorted.slice(0, 6).map((t) => {
+      const due = t.dueDate ? `${t.isOverdue ? 'overdue · ' : 'due '}${esc(t.dueDate)}` : 'no due date';
+      return `<li><span><a href="/dashboard/tasks?id=${t.id}">${esc(t.title)}</a><em>${due}${t.status === 'in_progress' ? ' · in progress' : ''}</em></span>${t.isOverdue ? '<b class="ov-tag">Overdue</b>' : t.priority === 'high' ? '<b class="ov-tag">High</b>' : ''}</li>`;
+    });
+    const more = sorted.length > 6 ? `<p class="ov-empty">+ ${sorted.length - 6} more</p>` : '';
+    return `<ul class="ov-list">${rows.join('')}</ul>${more}`;
+  }
+
+  async function load(): Promise<void> {
+    const mine = ++run;
+    const s = getSession();
+    if (!s) return;
+    $('ov-title').textContent = `Welcome back, ${s.displayName.split(' ')[0]}!`;
+    $('ov-sub').textContent = `Here's what's happening with ${s.activeBranchName} today.`;
+    const nowEl = $('ov-now');
     if (nowEl) {
       const d = new Date();
-      nowEl.textContent = d.toLocaleDateString(undefined, {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-      }) + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      nowEl.textContent = d.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     }
-    // Personalize title if session available
-    try {
-      const s = getSession();
-      if (s?.user?.name) {
-        const titleEl = document.getElementById('ov-title');
-        if (titleEl) titleEl.textContent = `Welcome back, ${s.user.name.split(' ')[0]}!`;
-      }
-    } catch {}
-  });
-  </script>
 
-  <style>
+    // Show owner section for head office / owners
+    const isOwner = can(s, 'dashboard.view') || can(s, 'branches.view');
+    $('ov-owner').hidden = !isOwner;
+    $('ov-legacy').hidden = isOwner;
+
+    if (isOwner) {
+      await loadOwner(mine, s);
+    } else {
+      // Staff view - basic KPIs and tasks
+      try {
+        const tasks = await listTasks({ assignedToMe: true, status: 'open' });
+        if (mine !== run) return;
+        $('ov-mytasks').innerHTML = myTasksHtml(tasks);
+      } catch {
+        $('ov-mytasks').innerHTML = empty('Could not load tasks.');
+      }
+    }
+  }
+
+  function dueCard(cls: string, icon: string, title: string, value: string, sub: string, href: string) {
+    return `<a class="ov-due-card ${cls}" href="${href}"><span class="ov-due-ico" aria-hidden="true">${icon}</span><span class="ov-due-body"><b>${esc(title)}</b><strong>${esc(value)}</strong><em>${esc(sub)}</em></span><span class="ov-due-view">View →</span></a>`;
+  }
+
+  async function loadOwner(mine: number, s: NonNullable<ReturnType<typeof getSession>>): Promise<void> {
+    const full = can(s, 'dashboard.view');
+    try {
+      const data = await loadDashboard({ range: Number(($('ov-range') as HTMLSelectElement).value) || 30 });
+      if (mine !== run) return;
+
+      // Due cards
+      const dueHtml = [
+        dueCard('is-emi', '📅', 'Installment Due Soon', data.due?.installments?.count ? `${data.due.installments.count} bike sale installments` : 'None', data.due?.installments?.hint || 'are due within 3 days', '/dashboard/sales#followups'),
+        dueCard('is-pay', '💳', 'Purchase Credit Due', data.due?.purchaseCredit ? formatNpr(data.due.purchaseCredit.amount) : 'Rs. 0', data.due?.purchaseCredit?.hint || 'due soon', '/dashboard/reports'),
+        dueCard('is-recv', '💰', 'Sales Credit Due', data.due?.salesCredit ? formatNpr(data.due.salesCredit.amount) : 'Rs. 0', data.due?.salesCredit?.hint || 'due soon', '/dashboard/reports'),
+        dueCard('is-serv', '🔧', 'Servicing Follow-ups', data.due?.servicing?.count ? `${data.due.servicing.count} customers` : 'None', data.due?.servicing?.hint || 'need follow-up', '/dashboard/sales#followups'),
+      ].join('');
+      $('ov-due').innerHTML = dueHtml;
+
+      // Overview tiles + chart
+      if (data.overview) {
+        $('ov-tiles').innerHTML = tiles(data.overview);
+        $('ov-linechart').innerHTML = lineChart(data.overview);
+      }
+
+      // Installments & Credit side panels
+      if (data.installments) {
+        $('ov-installments').innerHTML = data.installments.map((i: any) =>
+          `<div class="ov-row"><span><b>${esc(i.ref)}</b><em>Installment · ${i.paid} of ${i.total} paid</em></span><span class="ov-badge">${esc(i.dueLabel)}</span></div>`
+        ).join('') || empty('No upcoming installments');
+      }
+      if (data.credit) {
+        $('ov-credit').innerHTML = `
+          <div class="ov-row"><span>Purchase Credit (To Give)</span><strong>${formatNpr(data.credit.purchase || 0)}</strong></div>
+          <div class="ov-row"><span>Sales Credit (To Receive)</span><strong>${formatNpr(data.credit.sales || 0)}</strong></div>`;
+      }
+
+      // Stock alerts
+      if (data.lowStock) {
+        $('ov-low').innerHTML = data.lowStock.map((item: any) =>
+          `<div class="ov-row"><span>${esc(item.name)}</span><span>Stock: ${item.qty} <b class="ov-tag">Low Stock</b></span></div>`
+        ).join('') || empty('All good');
+      }
+
+      // Servicing
+      if (data.servicing) {
+        $('ov-servicing').innerHTML = data.servicing.map((f: any) =>
+          `<div class="ov-row"><span><b>${esc(f.customer)}</b><em>${esc(f.service)}</em></span><button class="ov-btn">Contact</button></div>`
+        ).join('') || empty('No follow-ups');
+      }
+
+      // Recent activity
+      if (data.activity) {
+        $('ov-activity').innerHTML = `<ul class="ov-timeline">${data.activity.map((a: any) =>
+          `<li class="k-${a.type}"><span>${esc(a.text)}</span><em>${esc(a.when)}</em></li>`
+        ).join('')}</ul>`;
+      }
+    } catch (err) {
+      console.error(err);
+      $('ov-due').innerHTML = empty('Could not load dashboard data.');
+    }
+  }
+
+  function tiles(o: Dashboard['overview']): string {
+    if (!o) return '';
+    return [
+      `<div class="ov-tile"><span>Total Sales</span><strong>${formatNpr(o.sales || 0)}</strong><em>↑ ${o.salesPct || 0}%</em></div>`,
+      `<div class="ov-tile"><span>Total Purchase</span><strong>${formatNpr(o.purchase || 0)}</strong><em>↑ ${o.purchasePct || 0}%</em></div>`,
+      `<div class="ov-tile"><span>Income</span><strong>${formatNpr(o.income || 0)}</strong><em>↑ ${o.incomePct || 0}%</em></div>`,
+      `<div class="ov-tile"><span>Expenses</span><strong>${formatNpr(o.expenses || 0)}</strong><em>↑ ${o.expensesPct || 0}%</em></div>`,
+    ].join('');
+  }
+
+  function lineChart(o: Dashboard['overview']): string {
+    // Simple placeholder chart area - real chart can be enhanced later
+    return `<div class="ov-chart-placeholder" style="height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.85rem;">Sales / Purchase / Expenses trend</div>`;
+  }
+
+  $('ov-refresh')?.addEventListener('click', () => load());
+  $('ov-range')?.addEventListener('change', () => load());
+  load();
+</script>
+
+<style>
   .ov-page { display: flex; flex-direction: column; gap: 16px; }
   .ov-hero {
     position: relative;
@@ -248,10 +393,23 @@ const navItems = getNavItemsForRole(defaultRole);
   .ov-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
   @media (max-width: 700px) { .ov-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .ov-tile { padding: 12px 12px 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel-bg); min-width: 0; }
+  .ov-tile span { display: block; font-size: 0.78rem; color: var(--text-muted); }
+  .ov-tile strong { display: block; font-size: 1.15rem; font-weight: 750; margin-top: 4px; }
+  .ov-tile em { font-style: normal; font-size: 0.75rem; color: #16a34a; }
   .ov-more { font-size: 0.78rem; font-weight: 650; color: var(--accent); text-decoration: none; }
   .ov-more:hover { text-decoration: underline; }
   .ov-hint { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
   .ov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 800px) { .ov-grid { grid-template-columns: 1fr; } }
-  </style>
+  .ov-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.86rem; }
+  .ov-row:last-child { border-bottom: 0; }
+  .ov-badge { font-size: 0.72rem; font-weight: 650; padding: 3px 8px; border-radius: 999px; background: #fef2f2; color: #b91c1c; }
+  .ov-tag { font-size: 0.7rem; font-weight: 650; padding: 2px 7px; border-radius: 6px; background: #fef2f2; color: #b91c1c; }
+  .ov-btn { font-size: 0.75rem; font-weight: 650; padding: 5px 10px; border-radius: 8px; border: 0; background: var(--accent); color: #fff; cursor: pointer; }
+  .ov-empty { color: var(--text-muted); font-size: 0.85rem; margin: 8px 0; }
+  .ov-timeline { list-style: none; margin: 0; padding: 0; }
+  .ov-timeline li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0 8px 14px; border-left: 2px solid var(--border); position: relative; font-size: 0.84rem; }
+  .ov-timeline li::before { content: ''; position: absolute; left: -5px; top: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .ov-timeline em { font-style: normal; color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; }
+</style>
 </AppLayout>
