@@ -1,10 +1,10 @@
-import { ApiError } from "../lib/api";
+import { ApiError } from "../../lib/api";
 import {
   createProduct,
   updateProduct,
   MAX_IMAGE_BYTES,
   type StockItem,
-} from "../lib/inventory";
+} from "../../lib/inventory";
 
 /**
  * Add / edit product dialog shared by the inventory list and detail pages.

@@ -1,0 +1,24 @@
+.tk-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tk-tab { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 0.8rem; cursor: pointer; }
+.tk-tab.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tk-pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.7rem; font-weight: 650; background: var(--surface); }
+.tk-pill.todo { background: color-mix(in srgb, #94a3b8 22%, transparent); }
+.tk-pill.in_progress { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.tk-pill.done { background: color-mix(in srgb, #22c55e 24%, transparent); }
+.tk-pill.cancelled { background: color-mix(in srgb, #ef4444 18%, transparent); }
+.tk-prio-high { color: #ef4444; font-weight: 700; font-size: 0.7rem; margin-left: 6px; }
+.tk-late { color: #ef4444; font-weight: 650; }
+.tk-row { cursor: pointer; }
+.tk-row:hover { background: var(--surface); }
+.tk-sub { display: block; font-size: 0.72rem; color: var(--text-muted); }
+.td-desc { white-space: pre-wrap; font-size: 0.85rem; margin: 0 0 10px; }
+.td-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.td-h { font-size: 0.85rem; margin: 14px 0 6px; }
+.td-events { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+.td-event { font-size: 0.8rem; }
+.td-event small { display: block; color: var(--text-muted); font-size: 0.7rem; }
+.td-files { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 0.82rem; }
+.td-files li { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.td-comment { display: flex; gap: 8px; margin-top: 12px; }
+.td-comment input, #tf-desc { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 0.85rem; }
+#tf-desc { width: 100%; resize: vertical; }

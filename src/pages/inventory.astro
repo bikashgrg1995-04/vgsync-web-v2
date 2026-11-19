@@ -5,7 +5,7 @@ import { getNavItemsForRole, BOTTOM_NAV } from "../lib/navigation";
 import { PAGE_META } from "../lib/page-meta";
 import type { UserRole } from "../lib/auth";
 import ProductDialog from "../components/inventory/ProductDialog.astro";
-import "../styles/app/inventory-page.css";
+import "../styles/widgets/inventory-page.css";
 
 const meta = PAGE_META.inventory;
 const defaultRole: UserRole = "owner";
@@ -286,5 +286,5 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import "../scripts/inventory-page.ts";
+  import "../scripts/pages/inventory-page.ts";
 </script>

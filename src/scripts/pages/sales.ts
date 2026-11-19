@@ -1,0 +1,837 @@
+import { can, getSession } from '../../lib/auth';
+import { listCustomers, type Customer } from '../../lib/customers';
+import { listStock, type StockItem } from '../../lib/inventory';
+import {
+  $, val, today, esc, describe, showError, dlg, submit, badge,
+  configureSalesDialogs, openForm, openReason, itemOptions,
+} from '../widgets/sales-dialogs';
+import {
+  listSales, listReturns, voidReturn,
+  listCredits, useCredit, deliverReplacement, voidCredit,
+  listFollowups, markFollowupDone, skipFollowup,
+  listBikes, registerBike, listLocalProducts, createLocalProduct,
+  formatNpr, formatQty,
+  STATUS_LABEL, TYPE_LABEL, PAYMENT_LABEL, METHOD_LABEL, CREDIT_LABEL, FOLLOWUP_LABEL,
+  type Sale, type SaleType, type SaleReturn, type SaleCredit, type Followup, type BikeUnit,
+  type LocalProduct, type CreditKind, type PayMethod,
+} from '../../lib/sales';
+
+if (!getSession()) window.location.replace('/');
+
+let allSales: Sale[] = [];
+let sales: Sale[] = [];
+let customers: Customer[] = [];
+let products: StockItem[] = [];
+let bikesInStock: BikeUnit[] = [];
+let localProducts: LocalProduct[] = [];
+let canWrite = true;
+let activePanel = 'overview';
+let loaded: Record<string, boolean> = {};
+
+function notice(message: string | null, error = false): void {
+  const el = $('sa-notice');
+  if (!el) return;
+  el.hidden = !message;
+  el.textContent = message ?? '';
+  el.classList.toggle('is-error', error);
+}
+
+const customerLabel = (s: Sale) => esc(s.customerId ? s.customerName : s.walkInName || 'Walk-in');
+
+// ---- Overview ------------------------------------------------------
+
+const SALE_PAGE_SIZE = 5;
+let salePage = 1;
+const DAY_MS = 86_400_000;
+
+const parseDay = (s: string) => new Date(`${s}T00:00:00`);
+const dayStart = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+const daysAgo = (s: string) => Math.round((dayStart() - parseDay(s).getTime()) / DAY_MS);
+
+function fmtDate(s: string): string {
+  const d = parseDay(s);
+  return Number.isNaN(d.getTime()) ? s : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function fmtWhen(sale: Sale): string {
+  if (!sale.createdAt) return fmtDate(sale.saleDate);
+  const d = new Date(sale.createdAt);
+  if (Number.isNaN(d.getTime())) return fmtDate(sale.saleDate);
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `${fmtDate(sale.saleDate)} • ${time}`;
+}
+
+function compact(n: number): string {
+  if (n >= 1_000_000) return `${+(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${+(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
+  return String(Math.round(n));
+}
+
+/** Confirmed sales are the real ones: drafts are not sold yet, cancelled ones never happened. */
+const live = () => allSales.filter((s) => s.status === 'confirmed');
+
+function inWindow(fromDaysAgo: number, toDaysAgo: number): Sale[] {
+  return live().filter((s) => {
+    const n = daysAgo(s.saleDate);
+    return n >= toDaysAgo && n <= fromDaysAgo;
+  });
+}
+
+function setTrend(id: string, current: number, previous: number): void {
+  const el = $(id);
+  if (!el) return;
+  el.className = 'pd-trend';
+  if (previous <= 0) {
+    el.textContent = current > 0 ? 'New' : '';
+    if (current > 0) el.classList.add('is-up');
+    return;
+  }
+  const pct = ((current - previous) / previous) * 100;
+  const flat = Math.abs(pct) < 0.05;
+  el.textContent = `${flat ? '' : pct > 0 ? '↑ ' : '↓ '}${Math.abs(pct).toFixed(1)}%`;
+  el.classList.add(flat ? 'is-flat' : pct > 0 ? 'is-up' : 'is-down');
+}
+
+function renderKpis(): void {
+  const now = inWindow(29, 0);
+  const before = inWindow(59, 30);
+  const sum = (list: Sale[]) => list.reduce((t, s) => t + s.netTotal, 0);
+  const avg = (list: Sale[]) => (list.length ? sum(list) / list.length : 0);
+
+  $('kpi-total')!.textContent = formatNpr(sum(now));
+  setTrend('kpi-total-trend', sum(now), sum(before));
+
+  $('kpi-invoices')!.textContent = String(now.length);
+  setTrend('kpi-invoices-trend', now.length, before.length);
+
+  $('kpi-average')!.textContent = formatNpr(Math.round(avg(now)));
+  setTrend('kpi-average-trend', avg(now), avg(before));
+
+  const since = dayStart() - 29 * DAY_MS;
+  const prior = dayStart() - 59 * DAY_MS;
+  const stamp = (c: Customer) => new Date(c.createdAt).getTime();
+  const added = customers.filter((c) => stamp(c) >= since).length;
+  const addedBefore = customers.filter((c) => stamp(c) >= prior && stamp(c) < since).length;
+  $('kpi-customers')!.textContent = String(customers.length);
+  setTrend('kpi-customers-trend', added, addedBefore);
+  $('kpi-customers-sub')!.textContent = `${added} new in last 30 days`;
+}
+
+function smoothPath(pts: [number, number][]): string {
+  if (pts.length < 2) return '';
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i];
+    const [x1, y1] = pts[i + 1];
+    const cx = (x0 + x1) / 2;
+    d += ` C${cx},${y0} ${cx},${y1} ${x1},${y1}`;
+  }
+  return d;
+}
+
+function niceMax(v: number): number {
+  if (v <= 0) return 1000;
+  const pow = Math.pow(10, Math.floor(Math.log10(v)));
+  const step = pow / 2;
+  return Math.ceil(v / step) * step;
+}
+
+const rangeDays = () => Number($<HTMLSelectElement>('pd-range')?.value ?? 30);
+
+function renderChart(): void {
+  const host = $('pd-chart');
+  if (!host) return;
+  const days = rangeDays();
+  // Group days into buckets so sparse sale dates still draw a readable line.
+  const size = days <= 7 ? 1 : days <= 30 ? 3 : 7;
+  const count = Math.ceil(days / size);
+  const thisP = new Array<number>(count).fill(0);
+  const lastP = new Array<number>(count).fill(0);
+  for (const s of live()) {
+    const n = daysAgo(s.saleDate);
+    if (n >= 0 && n < days) thisP[count - 1 - Math.floor(n / size)] += s.netTotal;
+    else if (n >= days && n < days * 2) lastP[count - 1 - Math.floor((n - days) / size)] += s.netTotal;
+  }
+
+  const W = 560, H = 230, padL = 44, padR = 14, padT = 14, padB = 28;
+  const yMax = niceMax(Math.max(...thisP, ...lastP));
+  const x = (i: number) => padL + (count <= 1 ? 0 : (i / (count - 1)) * (W - padL - padR));
+  const y = (v: number) => padT + (1 - v / yMax) * (H - padT - padB);
+  const thisPts = thisP.map((v, i): [number, number] => [x(i), y(v)]);
+  const lastPts = lastP.map((v, i): [number, number] => [x(i), y(v)]);
+
+  const grid = [0, 1 / 3, 2 / 3, 1]
+    .map((f) => `<line x1="${padL}" x2="${W - padR}" y1="${y(yMax * f)}" y2="${y(yMax * f)}" class="pd-grid-line" />
+      <text x="${padL - 8}" y="${y(yMax * f) + 3}" text-anchor="end" class="pd-axis">${compact(yMax * f)}</text>`)
+    .join('');
+  const every = Math.max(1, Math.ceil(count / 4));
+  const ticks = thisP
+    .map((_, i) => {
+      if (i % every !== 0 && i !== count - 1) return '';
+      const ago = (count - 1 - i) * size;
+      const label = new Date(dayStart() - ago * DAY_MS).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" class="pd-axis">${label}</text>`;
+    })
+    .join('');
+  const dots = (pts: [number, number][], cls: string) =>
+    pts.map(([px, py]) => `<circle cx="${px}" cy="${py}" r="3.2" class="${cls}" />`).join('');
+  const baseline = y(0);
+  const area = (pts: [number, number][]) =>
+    pts.length < 2 ? '' : `${smoothPath(pts)} L${pts[pts.length - 1][0]},${baseline} L${pts[0][0]},${baseline} Z`;
+  const empty = thisP.every((v) => v === 0) && lastP.every((v) => v === 0);
+
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sales this period and last period" preserveAspectRatio="xMidYMid meet">
+    ${grid}
+    <path d="${area(thisPts)}" class="sa-area-this" />
+    <path d="${smoothPath(lastPts)}" class="pd-line-last" />
+    <path d="${smoothPath(thisPts)}" class="pd-line-this" />
+    ${dots(lastPts, 'pd-dot-last')}
+    ${dots(thisPts, 'pd-dot-this')}
+    ${ticks}
+  </svg>${empty ? '<p class="pd-chart-empty">No sales in this period</p>' : ''}`;
+}
+
+// ---- Category + top products (worked out from sale lines) ------------
+
+const DONUT_COLORS = ['#2563eb', '#7c3aed', '#16a34a', '#f97316', '#94a3b8'];
+
+function categoryOf(line: Sale['lines'][number]): string {
+  if (line.productId) {
+    const p = products.find((x) => x.productId === line.productId);
+    return p?.category?.trim() || 'Uncategorised';
+  }
+  if (line.bikeUnitId) return 'Bikes';
+  if (line.localProductId) return 'Local products';
+  return 'Services';
+}
+
+function renderCategories(): void {
+  const el = $('sa-category');
+  if (!el) return;
+  const totals = new Map<string, number>();
+  for (const s of inWindow(rangeDays() - 1, 0)) {
+    for (const l of s.lines) totals.set(categoryOf(l), (totals.get(categoryOf(l)) ?? 0) + l.lineTotal);
+  }
+  const sorted = [...totals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  const grand = sorted.reduce((t, [, v]) => t + v, 0);
+  if (sorted.length === 0 || grand <= 0) {
+    el.innerHTML = '<p class="pd-empty-note">No sales in this period.</p>';
+    return;
+  }
+  let rows = sorted;
+  if (sorted.length > 5) {
+    rows = [...sorted.slice(0, 4), ['Others', sorted.slice(4).reduce((t, [, v]) => t + v, 0)]];
+  }
+
+  const R = 62, C = 2 * Math.PI * R;
+  let offset = 0;
+  const arcs = rows
+    .map(([, v], i) => {
+      const len = (v / grand) * C;
+      const arc = `<circle cx="80" cy="80" r="${R}" fill="none" stroke="${DONUT_COLORS[i % DONUT_COLORS.length]}" stroke-width="26"
+        stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-offset}" transform="rotate(-90 80 80)" />`;
+      offset += len;
+      return arc;
+    })
+    .join('');
+
+  el.innerHTML = `
+    <div class="sa-donut">
+      <svg viewBox="0 0 160 160" role="img" aria-label="Sales by category">
+        <circle cx="80" cy="80" r="${R}" fill="none" class="sa-donut-track" stroke-width="26" />
+        ${arcs}
+      </svg>
+      <div class="sa-donut-center"><strong>${esc(formatNpr(grand))}</strong><span>Total Sales</span></div>
+    </div>
+    <ul class="sa-donut-legend">
+      ${rows.map(([name, v], i) => `<li>
+        <i style="background:${DONUT_COLORS[i % DONUT_COLORS.length]}"></i>
+        <span class="sa-donut-name">${esc(name)}</span>
+        <span class="sa-donut-pct">${((v / grand) * 100).toFixed(1)}%</span>
+      </li>`).join('')}
+    </ul>`;
+}
+
+function renderTopProducts(): void {
+  const el = $('sa-products');
+  if (!el) return;
+  const agg = new Map<string, { name: string; productId: number | null; total: number }>();
+  for (const s of inWindow(rangeDays() - 1, 0)) {
+    for (const l of s.lines) {
+      const key = l.productId ? `p${l.productId}` : `n:${l.name}`;
+      const row = agg.get(key) ?? { name: l.name, productId: l.productId, total: 0 };
+      row.total += l.lineTotal;
+      agg.set(key, row);
+    }
+  }
+  const sorted = [...agg.values()].filter((r) => r.total > 0).sort((a, b) => b.total - a.total).slice(0, 5);
+  const grand = [...agg.values()].reduce((t, r) => t + r.total, 0);
+  if (sorted.length === 0 || grand <= 0) {
+    el.innerHTML = '<li class="pd-empty-note">No product sales in this period.</li>';
+    return;
+  }
+  el.innerHTML = sorted
+    .map((r, i) => {
+      const img = r.productId ? products.find((p) => p.productId === r.productId)?.image : null;
+      const thumb = img
+        ? `<span class="sa-prod-thumb" style="background-image:url('${esc(img)}')"></span>`
+        : `<span class="sa-prod-thumb is-letter">${esc((r.name || '?')[0].toUpperCase())}</span>`;
+      return `<li>
+        <span class="sa-prod-rank">${i + 1}</span>
+        ${thumb}
+        <div class="sa-prod-body"><strong>${esc(r.name)}</strong><span>${esc(formatNpr(r.total))}</span></div>
+        <span class="sa-prod-pct">${((r.total / grand) * 100).toFixed(1)}%</span>
+      </li>`;
+    })
+    .join('');
+}
+
+// ---- Recent sales table ----------------------------------------------
+
+function salePill(s: Sale): string {
+  if (s.status === 'cancelled') return `<span class="pd-pill pd-pill-cancelled">Cancelled</span>`;
+  if (s.status === 'draft') return `<span class="pd-pill pd-pill-draft">Draft</span>`;
+  if (s.paymentStatus === 'paid') return `<span class="pd-pill pd-pill-received">Completed</span>`;
+  return `<span class="pd-pill pd-pill-delivered">Confirmed</span>`;
+}
+
+function payPill(s: Sale): string {
+  if (s.status === 'cancelled') return '<span class="sa-muted">—</span>';
+  const cls = s.paymentStatus === 'paid' ? 'sa-paychip is-paid' : s.paymentStatus === 'partial' ? 'sa-paychip is-partial' : 'sa-paychip is-unpaid';
+  return `<span class="${cls}">${esc(PAYMENT_LABEL[s.paymentStatus])}</span>`;
+}
+
+const EYE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+
+function renderPager(total: number): void {
+  const el = $('pd-pages');
+  if (!el) return;
+  const pages = Math.max(1, Math.ceil(total / SALE_PAGE_SIZE));
+  salePage = Math.min(salePage, pages);
+  if (pages <= 1) {
+    el.innerHTML = '';
+    return;
+  }
+  const items: (number | '…')[] = [];
+  for (let n = 1; n <= pages; n++) {
+    if (n === 1 || n === pages || Math.abs(n - salePage) <= 1) items.push(n);
+    else if (items[items.length - 1] !== '…') items.push('…');
+  }
+  el.innerHTML =
+    `<button type="button" class="pd-pg" data-pg="${salePage - 1}" aria-label="Previous page" ${salePage <= 1 ? 'disabled' : ''}>‹</button>` +
+    items.map((n) => (n === '…'
+      ? '<span class="pd-pg-gap">…</span>'
+      : `<button type="button" class="pd-pg${n === salePage ? ' is-active' : ''}" data-pg="${n}">${n}</button>`)).join('') +
+    `<button type="button" class="pd-pg" data-pg="${salePage + 1}" aria-label="Next page" ${salePage >= pages ? 'disabled' : ''}>›</button>`;
+  el.querySelectorAll<HTMLButtonElement>('[data-pg]').forEach((b) =>
+    b.addEventListener('click', () => {
+      salePage = Number(b.dataset.pg);
+      renderRecentSales();
+    }),
+  );
+}
+
+function renderRecentSales(): void {
+  const tbody = $('pd-tbody');
+  if (!tbody) return;
+  const sorted = [...allSales].sort((a, b) => b.saleDate.localeCompare(a.saleDate) || b.id - a.id);
+  if (sorted.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="sa-empty">No sales yet.</td></tr>';
+    $('pd-count')!.textContent = 'Showing 0 of 0 sales';
+    renderPager(0);
+    return;
+  }
+  const pages = Math.max(1, Math.ceil(sorted.length / SALE_PAGE_SIZE));
+  salePage = Math.min(salePage, pages);
+  const start = (salePage - 1) * SALE_PAGE_SIZE;
+  const slice = sorted.slice(start, start + SALE_PAGE_SIZE);
+  tbody.innerHTML = slice
+    .map((s) => `<tr class="pd-row" data-id="${s.id}">
+        <td class="pd-po">${esc(s.invoiceNo || s.saleNo)}</td>
+        <td>${esc(fmtWhen(s))}</td>
+        <td>${customerLabel(s)}</td>
+        <td>${formatNpr(s.netTotal)}</td>
+        <td>${payPill(s)}</td>
+        <td>${salePill(s)}</td>
+        <td class="actions"><button type="button" class="pd-view-btn" data-view="${s.id}">${EYE} View</button></td>
+      </tr>`)
+    .join('');
+  $('pd-count')!.textContent = `Showing ${start + 1}–${start + slice.length} of ${sorted.length} sales`;
+  renderPager(sorted.length);
+  tbody.querySelectorAll<HTMLElement>('[data-view]').forEach((b) =>
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDetail(Number(b.dataset.view));
+    }),
+  );
+  tbody.querySelectorAll<HTMLTableRowElement>('.pd-row').forEach((row) =>
+    row.addEventListener('click', () => openDetail(Number(row.dataset.id))),
+  );
+}
+
+function renderOverview(): void {
+  renderKpis();
+  renderChart();
+  renderCategories();
+  renderTopProducts();
+  renderRecentSales();
+}
+
+$('pd-range')?.addEventListener('change', () => {
+  renderChart();
+  renderCategories();
+  renderTopProducts();
+});
+
+/** Downloads every sale as a CSV file. */
+function exportCsv(): void {
+  const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  const rows = [
+    ['Invoice', 'Sale no', 'Date', 'Customer', 'Kind', 'Status', 'Payment', 'Net total', 'Paid', 'Due'],
+    ...allSales.map((s) => [
+      s.invoiceNo, s.saleNo, s.saleDate,
+      s.customerId ? s.customerName : s.walkInName || 'Walk-in',
+      TYPE_LABEL[s.saleType], STATUS_LABEL[s.status],
+      s.status === 'cancelled' ? '' : PAYMENT_LABEL[s.paymentStatus],
+      s.netTotal, s.paid, s.status === 'cancelled' ? '' : s.remaining,
+    ]),
+  ];
+  const blob = new Blob([rows.map((r) => r.map(cell).join(',')).join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sales-${today()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+$('sa-export')?.addEventListener('click', exportCsv);
+$('qa-export')?.addEventListener('click', exportCsv);
+
+// ---- All sales list --------------------------------------------------
+
+function filters() {
+  return {
+    search: val('f-search').trim(),
+    status: val('f-status') as Sale['status'] | '',
+    saleType: val('f-type') as SaleType | '',
+    paymentStatus: val('f-pay') as Sale['paymentStatus'] | '',
+    dateFrom: val('f-from'),
+    dateTo: val('f-to'),
+  };
+}
+
+function renderList(): void {
+  const tbody = $('sa-tbody')!;
+  tbody.innerHTML = sales.length === 0
+    ? `<tr><td colspan="9" class="sa-empty">No sales found.</td></tr>`
+    : sales.map((s) => `<tr class="sa-row" data-id="${s.id}">
+        <td class="mono">${esc(s.invoiceNo || s.saleNo)}</td>
+        <td>${esc(s.saleDate)}</td>
+        <td>${customerLabel(s)}</td>
+        <td>${esc(TYPE_LABEL[s.saleType])}${s.paymentMode === 'emi' ? ' · EMI' : s.paymentMode === 'financed' ? ' · Financed' : ''}</td>
+        <td>${badge(s.status, STATUS_LABEL[s.status])}</td>
+        <td class="num">${formatNpr(s.netTotal)}</td>
+        <td class="num">${formatNpr(s.paid)}</td>
+        <td class="num">${s.status === 'cancelled' ? '—' : formatNpr(s.remaining)}</td>
+        <td>${s.status === 'cancelled' ? '—' : badge('pay-' + s.paymentStatus, PAYMENT_LABEL[s.paymentStatus])}</td>
+      </tr>`).join('');
+  $('sa-count')!.textContent = `${sales.length} sale${sales.length === 1 ? '' : 's'}`;
+  tbody.querySelectorAll<HTMLTableRowElement>('.sa-row').forEach((row) =>
+    row.addEventListener('click', () => openDetail(Number(row.dataset.id))),
+  );
+}
+
+async function loadList(): Promise<void> {
+  const f = filters();
+  const unfiltered = !f.search && !f.status && !f.saleType && !f.paymentStatus && !f.dateFrom && !f.dateTo;
+  try {
+    sales = unfiltered ? allSales : await listSales(f);
+  } catch (error) {
+    sales = [];
+    notice(describe(error), true);
+  }
+  renderList();
+}
+
+/** Loads every sale for the overview, then the list panel. */
+async function loadAll(): Promise<void> {
+  try {
+    allSales = await listSales();
+    notice(canWrite ? null : 'Read-only: you are viewing this branch from Head Office.');
+  } catch (error) {
+    allSales = [];
+    notice(describe(error), true);
+  }
+  renderOverview();
+  await loadList();
+}
+
+/** A sale opens on its own page. */
+function openDetail(id: number): void {
+  window.location.href = `/sales/detail?id=${id}`;
+}
+
+async function refreshAfterChange(_id?: number): Promise<void> {
+  await loadAll();
+  loaded = {};
+  void loadTab(activePanel);
+  void Promise.all([listStock(), listBikes('in_stock')]).then(([p, b]) => { products = p; bikesInStock = b; }).catch(() => {});
+}
+
+configureSalesDialogs({
+  getProducts: () => products,
+  getCustomers: () => customers,
+  getBikes: () => bikesInStock,
+  getLocalProducts: () => localProducts,
+  onChanged: refreshAfterChange,
+});
+
+$('sa-new')?.addEventListener('click', () => openForm());
+$('qa-new')?.addEventListener('click', () => openForm());
+
+// ---- Returns tab ---------------------------------------------------
+
+async function loadReturns(): Promise<void> {
+  const tbody = $('ret-tbody')!;
+  let rows: SaleReturn[];
+  try {
+    rows = await listReturns();
+    loaded.returns = true;
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="10" class="sa-empty">${esc(describe(error))}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.length === 0
+    ? `<tr><td colspan="10" class="sa-empty">No returns yet.</td></tr>`
+    : rows.map((r) => `<tr>
+        <td class="mono">${esc(r.returnNo)}</td><td>${esc(r.returnDate)}</td><td class="mono">${esc(r.invoiceNo)}</td>
+        <td>${esc(r.customerName)}</td>
+        <td>${r.items.map((i) => `${esc(i.productName)} ×${formatQty(i.quantity)}`).join(', ')}</td>
+        <td>${esc(r.reason)}</td>
+        <td class="num">${formatNpr(r.goodsValue)}</td><td class="num">${formatNpr(r.creditAmount)}</td>
+        <td>${r.status === 'void' ? badge('cancelled', 'Void') : badge('confirmed', 'Active')}</td>
+        <td>${r.status === 'active' && canWrite ? `<button class="btn-link is-danger" data-void-ret="${r.id}">Void</button>` : ''}</td>
+      </tr>`).join('');
+  tbody.querySelectorAll<HTMLButtonElement>('[data-void-ret]').forEach((b) =>
+    b.addEventListener('click', () =>
+      openReason('Void return', 'The goods go out of stock again and the effect on the sale and credit is removed.', async (reason) => {
+        await voidReturn(Number(b.dataset.voidRet), reason);
+      }),
+    ),
+  );
+}
+
+// ---- Credit tab ----------------------------------------------------
+
+async function loadCredits(): Promise<void> {
+  const tbody = $('cr-tbody')!;
+  let rows: SaleCredit[];
+  try {
+    rows = await listCredits();
+    loaded.credits = true;
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="7" class="sa-empty">${esc(describe(error))}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.length === 0
+    ? `<tr><td colspan="7" class="sa-empty">No credit used yet.</td></tr>`
+    : rows.map((c) => {
+        const detail = c.kind === 'refund'
+          ? esc(METHOD_LABEL[c.method as PayMethod] ?? c.method)
+          : c.kind === 'adjustment'
+            ? `Against ${esc(c.saleNo)}`
+            : `${c.items.map((i) => `${esc(i.productName)} ×${formatQty(i.quantity)}`).join(', ')} · ${esc(c.deliveryStatus)}`;
+        const acts: string[] = [];
+        if (canWrite && c.status === 'active') {
+          if (c.kind === 'replacement' && c.deliveryStatus === 'pending') acts.push(`<button class="btn-link" data-deliver="${c.id}">Goods handed over</button>`);
+          if (!(c.kind === 'replacement' && c.deliveryStatus === 'delivered')) acts.push(`<button class="btn-link is-danger" data-void-cr="${c.id}">Void</button>`);
+        }
+        return `<tr><td>${esc(c.settledOn)}</td><td>${esc(c.customerName)}</td><td>${esc(CREDIT_LABEL[c.kind])}</td><td>${detail}</td>
+          <td class="num">${formatNpr(c.amount)}</td><td>${c.status === 'void' ? badge('cancelled', 'Void') : badge('confirmed', 'Active')}</td>
+          <td class="actions">${acts.join(' ')}</td></tr>`;
+      }).join('');
+  tbody.querySelectorAll<HTMLButtonElement>('[data-deliver]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      try {
+        await deliverReplacement(Number(b.dataset.deliver));
+        await refreshAfterChange();
+      } catch (error) {
+        notice(describe(error), true);
+      }
+    }),
+  );
+  tbody.querySelectorAll<HTMLButtonElement>('[data-void-cr]').forEach((b) =>
+    b.addEventListener('click', () =>
+      openReason('Void credit use', 'The credit goes back to the customer balance.', async (reason) => {
+        await voidCredit(Number(b.dataset.voidCr), reason);
+      }),
+    ),
+  );
+}
+
+function syncCreditKind(): void {
+  const kind = val('cr-kind') as CreditKind;
+  $('cr-method-wrap')!.hidden = kind !== 'refund';
+  $('cr-sale-wrap')!.hidden = kind !== 'adjustment';
+  $('cr-items-wrap')!.hidden = kind !== 'replacement';
+  if (kind === 'replacement' && $('cr-lines')!.children.length === 0) {
+    addCreditLine();
+  }
+  if (kind === 'adjustment') {
+    const cid = Number(val('cr-customer'));
+    const open = allSales.filter((s) => s.customerId === cid && s.status === 'confirmed' && s.remaining > 0 && s.paymentMode === 'full');
+    $('cr-sale')!.innerHTML = open.length
+      ? open.map((s) => `<option value="${s.id}">${esc(s.invoiceNo)} · owes ${esc(formatNpr(s.remaining))}</option>`).join('')
+      : `<option value="">No unpaid sale for this customer</option>`;
+  }
+}
+
+function addCreditLine(): void {
+  const row = document.createElement('div');
+  row.className = 'sa-line sa-line-cr';
+  row.innerHTML = `
+    <select class="ln-item">${itemOptions('product')}</select>
+    <input class="ln-qty" type="number" min="0.001" step="0.001" value="1" />
+    <button type="button" class="btn-link is-danger ln-remove">✕</button>`;
+  $('cr-lines')!.appendChild(row);
+  row.querySelector('.ln-remove')!.addEventListener('click', () => row.remove());
+}
+
+$('cr-new')?.addEventListener('click', () => {
+  $('cr-customer')!.innerHTML = `<option value="">Choose customer…</option>` + customers.map((c) => `<option value="${c.id}">${esc(c.name)}${c.creditToPay > 0 ? ` (you owe ${esc(formatNpr(c.creditToPay))})` : ''}</option>`).join('');
+  $<HTMLSelectElement>('cr-kind')!.value = 'refund';
+  $<HTMLInputElement>('cr-amount')!.value = '';
+  $<HTMLInputElement>('cr-notes')!.value = '';
+  $('cr-lines')!.innerHTML = '';
+  syncCreditKind();
+  showError('cr-error', null);
+  dlg('dlg-credit').showModal();
+});
+$('cr-kind')?.addEventListener('change', syncCreditKind);
+$('cr-customer')?.addEventListener('change', syncCreditKind);
+$('cr-add-line')?.addEventListener('click', addCreditLine);
+
+$('form-credit')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const kind = val('cr-kind') as CreditKind;
+  const items = Array.from($('cr-lines')!.querySelectorAll<HTMLElement>('.sa-line-cr'))
+    .map((r) => ({ productId: Number(r.querySelector<HTMLSelectElement>('.ln-item')!.value), quantity: Number(r.querySelector<HTMLInputElement>('.ln-qty')!.value) }))
+    .filter((i) => i.productId);
+  if (kind === 'replacement' && items.length === 0) { showError('cr-error', 'Add the replacement goods.'); return; }
+  if (kind === 'adjustment' && !Number(val('cr-sale'))) { showError('cr-error', 'Choose a sale.'); return; }
+  void submit('cr-save', 'cr-error', 'dlg-credit', async () => {
+    await useCredit({
+      customerId: Number(val('cr-customer')), kind, amount: Number(val('cr-amount')),
+      method: val('cr-method') as PayMethod, saleId: Number(val('cr-sale')) || undefined, items, notes: val('cr-notes'),
+    });
+    await refreshAfterChange();
+  });
+});
+
+// ---- Follow-ups tab ------------------------------------------------
+
+async function loadFollowups(): Promise<void> {
+  const tbody = $('fu-tbody')!;
+  let rows: Followup[];
+  try {
+    rows = await listFollowups({
+      status: val('fu-status') as Followup['status'] | '',
+      kind: val('fu-kind') as Followup['kind'] | '',
+      overdue: $<HTMLInputElement>('fu-overdue')!.checked,
+    });
+    loaded.followups = true;
+  } catch (error) {
+    tbody.innerHTML = `<tr><td colspan="8" class="sa-empty">${esc(describe(error))}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.length === 0
+    ? `<tr><td colspan="8" class="sa-empty">Nothing to follow up.</td></tr>`
+    : rows.map((f) => {
+        const maint = f.kind === 'maintenance_post' || f.kind === 'maintenance_due';
+        const prev = f.previous ? `<br /><span class="muted small">3-day check: ${esc(f.previous.status)}${f.previous.hasIssue ? ' · had an issue' : ''}${f.previous.note ? ` · ${esc(f.previous.note)}` : ''}</span>` : '';
+        const acts: string[] = [];
+        if (canWrite && f.status === 'pending') {
+          if (maint && can(getSession(), 'sales.followup')) acts.push(`<button class="btn-link" data-done="${f.id}">Done</button> <button class="btn-link is-danger" data-skip="${f.id}">Skip</button>`);
+          else if (!maint) acts.push(`<button class="btn-link" data-open-sale="${f.saleId}">Open sale</button>`);
+        }
+        return `<tr>
+          <td class="${f.isOverdue ? 'is-overdue' : ''}">${esc(f.dueDate)}${f.isOverdue ? ' · overdue' : ''}</td>
+          <td>${esc(FOLLOWUP_LABEL[f.kind])}${f.installmentNumber ? ` #${f.installmentNumber}` : f.serviceNumber ? ` #${f.serviceNumber}` : ''}${prev}</td>
+          <td>${esc(f.customerName)}${f.customerPhone ? `<br /><span class="muted small">${esc(f.customerPhone)}</span>` : ''}</td>
+          <td class="mono">${esc(f.invoiceNo || f.saleNo)}</td>
+          <td>${esc([f.vehicleRegNo, f.vehicleChassisNo].filter(Boolean).join(' / ') || '—')}</td>
+          <td class="num">${f.amount > 0 ? formatNpr(f.amount) : '—'}</td>
+          <td>${badge(f.status === 'pending' ? 'draft' : f.status === 'done' ? 'confirmed' : 'cancelled', f.status)}${f.hasIssue ? ' ⚠' : ''}${f.note ? `<br /><span class="muted small">${esc(f.note)}</span>` : ''}</td>
+          <td class="actions">${acts.join('')}</td></tr>`;
+      }).join('');
+
+  tbody.querySelectorAll<HTMLButtonElement>('[data-done]').forEach((b) => b.addEventListener('click', () => {
+    const f = rows.find((x) => x.id === Number(b.dataset.done))!;
+    $('dn-sub')!.textContent = `${FOLLOWUP_LABEL[f.kind]} · ${f.customerName}`;
+    $<HTMLInputElement>('dn-note')!.value = '';
+    $<HTMLInputElement>('dn-issue')!.checked = false;
+    $<HTMLInputElement>('dn-next')!.value = '';
+    showError('dn-error', null);
+    $('form-done')!.dataset.id = String(f.id);
+    dlg('dlg-done').showModal();
+  }));
+  tbody.querySelectorAll<HTMLButtonElement>('[data-skip]').forEach((b) => b.addEventListener('click', () =>
+    openReason('Skip follow-up', 'Say why it is being skipped.', async (reason) => {
+      await skipFollowup(Number(b.dataset.skip), reason);
+    }),
+  ));
+  tbody.querySelectorAll<HTMLButtonElement>('[data-open-sale]').forEach((b) => b.addEventListener('click', () => {
+    openDetail(Number(b.dataset.openSale));
+  }));
+}
+
+$('form-done')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const id = Number($('form-done')!.dataset.id);
+  void submit('dn-save', 'dn-error', 'dlg-done', async () => {
+    await markFollowupDone(id, { note: val('dn-note'), hasIssue: $<HTMLInputElement>('dn-issue')!.checked, nextDueDate: val('dn-next') });
+    loaded.followups = false;
+    await loadFollowups();
+  });
+});
+for (const id of ['fu-status', 'fu-kind', 'fu-overdue']) $(id)?.addEventListener('change', () => void loadFollowups());
+
+// ---- Bikes and local products tab ----------------------------------
+
+async function loadBikes(): Promise<void> {
+  try {
+    const all = await listBikes();
+    const lps = await listLocalProducts();
+    localProducts = lps;
+    loaded.bikes = true;
+    $('bk-tbody')!.innerHTML = all.length === 0
+      ? `<tr><td colspan="5" class="sa-empty">No bikes registered.</td></tr>`
+      : all.map((b) => `<tr><td class="mono">${esc(b.chassisNo)}</td><td class="mono">${esc(b.engineNo)}</td><td>${esc(b.productName)}</td><td>${esc(b.color || '—')}</td>
+          <td>${badge(b.status === 'sold' ? 'cancelled' : 'confirmed', b.status === 'sold' ? 'Sold' : 'In stock')}</td></tr>`).join('');
+    $('lp-tbody')!.innerHTML = lps.length === 0
+      ? `<tr><td colspan="3" class="sa-empty">No local products.</td></tr>`
+      : lps.map((p) => `<tr><td>${esc(p.name)}${p.isActive ? '' : ' <span class="muted">(inactive)</span>'}</td><td>${esc(p.unit)}</td><td class="num">${formatNpr(p.salePrice)}</td></tr>`).join('');
+  } catch (error) {
+    $('bk-tbody')!.innerHTML = `<tr><td colspan="5" class="sa-empty">${esc(describe(error))}</td></tr>`;
+  }
+}
+
+$('bk-new')?.addEventListener('click', () => {
+  $('bk-product')!.innerHTML = `<option value="">Choose model…</option>` + products.map((p) => `<option value="${p.productId}">${esc(p.stockNo)} · ${esc(p.name)}</option>`).join('');
+  for (const id of ['bk-color', 'bk-chassis', 'bk-engine']) $<HTMLInputElement>(id)!.value = '';
+  showError('bk-error', null);
+  dlg('dlg-bike').showModal();
+});
+$('form-bike')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  void submit('bk-save', 'bk-error', 'dlg-bike', async () => {
+    await registerBike({ productId: Number(val('bk-product')), chassisNo: val('bk-chassis'), engineNo: val('bk-engine'), color: val('bk-color') });
+    loaded.bikes = false;
+    bikesInStock = await listBikes('in_stock');
+    await loadBikes();
+  });
+});
+$('lp-new')?.addEventListener('click', () => {
+  $<HTMLInputElement>('lp-name')!.value = '';
+  $<HTMLInputElement>('lp-unit')!.value = 'pcs';
+  $<HTMLInputElement>('lp-sale')!.value = '0';
+  $<HTMLInputElement>('lp-cost')!.value = '0';
+  showError('lp-error', null);
+  dlg('dlg-local').showModal();
+});
+$('form-local')?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  void submit('lp-save', 'lp-error', 'dlg-local', async () => {
+    await createLocalProduct({ name: val('lp-name'), unit: val('lp-unit'), salePrice: Number(val('lp-sale')) || 0, purchasePrice: Number(val('lp-cost')) || 0 });
+    localProducts = await listLocalProducts();
+    await loadBikes();
+  });
+});
+// ---- Panels, filters, load -----------------------------------------
+
+function loadTab(tab: string): Promise<void> | void {
+  if (loaded[tab]) return;
+  if (tab === 'returns') return loadReturns();
+  if (tab === 'credits') return loadCredits();
+  if (tab === 'followups') return loadFollowups();
+  if (tab === 'bikes') return loadBikes();
+}
+
+
+// A menu link that opens one list (Returns, Follow-ups) shows just that
+// list under its own title, not the whole Sales page around it.
+const FOCUS: Record<string, { title: string; sub: string; nav: string }> = { returns: { title: 'Sales Returns', sub: 'Goods customers brought back from stock sales.', nav: 'returns' }, followups: { title: 'Follow-ups', sub: 'Calls and visits that are due: service checks, instalments and credit.', nav: 'servicing' } };
+const heroTitle = document.querySelector<HTMLElement>('.pd-hero-title');
+const heroSub = document.querySelector<HTMLElement>('.pd-hero-sub');
+const headerTitle = document.querySelector<HTMLElement>('.header-title');
+const first = {
+  title: heroTitle?.textContent ?? '',
+  sub: heroSub?.textContent ?? '',
+  header: headerTitle?.textContent ?? '',
+  nav: document.querySelector('.app-sidebar .sidebar-link.is-active')?.getAttribute('data-nav-id') ?? '',
+};
+function applyFocus(name: string): void {
+  const f = FOCUS[name];
+  document.querySelector('.sa-page')?.classList.toggle('is-focus', !!f);
+  if (heroTitle) heroTitle.textContent = f ? f.title : first.title;
+  if (heroSub) heroSub.textContent = f ? f.sub : first.sub;
+  if (headerTitle) headerTitle.textContent = f ? f.title : first.header;
+  const nav = f ? f.nav : first.nav;
+  document.querySelectorAll<HTMLElement>('.app-sidebar .sidebar-link').forEach((a) => a.classList.toggle('is-active', a.dataset.navId === nav));
+}
+
+function showPanel(name: string): void {
+  activePanel = name;
+  applyFocus(name);
+  document.querySelectorAll<HTMLElement>('[data-panel]').forEach((p) => p.classList.toggle('is-active', p.dataset.panel === name));
+  void loadTab(name);
+  window.scrollTo({ top: 0 });
+}
+document.querySelectorAll<HTMLElement>('[data-goto]').forEach((btn) => btn.addEventListener('click', () => showPanel(btn.dataset.goto!)));
+
+// The sidebar links straight to a panel (for example /sales#returns).
+const panelNames = new Set(Array.from(document.querySelectorAll<HTMLElement>('[data-panel]')).map((p) => p.dataset.panel!));
+function panelFromHash(): void {
+  const name = window.location.hash.slice(1);
+  if (name && panelNames.has(name) && name !== activePanel) showPanel(name);
+  else if (!name && activePanel !== 'overview') showPanel('overview');
+}
+window.addEventListener('hashchange', panelFromHash);
+
+let timer: number | undefined;
+$('f-search')?.addEventListener('input', () => {
+  window.clearTimeout(timer);
+  timer = window.setTimeout(() => void loadList(), 300);
+});
+for (const id of ['f-status', 'f-type', 'f-pay', 'f-from', 'f-to']) $(id)?.addEventListener('change', () => void loadList());
+document.getElementById('branch-select')?.addEventListener('change', () => setTimeout(() => void init(), 300));
+
+async function init(): Promise<void> {
+  const s = getSession();
+  const scope = $('sa-scope');
+  if (scope && s) {
+    scope.hidden = false;
+    scope.textContent = `${s.activeBranchName} (${s.activeBranchCode})`;
+  }
+  canWrite = s?.accessMode !== 'read_only';
+  for (const id of ['sa-new', 'qa-new', 'cr-new', 'bk-new', 'lp-new']) {
+    const el = $(id);
+    if (el) el.hidden = !canWrite || !can(getSession(), 'sales.create');
+  }
+  loaded = {};
+
+  // Overview first: everything else (dialog choices) loads beside it.
+  const lookups = Promise.all([listCustomers(), listStock(), listBikes('in_stock'), listLocalProducts()])
+    .then(([c, p, b, l]) => { customers = c; products = p; bikesInStock = b; localProducts = l; })
+    .catch((error) => notice(describe(error), true));
+  const sold = loadAll();
+  await lookups;
+  // Category names need the products, so draw those cards again once they are in.
+  renderCategories();
+  renderTopProducts();
+  await sold;
+  renderKpis();
+  void loadTab(activePanel);
+}
+
+void init().then(panelFromHash);

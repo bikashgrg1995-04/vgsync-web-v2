@@ -1,7 +1,7 @@
-import { getSession } from "../lib/auth";
-import { ApiError } from "../lib/api";
-import { listSuppliers, type Supplier } from "../lib/suppliers";
-import { listStock, type StockItem } from "../lib/inventory";
+import { getSession } from "../../lib/auth";
+import { ApiError } from "../../lib/api";
+import { listSuppliers, type Supplier } from "../../lib/suppliers";
+import { listStock, type StockItem } from "../../lib/inventory";
 import {
   getPurchase,
   cancelPurchase,
@@ -15,7 +15,7 @@ import {
   type Purchase,
   type PurchaseReturn,
   setPurchaseDueDate,
-} from "../lib/purchases";
+} from "../../lib/purchases";
 import {
   configurePurchaseDialogs,
   openForm,
@@ -24,7 +24,7 @@ import {
   openReturn,
   openReason,
   esc,
-} from "./purchase-dialogs";
+} from "../widgets/purchase-dialogs";
 
 if (!getSession()) window.location.replace("/");
 

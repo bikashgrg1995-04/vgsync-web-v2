@@ -1,6 +1,6 @@
-import { ApiError } from '../lib/api';
-import type { Supplier } from '../lib/suppliers';
-import type { StockItem } from '../lib/inventory';
+import { ApiError } from '../../lib/api';
+import type { Supplier } from '../../lib/suppliers';
+import type { StockItem } from '../../lib/inventory';
 import {
   createPurchase,
   updatePurchase,
@@ -12,7 +12,7 @@ import {
   formatQty,
   type Purchase,
   type PayMethod,
-} from '../lib/purchases';
+} from '../../lib/purchases';
 
 /**
  * Dialogs shared by the purchase list and detail pages (new/edit purchase,

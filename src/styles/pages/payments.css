@@ -1,0 +1,117 @@
+.py-page { display: flex; flex-direction: column; gap: 14px; }
+.py-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.py-toolbar-right { display: flex; gap: 8px; }
+.py-scope { margin: 0 0 6px; font-size: 0.78rem; color: var(--text-muted); }
+.py-tabs { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.py-tab {
+  border: none; background: transparent; padding: 6px 14px; border-radius: 7px; font-family: inherit;
+  font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+}
+.py-tab.is-active { background: var(--panel-bg); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+.btn-primary-sm, .btn-ghost-sm { height: 34px; padding: 0 12px; border-radius: 8px; font-family: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer; }
+.btn-primary-sm { border: none; background: var(--accent); color: #fff; }
+.btn-primary-sm.is-danger { background: #ef334e; }
+.btn-primary-sm:disabled { opacity: 0.6; cursor: default; }
+.btn-ghost-sm { border: 1px solid var(--border); background: transparent; color: var(--text-secondary); }
+.btn-ghost-sm:hover { background: var(--surface-hover); color: var(--text-primary); }
+.btn-link { border: none; background: transparent; color: var(--accent); font-family: inherit; font-size: 0.78rem; font-weight: 650; cursor: pointer; padding: 0; }
+.btn-link.is-danger { color: #ef334e; }
+
+.py-notice { margin: 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text-secondary); font-size: 0.8rem; }
+.py-notice.is-error { color: #ef334e; border-color: rgba(239, 51, 78, 0.4); }
+
+.py-panel { display: none; }
+.py-panel.is-active { display: block; }
+.py-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.py-kpi { padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); }
+.py-kpi span { display: block; font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 4px; }
+.py-kpi strong { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+.py-kpi.danger strong { color: #ef334e; }
+.py-kpi.strong { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.py-kpi.wide { grid-column: 1 / -1; }
+.py-cats { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.8rem; }
+.py-cats em { font-style: normal; color: var(--text-secondary); }
+.py-cats b { color: var(--text-primary); margin-left: 4px; }
+
+.py-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 1000px) { .py-layout { grid-template-columns: 1fr; } }
+.py-card { border: 1px solid var(--border); border-radius: 12px; background: var(--panel-bg); padding: 12px; }
+.py-setup { margin-bottom: 12px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 12px; font-size: 0.8rem; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.py-chip { border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); border-radius: 999px; padding: 4px 10px; font-family: inherit; font-size: 0.76rem; font-weight: 600; cursor: pointer; }
+.py-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+.py-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
+.py-filters input, .py-filters select {
+  height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.8rem;
+}
+.py-filters input[type='search'] { flex: 1; min-width: 160px; }
+.py-inline { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); }
+
+.py-table-wrap { overflow-x: auto; }
+.py-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.py-table th, .py-table td { padding: 8px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+.py-table th { font-size: 0.66rem; font-weight: 650; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+.py-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.py-table .actions { white-space: nowrap; text-align: right; }
+.py-table tr.is-void td { color: var(--text-muted); }
+.py-table tr.is-void .num { text-decoration: line-through; }
+.py-row { cursor: pointer; }
+.py-row:hover td { background: var(--surface-hover); }
+.py-row.is-selected td { background: var(--accent-soft); }
+.py-empty { text-align: center !important; color: var(--text-muted); padding: 24px !important; }
+.py-foot { margin: 8px 0 0; font-size: 0.72rem; color: var(--text-muted); }
+.py-lock { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; padding: 1px 5px; border-radius: 4px; background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+.muted { color: var(--text-muted); }
+.small { font-size: 0.75rem; }
+.neg { color: #ef334e; }
+
+.py-badge { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 650; }
+.py-badge-ok { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+.py-badge-void { background: rgba(239, 51, 78, 0.12); color: #ef334e; }
+
+.py-empty-detail { margin: 0; padding: 24px 8px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
+.py-detail-head h3 { margin: 0 0 2px; font-size: 1rem; font-weight: 650; }
+.py-detail-head p { margin: 0; }
+.py-detail-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.py-mini-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.py-mini-kpis div { padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.py-mini-kpis span { display: block; font-size: 0.64rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+.py-mini-kpis strong { font-size: 0.95rem; }
+#pr-detail h4 { margin: 14px 0 6px; font-size: 0.74rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
+.py-list { list-style: none; margin: 0; padding: 0; font-size: 0.8rem; }
+.py-list li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.py-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.py-seg-btn { border: 0; border-right: 1px solid var(--border); background: transparent; color: var(--text-secondary); padding: 6px 11px; font: inherit; font-size: 0.76rem; cursor: pointer; }
+.py-seg-btn:last-child { border-right: 0; }
+.py-seg-btn:hover { background: var(--surface-hover); }
+.py-seg-btn.is-on[data-set="present"] { background: #16a34a; color: #fff; }
+.py-seg-btn.is-on[data-set="half"] { background: #d97706; color: #fff; }
+.py-seg-btn.is-on[data-set="absent"] { background: #dc2626; color: #fff; }
+.py-hint { font-size: 0.74rem; color: var(--text-muted); }
+.py-h { margin: 0 0 8px; font-size: 0.9rem; font-weight: 650; }
+.py-check { flex-direction: row; align-items: center; gap: 8px; }
+.ds-note { width: 100%; min-width: 120px; }
+#ds-sum { margin-left: auto; }
+.py-note { margin: 10px 0 0; font-size: 0.74rem; color: var(--text-muted); }
+.py-note.is-warn { color: #d97706; }
+
+.py-dialog {
+  border: none; border-radius: 14px; padding: 0; background: var(--panel-bg); color: var(--text-primary);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.28); max-width: 460px; width: calc(100% - 32px);
+}
+.py-dialog::backdrop { background: rgba(8,15,29,0.55); backdrop-filter: blur(4px); }
+.py-dialog-inner { padding: 20px; max-height: 88vh; overflow-y: auto; }
+.py-dialog-title { margin: 0 0 6px; font-size: 1rem; font-weight: 650; }
+.py-sub { margin: 0 0 12px; font-size: 0.8rem; color: var(--text-muted); }
+.py-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 10px 0; }
+@media (max-width: 520px) { .py-grid { grid-template-columns: 1fr; } }
+.py-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; font-weight: 600; color: var(--text-secondary); }
+.py-field[hidden] { display: none; }
+.py-field input, .py-field select {
+  height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--text-primary); font-family: inherit; font-size: 0.85rem;
+}
+.py-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
+.py-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }

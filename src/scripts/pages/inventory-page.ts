@@ -1,8 +1,8 @@
 
-import { getSession } from "../lib/auth";
-import { ApiError } from "../lib/api";
-import { openProductDialog } from "./product-dialog";
-import { openProductImport } from "./product-import";
+import { getSession } from "../../lib/auth";
+import { ApiError } from "../../lib/api";
+import { openProductDialog } from "../widgets/product-dialog";
+import { openProductImport } from "../widgets/product-import";
 import {
   listStock,
   downloadProducts,
@@ -18,7 +18,7 @@ import {
   type MovementType,
   type AdjustmentMode,
   type AdjustmentReason,
-} from "../lib/inventory";
+} from "../../lib/inventory";
 
 if (!getSession()) window.location.replace("/");
 
