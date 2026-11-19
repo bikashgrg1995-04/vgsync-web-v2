@@ -803,7 +803,7 @@ function openPoImport(): void {
   $('poi-error')!.hidden = true;
   $<HTMLButtonElement>('poi-save')!.disabled = true;
   poLines = [];
-  $<HTMLDialogElement>('dlg-po-import').showModal();
+  $<HTMLDialogElement>('dlg-po-import')!.showModal();
 }
 
 function poError(message: string): void {
@@ -882,7 +882,7 @@ $('form-po-import')?.addEventListener('submit', async (e) => {
       freight: Number($<HTMLInputElement>('poi-freight')!.value) || 0,
       lines: poLines.map((l) => ({ productId: l.productId, quantity: l.quantity, unitPrice: l.unitPrice })),
     });
-    $<HTMLDialogElement>('dlg-po-import').close();
+    $<HTMLDialogElement>('dlg-po-import')!.close();
     await refreshAfterChange(made.id);
   } catch (error) {
     poError(describe(error));

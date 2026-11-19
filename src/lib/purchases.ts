@@ -175,6 +175,7 @@ interface ApiLine {
   returned_quantity: string;
   returnable_quantity: string;
   damaged_quantity?: string;
+  is_new?: boolean;
 }
 
 interface ApiPayment {

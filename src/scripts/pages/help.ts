@@ -3,7 +3,7 @@ import { ApiError } from '../../lib/api';
 import {
   listFaqs, listTickets, createTicket, getContact,
   formatTicketDate, formatTicketDateTime,
-  type Faq, type Ticket, type TicketCategory, type SupportContact,
+  type Faq, type Ticket, type TicketCategory,
 } from '../../lib/support';
 
 if (!getSession()) window.location.replace('/');
