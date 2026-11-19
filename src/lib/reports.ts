@@ -433,9 +433,36 @@ export interface Dashboard {
   alerts: Array<{ kind: string; severity: 'info' | 'warning' | 'danger'; message: string }>;
   /** Head Office only: its branches, read-only. */
   branches?: DashboardBranch[];
+  overview: {
+    days: number;
+    date_from: string;
+    date_to: string;
+    labels: string[];
+    sales: OverviewBlock;
+    purchases: OverviewBlock;
+    income: OverviewBlock;
+    expenses: OverviewBlock;
+  };
+  due: {
+    installments: { count: number; days: number | null };
+    purchase_credit: { amount: string; days: number | null };
+    sales_credit: { amount: string; days: number | null };
+    servicing: { count: number };
+  };
+  installments: Array<{ sale: string; customer: string; number: number; of: number; due_date: string; days: number; amount: string }>;
+  servicing: Array<{ id: number; customer: string; phone: string; kind: string; due_date: string; overdue: boolean }>;
+  activity: Array<{ at: string; kind: 'sale' | 'payment' | 'purchase'; text: string }>;
+}
+
+export interface OverviewBlock {
+  total: string;
+  previous: string;
+  /** Percent against the period before; null when there is nothing to compare with. */
+  change_pct: number | null;
+  series: string[];
 }
 
 /** One call, real numbers from the API (needs the dashboard.view permission). */
-export function loadDashboard(): Promise<Dashboard> {
-  return api<Dashboard>('/reports/dashboard/');
+export function loadDashboard(days = 30): Promise<Dashboard> {
+  return api<Dashboard>(`/reports/dashboard/?days=${days}`);
 }
