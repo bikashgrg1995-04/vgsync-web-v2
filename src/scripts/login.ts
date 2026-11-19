@@ -79,7 +79,7 @@ const clearFormMessage = (): void => {
 // Already signed in -> skip the login screen.
 const existing = getSession();
 if (existing) {
-  window.location.replace(existing.mustChangePassword ? '/dashboard/change-password' : '/dashboard');
+  window.location.replace(existing.mustChangePassword ? '/change-password' : '/dashboard');
 }
 
 // "Remember me" pre-fills the business code and username.
@@ -133,7 +133,7 @@ loginForm?.addEventListener('submit', async (event: SubmitEvent) => {
 
     if (session.mustChangePassword) {
       showFormMessage('First login — please update your password.', 'info');
-      window.location.href = '/dashboard/change-password';
+      window.location.href = '/change-password';
       return;
     }
 

@@ -162,9 +162,9 @@ function failIfNeeded(res: Response, data: unknown): void {
 
   if (
     error.code === 'password_change_required' &&
-    window.location.pathname.replace(/\/+$/, '') !== '/dashboard/change-password'
+    window.location.pathname.replace(/\/+$/, '') !== '/change-password'
   ) {
-    window.location.replace('/dashboard/change-password');
+    window.location.replace('/change-password');
   }
 
   throw error;

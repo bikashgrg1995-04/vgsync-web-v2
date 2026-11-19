@@ -45,7 +45,7 @@ function paint(items: AppNotification[]): void {
       } catch {
         // Opening the page matters more than the read mark.
       }
-      window.location.href = el.dataset.link || '/dashboard/notifications';
+      window.location.href = el.dataset.link || '/notifications';
     }),
   );
 }

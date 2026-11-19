@@ -1,9 +1,9 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import { PAGE_META } from '../../lib/page-meta';
-import '../../styles/app/purchase-page.css';
-import '../../styles/app/statements-page.css';
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import { PAGE_META } from '../lib/page-meta';
+import '../styles/app/purchase-page.css';
+import '../styles/app/statements-page.css';
 
 const meta = PAGE_META.statements;
 const navItems = getNavItemsForRole();
@@ -105,11 +105,11 @@ const navItems = getNavItemsForRole();
 </AppLayout>
 
 <script>
-  import { ApiError } from '../../lib/api';
-  import { can, getSession } from '../../lib/auth';
-  import { listCustomers } from '../../lib/customers';
-  import { listSuppliers } from '../../lib/suppliers';
-  import { formatNpr } from '../../lib/reports';
+  import { ApiError } from '../lib/api';
+  import { can, getSession } from '../lib/auth';
+  import { listCustomers } from '../lib/customers';
+  import { listSuppliers } from '../lib/suppliers';
+  import { formatNpr } from '../lib/reports';
   import {
     STATEMENT_TYPES,
     downloadPartyStatement,
@@ -117,7 +117,7 @@ const navItems = getNavItemsForRole();
     type PartyKind,
     type StatementFilters,
     type StatementRow,
-  } from '../../lib/statements';
+  } from '../lib/statements';
 
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
   const esc = (v: string) =>

@@ -1,8 +1,8 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import type { UserRole } from '../../lib/auth';
-import '../../styles/app/purchase-page.css';
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import type { UserRole } from '../lib/auth';
+import '../styles/app/purchase-page.css';
 
 const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
@@ -236,9 +236,9 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { paintAvatar } from '../../lib/avatar';
-  import { getSession, canManageStaff, canEditPositions, canManagePositions, refreshProfile } from '../../lib/auth';
-  import { ApiError } from '../../lib/api';
+  import { paintAvatar } from '../lib/avatar';
+  import { getSession, canManageStaff, canEditPositions, canManagePositions, refreshProfile } from '../lib/auth';
+  import { ApiError } from '../lib/api';
   import {
     MODULES,
     ROLE_LABEL,
@@ -262,7 +262,7 @@ const navItems = getNavItemsForRole(defaultRole);
     loadCatalogue,
     loadPresets,
     positionLabel,
-  } from '../../lib/staff';
+  } from '../lib/staff';
 
   const session = getSession();
   if (!session) {
@@ -417,7 +417,7 @@ const navItems = getNavItemsForRole(defaultRole);
     const edit = canWrite
       ? `<button type="button" class="st-icon-btn is-edit" data-act="edit" data-id="${m.id}" aria-label="Edit ${esc(m.name)}" title="Edit">${ICON_EDIT}</button>`
       : '';
-    return `<div class="st-actions"><a class="st-icon-btn" href="/dashboard/staff/detail?id=${m.id}" aria-label="View ${esc(m.name)}" title="View">${ICON_EYE}</a>${edit}${more}</div>`;
+    return `<div class="st-actions"><a class="st-icon-btn" href="/staff/detail?id=${m.id}" aria-label="View ${esc(m.name)}" title="View">${ICON_EYE}</a>${edit}${more}</div>`;
   }
 
   function avatarHtml(m: StaffMember, cls = ''): string {
@@ -496,7 +496,7 @@ const navItems = getNavItemsForRole(defaultRole);
       .map((m) => {
         const st = statusOf(m);
         return `<tr>
-          <td><a class="st-person" href="/dashboard/staff/detail?id=${m.id}">${avatarHtml(m)}<span><strong>${esc(m.name)}</strong><span class="st-sub">${esc(m.username)}</span></span></a></td>
+          <td><a class="st-person" href="/staff/detail?id=${m.id}">${avatarHtml(m)}<span><strong>${esc(m.name)}</strong><span class="st-sub">${esc(m.username)}</span></span></a></td>
           <td>${esc(positionLabel(m)) || '—'}</td>
           <td>${esc(ROLE_LABEL[m.role] ?? m.role)}</td>
           <td>${contactHtml(m)}</td>
@@ -512,7 +512,7 @@ const navItems = getNavItemsForRole(defaultRole);
         const st = statusOf(m);
         return `<article class="st-card">
           <div class="st-card-top">${avatarHtml(m, 'is-lg')}<span class="st-badge st-badge-${st.cls}">${st.label}</span></div>
-          <a class="st-card-name" href="/dashboard/staff/detail?id=${m.id}">${esc(m.name)}</a>
+          <a class="st-card-name" href="/staff/detail?id=${m.id}">${esc(m.name)}</a>
           <span class="st-sub">${esc(m.username)} · ${esc(ROLE_LABEL[m.role] ?? m.role)}</span>
           <span class="st-card-pos">${esc(positionLabel(m)) || '—'}</span>
           ${contactHtml(m)}

@@ -41,31 +41,31 @@ export const NAV_GROUPS: NavGroup[] = [
 const ALL_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Dashboard', href: '/dashboard', icon: 'home', group: 'main' },
   // Everyone on the team can see their own pay; the owner has the Staff pay screen instead.
-  { id: 'my-jobs', label: 'My jobs', href: '/dashboard/my-jobs', icon: 'wrench', group: 'main', rule: 'not_owner' },
-  { id: 'my-pay', label: 'My pay', href: '/dashboard/my-pay', icon: 'wallet', group: 'main', rule: 'not_owner' },
-  { id: 'branches', label: 'Branches', href: '/dashboard/branches', icon: 'building', group: 'main', rule: 'company_owner' },
+  { id: 'my-jobs', label: 'My jobs', href: '/my-jobs', icon: 'wrench', group: 'main', rule: 'not_owner' },
+  { id: 'my-pay', label: 'My pay', href: '/my-pay', icon: 'wallet', group: 'main', rule: 'not_owner' },
+  { id: 'branches', label: 'Branches', href: '/branches', icon: 'building', group: 'main', rule: 'company_owner' },
 
-  { id: 'sales', label: 'Sales', href: '/dashboard/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },
-  { id: 'returns', label: 'Returns', href: '/dashboard/sales#returns', icon: 'returns', group: 'sales', perm: 'sales.view' },
-  { id: 'customers', label: 'Customers', href: '/dashboard/customers', icon: 'users', group: 'sales', perm: 'sales.view' },
-  { id: 'servicing', label: 'Follow-ups', href: '/dashboard/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
+  { id: 'sales', label: 'Sales', href: '/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },
+  { id: 'returns', label: 'Returns', href: '/sales#returns', icon: 'returns', group: 'sales', perm: 'sales.view' },
+  { id: 'customers', label: 'Customers', href: '/customers', icon: 'users', group: 'sales', perm: 'sales.view' },
+  { id: 'servicing', label: 'Follow-ups', href: '/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
 
-  { id: 'purchase', label: 'Purchase', href: '/dashboard/purchase', icon: 'clipboard', group: 'purchases', perm: 'purchases.view' },
-  { id: 'purchase-returns', label: 'Purchase Return', href: '/dashboard/purchase#returns', icon: 'returns', group: 'purchases', perm: 'purchases.view' },
-  { id: 'orders', label: 'Orders', href: '/dashboard/orders', icon: 'truck', group: 'orders', perm: 'orders.view' },
-  { id: 'suppliers', label: 'Suppliers', href: '/dashboard/suppliers', icon: 'truck', group: 'purchases', perm: 'purchases.view' },
+  { id: 'purchase', label: 'Purchase', href: '/purchase', icon: 'clipboard', group: 'purchases', perm: 'purchases.view' },
+  { id: 'purchase-returns', label: 'Purchase Return', href: '/purchase#returns', icon: 'returns', group: 'purchases', perm: 'purchases.view' },
+  { id: 'orders', label: 'Orders', href: '/orders', icon: 'truck', group: 'orders', perm: 'orders.view' },
+  { id: 'suppliers', label: 'Suppliers', href: '/suppliers', icon: 'truck', group: 'purchases', perm: 'purchases.view' },
 
-  { id: 'payments', label: 'Payments', href: '/dashboard/payments', icon: 'wallet', group: 'finance', perm: 'finance.view' },
-  { id: 'statements', label: 'Statements', href: '/dashboard/statements', icon: 'clipboard', group: 'finance', rule: 'statements' },
-  { id: 'approvals', label: 'Approvals', href: '/dashboard/approvals', icon: 'shield', group: 'finance', rule: 'approvals' },
+  { id: 'payments', label: 'Payments', href: '/payments', icon: 'wallet', group: 'finance', perm: 'finance.view' },
+  { id: 'statements', label: 'Statements', href: '/statements', icon: 'clipboard', group: 'finance', rule: 'statements' },
+  { id: 'approvals', label: 'Approvals', href: '/approvals', icon: 'shield', group: 'finance', rule: 'approvals' },
 
-  { id: 'inventory', label: 'Inventory', href: '/dashboard/inventory', icon: 'box', group: 'inventory', perm: 'inventory.view' },
+  { id: 'inventory', label: 'Inventory', href: '/inventory', icon: 'box', group: 'inventory', perm: 'inventory.view' },
 
-  { id: 'reports', label: 'Reports', href: '/dashboard/reports', icon: 'chart', group: 'reports', perm: 'reports.view' },
+  { id: 'reports', label: 'Reports', href: '/reports', icon: 'chart', group: 'reports', perm: 'reports.view' },
 
-  { id: 'staff', label: 'Staffs', href: '/dashboard/staff#team', icon: 'users', group: 'staffmgmt', perm: 'staff.view' },
-  { id: 'positions', label: 'Position / Role', href: '/dashboard/staff#positions', icon: 'shield', group: 'staffmgmt', perm: 'staff.view' },
-  { id: 'tasks', label: 'Tasks', href: '/dashboard/tasks', icon: 'clipboard', group: 'staffmgmt' },
+  { id: 'staff', label: 'Staffs', href: '/staff#team', icon: 'users', group: 'staffmgmt', perm: 'staff.view' },
+  { id: 'positions', label: 'Position / Role', href: '/staff#positions', icon: 'shield', group: 'staffmgmt', perm: 'staff.view' },
+  { id: 'tasks', label: 'Tasks', href: '/tasks', icon: 'clipboard', group: 'staffmgmt' },
 ];
 
 /** Codes that let a person decide an approval request. */
@@ -111,7 +111,7 @@ export function getNavItemsForRole(_role?: UserRole, _canManageTeam?: boolean): 
 }
 
 export const BOTTOM_NAV: NavItem[] = [
-  { id: 'settings', label: 'Settings', href: '/dashboard/settings', icon: 'settings', group: 'bottom' },
-  { id: 'help', label: 'Help & Support', href: '/dashboard/help', icon: 'help', group: 'bottom' },
+  { id: 'settings', label: 'Settings', href: '/settings', icon: 'settings', group: 'bottom' },
+  { id: 'help', label: 'Help & Support', href: '/help', icon: 'help', group: 'bottom' },
   { id: 'logout', label: 'Logout', href: '#logout', icon: 'logout', group: 'bottom' },
 ];

@@ -64,7 +64,7 @@ if (!getSession()) window.location.replace("/");
 const saleId = Number(new URLSearchParams(location.search).get("id"));
 
 if (!Number.isInteger(saleId) || saleId <= 0) {
-  window.location.replace("/dashboard/sales");
+  window.location.replace("/sales");
 }
 
 let sale: Sale | null = null;

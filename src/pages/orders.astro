@@ -1,9 +1,9 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import { PAGE_META } from '../../lib/page-meta';
-import type { UserRole } from '../../lib/auth';
-import '../../styles/app/purchase-page.css';
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import { PAGE_META } from '../lib/page-meta';
+import type { UserRole } from '../lib/auth';
+import '../styles/app/purchase-page.css';
 
 const meta = PAGE_META.orders;
 const defaultRole: UserRole = 'owner';
@@ -165,9 +165,9 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession } from '../../lib/auth';
-  import { ApiError } from '../../lib/api';
-  import { listStock, type StockItem } from '../../lib/inventory';
+  import { getSession } from '../lib/auth';
+  import { ApiError } from '../lib/api';
+  import { listStock, type StockItem } from '../lib/inventory';
   import {
     listOrders,
     getOrder,
@@ -184,12 +184,12 @@ const navItems = getNavItemsForRole(defaultRole);
     type Order,
     type OrderSummary,
     type OrderReturn,
-  } from '../../lib/orders';
+  } from '../lib/orders';
 
   const _s = getSession();
   if (!_s) window.location.replace('/');
   // Independent businesses order from suppliers, not from a Head Office.
-  else if (_s.businessType === 'independent') window.location.replace('/dashboard/supplier-orders');
+  else if (_s.businessType === 'independent') window.location.replace('/supplier-orders');
 
   let orders: OrderSummary[] = [];
   let selected: Order | null = null;

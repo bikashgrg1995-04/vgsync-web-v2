@@ -1,0 +1,27 @@
+---
+// Old addresses (/dashboard/sales, /dashboard/staff/detail?id=3, ...) still work:
+// bookmarks and old notification links are sent to the new page, query and #part kept.
+export function getStaticPaths() {
+  const pages = [
+    'approvals', 'branches', 'change-password', 'customers', 'help', 'inventory', 'inventory/detail',
+    'my-jobs', 'my-pay', 'notifications', 'orders', 'payments', 'purchase', 'purchase/detail',
+    'reports', 'returns', 'sales', 'sales/detail', 'servicing', 'settings', 'staff', 'staff/detail',
+    'statements', 'supplier-orders', 'suppliers', 'tasks',
+  ];
+  return pages.map((legacy) => ({ params: { legacy } }));
+}
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting…</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <script is:inline>
+      var rest = location.pathname.replace(/^\/dashboard\/?/, '').replace(/\/+$/, '');
+      location.replace('/' + rest + location.search + location.hash);
+    </script>
+  </body>
+</html>

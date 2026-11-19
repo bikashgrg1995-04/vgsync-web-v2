@@ -156,7 +156,7 @@ const EYE_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" st
 let tablePage = 1;
 
 function detailHref(productId: number): string {
-  return `/dashboard/inventory/detail?id=${productId}`;
+  return `/inventory/detail?id=${productId}`;
 }
 
 function renderPager(totalRows: number): void {

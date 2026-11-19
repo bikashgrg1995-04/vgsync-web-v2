@@ -1,10 +1,10 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import { PAGE_META } from '../../lib/page-meta';
-import type { UserRole } from '../../lib/auth';
-import pkg from '../../../package.json';
-import '../../styles/app/settings-page.css';
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import { PAGE_META } from '../lib/page-meta';
+import type { UserRole } from '../lib/auth';
+import pkg from '../../package.json';
+import '../styles/app/settings-page.css';
 
 const meta = PAGE_META.settings;
 const defaultRole: UserRole = 'owner';
@@ -143,7 +143,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
                 <li>
                   <span class="se-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>
                   <div><strong>Password</strong><small id="gen-password">—</small></div>
-                  <a class="se-btn is-outline" href="/dashboard/change-password">Change</a>
+                  <a class="se-btn is-outline" href="/change-password">Change</a>
                 </li>
                 <li>
                   <span class="se-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>
@@ -336,8 +336,8 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
                 <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm8 2c-2.7 0-8 1.3-8 4v2h16v-2c0-2.7-5.3-4-8-4zM8 13c-.3 0-.6 0-1 .1C5.4 13.4 2 14.5 2 17v2h5v-2c0-1.4.7-2.6 1.8-3.5A9 9 0 0 0 8 13z"></path></svg></span>
                 <div><h3>Users &amp; Permissions</h3><p>Who can sign in, and what each position is allowed to do</p></div>
                 <div class="se-u-actions">
-                  <a class="se-u-btn" href="/dashboard/staff#positions">Manage positions</a>
-                  <a class="se-u-btn is-primary" href="/dashboard/staff">Manage staff</a>
+                  <a class="se-u-btn" href="/staff#positions">Manage positions</a>
+                  <a class="se-u-btn is-primary" href="/staff">Manage staff</a>
                 </div>
               </header>
               <div class="se-u-kpis">
@@ -371,7 +371,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
             <article class="se-card">
               <header class="se-card-head">
                 <div><h3>Approval rules</h3><p>Amounts above the limit wait for an approver.</p></div>
-                <div class="se-u-actions"><a class="se-u-btn" href="/dashboard/approvals#rules">Edit rules</a></div>
+                <div class="se-u-actions"><a class="se-u-btn" href="/approvals#rules">Edit rules</a></div>
               </header>
               <ul class="se-u-list" id="u-rules-list"><li class="se-u-empty">Loading…</li></ul>
             </article>
@@ -401,7 +401,7 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
               <div><dt>Session started</dt><dd id="sec-session">—</dd></div>
               <div><dt>Password status</dt><dd id="sec-password-status">—</dd></div>
             </dl>
-            <div class="se-actions"><a class="se-btn is-primary" href="/dashboard/change-password">Change password</a></div>
+            <div class="se-actions"><a class="se-btn is-primary" href="/change-password">Change password</a></div>
           </article>
         </section>
 
@@ -426,12 +426,12 @@ const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'n
 </AppLayout>
 
 <script>
-  import { getSession, ApiError, can } from '../../lib/auth';
-  import { paintAvatar, setAvatarFromFile, clearAvatar } from '../../lib/avatar';
-  import { getMyProfile, saveMyProfile, getBusiness, getCompanyName } from '../../lib/settings';
-  import { api, apiDownload } from '../../lib/api';
-  import { listStaff, listPositions, loadCatalogue } from '../../lib/staff';
-  import { listRules, KIND_LABEL } from '../../lib/approvals';
+  import { getSession, ApiError, can } from '../lib/auth';
+  import { paintAvatar, setAvatarFromFile, clearAvatar } from '../lib/avatar';
+  import { getMyProfile, saveMyProfile, getBusiness, getCompanyName } from '../lib/settings';
+  import { api, apiDownload } from '../lib/api';
+  import { listStaff, listPositions, loadCatalogue } from '../lib/staff';
+  import { listRules, KIND_LABEL } from '../lib/approvals';
 
   const THEME_KEY = 'vgsync-theme';
   const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;

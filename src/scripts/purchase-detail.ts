@@ -31,7 +31,7 @@ if (!getSession()) window.location.replace("/");
 const purchaseId = Number(new URLSearchParams(location.search).get("id"));
 
 if (!Number.isInteger(purchaseId) || purchaseId <= 0) {
-  window.location.replace("/dashboard/purchase");
+  window.location.replace("/purchase");
 }
 
 let purchase: Purchase | null = null;

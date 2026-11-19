@@ -23,7 +23,7 @@ if (!getSession()) window.location.replace("/");
 const productId = Number(new URLSearchParams(location.search).get("id"));
 
 if (!Number.isInteger(productId) || productId <= 0) {
-  window.location.replace("/dashboard/inventory");
+  window.location.replace("/inventory");
 }
 
 const MOVES_PAGE_SIZE = 25;

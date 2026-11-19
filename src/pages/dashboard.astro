@@ -55,11 +55,11 @@ const navItems = getNavItemsForRole(defaultRole);
 
         <div class="ov-side">
           <section class="ov-card">
-            <h3><span class="ov-ico" aria-hidden="true">▦</span> Installments Overview <a href="/dashboard/sales#followups" class="ov-more">View All →</a></h3>
+            <h3><span class="ov-ico" aria-hidden="true">▦</span> Installments Overview <a href="/sales#followups" class="ov-more">View All →</a></h3>
             <div id="ov-installments"></div>
           </section>
           <section class="ov-card">
-            <h3><span class="ov-ico" aria-hidden="true">⚖</span> Credit Overview <a href="/dashboard/reports" class="ov-more">View All →</a></h3>
+            <h3><span class="ov-ico" aria-hidden="true">⚖</span> Credit Overview <a href="/reports" class="ov-more">View All →</a></h3>
             <div id="ov-credit"></div>
           </section>
         </div>
@@ -69,11 +69,11 @@ const navItems = getNavItemsForRole(defaultRole);
 
       <div class="ov-trio">
         <section class="ov-card">
-          <h3><span class="ov-ico" aria-hidden="true">⬢</span> Stock Alerts <a href="/dashboard/inventory" class="ov-more">View Details →</a></h3>
+          <h3><span class="ov-ico" aria-hidden="true">⬢</span> Stock Alerts <a href="/inventory" class="ov-more">View Details →</a></h3>
           <div id="ov-low"></div>
         </section>
         <section class="ov-card">
-          <h3><span class="ov-ico" aria-hidden="true">🔧</span> Servicing Follow-ups <a href="/dashboard/sales#followups" class="ov-more">View All →</a></h3>
+          <h3><span class="ov-ico" aria-hidden="true">🔧</span> Servicing Follow-ups <a href="/sales#followups" class="ov-more">View All →</a></h3>
           <div id="ov-servicing"></div>
         </section>
         <section class="ov-card">
@@ -93,7 +93,7 @@ const navItems = getNavItemsForRole(defaultRole);
 
     <div class="ov-grid" id="ov-legacy">
       <section class="ov-card" id="ov-mytasks-card">
-        <h3>My tasks <a href="/dashboard/tasks" class="ov-more">Open</a></h3>
+        <h3>My tasks <a href="/tasks" class="ov-more">Open</a></h3>
         <div id="ov-mytasks"></div>
       </section>
       <section class="ov-card">
@@ -101,15 +101,15 @@ const navItems = getNavItemsForRole(defaultRole);
         <div id="ov-chart"></div>
       </section>
       <section class="ov-card">
-        <h3>Follow-ups due <a href="/dashboard/sales" class="ov-more">Open</a></h3>
+        <h3>Follow-ups due <a href="/sales" class="ov-more">Open</a></h3>
         <div id="ov-follow"></div>
       </section>
       <section class="ov-card">
-        <h3>Stock to watch <a href="/dashboard/inventory" class="ov-more">Open</a></h3>
+        <h3>Stock to watch <a href="/inventory" class="ov-more">Open</a></h3>
         <div id="ov-stock"></div>
       </section>
       <section class="ov-card">
-        <h3>Recent sales <a href="/dashboard/sales" class="ov-more">Open</a></h3>
+        <h3>Recent sales <a href="/sales" class="ov-more">Open</a></h3>
         <div id="ov-sales"></div>
       </section>
     </div>
@@ -165,7 +165,7 @@ const navItems = getNavItemsForRole(defaultRole);
     );
     const rows = sorted.slice(0, 6).map((t) => {
       const due = t.dueDate ? `${t.isOverdue ? 'overdue · ' : 'due '}${esc(t.dueDate)}` : 'no due date';
-      return `<li><span><a href="/dashboard/tasks?id=${t.id}">${esc(t.title)}</a><em>${due}${t.status === 'in_progress' ? ' · in progress' : ''}</em></span>${t.isOverdue ? '<b class="ov-tag">Overdue</b>' : t.priority === 'high' ? '<b class="ov-tag">High</b>' : ''}</li>`;
+      return `<li><span><a href="/tasks?id=${t.id}">${esc(t.title)}</a><em>${due}${t.status === 'in_progress' ? ' · in progress' : ''}</em></span>${t.isOverdue ? '<b class="ov-tag">Overdue</b>' : t.priority === 'high' ? '<b class="ov-tag">High</b>' : ''}</li>`;
     });
     const more = sorted.length > 6 ? `<p class="ov-empty">+ ${sorted.length - 6} more</p>` : '';
     return `<ul class="ov-list">${rows.join('')}</ul>${more}`;
@@ -202,20 +202,20 @@ const navItems = getNavItemsForRole(defaultRole);
     if (sales && !can(s, 'dashboard.view')) {
       const t = sales.filter((x) => x.saleDate === today);
       const m = sales.filter((x) => x.saleDate >= month);
-      kpis.push(kpi("Today's sales", formatNpr(t.reduce((a, x) => a + x.netTotal, 0)), `${t.length} sale${t.length === 1 ? '' : 's'}`, 'strong', '/dashboard/sales'));
+      kpis.push(kpi("Today's sales", formatNpr(t.reduce((a, x) => a + x.netTotal, 0)), `${t.length} sale${t.length === 1 ? '' : 's'}`, 'strong', '/sales'));
       kpis.push(kpi('This month', formatNpr(m.reduce((a, x) => a + x.netTotal, 0)), `${m.length} sale${m.length === 1 ? '' : 's'}`));
     }
     if (follow) {
       const over = follow.filter((f: Followup) => f.isOverdue).length;
-      kpis.push(kpi('Follow-ups pending', String(follow.length), over ? `${over} overdue` : 'none overdue', over ? 'danger' : '', '/dashboard/sales'));
+      kpis.push(kpi('Follow-ups pending', String(follow.length), over ? `${over} overdue` : 'none overdue', over ? 'danger' : '', '/sales'));
     }
     if (stock) {
       const sm = getInventorySummary(stock);
-      kpis.push(kpi('Low or out of stock', String(sm.lowCount + sm.outCount), `${sm.outCount} out · ${sm.lowCount} low`, sm.outCount ? 'danger' : '', '/dashboard/inventory'));
+      kpis.push(kpi('Low or out of stock', String(sm.lowCount + sm.outCount), `${sm.outCount} out · ${sm.lowCount} low`, sm.outCount ? 'danger' : '', '/inventory'));
     }
     if (orders) {
       const open = orders.filter((o: OrderSummary) => ['ordered', 'partially_dispatched', 'dispatched', 'partially_received'].includes(o.status));
-      kpis.push(kpi('Open stock orders', String(open.length), s.businessType === 'branch' ? 'with Head Office' : 'from branches', '', '/dashboard/orders'));
+      kpis.push(kpi('Open stock orders', String(open.length), s.businessType === 'branch' ? 'with Head Office' : 'from branches', '', '/orders'));
     }
     $('ov-kpis').innerHTML = kpis.join('');
 
@@ -335,10 +335,10 @@ const navItems = getNavItemsForRole(defaultRole);
 
     const due = d.due;
     $('ov-due').innerHTML = [
-      alertCard('is-emi', '🗓', 'Installment Due Soon', `${due.installments.count} installment${due.installments.count === 1 ? '' : 's'}`, due.installments.count ? 'are due within 3 days' : 'none due within 3 days', '/dashboard/sales#followups'),
-      alertCard('is-pay', '💳', 'Purchase Credit Due', formatNpr(n(due.purchase_credit.amount)), inDays(due.purchase_credit.days) || 'nothing due this week', '/dashboard/purchase'),
-      alertCard('is-recv', '💰', 'Sales Credit Due', formatNpr(n(due.sales_credit.amount)), inDays(due.sales_credit.days) || 'nothing due this week', '/dashboard/sales#followups'),
-      alertCard('is-serv', '🔧', 'Servicing Follow-ups', `${due.servicing.count} customer${due.servicing.count === 1 ? '' : 's'}`, due.servicing.count ? 'need follow-up' : 'all caught up', '/dashboard/sales#followups'),
+      alertCard('is-emi', '🗓', 'Installment Due Soon', `${due.installments.count} installment${due.installments.count === 1 ? '' : 's'}`, due.installments.count ? 'are due within 3 days' : 'none due within 3 days', '/sales#followups'),
+      alertCard('is-pay', '💳', 'Purchase Credit Due', formatNpr(n(due.purchase_credit.amount)), inDays(due.purchase_credit.days) || 'nothing due this week', '/purchase'),
+      alertCard('is-recv', '💰', 'Sales Credit Due', formatNpr(n(due.sales_credit.amount)), inDays(due.sales_credit.days) || 'nothing due this week', '/sales#followups'),
+      alertCard('is-serv', '🔧', 'Servicing Follow-ups', `${due.servicing.count} customer${due.servicing.count === 1 ? '' : 's'}`, due.servicing.count ? 'need follow-up' : 'all caught up', '/sales#followups'),
     ].join('');
 
     $('ov-tiles').innerHTML = tiles(d.overview);
@@ -354,11 +354,11 @@ const navItems = getNavItemsForRole(defaultRole);
 
     const m = (v: string) => n(v);
     $('ov-owner-kpis').innerHTML = [
-      kpi('Profit (cash)', formatNpr(m(d.profit_month)), 'this month', m(d.profit_month) < 0 ? 'danger' : 'strong', '/dashboard/reports'),
+      kpi('Profit (cash)', formatNpr(m(d.profit_month)), 'this month', m(d.profit_month) < 0 ? 'danger' : 'strong', '/reports'),
       kpi('Cash in hand', formatNpr(m(d.cash.cash))),
       kpi('In the bank', formatNpr(m(d.cash.bank)), d.cash.other !== '0.00' ? `+ ${formatNpr(m(d.cash.other))} other` : ''),
-      kpi('Stock value', formatNpr(m(d.stock.value)), d.stock.damaged_value !== '0.00' ? `${formatNpr(m(d.stock.damaged_value))} damaged` : '', '', '/dashboard/inventory'),
-      kpi('Approvals waiting', String(d.approvals_pending), `${d.staff.active} active staff`, d.approvals_pending ? 'strong' : '', '/dashboard/approvals'),
+      kpi('Stock value', formatNpr(m(d.stock.value)), d.stock.damaged_value !== '0.00' ? `${formatNpr(m(d.stock.damaged_value))} damaged` : '', '', '/inventory'),
+      kpi('Approvals waiting', String(d.approvals_pending), `${d.staff.active} active staff`, d.approvals_pending ? 'strong' : '', '/approvals'),
     ].join('');
 
     $('ov-low').innerHTML = d.low_stock.items.length

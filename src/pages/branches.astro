@@ -1,8 +1,8 @@
 ---
-import AppLayout from '../../layouts/AppLayout.astro';
-import { getNavItemsForRole, BOTTOM_NAV } from '../../lib/navigation';
-import { PAGE_META } from '../../lib/page-meta';
-import type { UserRole } from '../../lib/auth';
+import AppLayout from '../layouts/AppLayout.astro';
+import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
+import { PAGE_META } from '../lib/page-meta';
+import type { UserRole } from '../lib/auth';
 
 const meta = PAGE_META.branches;
 const defaultRole: UserRole = 'owner';
@@ -55,10 +55,10 @@ const navItems = getNavItemsForRole(defaultRole);
 </AppLayout>
 
 <script>
-  import { getSession, switchBranch } from '../../lib/auth';
-  import { ApiError } from '../../lib/api';
-  import { getCompanyName } from '../../lib/settings';
-  import { listBusinesses, TYPE_LABEL, type BusinessRow } from '../../lib/branches';
+  import { getSession, switchBranch } from '../lib/auth';
+  import { ApiError } from '../lib/api';
+  import { getCompanyName } from '../lib/settings';
+  import { listBusinesses, TYPE_LABEL, type BusinessRow } from '../lib/branches';
 
   const session = getSession();
   if (!session) window.location.replace('/');
@@ -88,7 +88,7 @@ const navItems = getNavItemsForRole(defaultRole);
   async function open(id: number): Promise<void> {
     try {
       await switchBranch(id);
-      window.location.href = '/dashboard/branches';
+      window.location.href = '/branches';
     } catch (error) {
       notice(describe(error));
     }
