@@ -178,6 +178,7 @@ function cachePrefix(): string | null {
 }
 
 const inflight = new Map<string, Promise<void>>();
+const firstLoads = new Map<string, Promise<unknown>>();
 
 function revalidate(path: string, key: string, held: CacheEntry): void {
   if (inflight.has(key)) return;
@@ -211,11 +212,24 @@ async function cachedGet<T>(path: string, prefix: string): Promise<T> {
     return held.data as T;
   }
 
-  const res = await authedSend(path, 'GET', undefined);
-  const data = await readBody(res);
-  failIfNeeded(res, data);
-  void cacheWrite(key, { data, etag: res.headers.get('ETag'), at: Date.now() });
-  return data as T;
+  // Several parts of a page often ask for the same list at once (e.g. branches):
+  // ask the server once and hand the same answer to all of them.
+  const pending = firstLoads.get(key);
+  if (pending) return (await pending) as T;
+
+  const job = (async () => {
+    const res = await authedSend(path, 'GET', undefined);
+    const data = await readBody(res);
+    failIfNeeded(res, data);
+    void cacheWrite(key, { data, etag: res.headers.get('ETag'), at: Date.now() });
+    return data;
+  })();
+  firstLoads.set(key, job);
+  try {
+    return (await job) as T;
+  } finally {
+    firstLoads.delete(key);
+  }
 }
 
 /** Sends the request with the Bearer token, refreshing it once on a 401. */
