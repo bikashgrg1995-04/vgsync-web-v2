@@ -1,0 +1,44 @@
+<section class="se-panel" data-settings-panel="profile">
+  <article class="se-card">
+    <header class="se-card-head">
+      <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0z"></path></svg></span>
+      <div><h3>Profile</h3><p>Your account identity and photo across branches you can access</p></div>
+    </header>
+
+    <div class="se-profile-row">
+      <div class="se-avatar-wrap">
+        <div class="se-avatar" id="settings-avatar">BG</div>
+        <label class="se-avatar-upload" for="avatar-file" title="Upload photo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        </label>
+        <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp" hidden />
+      </div>
+      <div class="se-profile-text">
+        <strong id="settings-display-name">—</strong>
+        <span id="settings-role-line">—</span>
+        <div class="se-avatar-actions">
+          <button type="button" class="se-link" id="avatar-change">Change photo</button>
+          <button type="button" class="se-link is-danger" id="avatar-remove">Remove</button>
+        </div>
+        <p class="se-hint" id="avatar-hint">JPG, PNG or WebP · max 512 KB · kept on this device</p>
+      </div>
+    </div>
+
+    <div class="se-fields">
+      <label class="se-field"><span>First name</span><input type="text" id="set-first" autocomplete="given-name" maxlength="150" /></label>
+      <label class="se-field"><span>Last name</span><input type="text" id="set-last" autocomplete="family-name" maxlength="150" /></label>
+      <label class="se-field"><span>Email</span><input type="email" id="set-email" autocomplete="email" /></label>
+      <label class="se-field"><span>Phone</span><input type="tel" id="set-phone" autocomplete="tel" maxlength="20" /></label>
+      <label class="se-field"><span>Username</span><input type="text" id="set-username" readonly /></label>
+      <label class="se-field"><span>Role</span><input type="text" id="set-role" readonly /></label>
+      <label class="se-field is-wide"><span>Home branch</span><input type="text" id="set-home-branch" readonly /></label>
+    </div>
+    <p class="se-error" id="profile-error" hidden></p>
+    <div class="se-actions">
+      <button type="button" class="se-btn is-primary" id="save-profile">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v5h8"></path></svg>
+        Save Changes
+      </button>
+    </div>
+  </article>
+</section>

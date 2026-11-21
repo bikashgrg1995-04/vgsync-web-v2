@@ -8,6 +8,13 @@ const meta = PAGE_META.payments;
 const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
 import '../styles/pages/payments.css';
+import Toolbar from '../components/payments/Toolbar.astro';
+import LedgerPanel from '../components/payments/LedgerPanel.astro';
+import CashPanel from '../components/payments/CashPanel.astro';
+import CheckDialog from '../components/payments/CheckDialog.astro';
+import IncentivesPanel from '../components/payments/IncentivesPanel.astro';
+import DailyPanel from '../components/payments/DailyPanel.astro';
+import PayrollPanel from '../components/payments/PayrollPanel.astro';
 ---
 
 <AppLayout
@@ -23,77 +30,15 @@ import '../styles/pages/payments.css';
   showBranchSwitcher={true}
 >
   <div class="py-page">
-    <div class="py-toolbar">
-      <div>
-        <p class="py-scope" id="py-scope">Payments</p>
-        <div class="py-tabs" role="tablist">
-          <button type="button" class="py-tab is-active" data-tab="expenses">Expenses</button>
-          <button type="button" class="py-tab" data-tab="income">Income</button>
-          <button type="button" class="py-tab" data-tab="payroll">Staff pay</button>
-          <button type="button" class="py-tab" data-tab="daily">Daily sheet</button>
-          <button type="button" class="py-tab" data-tab="incentives">Incentives</button>
-          <button type="button" class="py-tab" data-tab="cash">Cash &amp; bank</button>
-        </div>
-      </div>
-      <div class="py-toolbar-right">
-        <button type="button" class="btn-ghost-sm" id="py-refresh">Refresh</button>
-        <button type="button" class="btn-primary-sm" id="py-add" hidden>+ Add expense</button>
-      </div>
-    </div>
+    <Toolbar />
 
     <p class="py-notice" id="py-notice" hidden></p>
 
     <!-- Expenses / Income -->
-    <section class="py-panel is-active" data-panel="ledger">
-      <div class="py-kpis" id="lg-kpis"></div>
-      <div class="py-card">
-        <div class="py-filters">
-          <select id="lg-category" aria-label="Category"></select>
-          <select id="lg-status" aria-label="Status">
-            <option value="">All status</option>
-            <option value="active">Active</option>
-            <option value="void">Void</option>
-          </select>
-          <label class="py-inline">From <input type="date" id="lg-from" /></label>
-          <label class="py-inline">To <input type="date" id="lg-to" /></label>
-        </div>
-        <div class="py-table-wrap">
-          <table class="py-table">
-            <thead>
-              <tr><th>Date</th><th>Category</th><th>Details</th><th>Method</th><th class="num">Amount</th><th>Status</th><th></th></tr>
-            </thead>
-            <tbody id="lg-tbody"><tr><td colspan="8" class="py-empty">Loading…</td></tr></tbody>
-          </table>
-        </div>
-        <p class="py-foot" id="lg-foot"></p>
-      </div>
-    </section>
+    <LedgerPanel />
 
     <!-- Cash and bank -->
-    <section class="py-panel" data-panel="cash">
-      <div class="py-card">
-        <div class="py-filters">
-          <label class="py-field"><span>As at</span><input type="date" id="cb-date" /></label>
-        </div>
-        <div class="py-table-wrap">
-          <table class="py-table">
-            <thead><tr><th>Method</th><th class="num">Opening</th><th class="num">Received</th><th class="num">Paid</th><th class="num">Books say</th><th>Last check</th><th></th></tr></thead>
-            <tbody id="cb-rows"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
-          </table>
-        </div>
-        <p class="py-hint" id="cb-hint"></p>
-        <p class="py-hint">Set the opening balance once (what you held at the end of a date), then check against the cash in the drawer or your bank statement. Money received and paid after the opening date is added automatically from sales, purchases, salaries, expenses and income.</p>
-      </div>
-      <div class="py-card">
-        <h3 class="py-h">Past checks</h3>
-        <div class="py-table-wrap">
-          <table class="py-table">
-            <thead><tr><th>Date</th><th>Method</th><th class="num">Books said</th><th class="num">Counted</th><th class="num">Difference</th><th>Note</th><th>By</th></tr></thead>
-            <tbody id="cb-history"><tr><td colspan="7" class="py-empty">No checks yet.</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
+    <CashPanel />
 
     <dialog class="py-dialog" id="dlg-open-bal">
       <form method="dialog" class="py-dialog-inner" id="form-open-bal">
@@ -108,106 +53,16 @@ import '../styles/pages/payments.css';
       </form>
     </dialog>
 
-    <dialog class="py-dialog" id="dlg-check">
-      <form method="dialog" class="py-dialog-inner" id="form-check">
-        <h2 class="py-dialog-title" id="ck-title">Check</h2>
-        <p class="py-hint" id="ck-expected"></p>
-        <label class="py-field"><span>Date *</span><input type="date" id="ck-date" required /></label>
-        <label class="py-field"><span>Counted / bank statement balance *</span><input type="number" id="ck-counted" step="0.01" required /></label>
-        <label class="py-field"><span>Note</span><input type="text" id="ck-note" maxlength="200" /></label>
-        <label class="py-field py-check"><input type="checkbox" id="ck-adjust" /> <span>Record any difference in the books (adds an income or expense entry)</span></label>
-        <p class="py-error" id="ck-error" hidden></p>
-        <div class="py-actions">
-          <button type="button" class="btn-ghost-sm" data-close="dlg-check">Cancel</button>
-          <button type="submit" class="btn-primary-sm">Save check</button>
-        </div>
-      </form>
-    </dialog>
+    <CheckDialog />
 
     <!-- Incentives -->
-    <section class="py-panel" data-panel="incentives">
-      <div class="py-card">
-        <div class="py-filters"><strong>How incentive is worked out</strong><span class="py-hint">Each rule pays on what a person did in the month.</span></div>
-        <form id="ir-form" class="py-filters" hidden>
-          <input id="ir-name" placeholder="Rule name" maxlength="100" required />
-          <select id="ir-basis"></select>
-          <input id="ir-value" type="number" min="0.01" step="0.01" placeholder="% or amount" required />
-          <select id="ir-target"></select>
-          <button type="submit" class="btn-primary-sm">Add rule</button>
-        </form>
-        <p class="py-error" id="ir-error" role="alert" hidden></p>
-        <div class="py-table-wrap">
-          <table class="py-table">
-            <thead><tr><th>Rule</th><th>Pays on</th><th class="num">Rate</th><th>For</th><th></th></tr></thead>
-            <tbody id="ir-rules"></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="py-card">
-        <div class="py-filters">
-          <input type="month" id="in-month" />
-          <button type="button" class="btn-ghost-sm" id="in-refresh">Refresh</button>
-          <span class="py-hint" id="in-sum"></span>
-          <button type="button" class="btn-primary-sm" id="in-apply-all" hidden>Add all to pay</button>
-        </div>
-        <p class="py-error" id="in-error" role="alert" hidden></p>
-        <div class="py-table-wrap">
-          <table class="py-table">
-            <thead><tr><th>Person</th><th>What it comes from</th><th class="num">Incentive</th><th>Status</th><th></th></tr></thead>
-            <tbody id="in-rows"></tbody>
-          </table>
-        </div>
-        <p class="py-hint">Adding puts the amount in the person's pay as a bonus, once per month. Void that bonus on Staff pay to redo a month. Returns are not taken off.</p>
-      </div>
-    </section>
+    <IncentivesPanel />
 
     <!-- Daily sheet -->
-    <section class="py-panel" data-panel="daily">
-      <div class="py-card">
-        <div class="py-filters">
-          <button type="button" class="btn-ghost-sm" id="ds-prev" aria-label="Previous day">‹</button>
-          <input type="date" id="ds-date" />
-          <button type="button" class="btn-ghost-sm" id="ds-next" aria-label="Next day">›</button>
-          <button type="button" class="btn-ghost-sm" id="ds-all">Everyone present</button>
-          <span class="py-hint" id="ds-sum"></span>
-          <button type="button" class="btn-primary-sm" id="ds-save">Save day</button>
-        </div>
-        <p class="py-error" id="ds-error" role="alert" hidden></p>
-        <div class="py-table-wrap">
-          <table class="py-table">
-            <thead>
-              <tr><th>Staff</th><th class="num">Daily rate</th><th>Today</th><th class="num">Day's wage</th><th class="num">Extra</th><th>Note</th><th class="num">Day's pay</th><th>This month</th></tr>
-            </thead>
-            <tbody id="ds-tbody"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
-          </table>
-        </div>
-        <p class="py-note">Present pays the full daily rate, Half pays half, Absent pays nothing. If the wage is different that day (or there is no fixed rate), type it in Day's wage. Marking a day again changes the wage already recorded. Only people on daily pay are listed.</p>
-      </div>
-    </section>
+    <DailyPanel />
 
     <!-- Payroll -->
-    <section class="py-panel" data-panel="payroll">
-      <div class="py-kpis" id="pr-kpis"></div>
-      <div id="pr-setup" class="py-setup" hidden></div>
-      <div class="py-layout">
-        <div class="py-card">
-          <div class="py-filters">
-            <input type="search" id="pr-search" placeholder="Search staff…" autocomplete="off" />
-          </div>
-          <div class="py-table-wrap">
-            <table class="py-table">
-              <thead>
-                <tr><th>Staff</th><th>Pay</th><th class="num">Owed now</th><th class="num">Advance</th><th>Next salary</th></tr>
-              </thead>
-              <tbody id="pr-tbody"><tr><td colspan="5" class="py-empty">Loading…</td></tr></tbody>
-            </table>
-          </div>
-        </div>
-        <aside class="py-card" id="pr-detail">
-          <p class="py-empty-detail">Select a person to see their account and statement.</p>
-        </aside>
-      </div>
-    </section>
+    <PayrollPanel />
   </div>
 
   <!-- Ledger form -->

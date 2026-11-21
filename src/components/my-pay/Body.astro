@@ -1,0 +1,34 @@
+<div id="mp-body" hidden>
+  <div class="pd-kpis">
+    <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Still to be paid</span><div class="pd-kpi-row"><strong id="mp-owed">—</strong></div><span class="pd-kpi-sub" id="mp-owed-sub">Earned but not paid yet</span></div></article>
+    <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Advance</span><div class="pd-kpi-row"><strong id="mp-adv">—</strong></div><span class="pd-kpi-sub">Paid ahead, used against the next salary</span></div></article>
+    <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Paid so far</span><div class="pd-kpi-row"><strong id="mp-paid">—</strong></div><span class="pd-kpi-sub" id="mp-last">—</span></div></article>
+    <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Next salary</span><div class="pd-kpi-row"><strong id="mp-next">—</strong></div><span class="pd-kpi-sub" id="mp-type">—</span></div></article>
+  </div>
+
+  <section class="pu-card" id="mp-incentive-card" hidden>
+    <div class="pu-filters"><strong>Incentive this month</strong><span class="pd-hint">So far, from your sales and jobs. It is added to your pay when the owner confirms it.</span></div>
+    <p><strong id="mp-inc-total">—</strong></p>
+    <p class="pd-hint" id="mp-inc-lines"></p>
+  </section>
+
+  <section class="pu-card" id="mp-unsettled-card" hidden>
+    <div class="pu-filters"><strong>Waiting to be paid</strong></div>
+    <div class="pu-table-wrap">
+      <table class="pu-table">
+        <thead><tr><th>Date</th><th>What for</th><th class="num">Amount</th><th class="num">Paid</th><th class="num">Left</th></tr></thead>
+        <tbody id="mp-unsettled"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="pu-card">
+    <div class="pu-filters"><strong>Statement</strong><span class="pu-count" id="mp-count"></span></div>
+    <div class="pu-table-wrap">
+      <table class="pu-table">
+        <thead><tr><th>Date</th><th>What</th><th>How</th><th class="num">Earned</th><th class="num">Deducted</th><th class="num">Paid</th><th class="num">Still owed</th></tr></thead>
+        <tbody id="mp-rows"></tbody>
+      </table>
+    </div>
+  </section>
+</div>

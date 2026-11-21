@@ -6,6 +6,8 @@ import type { UserRole } from '../lib/auth';
 import PurchaseDialogs from '../components/purchase/PurchaseDialogs.astro';
 import '../styles/widgets/purchase-shared.css';
 import '../styles/widgets/purchase-page.css';
+import Hero from '../components/supplier-orders/Hero.astro';
+import Card from '../components/supplier-orders/Card.astro';
 
 const meta = PAGE_META.orders;
 const defaultRole: UserRole = 'owner';
@@ -25,20 +27,7 @@ const navItems = getNavItemsForRole(defaultRole);
   showBranchSwitcher={true}
 >
   <div class="pu-page pd-page">
-    <header class="pd-hero">
-      <div class="pd-hero-text">
-        <div>
-          <h2 class="pd-hero-title">Orders</h2>
-          <p class="pd-hero-sub">Orders you placed with suppliers. When the goods arrive, receive them here: good stock and damaged stock are kept apart.</p>
-          <p class="pu-scope" id="so-scope" hidden></p>
-        </div>
-      </div>
-      <div class="pd-hero-actions">
-        <button type="button" class="btn-primary-sm" id="so-new" hidden>+ New Order</button>
-        <button type="button" class="btn-ghost-sm" id="so-refresh">Refresh</button>
-        <a class="btn-ghost-sm pd-link-btn" href="/purchase">All purchases</a>
-      </div>
-    </header>
+    <Hero />
 
     <p class="pu-notice" id="so-notice" hidden></p>
 
@@ -49,23 +38,7 @@ const navItems = getNavItemsForRole(defaultRole);
       <article class="pd-kpi"><div class="pd-kpi-body"><span class="pd-kpi-label">Received</span><div class="pd-kpi-row"><strong id="so-k-done">—</strong></div><span class="pd-kpi-sub">Now in Purchase</span></div></article>
     </div>
 
-    <section class="pu-card">
-      <div class="pu-filters">
-        <select id="so-filter" aria-label="Show">
-          <option value="open">Waiting for goods</option>
-          <option value="damaged">Damaged on arrival</option>
-          <option value="received">Received</option>
-          <option value="all">All orders</option>
-        </select>
-        <span class="pu-count" id="so-count"></span>
-      </div>
-      <div class="pu-table-wrap">
-        <table class="pu-table">
-          <thead><tr><th>Order</th><th>Date</th><th>Supplier</th><th>Status</th><th class="num">Ordered</th><th class="num">Good</th><th class="num">Damaged</th><th>Actions</th></tr></thead>
-          <tbody id="so-tbody"><tr><td colspan="8" class="pu-empty">Loading…</td></tr></tbody>
-        </table>
-      </div>
-    </section>
+    <Card />
   </div>
 
   <PurchaseDialogs />

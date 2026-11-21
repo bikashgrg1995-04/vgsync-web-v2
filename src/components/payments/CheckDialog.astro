@@ -1,0 +1,15 @@
+<dialog class="py-dialog" id="dlg-check">
+  <form method="dialog" class="py-dialog-inner" id="form-check">
+    <h2 class="py-dialog-title" id="ck-title">Check</h2>
+    <p class="py-hint" id="ck-expected"></p>
+    <label class="py-field"><span>Date *</span><input type="date" id="ck-date" required /></label>
+    <label class="py-field"><span>Counted / bank statement balance *</span><input type="number" id="ck-counted" step="0.01" required /></label>
+    <label class="py-field"><span>Note</span><input type="text" id="ck-note" maxlength="200" /></label>
+    <label class="py-field py-check"><input type="checkbox" id="ck-adjust" /> <span>Record any difference in the books (adds an income or expense entry)</span></label>
+    <p class="py-error" id="ck-error" hidden></p>
+    <div class="py-actions">
+      <button type="button" class="btn-ghost-sm" data-close="dlg-check">Cancel</button>
+      <button type="submit" class="btn-primary-sm">Save check</button>
+    </div>
+  </form>
+</dialog>

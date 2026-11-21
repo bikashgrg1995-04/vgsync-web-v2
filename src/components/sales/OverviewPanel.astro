@@ -1,0 +1,18 @@
+---
+import OverviewPanelKpis from './OverviewPanelKpis.astro';
+import OverviewPanelGrid from './OverviewPanelGrid.astro';
+---
+
+<section class="sa-panel is-active" data-panel="overview">
+  <OverviewPanelKpis />
+
+  <nav class="sa-subnav" aria-label="Sales sections">
+    <button type="button" class="sa-chip" data-goto="list">All sales</button>
+    <button type="button" class="sa-chip" data-goto="returns">Returns</button>
+    <button type="button" class="sa-chip" data-goto="credits">Customer credit</button>
+    <button type="button" class="sa-chip" data-goto="followups">Follow-ups</button>
+    <button type="button" class="sa-chip" data-goto="bikes">Bikes &amp; local products</button>
+  </nav>
+
+  <OverviewPanelGrid />
+</section>

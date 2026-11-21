@@ -1,0 +1,49 @@
+---
+import BranchInfoSection from './BranchInfoSection.astro';
+import SecuritySection from './SecuritySection.astro';
+import DataManagementSection from './DataManagementSection.astro';
+import AboutSection from './AboutSection.astro';
+---
+
+<div class="se-grid">
+  <!-- General settings -->
+  <article class="se-card">
+    <header class="se-card-head">
+      <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M4 21V4a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v6h5a1 1 0 0 1 1 1v10zM7 7v2h2V7zm0 4v2h2v-2zm0 4v2h2v-2zm6 0v2h2v-2zm0-4v2h2v-2z"></path></svg></span>
+      <div><h3>General Settings</h3><p>Basic settings for your store</p></div>
+    </header>
+    <div class="se-form">
+      <label class="se-row"><span>Store Name</span><input type="text" id="gen-name" readonly /></label>
+      <label class="se-row"><span>Currency</span><input type="text" value="NPR (Rs.)" readonly /></label>
+      <label class="se-row"><span>Timezone</span><input type="text" value="Asia/Kathmandu" readonly /></label>
+    </div>
+    <p class="se-hint">These are set for your business. To change them, contact VGSync support.</p>
+  </article>
+
+  <!-- Branch information -->
+  <BranchInfoSection />
+
+  <!-- Notifications -->
+  <article class="se-card">
+    <header class="se-card-head">
+      <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.5 2.5 0 0 0 2.4-1.8h-4.8A2.5 2.5 0 0 0 12 22zm7-5.5V11a7 7 0 0 0-5-6.7V3.5a2 2 0 0 0-4 0v.8A7 7 0 0 0 5 11v5.5l-2 2V20h18v-1.5z"></path></svg></span>
+      <div><h3>Notifications</h3><p>Tasks and follow-ups reach you in the app, under the bell at the top</p></div>
+    </header>
+    <ul class="se-toggles">
+      <li>
+        <span class="se-ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg></span>
+        <div><strong>In-App Notifications</strong><small>Always on: new tasks, task updates and due follow-ups</small></div>
+        <input type="checkbox" class="se-switch" checked disabled aria-label="In-app notifications" />
+      </li>
+    </ul>
+  </article>
+
+  <!-- Security -->
+  <SecuritySection />
+
+  <!-- Data management -->
+  <DataManagementSection />
+
+  <!-- About -->
+  <AboutSection />
+</div>

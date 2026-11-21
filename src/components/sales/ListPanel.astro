@@ -1,0 +1,40 @@
+<section class="sa-panel" data-panel="list">
+  <button type="button" class="pd-back" data-goto="overview">← Back to Sales</button>
+  <div class="sa-card">
+    <div class="sa-filters">
+      <input type="search" id="f-search" placeholder="Search customer, phone or chassis…" autocomplete="off" />
+      <select id="f-status" aria-label="Status">
+        <option value="">All status</option>
+        <option value="draft">Draft</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <select id="f-type" aria-label="Kind">
+        <option value="">All kinds</option>
+        <option value="stock">Stock sale</option>
+        <option value="bike">Bike sale</option>
+        <option value="maintenance">Maintenance</option>
+      </select>
+      <select id="f-pay" aria-label="Payment">
+        <option value="">All payments</option>
+        <option value="unpaid">Unpaid</option>
+        <option value="partial">Part paid</option>
+        <option value="paid">Paid</option>
+      </select>
+      <input type="date" id="f-from" aria-label="From" />
+      <input type="date" id="f-to" aria-label="To" />
+    </div>
+    <div class="sa-table-wrap">
+      <table class="sa-table">
+        <thead>
+          <tr>
+            <th>Invoice</th><th>Date</th><th>Customer</th><th>Kind</th><th>Status</th>
+            <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Payment</th>
+          </tr>
+        </thead>
+        <tbody id="sa-tbody"><tr><td colspan="9" class="sa-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="sa-foot" id="sa-count"></p>
+  </div>
+</section>

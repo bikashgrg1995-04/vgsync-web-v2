@@ -5,6 +5,7 @@ import { PAGE_META } from '../lib/page-meta';
 import type { UserRole } from '../lib/auth';
 import '../styles/widgets/purchase-shared.css';
 import '../styles/widgets/purchase-page.css';
+import DlgDialog from '../components/my-jobs/DlgDialog.astro';
 
 const meta = PAGE_META['my-jobs'];
 const defaultRole: UserRole = 'owner';
@@ -40,20 +41,7 @@ const navItems = getNavItemsForRole(defaultRole);
     <p class="pu-empty" id="mj-none" hidden>No job is given to you right now.</p>
     <div id="mj-list" style="display:grid;gap:14px"></div>
 
-    <dialog class="pu-dialog" id="mj-dlg" style="padding:18px;max-width:420px;width:92vw">
-      <form method="dialog" id="mj-form" style="display:grid;gap:10px">
-        <strong id="mj-dlg-title">Ask for a part</strong>
-        <label id="mj-part-wrap" style="display:grid;gap:4px"><span>Part</span><select id="mj-part"></select></label>
-        <label id="mj-work-wrap" style="display:grid;gap:4px" hidden><span>What work was done</span><input id="mj-work" maxlength="200" /></label>
-        <label style="display:grid;gap:4px"><span>Quantity</span><input id="mj-qty" type="number" min="0.001" step="any" value="1" /></label>
-        <label style="display:grid;gap:4px"><span>Note (optional)</span><input id="mj-note" maxlength="300" /></label>
-        <p class="pu-error" id="mj-dlg-error" role="alert" hidden></p>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button type="button" class="btn-ghost-sm" id="mj-cancel">Cancel</button>
-          <button type="submit" class="btn-primary-sm">Send to office</button>
-        </div>
-      </form>
-    </dialog>
+    <DlgDialog />
   </div>
 </AppLayout>
 

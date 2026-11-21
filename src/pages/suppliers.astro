@@ -8,6 +8,8 @@ const meta = PAGE_META.suppliers;
 const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
 import '../styles/pages/suppliers.css';
+import Kpis from '../components/suppliers/Kpis.astro';
+import Layout from '../components/suppliers/Layout.astro';
 ---
 
 <AppLayout
@@ -33,106 +35,9 @@ import '../styles/pages/suppliers.css';
 
     <p class="sup-form-error" id="sup-load-error" role="alert" hidden></p>
 
-    <div class="sup-kpis">
-      <article class="sup-kpi">
-        <span class="sup-kpi-label">Total</span>
-        <strong id="kpi-total">—</strong>
-      </article>
-      <article class="sup-kpi">
-        <span class="sup-kpi-label">Active</span>
-        <strong id="kpi-active">—</strong>
-      </article>
-      <article class="sup-kpi">
-        <span class="sup-kpi-label">Payable</span>
-        <strong id="kpi-payable">—</strong>
-      </article>
-      <article class="sup-kpi">
-        <span class="sup-kpi-label">Inactive</span>
-        <strong id="kpi-inactive">—</strong>
-      </article>
-    </div>
+    <Kpis />
 
-    <div class="sup-layout">
-      <section class="sup-list-panel">
-        <div class="sup-filters">
-          <div class="sup-search">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="search" id="sup-search" placeholder="Search name, phone, code…" autocomplete="off" />
-          </div>
-          <select id="sup-status-filter">
-            <option value="">All status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-
-        <div class="sup-table-wrap">
-          <table class="sup-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Contact</th>
-                <th>Phone</th>
-                <th class="num">Payable</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="sup-tbody">
-              <tr><td colspan="5">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="sup-footnote" id="sup-count"></p>
-      </section>
-
-      <aside class="sup-detail" id="sup-detail">
-        <div class="sup-detail-empty" id="sup-detail-empty">
-          <p>Select a supplier to view details</p>
-          <p class="muted">Used in Purchase orders and payables</p>
-        </div>
-
-        <div class="sup-detail-body" id="sup-detail-body" hidden>
-          <header class="sup-detail-head">
-            <div>
-              <p class="sup-detail-code" id="d-code">—</p>
-              <h3 id="d-name">—</h3>
-              <span class="sup-badge" id="d-status">—</span>
-            </div>
-            <div class="sup-detail-actions">
-              <button type="button" class="btn-ghost-sm" id="sup-statement">Statement</button>
-              <button type="button" class="btn-ghost-sm" id="sup-edit">Edit</button>
-              <button type="button" class="btn-ghost-sm is-danger" id="sup-toggle">Deactivate</button>
-            </div>
-          </header>
-
-          <dl class="sup-dl">
-            <div><dt>Contact</dt><dd id="d-contact">—</dd></div>
-            <div><dt>Phone</dt><dd id="d-phone">—</dd></div>
-            <div><dt>Email</dt><dd id="d-email">—</dd></div>
-            <div><dt>PAN</dt><dd id="d-pan">—</dd></div>
-            <div class="span2"><dt>Address</dt><dd id="d-address">—</dd></div>
-            <div><dt>You owe (total)</dt><dd id="d-credit-to-pay">—</dd></div>
-            <div><dt>Received, unpaid</dt><dd id="d-outstanding">—</dd></div>
-            <div><dt>On order, unpaid</dt><dd id="d-on-order">—</dd></div>
-            <div><dt>Advance paid</dt><dd id="d-advance">—</dd></div>
-            <div><dt>Supplier owes you</dt><dd id="d-credit-to-receive">—</dd></div>
-            <div><dt>Total purchased</dt><dd id="d-total">—</dd></div>
-            <div><dt>Replacement stock due</dt><dd id="d-stock-due">—</dd></div>
-            <div><dt>Still to arrive</dt><dd id="d-stock-pending">—</dd></div>
-            <div class="span2"><dt>Notes</dt><dd id="d-notes">—</dd></div>
-          </dl>
-
-          <p class="sup-detail-meta" id="d-meta"></p>
-
-          <div class="sup-detail-links">
-            <span class="chip">Purchase orders</span>
-            <span class="chip">Bills</span>
-            <span class="chip">Payments</span>
-          </div>
-          <p class="sup-hint">Suppliers are never deleted: deactivate one to hide it from new purchases.</p>
-        </div>
-      </aside>
-    </div>
+    <Layout />
   </div>
 
   <dialog class="sup-dialog" id="sup-dialog">

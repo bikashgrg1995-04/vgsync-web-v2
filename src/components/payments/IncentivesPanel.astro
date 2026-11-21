@@ -1,0 +1,35 @@
+<section class="py-panel" data-panel="incentives">
+  <div class="py-card">
+    <div class="py-filters"><strong>How incentive is worked out</strong><span class="py-hint">Each rule pays on what a person did in the month.</span></div>
+    <form id="ir-form" class="py-filters" hidden>
+      <input id="ir-name" placeholder="Rule name" maxlength="100" required />
+      <select id="ir-basis"></select>
+      <input id="ir-value" type="number" min="0.01" step="0.01" placeholder="% or amount" required />
+      <select id="ir-target"></select>
+      <button type="submit" class="btn-primary-sm">Add rule</button>
+    </form>
+    <p class="py-error" id="ir-error" role="alert" hidden></p>
+    <div class="py-table-wrap">
+      <table class="py-table">
+        <thead><tr><th>Rule</th><th>Pays on</th><th class="num">Rate</th><th>For</th><th></th></tr></thead>
+        <tbody id="ir-rules"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="py-card">
+    <div class="py-filters">
+      <input type="month" id="in-month" />
+      <button type="button" class="btn-ghost-sm" id="in-refresh">Refresh</button>
+      <span class="py-hint" id="in-sum"></span>
+      <button type="button" class="btn-primary-sm" id="in-apply-all" hidden>Add all to pay</button>
+    </div>
+    <p class="py-error" id="in-error" role="alert" hidden></p>
+    <div class="py-table-wrap">
+      <table class="py-table">
+        <thead><tr><th>Person</th><th>What it comes from</th><th class="num">Incentive</th><th>Status</th><th></th></tr></thead>
+        <tbody id="in-rows"></tbody>
+      </table>
+    </div>
+    <p class="py-hint">Adding puts the amount in the person's pay as a bonus, once per month. Void that bonus on Staff pay to redo a month. Returns are not taken off.</p>
+  </div>
+</section>

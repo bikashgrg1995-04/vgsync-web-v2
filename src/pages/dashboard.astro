@@ -8,6 +8,8 @@ const meta = PAGE_META.overview;
 const defaultRole: UserRole = 'headoffice';
 const navItems = getNavItemsForRole(defaultRole);
 import '../styles/pages/dashboard.css';
+import BranchOverview from '../components/dashboard/BranchOverview.astro';
+import MyTasks from '../components/dashboard/MyTasks.astro';
 ---
 
 <AppLayout
@@ -36,84 +38,9 @@ import '../styles/pages/dashboard.css';
 
     <div class="ov-kpis" id="ov-kpis"></div>
 
-    <section class="ov-owner" id="ov-owner" hidden>
-      <div class="ov-alerts" id="ov-alerts"></div>
-      <div class="ov-due" id="ov-due"></div>
+    <BranchOverview />
 
-      <div class="ov-main">
-        <section class="ov-card ov-overview">
-          <header class="ov-card-head">
-            <h3><span class="ov-ico" aria-hidden="true">▥</span> Overview</h3>
-            <select id="ov-range" class="ov-select" aria-label="Period">
-              <option value="7">Last 7 Days</option>
-              <option value="30" selected>Last 30 Days</option>
-              <option value="90">Last 90 Days</option>
-            </select>
-          </header>
-          <div class="ov-tiles" id="ov-tiles"></div>
-          <div id="ov-linechart"></div>
-        </section>
-
-        <div class="ov-side">
-          <section class="ov-card">
-            <h3><span class="ov-ico" aria-hidden="true">▦</span> Installments Overview <a href="/sales#followups" class="ov-more">View All →</a></h3>
-            <div id="ov-installments"></div>
-          </section>
-          <section class="ov-card">
-            <h3><span class="ov-ico" aria-hidden="true">⚖</span> Credit Overview <a href="/reports" class="ov-more">View All →</a></h3>
-            <div id="ov-credit"></div>
-          </section>
-        </div>
-      </div>
-
-      <div class="ov-kpis" id="ov-owner-kpis"></div>
-
-      <div class="ov-trio">
-        <section class="ov-card">
-          <h3><span class="ov-ico" aria-hidden="true">⬢</span> Stock Alerts <a href="/inventory" class="ov-more">View Details →</a></h3>
-          <div id="ov-low"></div>
-        </section>
-        <section class="ov-card">
-          <h3><span class="ov-ico" aria-hidden="true">🔧</span> Servicing Follow-ups <a href="/sales#followups" class="ov-more">View All →</a></h3>
-          <div id="ov-servicing"></div>
-        </section>
-        <section class="ov-card">
-          <h3><span class="ov-ico" aria-hidden="true">◷</span> Recent Activities</h3>
-          <div id="ov-activity"></div>
-        </section>
-      </div>
-
-      <section class="ov-card" id="ov-branches" hidden>
-        <h3>Branch overview <span class="ov-hint">read-only · this month</span></h3>
-        <div class="ov-table-wrap"><table class="ov-table">
-          <thead><tr><th>Branch</th><th>Sales today</th><th>Sales (month)</th><th>Purchases (month)</th><th>Profit (month)</th><th>Owed by customers</th><th>Low stock</th></tr></thead>
-          <tbody id="ov-branches-body"></tbody>
-        </table></div>
-      </section>
-    </section>
-
-    <div class="ov-grid" id="ov-legacy">
-      <section class="ov-card" id="ov-mytasks-card">
-        <h3>My tasks <a href="/tasks" class="ov-more">Open</a></h3>
-        <div id="ov-mytasks"></div>
-      </section>
-      <section class="ov-card">
-        <h3>Sales, last 14 days <span class="ov-hint">confirmed sales</span></h3>
-        <div id="ov-chart"></div>
-      </section>
-      <section class="ov-card">
-        <h3>Follow-ups due <a href="/sales" class="ov-more">Open</a></h3>
-        <div id="ov-follow"></div>
-      </section>
-      <section class="ov-card">
-        <h3>Stock to watch <a href="/inventory" class="ov-more">Open</a></h3>
-        <div id="ov-stock"></div>
-      </section>
-      <section class="ov-card">
-        <h3>Recent sales <a href="/sales" class="ov-more">Open</a></h3>
-        <div id="ov-sales"></div>
-      </section>
-    </div>
+    <MyTasks />
   </div>
 </AppLayout>
 

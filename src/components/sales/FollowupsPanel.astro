@@ -1,0 +1,32 @@
+<section class="sa-panel" data-panel="followups">
+  <button type="button" class="pd-back" data-goto="overview">← Back to Sales</button>
+  <div class="sa-card">
+    <div class="sa-filters">
+      <select id="fu-status" aria-label="Status">
+        <option value="pending">Pending</option>
+        <option value="">All</option>
+        <option value="done">Done</option>
+        <option value="skipped">Skipped</option>
+      </select>
+      <select id="fu-kind" aria-label="Kind">
+        <option value="">All kinds</option>
+        <option value="maintenance_post">Post-service check (3 days)</option>
+        <option value="maintenance_due">Maintenance (90 days)</option>
+        <option value="emi_due">EMI instalment</option>
+        <option value="credit_due">Credit to receive</option>
+        <option value="financer_due">Due from finance company</option>
+        <option value="free_service_due">Free service due</option>
+      </select>
+      <label class="sa-check"><input type="checkbox" id="fu-overdue" /> Overdue only</label>
+    </div>
+    <div class="sa-table-wrap">
+      <table class="sa-table">
+        <thead>
+          <tr><th>Due</th><th>Kind</th><th>Customer</th><th>Sale</th><th>Vehicle</th><th class="num">Amount</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody id="fu-tbody"><tr><td colspan="8" class="sa-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="sa-foot">Follow-ups are created when a sale is confirmed. EMI and credit follow-ups close by themselves when paid.</p>
+  </div>
+</section>

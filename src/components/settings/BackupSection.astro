@@ -1,0 +1,66 @@
+<section class="se-panel" data-settings-panel="backup">
+  <div class="se-grid">
+    <article class="se-card se-u-wide">
+      <header class="se-card-head">
+        <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.5 12 3.5 3.5 0 0 0 5 19z"></path></svg></span>
+        <div><h3>Backup</h3><p id="bk-scope">A copy of your business data you can keep safe</p></div>
+        <div class="se-u-actions"><button type="button" class="se-btn is-primary" id="bk-download">Download backup</button></div>
+      </header>
+      <p class="se-hint" id="bk-msg" hidden></p>
+      <p class="se-hint">The backup is a ZIP file with one spreadsheet (CSV) for each kind of record: customers, sales, purchases, stock, payroll, staff and positions, approvals and the change history. Passwords are never included. Keep the file somewhere safe: anyone who has it can read your business data.</p>
+      <h4 class="se-sub">Recent backups</h4>
+      <div class="se-u-scroll">
+        <table class="se-u-table">
+          <thead><tr><th>When</th><th>What</th><th>By</th><th>Covers</th><th class="num">Records</th><th class="num">Size</th><th></th></tr></thead>
+          <tbody id="bk-rows"><tr><td colspan="7" class="se-u-empty">No backups taken yet.</td></tr></tbody>
+        </table>
+      </div>
+    </article>
+    <article class="se-card se-u-wide" id="bk-restore-card" hidden>
+      <header class="se-card-head">
+        <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"></path><path d="m7 8 5-5 5 5"></path><path d="M4 21h16"></path></svg></span>
+        <div><h3>Restore</h3><p>Put your business records back the way they were in a backup file</p></div>
+      </header>
+      <p class="se-hint">Restoring replaces this business's records (sales, purchases, stock, customers, payroll, finance, tasks, approvals) with the ones in the file. Staff accounts, passwords and permissions are not touched, and the change history is kept. Staff documents (uploaded files) are not part of a backup. Reminders are rebuilt from the restored records. A safety copy of your data from just before is kept, so you can undo a restore.</p>
+      <div class="bk-row">
+        <input type="file" id="bk-file" accept=".zip,application/zip" />
+        <button type="button" class="se-btn is-outline" id="bk-check">Check file</button>
+      </div>
+      <p class="se-hint is-error" id="bk-rerror" hidden></p>
+      <div id="bk-preview" hidden>
+        <p class="se-hint" id="bk-pinfo"></p>
+        <div class="se-u-scroll">
+          <table class="se-u-table">
+            <thead><tr><th>Records</th><th class="num">Now</th><th class="num">In the file</th></tr></thead>
+            <tbody id="bk-ptable"></tbody>
+          </table>
+        </div>
+        <div class="bk-row">
+          <input type="text" id="bk-confirm" autocomplete="off" aria-label="Type the business code to confirm" />
+          <button type="button" class="se-btn is-primary" id="bk-restore" disabled>Restore now</button>
+        </div>
+        <p class="se-hint" id="bk-chint"></p>
+      </div>
+    </article>
+    <article class="se-card se-u-wide" id="lg-card" hidden>
+      <header class="se-card-head">
+        <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path><path d="M12 7v5l3 2"></path></svg></span>
+        <div><h3>Import old VGSync data</h3><p>Bring in stock, suppliers, purchases, sales, follow-ups and expenses from the old system</p></div>
+      </header>
+      <p class="se-hint">Upload the old system's data file (<code>data.json</code>, a Django dump). Stock comes in with its current quantity and prices; purchases, sales, payments, follow-ups and expenses come in as history and never move stock again. Old logins, staff, salary sheets and customer orders are not imported. This works only for a Head Office or independent business that has no sales or purchases yet, so nothing is entered twice. A safety copy is kept first, so it can be undone with a restore.</p>
+      <div class="bk-row">
+        <input type="file" id="lg-file" accept=".json,application/json" />
+        <button type="button" class="se-btn is-outline" id="lg-check">Check file</button>
+      </div>
+      <p class="se-hint is-error" id="lg-error" hidden></p>
+      <div id="lg-preview" hidden>
+        <p class="se-hint" id="lg-info"></p>
+        <div class="bk-row">
+          <input type="text" id="lg-confirm" autocomplete="off" aria-label="Type the business code to confirm" />
+          <button type="button" class="se-btn is-primary" id="lg-import" disabled>Import now</button>
+        </div>
+        <p class="se-hint" id="lg-hint"></p>
+      </div>
+    </article>
+  </div>
+</section>

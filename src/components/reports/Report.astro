@@ -1,0 +1,33 @@
+<section class="rp-card">
+  <div class="rp-head">
+    <div>
+      <h2 id="rp-title">Report</h2>
+      <p id="rp-hint" class="rp-hint"></p>
+    </div>
+    <div class="rp-filters" id="rp-filters">
+      <label data-ctl="dates">Period
+        <select id="rp-preset">
+          <option value="all">All time</option>
+          <option value="month">This month</option>
+          <option value="30">Last 30 days</option>
+          <option value="year">This year</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </label>
+      <label data-ctl="dates" class="rp-custom" hidden>From <input type="date" id="rp-from" /></label>
+      <label data-ctl="dates" class="rp-custom" hidden>To <input type="date" id="rp-to" /></label>
+      <label data-ctl="groupBy" hidden>Group by
+        <select id="rp-group"><option value="month">Month</option><option value="week">Week</option><option value="day">Day</option></select>
+      </label>
+      <label data-ctl="by" hidden>Rank by
+        <select id="rp-by"><option value="value">Sales value</option><option value="quantity">Quantity</option></select>
+      </label>
+      <label data-ctl="limit" hidden>Show
+        <select id="rp-limit"><option value="10">Top 10</option><option value="25">Top 25</option><option value="50">Top 50</option><option value="100">Top 100</option></select>
+      </label>
+    </div>
+  </div>
+
+  <p class="rp-error" id="rp-error" hidden></p>
+  <div id="rp-body"><p class="rp-empty">Loading…</p></div>
+</section>

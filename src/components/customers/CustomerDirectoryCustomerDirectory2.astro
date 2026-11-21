@@ -1,0 +1,49 @@
+<section class="cus-list-panel pd-card">
+  <div class="cus-dir-head">
+    <h3>Customer Directory</h3>
+    <span class="cus-count-chip" id="cus-count-chip">0 customers</span>
+  </div>
+  <div class="cus-filters">
+    <div class="cus-search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="search" id="cus-search" placeholder="Search customer by name, phone or email…" autocomplete="off" />
+    </div>
+    <select id="cus-status-filter" aria-label="Status">
+      <option value="">All Status</option>
+      <option value="active">Active</option>
+      <option value="inactive">Inactive</option>
+    </select>
+    <select id="cus-type-filter" aria-label="Customer type">
+      <option value="">All Customer Type</option>
+      <option value="individual">Individual</option>
+      <option value="business">Business</option>
+      <option value="fleet">Fleet</option>
+    </select>
+    <label class="cus-dues-toggle">
+      <input type="checkbox" id="cus-dues-filter" />
+      <span>Has dues</span>
+    </label>
+  </div>
+
+  <div class="cus-table-wrap">
+    <table class="cus-table cus-dir">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th>Type</th>
+          <th>Contact</th>
+          <th class="num">Owes you</th>
+          <th>Status</th>
+          <th class="cus-actions-h">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="cus-tbody">
+        <tr><td colspan="6">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="cus-pager">
+    <p class="cus-footnote" id="cus-count"></p>
+    <nav class="cus-pages" id="cus-pages" aria-label="Pages"></nav>
+  </div>
+</section>

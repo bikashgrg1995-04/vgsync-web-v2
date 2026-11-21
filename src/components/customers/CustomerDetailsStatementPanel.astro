@@ -1,0 +1,39 @@
+<div class="cus-tabpanel" data-panel="statement" hidden>
+  <section class="cus-stmt" aria-label="Statement">
+  <div class="cus-stmt-head">
+    <h4>Statement</h4>
+    <div class="cus-stmt-actions">
+      <button type="button" class="btn-ghost-sm" id="stmt-xlsx">Excel</button>
+      <button type="button" class="btn-ghost-sm" id="stmt-pdf">PDF</button>
+    </div>
+  </div>
+  <div class="cus-stmt-filters">
+    <label><span>From</span><input type="date" id="stmt-from" /></label>
+    <label><span>To</span><input type="date" id="stmt-to" /></label>
+    <label>
+      <span>Type</span>
+      <select id="stmt-type">
+        <option value="">All</option>
+        <option value="sale">Sales</option>
+        <option value="payment">Payments</option>
+        <option value="return">Returns</option>
+        <option value="refund">Refunds</option>
+        <option value="replacement">Replacements</option>
+        <option value="adjustment">Credit adjustments</option>
+      </select>
+    </label>
+  </div>
+  <p class="cus-stmt-error" id="stmt-error" role="alert" hidden></p>
+  <p class="cus-stmt-totals" id="stmt-totals"></p>
+  <div class="cus-stmt-wrap">
+    <table class="cus-stmt-table">
+      <thead>
+        <tr><th>Date</th><th>Type</th><th>Reference</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr>
+      </thead>
+      <tbody id="stmt-tbody"></tbody>
+    </table>
+  </div>
+  <button type="button" class="btn-ghost-sm" id="stmt-more" hidden>Load more</button>
+  <p class="cus-hint" id="stmt-hint">Positive balance: the customer owes you. Negative: you owe the customer.</p>
+</section>
+</div>

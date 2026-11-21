@@ -1,0 +1,56 @@
+---
+import OverviewPanel from './OverviewPanel.astro';
+import AttendancePanel from './AttendancePanel.astro';
+import DocumentsPanel from './DocumentsPanel.astro';
+---
+
+<div class="sd-main">
+  <!-- OVERVIEW -->
+  <OverviewPanel />
+
+  <!-- SALARY -->
+  <section class="sd-panel" data-panel="salary">
+    <div class="sd-card">
+      <div class="sd-card-head"><h3>Salary Records</h3><a class="sd-btn" href="/payments">Manage in Payments</a></div>
+      <div class="sd-kpis" id="sd-pay-kpis"></div>
+      <div class="sd-table-wrap">
+        <table class="sd-table">
+          <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Method</th><th class="num">Amount</th><th class="num">Owed after</th></tr></thead>
+          <tbody id="sd-statement"><tr><td colspan="6" class="sd-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ATTENDANCE -->
+  <AttendancePanel />
+
+  <!-- DOCUMENTS -->
+  <DocumentsPanel />
+
+  <!-- ACCESS -->
+  <section class="sd-panel" data-panel="access">
+    <div class="sd-card">
+      <div class="sd-card-head">
+        <h3>Access &amp; Permissions</h3>
+        <button type="button" class="btn-primary-sm" id="sd-access-save" hidden>Save changes</button>
+      </div>
+      <p class="sd-hint" id="sd-access-note" style="margin-bottom:10px"></p>
+      <p class="sd-hint" id="sd-access-error" role="alert" style="color:#ef4444" hidden></p>
+      <div id="sd-access-wrap" class="sd-access-groups"><div id="sd-access"></div></div>
+    </div>
+  </section>
+
+  <!-- ACTIVITY -->
+  <section class="sd-panel" data-panel="activity">
+    <div class="sd-card">
+      <div class="sd-card-head"><h3>Activity Logs</h3></div>
+      <div class="sd-table-wrap">
+        <table class="sd-table">
+          <thead><tr><th>When</th><th>By</th><th>Action</th><th>Change</th></tr></thead>
+          <tbody id="sd-activity"><tr><td colspan="4" class="sd-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>

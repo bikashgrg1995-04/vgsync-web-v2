@@ -1,0 +1,87 @@
+<section class="invd-panel is-active" data-panel="details">
+  <div class="invd-grid-top">
+    <div class="inv-card">
+      <div class="inv-card-head">
+        <h3 class="inv-card-title">Stock Information</h3>
+      </div>
+      <div class="invd-info">
+        <dl class="invd-dl">
+          <div><dt>Product Name</dt><dd id="inf-name">—</dd></div>
+          <div><dt>Stock ID</dt><dd id="inf-stock-no">—</dd></div>
+          <div><dt>Category</dt><dd id="inf-category">—</dd></div>
+          <div><dt>Brand</dt><dd id="inf-brand">—</dd></div>
+          <div><dt>Unit</dt><dd id="inf-unit">—</dd></div>
+        </dl>
+        <dl class="invd-dl">
+          <div><dt>Minimum Stock</dt><dd id="inf-min">—</dd></div>
+          <div><dt>Current Stock</dt><dd class="is-big" id="inf-qty">—</dd></div>
+          <div><dt>Available Stock</dt><dd class="is-good" id="inf-avail">—</dd></div>
+          <div><dt>Damaged Stock</dt><dd id="inf-dmg">—</dd></div>
+          <div><dt>Last Updated</dt><dd class="is-small" id="inf-updated">—</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="inv-card">
+      <div class="inv-card-head">
+        <h3 class="inv-card-title">Stock Movement Overview</h3>
+        <select id="invd-range" aria-label="Range" class="invd-range">
+          <option value="7">Last 7 Days</option>
+          <option value="30" selected>Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+        </select>
+      </div>
+      <div class="invd-legend">
+        <span><i class="is-in"></i>Stock In</span>
+        <span><i class="is-out"></i>Stock Out</span>
+      </div>
+      <div class="invd-chart" id="invd-chart"></div>
+    </div>
+  </div>
+
+  <div class="invd-grid-bottom">
+    <div class="inv-card">
+      <div class="inv-card-head">
+        <h3 class="inv-card-title">Recent Stock Movements</h3>
+        <button type="button" class="btn-link" id="invd-view-all">View All →</button>
+      </div>
+      <div class="inv-table-wrap">
+        <table class="inv-table invd-table-recent">
+          <thead>
+            <tr>
+              <th>Date &amp; Time</th>
+              <th>Type</th>
+              <th class="num">Quantity</th>
+              <th>Reference</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="invd-recent"><tr><td colspan="5" class="inv-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="inv-card">
+      <div class="inv-card-head">
+        <h3 class="inv-card-title">Quick Actions &amp; Info</h3>
+      </div>
+      <div class="invd-actions">
+        <button type="button" class="invd-act is-in" id="invd-stock-in">↑ Stock In</button>
+        <button type="button" class="invd-act is-out" id="invd-stock-out">↓ Stock Out</button>
+        <button type="button" class="invd-act is-adjust" id="invd-adjust">⇄ Adjust Stock</button>
+      </div>
+      <div class="invd-values">
+        <div>
+          <span>Stock Value (Current)</span>
+          <strong id="invd-value">—</strong>
+          <small id="invd-value-note"></small>
+        </div>
+        <div>
+          <span>Total Movements</span>
+          <strong id="invd-moves-total">—</strong>
+          <small id="invd-moves-note">(Last 30 days)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

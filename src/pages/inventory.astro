@@ -6,6 +6,9 @@ import { PAGE_META } from "../lib/page-meta";
 import type { UserRole } from "../lib/auth";
 import ProductDialog from "../components/inventory/ProductDialog.astro";
 import "../styles/widgets/inventory-page.css";
+import Hero from '../components/inventory/Hero.astro';
+import StockList from '../components/inventory/StockList.astro';
+import Panel from '../components/inventory/Panel.astro';
 
 const meta = PAGE_META.inventory;
 const defaultRole: UserRole = "owner";
@@ -27,190 +30,15 @@ const navItems = getNavItemsForRole(defaultRole);
   <div class="inv-page" id="inv-page">
     <p class="inv-scope" id="inv-scope" hidden>Stock</p>
 
-    <header class="inv-hero">
-      <div class="inv-hero-text">
-        <div class="inv-hero-icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.73Z"></path>
-            <path d="m3.3 7 8.7 5 8.7-5"></path>
-            <path d="M12 22V12"></path>
-          </svg>
-        </div>
-
-        <div>
-          <h2 class="inv-hero-title">Inventory</h2>
-          <p class="inv-hero-sub">
-            Stock details, product availability and inventory overview.
-          </p>
-        </div>
-      </div>
-
-      <div class="inv-hero-actions">
-        <button type="button" class="btn-primary-sm" id="inv-add" hidden>+ Add Stock</button>
-        <button type="button" class="btn-ghost-sm" id="inv-import-stock" hidden>Import Stock</button>
-        <button type="button" class="btn-ghost-sm" id="inv-import" hidden>Import Products</button>
-        <button type="button" class="btn-ghost-sm" id="inv-mrp" hidden>Update MRP</button>
-        <button type="button" class="btn-ghost-sm" id="inv-export">Export</button>
-        <button type="button" class="btn-warn-sm" id="inv-low-filter">Low Stocks</button>
-      </div>
-    </header>
+    <Hero />
 
     <p class="inv-notice" id="inv-notice" hidden></p>
 
     <!-- STOCK LIST -->
-    <section class="inv-panel is-active" data-inv-panel="stock">
-      <div class="inv-card">
-        <div class="inv-card-head">
-          <h3 class="inv-card-title">Stock List</h3>
-
-          <div class="inv-filters">
-            <div class="inv-search">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.3-4.3"></path>
-              </svg>
-              <input type="search" id="inv-search" placeholder="Search stock…" autocomplete="off" />
-            </div>
-
-            <select id="inv-category" aria-label="Category">
-              <option value="">All Categories</option>
-            </select>
-
-            <select id="inv-status" aria-label="Status">
-              <option value="">All Status</option>
-              <option value="in_stock">In Stock</option>
-              <option value="low">Low Stock</option>
-              <option value="out">Out of Stock</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="inv-table-wrap">
-          <table class="inv-table">
-            <thead>
-              <tr>
-                <th>Stock ID</th>
-                <th class="thumb-col"><span class="sr-only">Image</span></th>
-                <th>Stock Name</th>
-                <th class="num">Current Stock</th>
-                <th class="num hide-sm">Selling Price</th>
-                <th>Status</th>
-                <th class="actions">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="inv-tbody">
-              <tr>
-                <td colspan="7" class="inv-empty">Loading…</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="inv-table-foot">
-          <p class="inv-footnote" id="inv-count"></p>
-          <nav class="inv-pages" id="inv-pages" aria-label="Stock list pages"></nav>
-        </div>
-      </div>
-
-      <!-- CATEGORY + RECENT ACTIVITY -->
-      <div class="inv-bottom-grid">
-        <!-- STOCK BY CATEGORY -->
-        <div class="inv-card inv-cat-card">
-          <div class="inv-card-head">
-            <h3 class="inv-card-title">Stock by Category</h3>
-          </div>
-
-          <div class="inv-cat-body" id="inv-cat-body">
-            <div class="inv-donut-wrap">
-              <svg class="inv-donut" viewBox="0 0 42 42" aria-hidden="true" id="inv-donut"></svg>
-              <div class="inv-donut-center">
-                <strong id="inv-cat-total">0</strong>
-                <span>Total Stock</span>
-              </div>
-            </div>
-
-            <ul class="inv-cat-legend" id="inv-cat-legend"></ul>
-          </div>
-
-        </div>
-
-        <!-- RECENT STOCK ACTIVITIES -->
-        <div class="inv-card inv-act-card">
-          <div class="inv-card-head">
-            <h3 class="inv-card-title">Recent Stock Activities</h3>
-            <button type="button" class="btn-link" id="inv-view-moves">View All →</button>
-          </div>
-
-          <ul class="inv-activity" id="inv-activity">
-            <li class="inv-activity-empty">No recent movements</li>
-          </ul>
-
-          <div class="inv-pager inv-mini-pager" id="inv-act-pager" hidden>
-            <span id="inv-act-page-info">Page 1</span>
-            <div class="inv-page-actions">
-              <button type="button" class="inv-page-btn" id="inv-act-prev" disabled>Previous</button>
-              <button type="button" class="inv-page-btn" id="inv-act-next">Next</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <StockList />
 
     <!-- MOVEMENT HISTORY -->
-    <section class="inv-panel" data-inv-panel="moves">
-      <button type="button" class="btn-link inv-back-stock" id="inv-back-stock">
-        ← Back to stock list
-      </button>
-
-      <div class="inv-card">
-        <div class="inv-filters inv-filters-moves">
-          <div class="inv-search">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </svg>
-            <input type="search" id="mv-search" placeholder="Search product, reference or note…" autocomplete="off" />
-          </div>
-
-          <select id="mv-type" aria-label="Movement type">
-            <option value="">All types</option>
-          </select>
-          <input type="date" id="mv-from" aria-label="From date" />
-          <input type="date" id="mv-to" aria-label="To date" />
-        </div>
-
-        <div class="inv-table-wrap">
-          <table class="inv-table inv-table-moves">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Stock no</th>
-                <th>Product</th>
-                <th>Type</th>
-                <th class="hide-sm">Stock</th>
-                <th class="num">Qty</th>
-                <th class="num hide-sm">Balance</th>
-                <th class="hide-md">Reference</th>
-                <th class="hide-md">By</th>
-              </tr>
-            </thead>
-            <tbody id="moves-tbody">
-              <tr>
-                <td colspan="9" class="inv-empty">Loading…</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="inv-pager">
-          <span class="inv-footnote" id="mv-count"></span>
-          <div>
-            <button type="button" class="btn-ghost-sm" id="mv-prev">Previous</button>
-            <button type="button" class="btn-ghost-sm" id="mv-next">Next</button>
-          </div>
-        </div>
-      </div>
-    </section>
+    <Panel />
   </div>
 
   <!-- STOCK ADJUSTMENT DIALOG -->
