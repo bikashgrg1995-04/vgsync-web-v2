@@ -31,4 +31,6 @@ pnpm-debug.log*
 .wrangler/
 
 # Local OS files
-Thumbs.db
+Thumbs.dbtests/.auth/
+test-results/
+playwright-report/

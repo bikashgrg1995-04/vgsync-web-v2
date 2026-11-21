@@ -56,7 +56,7 @@ export async function warmUp(): Promise<void> {
     await idle();
     if (!navigator.onLine) return;
     try {
-      await api(w.path);
+      await api(w.path, { keepAfterLeave: true });
     } catch {
       /* not allowed here, or offline: skip */
     }

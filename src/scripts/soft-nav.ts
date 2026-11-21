@@ -5,6 +5,7 @@
  * Anything that goes wrong falls back to an ordinary full page load.
  */
 import { refreshMenuGroups } from './app-shell';
+import { leavePage } from '../lib/api';
 
 type Tracked = {
   target: EventTarget;
@@ -55,6 +56,7 @@ EventTarget.prototype.addEventListener = function (
 } as typeof EventTarget.prototype.addEventListener;
 
 function teardown(): void {
+  leavePage();
   for (const t of tracked) t.target.removeEventListener(t.type, t.listener, t.options);
   tracked = [];
 }
