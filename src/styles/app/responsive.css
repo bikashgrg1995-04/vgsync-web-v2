@@ -226,3 +226,6 @@ html:has(.app-shell) { font-size: 14px; }
 .sk-row td { padding-top: 12px; padding-bottom: 12px; }
 @keyframes sk-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .sk-bar { animation: none; } }
+
+/* ---------- 8. Offline bar ---------- */
+.offline-bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 200; max-width: min(92vw, 640px); padding: 9px 16px; border-radius: 999px; background: #b45309; color: #fff; font-size: 0.8rem; font-weight: 600; box-shadow: 0 8px 24px rgba(0,0,0,0.3); text-align: center; }
