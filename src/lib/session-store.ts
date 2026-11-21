@@ -9,6 +9,8 @@
  * third-party scripts to these pages.
  */
 
+import { cacheWipe } from './cache';
+
 export interface ApiUser {
   id: number;
   username: string;
@@ -94,6 +96,8 @@ export function writeAuth(auth: StoredAuth): void {
 }
 
 export function clearAuth(): void {
+  // The saved copy of the business data goes with the session.
+  void cacheWipe();
   safe(() => sessionStorage.removeItem(AUTH_KEY), undefined);
   safe(() => localStorage.removeItem(AUTH_KEY), undefined);
 }

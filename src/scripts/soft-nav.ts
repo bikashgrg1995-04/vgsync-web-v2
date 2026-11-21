@@ -106,6 +106,15 @@ function pageScripts(next: Document): HTMLScriptElement[] {
   );
 }
 
+async function pageModulesOf(wrapper: string): Promise<string[]> {
+  try {
+    const text = await (await fetch(wrapper)).text();
+    return [...text.matchAll(/import\s+["'](\/src\/scripts\/pages\/[^"']+)["']/g)].map((m) => m[1]!);
+  } catch {
+    return [];
+  }
+}
+
 async function runScripts(scripts: HTMLScriptElement[]): Promise<void> {
   for (const s of scripts) {
     const src = s.getAttribute('src');
@@ -116,9 +125,18 @@ async function runScripts(scripts: HTMLScriptElement[]): Promise<void> {
 
       // First run uses the plain address, which the browser has usually
       // preloaded; running it again needs a fresh copy of the module.
-      if (executed.has(plain)) url.searchParams.set('soft', String(++counter));
+      const again = executed.has(plain);
+      if (again) url.searchParams.set('soft', String(++counter));
       else executed.add(plain);
-      await import(/* @vite-ignore */ url.pathname + url.search);
+
+      // While developing, a page script is a one-line wrapper around the real
+      // page module, which would not run a second time. Run the module itself afresh.
+      const inner = again && import.meta.env.DEV ? await pageModulesOf(plain) : [];
+      if (inner.length) {
+        for (const m of inner) await import(/* @vite-ignore */ `${m}${m.includes('?') ? '&' : '?'}soft=${++counter}`);
+      } else {
+        await import(/* @vite-ignore */ url.pathname + url.search);
+      }
     } else {
       const el = document.createElement('script');
 
@@ -189,7 +207,7 @@ function prefetch(url: string): void {
   prefetched.set(key, { at: Date.now(), html });
 }
 
-async function go(url: string, push: boolean): Promise<void> {
+async function go(url: string, push: boolean, keepScroll = false): Promise<void> {
   const mine = ++token;
   const shell = document.getElementById('app-shell');
 
@@ -213,8 +231,10 @@ async function go(url: string, push: boolean): Promise<void> {
     if (push) window.history.pushState({ soft: true }, '', url);
     shown = keyOf(window.location.href);
     syncChrome(next);
-    window.scrollTo({ top: 0 });
-    document.getElementById('app-content')?.scrollTo({ top: 0 });
+    if (!keepScroll) {
+      window.scrollTo({ top: 0 });
+      document.getElementById('app-content')?.scrollTo({ top: 0 });
+    }
     await runScripts(pageScripts(next));
   } catch {
     window.location.assign(url);
@@ -277,6 +297,38 @@ const warm = (e: Event) => {
 document.addEventListener('mouseover', warm, { passive: true });
 document.addEventListener('touchstart', warm, { passive: true });
 document.addEventListener('focusin', warm);
+
+// New data arrived for what this page shows (the saved copy was out of date):
+// load the page again from the now-current copy. Never while the person is
+// typing or a dialog is open, so nothing they are doing is lost.
+let freshTimer: number | undefined;
+let freshTries = 0;
+
+function personIsBusy(): boolean {
+  if (document.querySelector('dialog[open]')) return true;
+  const a = document.activeElement;
+  return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !!content()?.contains(a);
+}
+
+async function refreshPage(): Promise<void> {
+  if (personIsBusy()) {
+    if (++freshTries < 8) freshTimer = window.setTimeout(() => void refreshPage(), 2000);
+    return;
+  }
+  freshTries = 0;
+  const box = document.getElementById('app-content');
+  const top = box?.scrollTop ?? 0;
+  const y = window.scrollY;
+  await go(window.location.href, false, true);
+  box?.scrollTo({ top });
+  window.scrollTo({ top: y });
+}
+
+window.addEventListener('vg:data-changed', () => {
+  window.clearTimeout(freshTimer);
+  freshTries = 0;
+  freshTimer = window.setTimeout(() => void refreshPage(), 600);
+});
 
 // Highlight the clicked item at once; the real highlight follows the page.
 function markActive(a: HTMLAnchorElement): void {

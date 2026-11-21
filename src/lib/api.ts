@@ -9,6 +9,7 @@
  * - Turns every error body into an ApiError with a readable message.
  */
 
+import { cacheDropPrefix, cacheRead, cacheWrite, type CacheEntry } from './cache';
 import { clearAuth, readAuth, writeAuth } from './session-store';
 
 export const API_BASE = (
@@ -72,8 +73,8 @@ async function readBody(res: Response): Promise<unknown> {
   }
 }
 
-function jsonInit(method: string, body: unknown, token?: string): RequestInit {
-  const headers: Record<string, string> = { Accept: 'application/json' };
+function jsonInit(method: string, body: unknown, token?: string, extra?: Record<string, string>): RequestInit {
+  const headers: Record<string, string> = { Accept: 'application/json', ...extra };
   // FormData (file uploads) sets its own multipart boundary header.
   const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
@@ -130,17 +131,79 @@ export interface RequestOptions {
   body?: unknown;
   /** false for public endpoints (login, forgot/reset password). */
   auth?: boolean;
+  /** false to always ask the server (live counters). GET answers are kept on the device by default. */
+  cache?: boolean;
+}
+
+// ---- Saved answers (stale-while-revalidate) ----------------------------------
+//
+// A GET is answered from the copy on this device when there is one, and the
+// server is asked in the background whether it changed (If-None-Match: when
+// nothing changed it replies 304 with no data). Only a real change replaces the
+// copy and tells the page to refresh. Any save (POST/PATCH/PUT/DELETE) forgets
+// the copies of that person and business, so the next read is always fresh.
+
+/** Answers younger than this are used as they are, without asking the server. */
+const FRESH_MS = 20_000;
+
+/** Never kept: sign-in, live counters and files. */
+const NOT_CACHED = /^\/(auth|notifications)\b|export|download|template|\.(xlsx|pdf|csv)\b/i;
+
+function cachePrefix(): string | null {
+  const a = readAuth();
+  return a ? `${a.user.id}:${a.active_business.id}:` : null;
+}
+
+const inflight = new Map<string, Promise<void>>();
+
+function revalidate(path: string, key: string, held: CacheEntry): void {
+  if (inflight.has(key)) return;
+  const job = (async () => {
+    try {
+      const res = await authedSend(path, 'GET', undefined, held.etag ? { 'If-None-Match': held.etag } : undefined);
+      if (res.status === 304) {
+        await cacheWrite(key, { ...held, at: Date.now() });
+        return;
+      }
+      if (!res.ok) return; // offline or a server problem: keep showing what we have
+      const data = await readBody(res);
+      const changed = JSON.stringify(data) !== JSON.stringify(held.data);
+      await cacheWrite(key, { data, etag: res.headers.get('ETag'), at: Date.now() });
+      if (changed) window.dispatchEvent(new Event('vg:data-changed'));
+    } catch {
+      /* offline: the saved copy stays */
+    } finally {
+      inflight.delete(key);
+    }
+  })();
+  inflight.set(key, job);
+}
+
+async function cachedGet<T>(path: string, prefix: string): Promise<T> {
+  const key = prefix + path;
+  const held = await cacheRead(key);
+
+  if (held) {
+    if (Date.now() - held.at > FRESH_MS) revalidate(path, key, held);
+    return held.data as T;
+  }
+
+  const res = await authedSend(path, 'GET', undefined);
+  const data = await readBody(res);
+  failIfNeeded(res, data);
+  void cacheWrite(key, { data, etag: res.headers.get('ETag'), at: Date.now() });
+  return data as T;
 }
 
 /** Sends the request with the Bearer token, refreshing it once on a 401. */
-async function authedSend(path: string, method: string, body: unknown): Promise<Response> {
+async function authedSend(path: string, method: string, body: unknown, extra?: Record<string, string>): Promise<Response> {
   const first = readAuth();
   if (!first) {
     redirectToLogin();
     throw new ApiError('Please sign in.', 401);
   }
 
-  let res = await send(path, jsonInit(method, body, first.access));
+  let res = await send(path, jsonInit(method, body, first.access, extra));
 
   if (res.status === 401) {
     const ok = await refreshOnce();
@@ -149,7 +212,7 @@ async function authedSend(path: string, method: string, body: unknown): Promise<
       redirectToLogin();
       throw new ApiError('Your session has expired. Please sign in again.', 401);
     }
-    res = await send(path, jsonInit(method, body, next.access));
+    res = await send(path, jsonInit(method, body, next.access, extra));
   }
 
   return res;
@@ -173,10 +236,17 @@ function failIfNeeded(res: Response, data: unknown): void {
 export async function api<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = options.body === undefined ? 'GET' : 'POST', body, auth = true } = options;
 
+  const prefix = auth ? cachePrefix() : null;
+  if (method === 'GET' && prefix && options.cache !== false && !NOT_CACHED.test(path)) {
+    return cachedGet<T>(path, prefix);
+  }
+
   const res = auth ? await authedSend(path, method, body) : await send(path, jsonInit(method, body));
   const data = await readBody(res);
 
   failIfNeeded(res, data);
+  // A save changes what other pages show (stock, balances, dashboard): forget the saved copies.
+  if (method !== 'GET' && prefix) await cacheDropPrefix(prefix);
   return data as T;
 }
 
