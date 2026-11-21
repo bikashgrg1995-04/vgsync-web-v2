@@ -12,6 +12,7 @@ import '../styles/pages/orders.css';
 import Hero from '../components/orders/Hero.astro';
 import Kpis from '../components/orders/Kpis.astro';
 import Layout from '../components/orders/Layout.astro';
+import NewStockOrderDialog from '../components/orders/NewStockOrderDialog.astro';
 ---
 
 <AppLayout
@@ -37,20 +38,7 @@ import Layout from '../components/orders/Layout.astro';
   </div>
 
   <!-- New order -->
-  <dialog class="or-dialog or-wide" id="dlg-new">
-    <form method="dialog" class="or-dialog-inner" id="form-new">
-      <h2 class="or-dialog-title">New stock order</h2>
-      <p class="or-sub">Ask Head Office for stock. Nothing moves until Head Office dispatches it.</p>
-      <div class="or-lines-head"><strong>Items</strong><button type="button" class="btn-ghost-sm" id="new-add">+ Add item</button></div>
-      <div id="new-lines" class="or-lines"></div>
-      <label class="or-field"><span>Note to Head Office</span><input type="text" id="new-notes" /></label>
-      <p class="or-error" id="new-error" hidden></p>
-      <div class="or-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-new">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="new-save">Place order</button>
-      </div>
-    </form>
-  </dialog>
+  <NewStockOrderDialog />
 
   <!-- Generic quantities dialog (dispatch, receive, return, receive return, review) -->
   <dialog class="or-dialog or-wide" id="dlg-qty">

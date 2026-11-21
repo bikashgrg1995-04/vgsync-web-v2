@@ -1,0 +1,22 @@
+<dialog class="pu-dialog pu-wide" id="dlg-po-import">
+  <form method="dialog" class="pu-dialog-inner" id="form-po-import">
+    <h2 class="pu-dialog-title">Import purchase order from Excel</h2>
+    <p class="pu-hint">One row per item. Columns: Stock No, Quantity and Unit Price (optional; the product's purchase price is used if left empty). A Stock No that is not in your inventory is shown as NEW if the row has a Stock Name and Unit Price, and is added only after you confirm. A draft purchase is created, which you can still edit before the goods arrive. Prefer typing items one by one? Close this and use New Purchase. <button type="button" class="btn-ghost-sm" id="poi-template">Download template</button></p>
+    <div class="pu-grid">
+      <label class="pu-field"><span>Supplier *</span><select id="poi-supplier" required></select></label>
+      <label class="pu-field"><span>File (.xlsx or .csv) *</span><input type="file" id="poi-file" accept=".xlsx,.csv" required /></label>
+      <label class="pu-field"><span>Bill no</span><input type="text" id="poi-bill" maxlength="60" /></label>
+      <label class="pu-field"><span>Purchase date</span><input type="date" id="poi-date" /></label>
+      <label class="pu-field"><span>Discount (Rs)</span><input type="number" id="poi-discount" min="0" step="0.01" value="0" /></label>
+      <label class="pu-field"><span>VAT %</span><input type="number" id="poi-vat" min="0" max="100" step="0.01" value="0" /></label>
+      <label class="pu-field"><span>Freight (Rs)</span><input type="number" id="poi-freight" min="0" step="0.01" value="0" /></label>
+    </div>
+    <div id="poi-preview"></div>
+    <p class="pu-error" id="poi-error" hidden></p>
+    <div class="pu-actions">
+      <button type="button" class="btn-ghost-sm" data-close="dlg-po-import">Cancel</button>
+      <button type="button" class="btn-ghost-sm" id="poi-check">Check file</button>
+      <button type="submit" class="btn-primary-sm" id="poi-save" disabled>Create draft</button>
+    </div>
+  </form>
+</dialog>

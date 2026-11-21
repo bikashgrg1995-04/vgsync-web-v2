@@ -1,0 +1,33 @@
+<dialog class="pu-dialog pu-wide" id="dlg-credit">
+  <form method="dialog" class="pu-dialog-inner" id="form-credit">
+    <h2 class="pu-dialog-title">Use supplier credit</h2>
+    <div class="pu-grid">
+      <label class="pu-field"><span>Supplier *</span><select id="cr-supplier" required></select></label>
+      <label class="pu-field"><span>What happens *</span>
+        <select id="cr-kind">
+          <option value="refund">Refund (supplier pays back)</option>
+          <option value="replacement">Replacement goods</option>
+          <option value="adjustment">Set against a purchase</option>
+        </select>
+      </label>
+      <label class="pu-field"><span>Credit amount *</span><input type="number" id="cr-amount" required min="0.01" step="0.01" /></label>
+      <label class="pu-field" id="cr-method-wrap"><span>Method</span>
+        <select id="cr-method">
+          <option value="cash">Cash</option><option value="bank">Bank</option>
+          <option value="online">Online</option><option value="cheque">Cheque</option>
+        </select>
+      </label>
+      <label class="pu-field" id="cr-purchase-wrap" hidden><span>Purchase</span><select id="cr-purchase"></select></label>
+    </div>
+    <div id="cr-items-wrap" hidden>
+      <div class="pu-lines-head"><strong>Replacement goods</strong><button type="button" class="btn-ghost-sm" id="cr-add-line">+ Add item</button></div>
+      <div id="cr-lines" class="pu-lines"></div>
+    </div>
+    <label class="pu-field"><span>Note</span><input type="text" id="cr-notes" /></label>
+    <p class="pu-error" id="cr-error" hidden></p>
+    <div class="pu-actions">
+      <button type="button" class="btn-ghost-sm" data-close="dlg-credit">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="cr-save">Save</button>
+    </div>
+  </form>
+</dialog>

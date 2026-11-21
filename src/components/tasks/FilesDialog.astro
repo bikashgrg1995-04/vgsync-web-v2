@@ -1,0 +1,23 @@
+<dialog class="pu-dialog pu-wide" id="tk-dlg">
+  <div class="pu-dialog-inner">
+    <h2 class="pu-dialog-title" id="td-title"></h2>
+    <p class="pu-sub" id="td-meta"></p>
+    <p class="td-desc" id="td-desc"></p>
+    <div class="td-actions" id="td-actions"></div>
+    <label class="pu-field" id="td-note-wrap"><span>Note (optional)</span><input type="text" id="td-note" maxlength="500" placeholder="What was done?" /></label>
+    <p class="pu-error" id="td-error" hidden></p>
+    <h3 class="td-h">Files</h3>
+    <ul class="td-files" id="td-files"></ul>
+    <div class="td-comment" id="td-upload" hidden>
+      <input type="file" id="td-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt" aria-label="Attach a file" />
+      <button type="button" class="btn-ghost-sm" id="td-attach">Attach</button>
+    </div>
+    <h3 class="td-h">History</h3>
+    <ol class="td-events" id="td-events"></ol>
+    <div class="td-comment">
+      <input type="text" id="td-comment" maxlength="500" placeholder="Write a comment…" aria-label="Comment" />
+      <button type="button" class="btn-ghost-sm" id="td-send">Send</button>
+    </div>
+    <div class="pu-actions"><button type="button" class="btn-ghost-sm" id="td-close">Close</button></div>
+  </div>
+</dialog>

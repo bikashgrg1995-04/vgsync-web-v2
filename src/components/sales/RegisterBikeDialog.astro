@@ -1,0 +1,16 @@
+<dialog class="sa-dialog" id="dlg-bike">
+  <form method="dialog" class="sa-dialog-inner" id="form-bike">
+    <h2 class="sa-dialog-title">Register bike</h2>
+    <div class="sa-grid">
+      <label class="sa-field"><span>Model (catalog product) *</span><select id="bk-product" required></select></label>
+      <label class="sa-field"><span>Colour</span><input type="text" id="bk-color" /></label>
+      <label class="sa-field"><span>Chassis no *</span><input type="text" id="bk-chassis" required /></label>
+      <label class="sa-field"><span>Engine no *</span><input type="text" id="bk-engine" required /></label>
+    </div>
+    <p class="sa-error" id="bk-error" hidden></p>
+    <div class="sa-actions">
+      <button type="button" class="btn-ghost-sm" data-close="dlg-bike">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="bk-save">Register</button>
+    </div>
+  </form>
+</dialog>

@@ -1,0 +1,24 @@
+<dialog class="py-dialog" id="dlg-ledger">
+  <form method="dialog" class="py-dialog-inner" id="form-ledger">
+    <h2 class="py-dialog-title" id="lf-title">Add expense</h2>
+    <input type="hidden" id="lf-id" />
+    <div class="py-grid">
+      <label class="py-field"><span>Category *</span><select id="lf-category" required></select></label>
+      <label class="py-field"><span>Amount *</span><input type="number" id="lf-amount" required min="0.01" step="0.01" /></label>
+      <label class="py-field"><span>Date *</span><input type="date" id="lf-date" required /></label>
+      <label class="py-field"><span>Method</span>
+        <select id="lf-method">
+          <option value="">—</option><option value="cash">Cash</option><option value="bank">Bank transfer</option>
+          <option value="online">Online</option><option value="cheque">Cheque</option>
+        </select>
+      </label>
+      <label class="py-field"><span>Reference</span><input type="text" id="lf-ref" maxlength="100" /></label>
+      <label class="py-field"><span>Details</span><input type="text" id="lf-desc" /></label>
+    </div>
+    <p class="py-error" id="lf-error" hidden></p>
+    <div class="py-actions">
+      <button type="button" class="btn-ghost-sm" data-close="dlg-ledger">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="lf-save">Save</button>
+    </div>
+  </form>
+</dialog>

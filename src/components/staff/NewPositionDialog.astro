@@ -1,0 +1,21 @@
+<dialog class="st-dialog st-dialog-wide" id="position-dialog" aria-labelledby="position-title">
+  <form class="st-dialog-inner" id="position-form" novalidate>
+    <h2 class="st-dialog-title" id="position-title">New position</h2>
+    <input type="hidden" id="p-id" />
+    <div class="st-form-grid">
+      <label class="st-field"><span>Name *</span><input type="text" id="p-name" autocomplete="off" placeholder="e.g. Sales counter" /></label>
+      <label class="st-field"><span>Description</span><input type="text" id="p-desc" autocomplete="off" /></label>
+      <label class="st-field"><span>Department</span><input type="text" id="p-dept" autocomplete="off" placeholder="e.g. Finance" /></label>
+      <label class="st-field" id="p-preset-wrap"><span>Start from a preset</span>
+        <select id="p-preset"><option value="">Blank</option></select>
+      </label>
+    </div>
+    <div class="st-perm-groups" id="perm-groups"></div>
+    <p class="st-hint">Create, edit and delete need View as well. A preset only fills the boxes; later changes to it never change this position. Managing permissions stays with the owner. An administrator can only grant what they hold themselves.</p>
+    <p class="st-error" id="p-error" role="alert" hidden></p>
+    <div class="st-dialog-actions">
+      <button type="button" class="btn-ghost-sm" id="p-cancel">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="p-save">Save</button>
+    </div>
+  </form>
+</dialog>

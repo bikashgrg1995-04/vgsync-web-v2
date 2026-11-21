@@ -1,0 +1,51 @@
+<dialog class="sup-dialog" id="sup-dialog">
+  <form class="sup-dialog-inner" id="sup-form">
+    <h2 class="sup-dialog-title" id="sup-form-title">New supplier</h2>
+    <input type="hidden" id="f-id" />
+
+    <div class="sup-form-grid">
+      <label class="sup-field span2">
+        <span>Name *</span>
+        <input type="text" id="f-name" required placeholder="Company name" />
+      </label>
+      <label class="sup-field">
+        <span>Status</span>
+        <select id="f-status">
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </label>
+      <label class="sup-field">
+        <span>Contact person</span>
+        <input type="text" id="f-contact" />
+      </label>
+      <label class="sup-field">
+        <span>Phone</span>
+        <input type="tel" id="f-phone" />
+      </label>
+      <label class="sup-field">
+        <span>Email</span>
+        <input type="email" id="f-email" />
+      </label>
+      <label class="sup-field span2">
+        <span>Address</span>
+        <input type="text" id="f-address" />
+      </label>
+      <label class="sup-field">
+        <span>PAN / VAT number</span>
+        <input type="text" id="f-pan" />
+      </label>
+      <label class="sup-field span2">
+        <span>Notes</span>
+        <input type="text" id="f-notes" />
+      </label>
+    </div>
+
+    <p class="sup-form-error" id="f-error" hidden></p>
+
+    <div class="sup-dialog-actions">
+      <button type="button" class="btn-ghost-sm" id="f-cancel">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="f-save">Save</button>
+    </div>
+  </form>
+</dialog>

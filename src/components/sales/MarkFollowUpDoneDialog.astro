@@ -1,0 +1,14 @@
+<dialog class="sa-dialog" id="dlg-done">
+  <form method="dialog" class="sa-dialog-inner" id="form-done">
+    <h2 class="sa-dialog-title">Mark follow-up done</h2>
+    <p class="sa-sub" id="dn-sub"></p>
+    <label class="sa-field"><span>Note</span><input type="text" id="dn-note" maxlength="300" /></label>
+    <label class="sa-check" id="dn-issue-wrap"><input type="checkbox" id="dn-issue" /> Customer reported a problem</label>
+    <label class="sa-field" id="dn-next-wrap"><span>Book the next follow-up on (optional)</span><input type="date" id="dn-next" /></label>
+    <p class="sa-error" id="dn-error" hidden></p>
+    <div class="sa-actions">
+      <button type="button" class="btn-ghost-sm" data-close="dlg-done">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="dn-save">Mark done</button>
+    </div>
+  </form>
+</dialog>

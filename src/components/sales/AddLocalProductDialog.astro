@@ -1,0 +1,16 @@
+<dialog class="sa-dialog" id="dlg-local">
+  <form method="dialog" class="sa-dialog-inner" id="form-local">
+    <h2 class="sa-dialog-title">Add local product</h2>
+    <div class="sa-grid">
+      <label class="sa-field"><span>Name *</span><input type="text" id="lp-name" required /></label>
+      <label class="sa-field"><span>Unit</span><input type="text" id="lp-unit" value="pcs" maxlength="20" /></label>
+      <label class="sa-field"><span>Sale price</span><input type="number" id="lp-sale" min="0" step="0.01" value="0" /></label>
+      <label class="sa-field"><span>Cost price</span><input type="number" id="lp-cost" min="0" step="0.01" value="0" /></label>
+    </div>
+    <p class="sa-error" id="lp-error" hidden></p>
+    <div class="sa-actions">
+      <button type="button" class="btn-ghost-sm" data-close="dlg-local">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="lp-save">Save</button>
+    </div>
+  </form>
+</dialog>

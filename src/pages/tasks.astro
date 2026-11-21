@@ -11,6 +11,8 @@ const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
 import '../styles/pages/tasks.css';
 import Card from '../components/tasks/Card.astro';
+import AssignATaskDialog from '../components/tasks/AssignATaskDialog.astro';
+import FilesDialog from '../components/tasks/FilesDialog.astro';
 ---
 
 <AppLayout
@@ -60,53 +62,10 @@ import Card from '../components/tasks/Card.astro';
   </div>
 
   <!-- Assign / edit -->
-  <dialog class="pu-dialog" id="tk-form-dlg">
-    <form method="dialog" class="pu-dialog-inner" id="tk-form">
-      <h2 class="pu-dialog-title" id="tk-form-title">Assign a task</h2>
-      <label class="pu-field"><span>Task *</span><input type="text" id="tf-title" maxlength="200" required placeholder="e.g. Count the engine oil stock" /></label>
-      <label class="pu-field"><span>Details</span><textarea id="tf-desc" rows="3" maxlength="2000"></textarea></label>
-      <div class="pu-grid">
-        <label class="pu-field"><span>Assign to *</span><select id="tf-who" required></select></label>
-        <label class="pu-field"><span>Due date</span><input type="date" id="tf-due" /></label>
-        <label class="pu-field"><span>Repeats</span>
-          <select id="tf-repeat"><option value="none" selected>Does not repeat</option><option value="daily">Every day</option><option value="weekly">Every week</option><option value="monthly">Every month</option></select>
-        </label>
-        <label class="pu-field"><span>Priority</span>
-          <select id="tf-priority"><option value="low">Low</option><option value="normal" selected>Normal</option><option value="high">High</option></select>
-        </label>
-      </div>
-      <p class="pu-error" id="tf-error" hidden></p>
-      <div class="pu-actions">
-        <button type="button" class="btn-ghost-sm" id="tf-cancel">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="tf-save">Assign</button>
-      </div>
-    </form>
-  </dialog>
+  <AssignATaskDialog />
 
   <!-- Task detail -->
-  <dialog class="pu-dialog pu-wide" id="tk-dlg">
-    <div class="pu-dialog-inner">
-      <h2 class="pu-dialog-title" id="td-title"></h2>
-      <p class="pu-sub" id="td-meta"></p>
-      <p class="td-desc" id="td-desc"></p>
-      <div class="td-actions" id="td-actions"></div>
-      <label class="pu-field" id="td-note-wrap"><span>Note (optional)</span><input type="text" id="td-note" maxlength="500" placeholder="What was done?" /></label>
-      <p class="pu-error" id="td-error" hidden></p>
-      <h3 class="td-h">Files</h3>
-      <ul class="td-files" id="td-files"></ul>
-      <div class="td-comment" id="td-upload" hidden>
-        <input type="file" id="td-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt" aria-label="Attach a file" />
-        <button type="button" class="btn-ghost-sm" id="td-attach">Attach</button>
-      </div>
-      <h3 class="td-h">History</h3>
-      <ol class="td-events" id="td-events"></ol>
-      <div class="td-comment">
-        <input type="text" id="td-comment" maxlength="500" placeholder="Write a comment…" aria-label="Comment" />
-        <button type="button" class="btn-ghost-sm" id="td-send">Send</button>
-      </div>
-      <div class="pu-actions"><button type="button" class="btn-ghost-sm" id="td-close">Close</button></div>
-    </div>
-  </dialog>
+  <FilesDialog />
 </AppLayout>
 
 <script>
