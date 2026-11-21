@@ -1,0 +1,46 @@
+---
+import CustomerDetailsOverviewPanel from './CustomerDetailsOverviewPanel.astro';
+import CustomerDetailsStatementPanel from './CustomerDetailsStatementPanel.astro';
+---
+
+<div class="cus-detail-body" id="cus-detail-body" hidden>
+  <div class="cus-drawer-top">
+    <h3>Customer Details</h3>
+    <button type="button" class="cus-x" id="cus-close" aria-label="Close details">✕</button>
+  </div>
+
+  <div class="cus-profile">
+    <span class="cus-avatar big" id="d-avatar" aria-hidden="true"></span>
+    <div>
+      <div class="cus-profile-name"><h4 id="d-name">—</h4><span class="cus-badge" id="d-status">—</span></div>
+      <p class="cus-detail-code" id="d-code">—</p>
+      <p class="cus-profile-type" id="d-type-line">—</p>
+    </div>
+  </div>
+
+  <div class="cus-detail-actions">
+    <button type="button" class="btn-ghost-sm" id="cus-statement">Statement</button>
+    <button type="button" class="btn-ghost-sm is-danger" id="cus-toggle">Deactivate</button>
+  </div>
+
+  <p class="cus-limit-warn" id="d-limit-warn" role="status" hidden>
+    Owes more than the credit limit. Sales are still allowed.
+  </p>
+
+  <div class="cus-tabs" role="tablist">
+    <button type="button" role="tab" class="is-active" data-tab="overview">Overview</button>
+    <button type="button" role="tab" data-tab="history">Purchase History</button>
+    <button type="button" role="tab" data-tab="statement">Statement</button>
+  </div>
+
+  <CustomerDetailsOverviewPanel />
+
+  <div class="cus-tabpanel" data-panel="history" hidden>
+    <section class="cus-card">
+      <header><h4>Purchase History</h4></header>
+      <div id="d-history"></div>
+    </section>
+  </div>
+
+  <CustomerDetailsStatementPanel />
+</div>

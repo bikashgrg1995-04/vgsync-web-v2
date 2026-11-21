@@ -1,0 +1,17 @@
+<section class="pu-card">
+  <div class="pu-filters">
+    <select id="so-filter" aria-label="Show">
+      <option value="open">Waiting for goods</option>
+      <option value="damaged">Damaged on arrival</option>
+      <option value="received">Received</option>
+      <option value="all">All orders</option>
+    </select>
+    <span class="pu-count" id="so-count"></span>
+  </div>
+  <div class="pu-table-wrap">
+    <table class="pu-table">
+      <thead><tr><th>Order</th><th>Date</th><th>Supplier</th><th>Status</th><th class="num">Ordered</th><th class="num">Good</th><th class="num">Damaged</th><th>Actions</th></tr></thead>
+      <tbody id="so-tbody"><tr><td colspan="8" class="pu-empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</section>

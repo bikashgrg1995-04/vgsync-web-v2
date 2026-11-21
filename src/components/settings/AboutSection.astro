@@ -1,0 +1,22 @@
+---
+import pkg from '../../../package.json';
+const builtOn = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+---
+
+<article class="se-card">
+  <header class="se-card-head">
+    <span class="se-tile" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2zm0-8h-2V7h2z"></path></svg></span>
+    <div><h3>About VGSync</h3><p>Application information</p></div>
+  </header>
+  <div class="se-about">
+    <div class="se-about-logo">
+      <span class="se-logo-tile" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 9 5v10l-9 5-9-5V7z"></path><path d="m3 7 9 5 9-5"></path><path d="M12 12v10"></path></svg></span>
+      <div><strong>VGSync</strong><small>Manage · Grow · Succeed</small></div>
+    </div>
+    <dl class="se-kv is-compact">
+      <div><dt>Version</dt><dd>v{pkg.version}</dd></div>
+      <div><dt>Last Updated</dt><dd>{builtOn}</dd></div>
+      <div><dt>Built With</dt><dd><span class="se-heart" aria-hidden="true">♥</span> for business</dd></div>
+    </dl>
+  </div>
+</article>

@@ -1,0 +1,36 @@
+<section class="pu-panel" data-panel="list">
+  <button type="button" class="pd-back" data-goto="overview">← Back to Purchase</button>
+  <div class="pu-card">
+    <div class="pu-filters">
+      <input type="search" id="f-search" placeholder="Search bill no or supplier…" autocomplete="off" />
+      <select id="f-status" aria-label="Status">
+        <option value="">All status</option>
+        <option value="draft">Draft</option>
+        <option value="partial">Part received</option>
+        <option value="received">Received</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <select id="f-pay" aria-label="Payment">
+        <option value="">All payments</option>
+        <option value="unpaid">Unpaid</option>
+        <option value="partial">Part paid</option>
+        <option value="paid">Paid</option>
+      </select>
+      <select id="f-supplier" aria-label="Supplier"><option value="">All suppliers</option></select>
+      <input type="date" id="f-from" aria-label="From" />
+      <input type="date" id="f-to" aria-label="To" />
+    </div>
+    <div class="pu-table-wrap">
+      <table class="pu-table">
+        <thead>
+          <tr>
+            <th>No</th><th>Date</th><th>Supplier</th><th>Bill</th><th>Status</th>
+            <th class="num">Total</th><th class="num">Paid</th><th class="num">Due</th><th>Pay by</th><th>Payment</th>
+          </tr>
+        </thead>
+        <tbody id="pu-tbody"><tr><td colspan="10" class="pu-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="pu-foot" id="pu-count"></p>
+  </div>
+</section>

@@ -4,6 +4,8 @@ import { getNavItemsForRole, BOTTOM_NAV } from '../lib/navigation';
 import { PAGE_META } from '../lib/page-meta';
 import '../styles/widgets/purchase-page.css';
 import '../styles/pages/statements-page.css';
+import Kpis from '../components/statements/Kpis.astro';
+import ChooseACustomer from '../components/statements/ChooseACustomer.astro';
 
 const meta = PAGE_META.statements;
 const navItems = getNavItemsForRole();
@@ -58,49 +60,9 @@ const navItems = getNavItemsForRole();
 
     <p class="sm-error" id="sm-error" role="alert" hidden></p>
 
-    <div class="pd-kpis" id="sm-kpis" hidden>
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-blue" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v8"></path><path d="m8 12 4-4 4 4"></path><circle cx="12" cy="12" r="9"></circle></svg></span>
-        <div class="pd-kpi-body"><span class="pd-kpi-label">Opening balance</span><div class="pd-kpi-row"><strong id="kpi-open">—</strong></div><span class="pd-kpi-sub" id="kpi-open-sub">Before the first date</span></div>
-      </article>
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-orange" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg></span>
-        <div class="pd-kpi-body"><span class="pd-kpi-label" id="kpi-debit-label">Billed</span><div class="pd-kpi-row"><strong id="kpi-debit">—</strong></div><span class="pd-kpi-sub">Debit in this period</span></div>
-      </article>
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-green" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m11 6-6 6 6 6"></path></svg></span>
-        <div class="pd-kpi-body"><span class="pd-kpi-label" id="kpi-credit-label">Settled</span><div class="pd-kpi-row"><strong id="kpi-credit">—</strong></div><span class="pd-kpi-sub">Credit in this period</span></div>
-      </article>
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-purple" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"></rect><path d="M3 10h18"></path></svg></span>
-        <div class="pd-kpi-body"><span class="pd-kpi-label">Closing balance</span><div class="pd-kpi-row"><strong id="kpi-close">—</strong></div><span class="pd-kpi-sub" id="kpi-close-sub">—</span></div>
-      </article>
-    </div>
+    <Kpis />
 
-    <section class="pd-card" id="sm-card">
-      <div class="sm-head">
-        <div>
-          <h3 id="sm-title">Choose a customer or supplier</h3>
-          <p id="sm-sub">Their statement will appear here.</p>
-        </div>
-        <div class="sm-actions">
-          <button type="button" class="sm-btn" id="sm-xlsx" disabled>Excel</button>
-          <button type="button" class="sm-btn" id="sm-pdf" disabled>PDF</button>
-          <button type="button" class="sm-btn" id="sm-print" disabled>Print</button>
-        </div>
-      </div>
-      <div class="sm-wrap">
-        <table class="sm-table">
-          <thead>
-            <tr><th>Date</th><th>Type</th><th>Reference</th><th>Details</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr>
-          </thead>
-          <tbody id="sm-tbody"></tbody>
-        </table>
-      </div>
-      <div class="sm-empty" id="sm-empty">Pick someone above to see every transaction with them.</div>
-      <div class="sm-more"><button type="button" class="sm-btn" id="sm-more" hidden>Load more</button></div>
-      <p class="sm-note" id="sm-note"></p>
-    </section>
+    <ChooseACustomer />
   </div>
 </AppLayout>
 

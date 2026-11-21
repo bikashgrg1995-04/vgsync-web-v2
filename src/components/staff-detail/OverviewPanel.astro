@@ -1,0 +1,45 @@
+---
+import { I, ic } from './icons';
+---
+
+<section class="sd-panel is-active" data-panel="overview">
+  <div class="sd-card">
+    <div class="sd-card-head">
+      <h3>Staff Overview</h3>
+      <a class="sd-btn" id="sd-edit" href="/staff" hidden><Fragment set:html={I(ic.edit, 14)} />Edit Staff</a>
+    </div>
+    <div class="sd-tiles">
+      <div class="sd-tile"><span class="sd-tile-ico"><Fragment set:html={I(ic.cal, 18)} /></span><div><small>Join Date</small><strong id="sd-t-joined">—</strong></div></div>
+      <div class="sd-tile"><span class="sd-tile-ico"><Fragment set:html={I(ic.badge, 18)} /></span><div><small>Role</small><strong id="sd-t-role">—</strong></div></div>
+      <div class="sd-tile"><span class="sd-tile-ico"><Fragment set:html={I(ic.brief, 18)} /></span><div><small>Position</small><strong id="sd-t-position">—</strong></div></div>
+      <div class="sd-tile"><span class="sd-tile-ico"><Fragment set:html={I(ic.build, 18)} /></span><div><small>Branch</small><strong id="sd-t-branch">—</strong></div></div>
+    </div>
+
+    <div class="sd-two">
+      <section class="sd-card">
+        <div class="sd-card-head"><h3>Account Information</h3></div>
+        <dl class="sd-kv">
+          <div><dt>Full Name</dt><dd id="sd-k-name">—</dd></div>
+          <div><dt>Username</dt><dd id="sd-k-username">—</dd></div>
+          <div><dt>Email</dt><dd id="sd-k-email">—</dd></div>
+          <div><dt>Phone</dt><dd id="sd-k-phone">—</dd></div>
+          <div><dt>Last Sign-in</dt><dd id="sd-k-login">—</dd></div>
+          <div><dt>Password</dt><dd id="sd-k-password">—</dd></div>
+        </dl>
+      </section>
+
+      <section class="sd-card">
+        <div class="sd-card-head"><h3>Salary</h3><span class="sd-pill is-earned" id="sd-pay-type" hidden></span></div>
+        <div id="sd-salary-box"><p class="sd-hint">Loading…</p></div>
+      </section>
+    </div>
+
+    <div class="sd-card-head"><h3>Recent Salary Records</h3><button type="button" class="sd-link" data-goto="salary">View All Records →</button></div>
+    <div class="sd-table-wrap">
+      <table class="sd-table">
+        <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Status</th><th class="num">Amount</th></tr></thead>
+        <tbody id="sd-recent"><tr><td colspan="5" class="sd-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>

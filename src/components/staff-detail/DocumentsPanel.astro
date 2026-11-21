@@ -1,0 +1,24 @@
+<section class="sd-panel" data-panel="documents">
+  <div class="sd-card">
+    <div class="sd-card-head"><h3>Documents</h3></div>
+    <form id="sd-doc-form" class="sd-doc-form" hidden>
+      <input type="text" id="sd-doc-title" placeholder="Title (optional)" maxlength="150" />
+      <select id="sd-doc-category" aria-label="Category">
+        <option value="identity">Identity</option>
+        <option value="contract">Contract</option>
+        <option value="cv">CV / Certificate</option>
+        <option value="other" selected>Other</option>
+      </select>
+      <input type="file" id="sd-doc-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt" required />
+      <button type="submit" class="sd-btn" id="sd-doc-upload">Upload</button>
+    </form>
+    <p class="sd-hint" id="sd-doc-error" hidden></p>
+    <div class="sd-table-wrap">
+      <table class="sd-table">
+        <thead><tr><th>Title</th><th>Category</th><th>File</th><th>Added</th><th class="num">Size</th><th></th></tr></thead>
+        <tbody id="sd-docs"><tr><td colspan="6" class="sd-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="sd-hint">PDF, image, Word, Excel or text files up to 10 MB. Files open only after signing in.</p>
+  </div>
+</section>

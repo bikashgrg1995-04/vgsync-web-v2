@@ -7,6 +7,10 @@ import '../styles/widgets/purchase-page.css';
 const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
 import '../styles/pages/staff.css';
+import Hero from '../components/staff/Hero.astro';
+import Kpis from '../components/staff/Kpis.astro';
+import StaffDirectory from '../components/staff/StaffDirectory.astro';
+import PanelPositions from '../components/staff/PanelPositions.astro';
 ---
 
 <AppLayout
@@ -22,135 +26,17 @@ import '../styles/pages/staff.css';
   showBranchSwitcher={true}
 >
   <div class="st-page">
-    <header class="pd-hero">
-      <div class="pd-hero-text">
-        <div class="pd-hero-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></div>
-        <div>
-          <h2 class="pd-hero-title" id="st-title">Staffs</h2>
-          <p class="pd-hero-sub" id="st-sub">Manage your team, salary and access.</p>
-          <p class="st-scope" id="st-scope">Team</p>
-        </div>
-      </div>
-      <div class="pd-hero-actions">
-        <div class="st-tabs" role="tablist" aria-label="Staff sections" hidden>
-          <button type="button" role="tab" id="tab-team" aria-selected="true" aria-controls="panel-team">Team</button>
-          <button type="button" role="tab" id="tab-positions" aria-selected="false" aria-controls="panel-positions">Positions</button>
-        </div>
-        <button type="button" class="btn-primary-sm" id="member-add">+ Add Staff</button>
-      </div>
-    </header>
+    <Hero />
 
-    <div class="pd-kpis st-kpis" id="st-kpis">
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.9"></path><path d="M16 3.1a4 4 0 0 1 0 7.8"></path></svg></span>
-        <div class="pd-kpi-body">
-          <span class="pd-kpi-label">Total Staff</span>
-          <div class="pd-kpi-row"><strong id="kpi-total">—</strong></div>
-          <span class="pd-kpi-sub">Team members</span>
-        </div>
-      </article>
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-green"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span>
-        <div class="pd-kpi-body">
-          <span class="pd-kpi-label">Active Staff</span>
-          <div class="pd-kpi-row"><strong id="kpi-active">—</strong></div>
-          <span class="pd-kpi-sub">Can sign in</span>
-        </div>
-      </article>
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-red"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M10 15V9"></path><path d="M14 15V9"></path></svg></span>
-        <div class="pd-kpi-body">
-          <span class="pd-kpi-label">Former Staff</span>
-          <div class="pd-kpi-row"><strong id="kpi-inactive">—</strong></div>
-          <span class="pd-kpi-sub">Former staff</span>
-        </div>
-      </article>
-    </div>
+    <Kpis />
 
     <p class="st-banner" id="st-banner" role="alert" hidden></p>
 
     <!-- TEAM -->
-    <section class="st-panel pd-card" id="panel-team" role="tabpanel" aria-labelledby="tab-team">
-      <div class="st-dir-head">
-        <h3 class="st-dir-title">Staff Directory <span class="st-pill" id="st-pill">0 members</span></h3>
-        <div class="st-view" role="group" aria-label="View">
-          <button type="button" class="st-view-btn" data-view="grid" aria-label="Card view" aria-pressed="false">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          </button>
-          <button type="button" class="st-view-btn is-active" data-view="list" aria-label="List view" aria-pressed="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="st-filters">
-        <div class="st-search">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="search" id="st-search" placeholder="Search by name, username or contact…" autocomplete="off" aria-label="Search team" />
-        </div>
-        <select id="st-status-filter" aria-label="Filter by status">
-          <option value="active" selected>Current team</option>
-          <option value="inactive">Former staff</option>
-          <option value="">Everyone</option>
-        </select>
-        <select id="st-position-filter" aria-label="Filter by position">
-          <option value="">All Positions</option>
-        </select>
-        <select id="st-role-filter" aria-label="Filter by role">
-          <option value="">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="accountant">Accountant</option>
-          <option value="staff">Staff</option>
-        </select>
-      </div>
-
-      <div id="st-directory">
-        <div class="st-table-wrap" id="st-list-view">
-          <table class="st-table">
-            <thead>
-              <tr>
-                <th>Staff</th>
-                <th>Position</th>
-                <th>Role</th>
-                <th>Contact</th>
-                <th>Join Date</th>
-                <th>Status</th>
-                <th class="st-th-actions">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="member-tbody"><tr><td colspan="7">Loading…</td></tr></tbody>
-          </table>
-        </div>
-        <div class="st-grid" id="st-grid-view" hidden></div>
-      </div>
-
-      <div class="st-foot">
-        <p class="st-footnote" id="member-count"></p>
-        <div class="st-pages" id="st-pages"></div>
-      </div>
-    </section>
+    <StaffDirectory />
 
     <!-- POSITIONS -->
-    <section class="st-panel" id="panel-positions" role="tabpanel" aria-labelledby="tab-positions" hidden>
-      <div class="st-panel-head">
-        <p class="st-hint">A position decides what a staff member can see and do in each module. Staff must have one.</p>
-        <button type="button" class="btn-primary-sm" id="position-add">+ New position</button>
-      </div>
-      <div class="st-table-wrap">
-        <table class="st-table">
-          <thead>
-            <tr>
-              <th>Position</th>
-              <th>Access</th>
-              <th class="num">Active staff</th>
-              <th>Status</th>
-              <th><span class="visually-hidden">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody id="position-tbody"><tr><td colspan="5">Loading…</td></tr></tbody>
-        </table>
-      </div>
-    </section>
+    <PanelPositions />
   </div>
 
   <!-- Member dialog -->

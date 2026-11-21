@@ -1,0 +1,24 @@
+<section class="py-panel" data-panel="cash">
+  <div class="py-card">
+    <div class="py-filters">
+      <label class="py-field"><span>As at</span><input type="date" id="cb-date" /></label>
+    </div>
+    <div class="py-table-wrap">
+      <table class="py-table">
+        <thead><tr><th>Method</th><th class="num">Opening</th><th class="num">Received</th><th class="num">Paid</th><th class="num">Books say</th><th>Last check</th><th></th></tr></thead>
+        <tbody id="cb-rows"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="py-hint" id="cb-hint"></p>
+    <p class="py-hint">Set the opening balance once (what you held at the end of a date), then check against the cash in the drawer or your bank statement. Money received and paid after the opening date is added automatically from sales, purchases, salaries, expenses and income.</p>
+  </div>
+  <div class="py-card">
+    <h3 class="py-h">Past checks</h3>
+    <div class="py-table-wrap">
+      <table class="py-table">
+        <thead><tr><th>Date</th><th>Method</th><th class="num">Books said</th><th class="num">Counted</th><th class="num">Difference</th><th>Note</th><th>By</th></tr></thead>
+        <tbody id="cb-history"><tr><td colspan="7" class="py-empty">No checks yet.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,54 @@
+<section class="inv-panel" data-inv-panel="moves">
+  <button type="button" class="btn-link inv-back-stock" id="inv-back-stock">
+    ← Back to stock list
+  </button>
+
+  <div class="inv-card">
+    <div class="inv-filters inv-filters-moves">
+      <div class="inv-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.3-4.3"></path>
+        </svg>
+        <input type="search" id="mv-search" placeholder="Search product, reference or note…" autocomplete="off" />
+      </div>
+
+      <select id="mv-type" aria-label="Movement type">
+        <option value="">All types</option>
+      </select>
+      <input type="date" id="mv-from" aria-label="From date" />
+      <input type="date" id="mv-to" aria-label="To date" />
+    </div>
+
+    <div class="inv-table-wrap">
+      <table class="inv-table inv-table-moves">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Stock no</th>
+            <th>Product</th>
+            <th>Type</th>
+            <th class="hide-sm">Stock</th>
+            <th class="num">Qty</th>
+            <th class="num hide-sm">Balance</th>
+            <th class="hide-md">Reference</th>
+            <th class="hide-md">By</th>
+          </tr>
+        </thead>
+        <tbody id="moves-tbody">
+          <tr>
+            <td colspan="9" class="inv-empty">Loading…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="inv-pager">
+      <span class="inv-footnote" id="mv-count"></span>
+      <div>
+        <button type="button" class="btn-ghost-sm" id="mv-prev">Previous</button>
+        <button type="button" class="btn-ghost-sm" id="mv-next">Next</button>
+      </div>
+    </div>
+  </div>
+</section>

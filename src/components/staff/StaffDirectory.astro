@@ -1,0 +1,59 @@
+<section class="st-panel pd-card" id="panel-team" role="tabpanel" aria-labelledby="tab-team">
+  <div class="st-dir-head">
+    <h3 class="st-dir-title">Staff Directory <span class="st-pill" id="st-pill">0 members</span></h3>
+    <div class="st-view" role="group" aria-label="View">
+      <button type="button" class="st-view-btn" data-view="grid" aria-label="Card view" aria-pressed="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </button>
+      <button type="button" class="st-view-btn is-active" data-view="list" aria-label="List view" aria-pressed="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="st-filters">
+    <div class="st-search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="search" id="st-search" placeholder="Search by name, username or contact…" autocomplete="off" aria-label="Search team" />
+    </div>
+    <select id="st-status-filter" aria-label="Filter by status">
+      <option value="active" selected>Current team</option>
+      <option value="inactive">Former staff</option>
+      <option value="">Everyone</option>
+    </select>
+    <select id="st-position-filter" aria-label="Filter by position">
+      <option value="">All Positions</option>
+    </select>
+    <select id="st-role-filter" aria-label="Filter by role">
+      <option value="">All Roles</option>
+      <option value="admin">Admin</option>
+      <option value="accountant">Accountant</option>
+      <option value="staff">Staff</option>
+    </select>
+  </div>
+
+  <div id="st-directory">
+    <div class="st-table-wrap" id="st-list-view">
+      <table class="st-table">
+        <thead>
+          <tr>
+            <th>Staff</th>
+            <th>Position</th>
+            <th>Role</th>
+            <th>Contact</th>
+            <th>Join Date</th>
+            <th>Status</th>
+            <th class="st-th-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="member-tbody"><tr><td colspan="7">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="st-grid" id="st-grid-view" hidden></div>
+  </div>
+
+  <div class="st-foot">
+    <p class="st-footnote" id="member-count"></p>
+    <div class="st-pages" id="st-pages"></div>
+  </div>
+</section>

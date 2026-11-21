@@ -1,0 +1,22 @@
+<section class="py-panel" data-panel="daily">
+  <div class="py-card">
+    <div class="py-filters">
+      <button type="button" class="btn-ghost-sm" id="ds-prev" aria-label="Previous day">‹</button>
+      <input type="date" id="ds-date" />
+      <button type="button" class="btn-ghost-sm" id="ds-next" aria-label="Next day">›</button>
+      <button type="button" class="btn-ghost-sm" id="ds-all">Everyone present</button>
+      <span class="py-hint" id="ds-sum"></span>
+      <button type="button" class="btn-primary-sm" id="ds-save">Save day</button>
+    </div>
+    <p class="py-error" id="ds-error" role="alert" hidden></p>
+    <div class="py-table-wrap">
+      <table class="py-table">
+        <thead>
+          <tr><th>Staff</th><th class="num">Daily rate</th><th>Today</th><th class="num">Day's wage</th><th class="num">Extra</th><th>Note</th><th class="num">Day's pay</th><th>This month</th></tr>
+        </thead>
+        <tbody id="ds-tbody"><tr><td colspan="7" class="py-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="py-note">Present pays the full daily rate, Half pays half, Absent pays nothing. If the wage is different that day (or there is no fixed rate), type it in Day's wage. Marking a day again changes the wage already recorded. Only people on daily pay are listed.</p>
+  </div>
+</section>

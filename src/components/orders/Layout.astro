@@ -1,0 +1,41 @@
+<div class="or-layout">
+  <div class="or-card">
+    <div class="or-filters">
+      <div class="or-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" id="f-search" placeholder="Search reference or product…" autocomplete="off" />
+      </div>
+      <select id="f-status" aria-label="Status">
+        <option value="">All status</option>
+        <option value="ordered">Ordered</option>
+        <option value="partially_dispatched">Part dispatched</option>
+        <option value="dispatched">In transit</option>
+        <option value="partially_received">Part received</option>
+        <option value="received">Delivered</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <select id="f-range" aria-label="Date range">
+        <option value="">All time</option>
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+    </div>
+    <div class="or-table-wrap">
+      <table class="or-table">
+        <thead>
+          <tr>
+            <th>Order</th><th id="th-who">Branch</th><th>Date</th><th>Status</th>
+            <th class="num">Ordered</th><th class="num">Sent</th><th class="num">Good</th><th class="num">Damaged</th><th class="or-th-act">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="or-tbody"><tr><td colspan="9" class="or-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="or-footrow"><p class="or-foot" id="or-count"></p><div class="or-pages" id="or-pages"></div></div>
+  </div>
+
+  <aside class="or-card or-detail-card" id="or-detail">
+    <p class="or-empty-detail">Select an order to see its items and history.</p>
+  </aside>
+</div>

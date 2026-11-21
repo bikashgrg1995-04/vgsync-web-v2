@@ -1,0 +1,42 @@
+<div class="cus-tabpanel" data-panel="overview">
+  <section class="cus-card">
+    <header><h4>Personal Information</h4><button type="button" class="btn-ghost-sm" id="cus-edit">✎ Edit</button></header>
+    <dl class="cus-kv">
+      <div><dt>Full Name</dt><dd id="d-fullname">—</dd></div>
+      <div><dt>Phone</dt><dd id="d-phone">—</dd></div>
+      <div><dt>Email</dt><dd id="d-email">—</dd></div>
+      <div><dt>Address</dt><dd id="d-address">—</dd></div>
+      <div><dt>PAN</dt><dd id="d-pan">—</dd></div>
+      <div><dt>Customer Type</dt><dd id="d-type">—</dd></div>
+      <div><dt>Created At</dt><dd id="d-created">—</dd></div>
+      <div><dt>Notes</dt><dd id="d-notes">—</dd></div>
+    </dl>
+  </section>
+
+  <section class="cus-card">
+    <header><h4>Customer Statistics</h4></header>
+    <div class="cus-stats">
+      <div><span>Total Purchases</span><strong id="d-total">—</strong></div>
+      <div><span>This Year</span><strong id="d-year">—</strong></div>
+      <div><span>Last Purchase</span><strong id="d-last">—</strong></div>
+    </div>
+    <dl class="cus-kv tight">
+      <div><dt>Owes you</dt><dd id="d-owes">—</dd></div>
+      <div><dt>Credit limit</dt><dd id="d-credit">—</dd></div>
+      <div><dt>You owe them</dt><dd id="d-credit-to-pay">—</dd></div>
+      <div><dt>Advance received</dt><dd id="d-advance">—</dd></div>
+      <div><dt>Replacement due</dt><dd id="d-stock">—</dd></div>
+    </dl>
+  </section>
+
+  <section class="cus-card">
+    <header><h4>This Month Purchase</h4><button type="button" class="cus-link" data-goto="history">View All →</button></header>
+    <div id="d-month"></div>
+  </section>
+
+  <section class="cus-card">
+    <header><h4>Recent Purchase Records</h4><button type="button" class="cus-link" data-goto="history">View All →</button></header>
+    <div id="d-recent"></div>
+  </section>
+  <p class="cus-detail-meta" id="d-meta"></p>
+</div>

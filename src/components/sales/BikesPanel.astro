@@ -1,0 +1,31 @@
+<section class="sa-panel" data-panel="bikes">
+  <button type="button" class="pd-back" data-goto="overview">← Back to Sales</button>
+  <div class="sa-layout sa-layout-even">
+    <div class="sa-card">
+      <div class="sa-credit-head">
+        <strong>Bikes</strong>
+        <button type="button" class="btn-primary-sm" id="bk-new" hidden>+ Register bike</button>
+      </div>
+      <div class="sa-table-wrap">
+        <table class="sa-table">
+          <thead><tr><th>Chassis</th><th>Engine</th><th>Model</th><th>Colour</th><th>Status</th></tr></thead>
+          <tbody id="bk-tbody"><tr><td colspan="5" class="sa-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="sa-foot">Register each bike by chassis number before selling it. Stock itself comes from purchases.</p>
+    </div>
+    <div class="sa-card">
+      <div class="sa-credit-head">
+        <strong>Local products</strong>
+        <button type="button" class="btn-primary-sm" id="lp-new" hidden>+ Add</button>
+      </div>
+      <div class="sa-table-wrap">
+        <table class="sa-table">
+          <thead><tr><th>Name</th><th>Unit</th><th class="num">Sale price</th></tr></thead>
+          <tbody id="lp-tbody"><tr><td colspan="3" class="sa-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="sa-foot">Sales-only items (services, accessories bought in). They never touch stock.</p>
+    </div>
+  </div>
+</section>

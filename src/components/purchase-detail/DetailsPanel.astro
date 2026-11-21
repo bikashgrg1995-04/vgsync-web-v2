@@ -1,0 +1,85 @@
+<section class="invd-panel is-active" data-panel="details">
+  <div class="invd-grid-top">
+    <div class="inv-card">
+      <div class="inv-card-head">
+        <h3 class="inv-card-title">Purchase Information</h3>
+      </div>
+      <div class="invd-info">
+        <dl class="invd-dl">
+          <div><dt>PO Number</dt><dd id="inf-no">—</dd></div>
+          <div><dt>Supplier</dt><dd id="inf-supplier">—</dd></div>
+          <div><dt>Bill No</dt><dd id="inf-bill">—</dd></div>
+          <div><dt>Purchase Date</dt><dd id="inf-date">—</dd></div>
+          <div><dt>Payment due</dt><dd><span id="inf-due-date">—</span> <button type="button" class="btn-link" id="inf-due-edit" hidden>Change</button></dd></div>
+          <div><dt>Payment</dt><dd id="inf-pay">—</dd></div>
+        </dl>
+        <dl class="invd-dl">
+          <div><dt>Subtotal</dt><dd id="inf-subtotal">—</dd></div>
+          <div><dt>Discount</dt><dd id="inf-discount">—</dd></div>
+          <div><dt id="inf-vat-label">VAT</dt><dd id="inf-vat">—</dd></div>
+          <div><dt>Freight</dt><dd id="inf-freight">—</dd></div>
+          <div><dt>Net Total</dt><dd class="is-big" id="inf-net">—</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="inv-card">
+      <div class="inv-card-head">
+        <h3 class="inv-card-title">Payment &amp; Delivery</h3>
+      </div>
+      <div class="pud-progress">
+        <div class="pud-prog">
+          <div class="pud-prog-head">
+            <span>Paid</span>
+            <strong id="pg-pay-text">—</strong>
+          </div>
+          <div class="pud-bar"><i class="is-pay" id="pg-pay-bar" style="width:0"></i></div>
+          <small id="pg-pay-note"></small>
+        </div>
+
+        <div class="pud-prog">
+          <div class="pud-prog-head">
+            <span>Delivered</span>
+            <strong id="pg-del-text">—</strong>
+          </div>
+          <div class="pud-bar"><i class="is-del" id="pg-del-bar" style="width:0"></i></div>
+          <small id="pg-del-note"></small>
+        </div>
+
+        <div class="invd-values pud-values">
+          <div>
+            <span>Amount Due</span>
+            <strong id="pg-due">—</strong>
+            <small id="pg-due-note"></small>
+          </div>
+          <div>
+            <span>Credit Applied</span>
+            <strong id="pg-credit">—</strong>
+            <small>From returned goods</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inv-card">
+    <div class="inv-card-head">
+      <h3 class="inv-card-title">Items</h3>
+    </div>
+    <div class="inv-table-wrap">
+      <table class="inv-table pud-items">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th class="num">Qty</th>
+            <th class="num">Unit Price</th>
+            <th class="num">Total</th>
+            <th class="num">Received</th>
+            <th class="num hide-sm">Returned</th>
+          </tr>
+        </thead>
+        <tbody id="pud-lines"><tr><td colspan="6" class="inv-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</section>

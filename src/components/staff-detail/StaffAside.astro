@@ -1,0 +1,31 @@
+---
+import { I, ic } from './icons';
+---
+
+<aside class="sd-side">
+  <section class="sd-card sd-profile">
+    <div class="sd-profile-top">
+      <span class="sd-avatar" id="sd-avatar">?</span>
+      <div>
+        <h2 class="sd-name" id="sd-name">Loading…</h2>
+        <span class="sd-code" id="sd-username">—</span>
+        <span class="sd-pill is-active" id="sd-status">—</span>
+      </div>
+    </div>
+    <ul class="sd-facts">
+      <li><Fragment set:html={I(ic.brief)} /><span id="sd-f-position">—</span></li>
+      <li><Fragment set:html={I(ic.build)} /><span id="sd-f-branch">—</span></li>
+      <li><Fragment set:html={I(ic.phone)} /><span id="sd-f-phone">—</span></li>
+      <li><Fragment set:html={I(ic.mail)} /><span id="sd-f-email">—</span></li>
+    </ul>
+  </section>
+
+  <nav class="sd-nav" aria-label="Staff sections" id="sd-nav">
+    <button type="button" class="is-active" data-tab="overview"><Fragment set:html={I(ic.home)} />Overview</button>
+    <button type="button" data-tab="salary"><Fragment set:html={I(ic.coin)} />Salary Records</button>
+    <button type="button" data-tab="attendance" id="sd-tab-attendance"><Fragment set:html={I(ic.cal)} />Attendance</button>
+    <button type="button" data-tab="access"><Fragment set:html={I(ic.shield)} />Access &amp; Permissions</button>
+    <button type="button" data-tab="documents"><Fragment set:html={I(ic.folder)} />Documents</button>
+    <button type="button" data-tab="activity"><Fragment set:html={I(ic.history)} />Activity Logs</button>
+  </nav>
+</aside>

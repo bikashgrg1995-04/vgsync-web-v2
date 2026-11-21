@@ -1,0 +1,22 @@
+<section class="py-panel" data-panel="payroll">
+  <div class="py-kpis" id="pr-kpis"></div>
+  <div id="pr-setup" class="py-setup" hidden></div>
+  <div class="py-layout">
+    <div class="py-card">
+      <div class="py-filters">
+        <input type="search" id="pr-search" placeholder="Search staff…" autocomplete="off" />
+      </div>
+      <div class="py-table-wrap">
+        <table class="py-table">
+          <thead>
+            <tr><th>Staff</th><th>Pay</th><th class="num">Owed now</th><th class="num">Advance</th><th>Next salary</th></tr>
+          </thead>
+          <tbody id="pr-tbody"><tr><td colspan="5" class="py-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <aside class="py-card" id="pr-detail">
+      <p class="py-empty-detail">Select a person to see their account and statement.</p>
+    </aside>
+  </div>
+</section>

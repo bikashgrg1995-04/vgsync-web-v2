@@ -9,6 +9,9 @@ const meta = PAGE_META.orders;
 const defaultRole: UserRole = 'owner';
 const navItems = getNavItemsForRole(defaultRole);
 import '../styles/pages/orders.css';
+import Hero from '../components/orders/Hero.astro';
+import Kpis from '../components/orders/Kpis.astro';
+import Layout from '../components/orders/Layout.astro';
 ---
 
 <AppLayout
@@ -24,99 +27,13 @@ import '../styles/pages/orders.css';
   showBranchSwitcher={true}
 >
   <div class="or-page">
-    <header class="pd-hero">
-      <div class="pd-hero-text">
-        <div class="pd-hero-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg></div>
-        <div>
-          <h2 class="pd-hero-title" id="or-heading">Orders</h2>
-          <p class="pd-hero-sub">Manage stock orders between branches and Head Office.</p>
-          <p class="or-scope" id="or-scope">Orders</p>
-        </div>
-      </div>
-      <div class="pd-hero-actions">
-        <button type="button" class="btn-ghost-sm" id="or-refresh">Refresh</button>
-        <button type="button" class="btn-primary-sm" id="or-new" hidden>+ New Order</button>
-      </div>
-    </header>
+    <Hero />
 
     <p class="or-notice" id="or-notice" hidden></p>
 
-    <div class="pd-kpis or-kpis">
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-blue"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/></svg></span>
-        <div class="pd-kpi-body">
-          <span class="pd-kpi-label">Total Orders</span>
-          <div class="pd-kpi-row"><strong id="kpi-total">—</strong></div>
-          <span class="pd-kpi-sub">All stock orders</span>
-        </div>
-      </article>
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-orange"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
-        <div class="pd-kpi-body">
-          <span class="pd-kpi-label" id="kpi-a-label">Open</span>
-          <div class="pd-kpi-row"><strong id="kpi-a">—</strong></div>
-          <span class="pd-kpi-sub">Not finished yet</span>
-        </div>
-      </article>
-      <article class="pd-kpi">
-        <span class="pd-kpi-icon is-purple"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
-        <div class="pd-kpi-body">
-          <span class="pd-kpi-label" id="kpi-b-label">In transit</span>
-          <div class="pd-kpi-row"><strong id="kpi-b">—</strong></div>
-          <span class="pd-kpi-sub">On the way</span>
-        </div>
-      </article>
-      <article class="pd-kpi is-danger">
-        <span class="pd-kpi-icon is-red"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
-        <div class="pd-kpi-body">
-          <span class="pd-kpi-label">Damaged to return</span>
-          <div class="pd-kpi-row"><strong id="kpi-dmg">—</strong></div>
-          <span class="pd-kpi-sub">Waiting to go back</span>
-        </div>
-      </article>
-    </div>
+    <Kpis />
 
-    <div class="or-layout">
-      <div class="or-card">
-        <div class="or-filters">
-          <div class="or-search">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input type="search" id="f-search" placeholder="Search reference or product…" autocomplete="off" />
-          </div>
-          <select id="f-status" aria-label="Status">
-            <option value="">All status</option>
-            <option value="ordered">Ordered</option>
-            <option value="partially_dispatched">Part dispatched</option>
-            <option value="dispatched">In transit</option>
-            <option value="partially_received">Part received</option>
-            <option value="received">Delivered</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <select id="f-range" aria-label="Date range">
-            <option value="">All time</option>
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-          </select>
-        </div>
-        <div class="or-table-wrap">
-          <table class="or-table">
-            <thead>
-              <tr>
-                <th>Order</th><th id="th-who">Branch</th><th>Date</th><th>Status</th>
-                <th class="num">Ordered</th><th class="num">Sent</th><th class="num">Good</th><th class="num">Damaged</th><th class="or-th-act">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="or-tbody"><tr><td colspan="9" class="or-empty">Loading…</td></tr></tbody>
-          </table>
-        </div>
-        <div class="or-footrow"><p class="or-foot" id="or-count"></p><div class="or-pages" id="or-pages"></div></div>
-      </div>
-
-      <aside class="or-card or-detail-card" id="or-detail">
-        <p class="or-empty-detail">Select an order to see its items and history.</p>
-      </aside>
-    </div>
+    <Layout />
   </div>
 
   <!-- New order -->
