@@ -219,3 +219,10 @@ html:has(.app-shell) { font-size: 14px; }
   .app-content .pd-kpi-icon { width: 30px; height: 30px; }
   .app-content .pd-hero { gap: 8px; }
 }
+
+/* ---------- 7. Shimmer placeholders ---------- */
+.sk-bar { display: block; border-radius: 6px; background: linear-gradient(90deg, color-mix(in srgb, var(--text-primary) 7%, transparent) 25%, color-mix(in srgb, var(--text-primary) 15%, transparent) 37%, color-mix(in srgb, var(--text-primary) 7%, transparent) 63%); background-size: 400% 100%; animation: sk-shimmer 1.3s ease-in-out infinite; }
+.sk-line { display: block; margin: 8px 0; }
+.sk-row td { padding-top: 12px; padding-bottom: 12px; }
+@keyframes sk-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .sk-bar { animation: none; } }
