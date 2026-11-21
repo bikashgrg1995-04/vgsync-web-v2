@@ -58,6 +58,18 @@ async function load(): Promise<void> {
   if (!s) return;
   $('ov-title').textContent = `Welcome back, ${s.displayName.split(' ')[0]}!`;
   $('ov-sub').textContent = `Here's what's happening with ${s.activeBranchName} today.`;
+  // The full dashboard has its own single request and replaces the simple widgets,
+  // so those widgets' requests are not made at all. Its shimmer shows right away.
+  if (can(s, 'dashboard.view')) {
+    $('ov-legacy').hidden = true;
+    $('ov-kpis').hidden = true;
+    $('ov-owner').hidden = false;
+    await loadOwner(mine, s);
+    return;
+  }
+  $('ov-owner').hidden = true;
+  $('ov-legacy').hidden = false;
+
   const month = iso(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const from14 = iso(daysAgo(13));
   const from = month < from14 ? month : from14;
