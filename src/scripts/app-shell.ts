@@ -12,6 +12,7 @@ import { getNavItemsForRole, navItemVisible, type NavViewer } from '../lib/navig
 import { paintAvatar } from '../lib/avatar';
 import './table-cards';
 import './skeleton';
+import { warmUp } from '../lib/warmup';
 
 const root = document.documentElement;
 const shell = document.getElementById('app-shell');
@@ -434,4 +435,35 @@ function setupMenuGroups(): void {
       saveOpenGroups(now);
     });
   }
+}
+
+// ---- Offline bar + background warm-up ------------------------------------------
+{
+  let bar: HTMLElement | null = null;
+  const show = (offline: boolean) => {
+    if (offline && !bar) {
+      bar = document.createElement('div');
+      bar.className = 'offline-bar';
+      bar.setAttribute('role', 'status');
+      bar.textContent = "You're offline. Showing saved data; saving is turned off until you're back online.";
+      document.body.appendChild(bar);
+    } else if (!offline && bar) {
+      bar.remove();
+      bar = null;
+    }
+  };
+  window.addEventListener('offline', () => show(true));
+  window.addEventListener('online', () => {
+    show(false);
+    window.dispatchEvent(new Event('vg:data-changed')); // look for anything new
+  });
+  window.addEventListener('vg:reach', (e) => show((e as CustomEvent<boolean>).detail === false));
+  if (navigator.onLine === false) show(true);
+
+  void warmUp();
+}
+
+// Keep the app's pages and files on the device so it opens without internet.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }

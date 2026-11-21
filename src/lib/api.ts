@@ -56,10 +56,18 @@ export function toApiError(status: number, data: unknown): ApiError {
   return new ApiError(message, status, code, fields);
 }
 
+/** Tells the page whether the server can be reached (the offline bar listens). */
+function reach(ok: boolean): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vg:reach', { detail: ok }));
+}
+
 async function send(path: string, init: RequestInit): Promise<Response> {
   try {
-    return await fetch(`${API_BASE}${path}`, init);
+    const res = await fetch(`${API_BASE}${path}`, init);
+    reach(true);
+    return res;
   } catch {
+    reach(false);
     throw new ApiError(NETWORK_MESSAGE, 0, 'network');
   }
 }
@@ -239,6 +247,12 @@ export async function api<T = unknown>(path: string, options: RequestOptions = {
   const prefix = auth ? cachePrefix() : null;
   if (method === 'GET' && prefix && options.cache !== false && !NOT_CACHED.test(path)) {
     return cachedGet<T>(path, prefix);
+  }
+
+  // Saving needs the server (invoice numbers, stock and approvals are decided there).
+  if (method !== 'GET' && typeof navigator !== 'undefined' && navigator.onLine === false) {
+    reach(false);
+    throw new ApiError("You're offline. Saving is turned off until you're back online.", 0, 'offline');
   }
 
   const res = auth ? await authedSend(path, method, body) : await send(path, jsonInit(method, body));
