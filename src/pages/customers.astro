@@ -12,6 +12,7 @@ import '../styles/pages/customers.css';
 import Hero from '../components/customers/Hero.astro';
 import Kpis from '../components/customers/Kpis.astro';
 import CustomerDirectory from '../components/customers/CustomerDirectory.astro';
+import NewCustomerDialog from '../components/customers/NewCustomerDialog.astro';
 ---
 
 <AppLayout
@@ -36,66 +37,7 @@ import CustomerDirectory from '../components/customers/CustomerDirectory.astro';
     <CustomerDirectory />
   </div>
 
-  <dialog class="cus-dialog" id="cus-dialog">
-    <form class="cus-dialog-inner" id="cus-form">
-      <h2 class="cus-dialog-title" id="cus-form-title">New customer</h2>
-      <input type="hidden" id="f-id" />
-
-      <div class="cus-form-grid">
-        <label class="cus-field span2">
-          <span>Name *</span>
-          <input type="text" id="f-name" required placeholder="Full name or company" />
-        </label>
-        <label class="cus-field">
-          <span>Type</span>
-          <select id="f-type">
-            <option value="individual">Individual</option>
-            <option value="business">Business</option>
-            <option value="fleet">Fleet</option>
-          </select>
-        </label>
-        <label class="cus-field">
-          <span>Status</span>
-          <select id="f-status">
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </label>
-        <label class="cus-field">
-          <span>Phone</span>
-          <input type="tel" id="f-phone" placeholder="98XXXXXXXX (optional)" />
-        </label>
-        <label class="cus-field">
-          <span>Email</span>
-          <input type="email" id="f-email" placeholder="optional" />
-        </label>
-        <label class="cus-field span2">
-          <span>Address</span>
-          <input type="text" id="f-address" />
-        </label>
-        <label class="cus-field">
-          <span>PAN / VAT number</span>
-          <input type="text" id="f-pan" placeholder="optional" />
-        </label>
-        <label class="cus-field">
-          <span>Credit limit (NPR)</span>
-          <input type="number" id="f-credit" min="0" step="1000" value="0" />
-          <small class="cus-field-hint">0 means no limit. Going over only shows a warning.</small>
-        </label>
-        <label class="cus-field span2">
-          <span>Notes</span>
-          <input type="text" id="f-notes" />
-        </label>
-      </div>
-
-      <p class="cus-form-error" id="f-error" hidden></p>
-
-      <div class="cus-dialog-actions">
-        <button type="button" class="btn-ghost-sm" id="f-cancel">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="f-save">Save</button>
-      </div>
-    </form>
-  </dialog>
+  <NewCustomerDialog />
 </AppLayout>
 
 <script>

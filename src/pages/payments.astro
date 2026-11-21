@@ -15,6 +15,10 @@ import CheckDialog from '../components/payments/CheckDialog.astro';
 import IncentivesPanel from '../components/payments/IncentivesPanel.astro';
 import DailyPanel from '../components/payments/DailyPanel.astro';
 import PayrollPanel from '../components/payments/PayrollPanel.astro';
+import AddExpenseDialog from '../components/payments/AddExpenseDialog.astro';
+import PaySetupDialog from '../components/payments/PaySetupDialog.astro';
+import PayStaffDialog from '../components/payments/PayStaffDialog.astro';
+import AddWageBonusDialog from '../components/payments/AddWageBonusDialog.astro';
 ---
 
 <AppLayout
@@ -66,94 +70,16 @@ import PayrollPanel from '../components/payments/PayrollPanel.astro';
   </div>
 
   <!-- Ledger form -->
-  <dialog class="py-dialog" id="dlg-ledger">
-    <form method="dialog" class="py-dialog-inner" id="form-ledger">
-      <h2 class="py-dialog-title" id="lf-title">Add expense</h2>
-      <input type="hidden" id="lf-id" />
-      <div class="py-grid">
-        <label class="py-field"><span>Category *</span><select id="lf-category" required></select></label>
-        <label class="py-field"><span>Amount *</span><input type="number" id="lf-amount" required min="0.01" step="0.01" /></label>
-        <label class="py-field"><span>Date *</span><input type="date" id="lf-date" required /></label>
-        <label class="py-field"><span>Method</span>
-          <select id="lf-method">
-            <option value="">—</option><option value="cash">Cash</option><option value="bank">Bank transfer</option>
-            <option value="online">Online</option><option value="cheque">Cheque</option>
-          </select>
-        </label>
-        <label class="py-field"><span>Reference</span><input type="text" id="lf-ref" maxlength="100" /></label>
-        <label class="py-field"><span>Details</span><input type="text" id="lf-desc" /></label>
-      </div>
-      <p class="py-error" id="lf-error" hidden></p>
-      <div class="py-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-ledger">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="lf-save">Save</button>
-      </div>
-    </form>
-  </dialog>
+  <AddExpenseDialog />
 
   <!-- Pay setup -->
-  <dialog class="py-dialog" id="dlg-salary">
-    <form method="dialog" class="py-dialog-inner" id="form-salary">
-      <h2 class="py-dialog-title">Pay setup</h2>
-      <p class="py-sub" id="sl-sub"></p>
-      <div class="py-grid">
-        <label class="py-field"><span>Pay type *</span>
-          <select id="sl-type"><option value="monthly">Monthly salary</option><option value="daily">Daily wage</option></select>
-        </label>
-        <label class="py-field"><span id="sl-rate-label">Monthly salary *</span><input type="number" id="sl-rate" min="0" step="0.01" value="0" /></label>
-        <label class="py-field" data-monthly><span>Allowances</span><input type="number" id="sl-allow" min="0" step="0.01" value="0" /></label>
-        <label class="py-field" data-monthly><span>Salary day (1–31)</span><input type="number" id="sl-day" min="1" max="31" step="1" value="1" /></label>
-        <label class="py-field" id="sl-start-wrap"><span>Starts on</span><input type="date" id="sl-start" /></label>
-      </div>
-      <p class="py-note" id="sl-note"></p>
-      <p class="py-error" id="sl-error" hidden></p>
-      <div class="py-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-salary">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="sl-save">Save</button>
-      </div>
-    </form>
-  </dialog>
+  <PaySetupDialog />
 
   <!-- Payroll payment -->
-  <dialog class="py-dialog" id="dlg-pay">
-    <form method="dialog" class="py-dialog-inner" id="form-pay">
-      <h2 class="py-dialog-title">Pay staff</h2>
-      <p class="py-sub" id="pp-sub"></p>
-      <div class="py-grid">
-        <label class="py-field"><span>Amount *</span><input type="number" id="pp-amount" required min="0.01" step="0.01" /></label>
-        <label class="py-field"><span>Method *</span>
-          <select id="pp-method"><option value="cash">Cash</option><option value="bank">Bank transfer</option><option value="online">Online</option></select>
-        </label>
-        <label class="py-field"><span>Paid on</span><input type="date" id="pp-date" /></label>
-        <label class="py-field"><span>Reference</span><input type="text" id="pp-ref" maxlength="100" /></label>
-      </div>
-      <p class="py-note">Paying more than is owed, or before the salary day, is kept as an advance and used up by the next amount due.</p>
-      <p class="py-error" id="pp-error" hidden></p>
-      <div class="py-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="pp-save">Record payment</button>
-      </div>
-    </form>
-  </dialog>
+  <PayStaffDialog />
 
   <!-- Payroll entry -->
-  <dialog class="py-dialog" id="dlg-entry">
-    <form method="dialog" class="py-dialog-inner" id="form-entry">
-      <h2 class="py-dialog-title">Add wage, bonus or deduction</h2>
-      <p class="py-sub" id="en-sub"></p>
-      <div class="py-grid">
-        <label class="py-field"><span>Type *</span><select id="en-kind"></select></label>
-        <label class="py-field"><span>Date *</span><input type="date" id="en-date" required /></label>
-        <label class="py-field"><span>Amount *</span><input type="number" id="en-amount" required min="0.01" step="0.01" /></label>
-        <label class="py-field"><span>Note</span><input type="text" id="en-desc" /></label>
-      </div>
-      <p class="py-error" id="en-error" hidden></p>
-      <div class="py-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-entry">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="en-save">Save</button>
-      </div>
-    </form>
-  </dialog>
+  <AddWageBonusDialog />
 
   <!-- Reason -->
   <dialog class="py-dialog" id="dlg-reason">

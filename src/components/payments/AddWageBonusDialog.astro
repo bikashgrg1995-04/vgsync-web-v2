@@ -1,0 +1,17 @@
+<dialog class="py-dialog" id="dlg-entry">
+  <form method="dialog" class="py-dialog-inner" id="form-entry">
+    <h2 class="py-dialog-title">Add wage, bonus or deduction</h2>
+    <p class="py-sub" id="en-sub"></p>
+    <div class="py-grid">
+      <label class="py-field"><span>Type *</span><select id="en-kind"></select></label>
+      <label class="py-field"><span>Date *</span><input type="date" id="en-date" required /></label>
+      <label class="py-field"><span>Amount *</span><input type="number" id="en-amount" required min="0.01" step="0.01" /></label>
+      <label class="py-field"><span>Note</span><input type="text" id="en-desc" /></label>
+    </div>
+    <p class="py-error" id="en-error" hidden></p>
+    <div class="py-actions">
+      <button type="button" class="btn-ghost-sm" data-close="dlg-entry">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="en-save">Save</button>
+    </div>
+  </form>
+</dialog>

@@ -14,6 +14,10 @@ import ReturnsPanel from '../components/sales/ReturnsPanel.astro';
 import CreditsPanel from '../components/sales/CreditsPanel.astro';
 import FollowupsPanel from '../components/sales/FollowupsPanel.astro';
 import BikesPanel from '../components/sales/BikesPanel.astro';
+import UseCustomerCreditDialog from '../components/sales/UseCustomerCreditDialog.astro';
+import MarkFollowUpDoneDialog from '../components/sales/MarkFollowUpDoneDialog.astro';
+import RegisterBikeDialog from '../components/sales/RegisterBikeDialog.astro';
+import AddLocalProductDialog from '../components/sales/AddLocalProductDialog.astro';
 
 const meta = PAGE_META.sales;
 const defaultRole: UserRole = 'owner';
@@ -60,91 +64,16 @@ const navItems = getNavItemsForRole(defaultRole);
   <SalesDialogs />
 
   <!-- Use credit -->
-  <dialog class="sa-dialog sa-wide" id="dlg-credit">
-    <form method="dialog" class="sa-dialog-inner" id="form-credit">
-      <h2 class="sa-dialog-title">Use customer credit</h2>
-      <div class="sa-grid">
-        <label class="sa-field"><span>Customer *</span><select id="cr-customer" required></select></label>
-        <label class="sa-field"><span>What happens *</span>
-          <select id="cr-kind">
-            <option value="refund">Refund (cash goes back)</option>
-            <option value="adjustment">Set against another sale</option>
-            <option value="replacement">Replacement goods</option>
-          </select>
-        </label>
-        <label class="sa-field"><span>Credit amount *</span><input type="number" id="cr-amount" required min="0.01" step="0.01" /></label>
-        <label class="sa-field" id="cr-method-wrap"><span>Method</span>
-          <select id="cr-method">
-            <option value="cash">Cash</option><option value="bank">Bank</option>
-            <option value="online">Online</option><option value="cheque">Cheque</option>
-          </select>
-        </label>
-        <label class="sa-field" id="cr-sale-wrap" hidden><span>Sale</span><select id="cr-sale"></select></label>
-      </div>
-      <div id="cr-items-wrap" hidden>
-        <div class="sa-lines-head"><strong>Replacement goods</strong><button type="button" class="btn-ghost-sm" id="cr-add-line">+ Add item</button></div>
-        <div id="cr-lines" class="sa-lines"></div>
-      </div>
-      <label class="sa-field"><span>Note</span><input type="text" id="cr-notes" /></label>
-      <p class="sa-error" id="cr-error" hidden></p>
-      <div class="sa-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-credit">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="cr-save">Save</button>
-      </div>
-    </form>
-  </dialog>
+  <UseCustomerCreditDialog />
 
   <!-- Follow-up done -->
-  <dialog class="sa-dialog" id="dlg-done">
-    <form method="dialog" class="sa-dialog-inner" id="form-done">
-      <h2 class="sa-dialog-title">Mark follow-up done</h2>
-      <p class="sa-sub" id="dn-sub"></p>
-      <label class="sa-field"><span>Note</span><input type="text" id="dn-note" maxlength="300" /></label>
-      <label class="sa-check" id="dn-issue-wrap"><input type="checkbox" id="dn-issue" /> Customer reported a problem</label>
-      <label class="sa-field" id="dn-next-wrap"><span>Book the next follow-up on (optional)</span><input type="date" id="dn-next" /></label>
-      <p class="sa-error" id="dn-error" hidden></p>
-      <div class="sa-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-done">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="dn-save">Mark done</button>
-      </div>
-    </form>
-  </dialog>
+  <MarkFollowUpDoneDialog />
 
   <!-- Register bike -->
-  <dialog class="sa-dialog" id="dlg-bike">
-    <form method="dialog" class="sa-dialog-inner" id="form-bike">
-      <h2 class="sa-dialog-title">Register bike</h2>
-      <div class="sa-grid">
-        <label class="sa-field"><span>Model (catalog product) *</span><select id="bk-product" required></select></label>
-        <label class="sa-field"><span>Colour</span><input type="text" id="bk-color" /></label>
-        <label class="sa-field"><span>Chassis no *</span><input type="text" id="bk-chassis" required /></label>
-        <label class="sa-field"><span>Engine no *</span><input type="text" id="bk-engine" required /></label>
-      </div>
-      <p class="sa-error" id="bk-error" hidden></p>
-      <div class="sa-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-bike">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="bk-save">Register</button>
-      </div>
-    </form>
-  </dialog>
+  <RegisterBikeDialog />
 
   <!-- Local product -->
-  <dialog class="sa-dialog" id="dlg-local">
-    <form method="dialog" class="sa-dialog-inner" id="form-local">
-      <h2 class="sa-dialog-title">Add local product</h2>
-      <div class="sa-grid">
-        <label class="sa-field"><span>Name *</span><input type="text" id="lp-name" required /></label>
-        <label class="sa-field"><span>Unit</span><input type="text" id="lp-unit" value="pcs" maxlength="20" /></label>
-        <label class="sa-field"><span>Sale price</span><input type="number" id="lp-sale" min="0" step="0.01" value="0" /></label>
-        <label class="sa-field"><span>Cost price</span><input type="number" id="lp-cost" min="0" step="0.01" value="0" /></label>
-      </div>
-      <p class="sa-error" id="lp-error" hidden></p>
-      <div class="sa-actions">
-        <button type="button" class="btn-ghost-sm" data-close="dlg-local">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="lp-save">Save</button>
-      </div>
-    </form>
-  </dialog>
+  <AddLocalProductDialog />
 </AppLayout>
 
 <script>

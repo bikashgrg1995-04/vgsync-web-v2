@@ -1,0 +1,22 @@
+<dialog class="pu-dialog" id="tk-form-dlg">
+  <form method="dialog" class="pu-dialog-inner" id="tk-form">
+    <h2 class="pu-dialog-title" id="tk-form-title">Assign a task</h2>
+    <label class="pu-field"><span>Task *</span><input type="text" id="tf-title" maxlength="200" required placeholder="e.g. Count the engine oil stock" /></label>
+    <label class="pu-field"><span>Details</span><textarea id="tf-desc" rows="3" maxlength="2000"></textarea></label>
+    <div class="pu-grid">
+      <label class="pu-field"><span>Assign to *</span><select id="tf-who" required></select></label>
+      <label class="pu-field"><span>Due date</span><input type="date" id="tf-due" /></label>
+      <label class="pu-field"><span>Repeats</span>
+        <select id="tf-repeat"><option value="none" selected>Does not repeat</option><option value="daily">Every day</option><option value="weekly">Every week</option><option value="monthly">Every month</option></select>
+      </label>
+      <label class="pu-field"><span>Priority</span>
+        <select id="tf-priority"><option value="low">Low</option><option value="normal" selected>Normal</option><option value="high">High</option></select>
+      </label>
+    </div>
+    <p class="pu-error" id="tf-error" hidden></p>
+    <div class="pu-actions">
+      <button type="button" class="btn-ghost-sm" id="tf-cancel">Cancel</button>
+      <button type="submit" class="btn-primary-sm" id="tf-save">Assign</button>
+    </div>
+  </form>
+</dialog>

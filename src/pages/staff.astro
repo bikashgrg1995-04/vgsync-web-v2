@@ -11,6 +11,9 @@ import Hero from '../components/staff/Hero.astro';
 import Kpis from '../components/staff/Kpis.astro';
 import StaffDirectory from '../components/staff/StaffDirectory.astro';
 import PanelPositions from '../components/staff/PanelPositions.astro';
+import AddTeamMemberDialog from '../components/staff/AddTeamMemberDialog.astro';
+import TemporaryPasswordDialog from '../components/staff/TemporaryPasswordDialog.astro';
+import NewPositionDialog from '../components/staff/NewPositionDialog.astro';
 ---
 
 <AppLayout
@@ -40,86 +43,13 @@ import PanelPositions from '../components/staff/PanelPositions.astro';
   </div>
 
   <!-- Member dialog -->
-  <dialog class="st-dialog" id="member-dialog" aria-labelledby="member-title">
-    <form class="st-dialog-inner" id="member-form" novalidate>
-      <h2 class="st-dialog-title" id="member-title">Add team member</h2>
-      <input type="hidden" id="m-id" />
-      <div class="st-form-grid">
-        <label class="st-field"><span>First name *</span><input type="text" id="m-first" autocomplete="off" /></label>
-        <label class="st-field"><span>Last name</span><input type="text" id="m-last" autocomplete="off" /></label>
-        <label class="st-field span2" id="m-signin-wrap"><span><input type="checkbox" id="m-signin" checked /> Can sign in to the system</span>
-          <small class="st-hint">Turn this off for someone who only needs to be in the records, such as a daily worker. They get no login or password; their pay and history are kept.</small>
-        </label>
-        <label class="st-field span2" id="m-username-wrap"><span>Username *</span><input type="text" id="m-username" autocomplete="off" autocapitalize="none" spellcheck="false" /></label>
-        <label class="st-field"><span>Email</span><input type="email" id="m-email" autocomplete="off" /></label>
-        <label class="st-field"><span>Phone</span><input type="tel" id="m-phone" autocomplete="off" /></label>
-        <label class="st-field">
-          <span>Role *</span>
-          <select id="m-role">
-            <option value="staff">Staff</option>
-          </select>
-        </label>
-        <label class="st-field" id="m-position-wrap">
-          <span>Position *</span>
-          <select id="m-position"></select>
-        </label>
-        <fieldset class="st-field span2" id="m-extra-wrap">
-          <span>More positions (optional)</span>
-          <div id="m-extra" class="st-checks"></div>
-          <small class="st-hint">Access is the combination of all positions this person holds.</small>
-        </fieldset>
-        <label class="st-field span2" id="m-password-wrap">
-          <span>Temporary password</span>
-          <input type="text" id="m-password" autocomplete="off" placeholder="Leave empty to generate one" />
-        </label>
-      </div>
-      <p class="st-hint" id="m-hint">The person must choose a new password the first time they sign in.</p>
-      <p class="st-error" id="m-error" role="alert" hidden></p>
-      <div class="st-dialog-actions">
-        <button type="button" class="btn-ghost-sm" id="m-cancel">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="m-save">Save</button>
-      </div>
-    </form>
-  </dialog>
+  <AddTeamMemberDialog />
 
   <!-- Temporary password shown once -->
-  <dialog class="st-dialog" id="secret-dialog" aria-labelledby="secret-title">
-    <div class="st-dialog-inner">
-      <h2 class="st-dialog-title" id="secret-title">Temporary password</h2>
-      <p class="st-hint" id="secret-who"></p>
-      <div class="st-secret">
-        <code id="secret-value"></code>
-        <button type="button" class="btn-ghost-sm" id="secret-copy">Copy</button>
-      </div>
-      <p class="st-warn">Shown only once. Give it to the person now; they must change it when they sign in.</p>
-      <div class="st-dialog-actions">
-        <button type="button" class="btn-primary-sm" id="secret-close">Done</button>
-      </div>
-    </div>
-  </dialog>
+  <TemporaryPasswordDialog />
 
   <!-- Position dialog -->
-  <dialog class="st-dialog st-dialog-wide" id="position-dialog" aria-labelledby="position-title">
-    <form class="st-dialog-inner" id="position-form" novalidate>
-      <h2 class="st-dialog-title" id="position-title">New position</h2>
-      <input type="hidden" id="p-id" />
-      <div class="st-form-grid">
-        <label class="st-field"><span>Name *</span><input type="text" id="p-name" autocomplete="off" placeholder="e.g. Sales counter" /></label>
-        <label class="st-field"><span>Description</span><input type="text" id="p-desc" autocomplete="off" /></label>
-        <label class="st-field"><span>Department</span><input type="text" id="p-dept" autocomplete="off" placeholder="e.g. Finance" /></label>
-        <label class="st-field" id="p-preset-wrap"><span>Start from a preset</span>
-          <select id="p-preset"><option value="">Blank</option></select>
-        </label>
-      </div>
-      <div class="st-perm-groups" id="perm-groups"></div>
-      <p class="st-hint">Create, edit and delete need View as well. A preset only fills the boxes; later changes to it never change this position. Managing permissions stays with the owner. An administrator can only grant what they hold themselves.</p>
-      <p class="st-error" id="p-error" role="alert" hidden></p>
-      <div class="st-dialog-actions">
-        <button type="button" class="btn-ghost-sm" id="p-cancel">Cancel</button>
-        <button type="submit" class="btn-primary-sm" id="p-save">Save</button>
-      </div>
-    </form>
-  </dialog>
+  <NewPositionDialog />
 </AppLayout>
 
 <script>
