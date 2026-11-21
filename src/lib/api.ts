@@ -141,6 +141,21 @@ export interface RequestOptions {
   auth?: boolean;
   /** false to always ask the server (live counters). GET answers are kept on the device by default. */
   cache?: boolean;
+  /** true for work that must finish even if the person has moved to another page (background warm-up). */
+  keepAfterLeave?: boolean;
+}
+
+// ---- Page changes -------------------------------------------------------------
+//
+// Moving to another page swaps the content without reloading. An answer that
+// arrives for the page the person already left must not be handed to that
+// page's script: its screen is gone and it would write into the new page.
+// Such answers are dropped (the save itself, if any, is already done).
+let pageGeneration = 0;
+
+/** Called by the page switcher each time the content is replaced. */
+export function leavePage(): void {
+  pageGeneration++;
 }
 
 // ---- Saved answers (stale-while-revalidate) ----------------------------------
@@ -241,7 +256,7 @@ function failIfNeeded(res: Response, data: unknown): void {
   throw error;
 }
 
-export async function api<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
+async function apiNow<T>(path: string, options: RequestOptions): Promise<T> {
   const { method = options.body === undefined ? 'GET' : 'POST', body, auth = true } = options;
 
   const prefix = auth ? cachePrefix() : null;
@@ -262,6 +277,20 @@ export async function api<T = unknown>(path: string, options: RequestOptions = {
   // A save changes what other pages show (stock, balances, dashboard): forget the saved copies.
   if (method !== 'GET' && prefix) await cacheDropPrefix(prefix);
   return data as T;
+}
+
+export function api<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
+  const started = pageGeneration;
+  const run = apiNow<T>(path, options);
+
+  if (options.keepAfterLeave) return run;
+
+  const gone = () => new Promise<never>(() => {});
+
+  return run.then(
+    (v) => (started === pageGeneration ? v : gone()),
+    (e) => (started === pageGeneration ? Promise.reject(e) : gone()),
+  );
 }
 
 /** Downloads a file (Excel/PDF export) and hands it to the browser as a save. */
