@@ -1,9 +1,9 @@
 /* Popup shown once right after sign-in, over the shimmering page. */
 .boot-overlay {
+  display: none;
   position: fixed;
   inset: 0;
   z-index: 9000;
-  display: grid;
   place-items: center;
   padding: 16px;
   background: color-mix(in srgb, var(--page-bg, #0b1220) 28%, transparent);
@@ -52,3 +52,5 @@
 @media (prefers-reduced-motion: reduce) {
   .boot-spinner span, .boot-fill, .boot-card { animation: none; }
 }
+
+html.vg-booting .boot-overlay { display: grid; }

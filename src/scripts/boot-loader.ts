@@ -34,19 +34,9 @@ if (firstLoad) {
 }
 
 function start(): void {
-  const root = document.createElement('div');
-  root.className = 'boot-overlay';
-  root.setAttribute('role', 'status');
-  root.setAttribute('aria-live', 'polite');
-  root.innerHTML = `
-    <div class="boot-card">
-      <div class="boot-spinner" aria-hidden="true"><span></span><span></span><span></span></div>
-      <h2 class="boot-title">Setting things up</h2>
-      <p class="boot-msg" id="boot-msg">${STEPS[0][1]}</p>
-      <div class="boot-track" aria-hidden="true"><i class="boot-fill" id="boot-fill"></i></div>
-      <p class="boot-pct" id="boot-pct">0%</p>
-    </div>`;
-  document.body.appendChild(root);
+  const found = document.getElementById('boot-overlay');
+  if (!found) return;
+  const root: HTMLElement = found;
 
   const fill = root.querySelector<HTMLElement>('#boot-fill')!;
   const msg = root.querySelector<HTMLElement>('#boot-msg')!;
@@ -79,14 +69,19 @@ function start(): void {
       if (started > 0 && pending === 0 && !warming) idleSince ||= now;
       else idleSince = 0;
       const quiet = idleSince && now - idleSince > 450;
-      if ((age > MIN_MS && quiet) || age > MAX_MS) {
+      // Also wait until the page behind has swapped its shimmer for real data.
+      const shimmering = Array.from(document.querySelectorAll('#app-content .sk-bar')).some((e) => (e as HTMLElement).offsetParent !== null);
+      if ((age > MIN_MS && quiet && !shimmering) || age > MAX_MS) {
         finished = true;
         msg.textContent = 'All set';
       }
     } else if (shown > 99) {
       pct.textContent = '100%';
       root.classList.add('is-leaving');
-      setTimeout(() => root.remove(), 350);
+      setTimeout(() => {
+        document.documentElement.classList.remove('vg-booting');
+        root.remove();
+      }, 350);
       return;
     }
     requestAnimationFrame(frame);

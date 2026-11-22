@@ -60,6 +60,20 @@ const {
       else window.location.replace('/');
     })();
   </script>
+  <!-- Loading popup after sign-in. The tiny script marks the page before it is painted
+       so the popup is there from the first frame; boot-loader.ts then drives it. -->
+  <script is:inline>
+    try { if (sessionStorage.getItem('vg:welcome') === '1') document.documentElement.classList.add('vg-booting'); } catch (e) {}
+  </script>
+  <div class="boot-overlay" id="boot-overlay" role="status" aria-live="polite">
+    <div class="boot-card">
+      <div class="boot-spinner" aria-hidden="true"><span></span><span></span><span></span></div>
+      <h2 class="boot-title">Setting things up</h2>
+      <p class="boot-msg" id="boot-msg">Signing you in securely…</p>
+      <div class="boot-track" aria-hidden="true"><i class="boot-fill" id="boot-fill"></i></div>
+      <p class="boot-pct" id="boot-pct">0%</p>
+    </div>
+  </div>
   <div class="app-shell" id="app-shell">
     <AppSidebar
       items={navItems}

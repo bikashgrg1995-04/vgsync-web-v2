@@ -28,7 +28,7 @@ test('sidebar links land on the right page and section', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('Purchase Return shows the purchase page, Returns shows the sales page', async ({ page }) => {
+test('Purchase Return shows the purchase page, Sales Return shows the sales page', async ({ page }) => {
   await page.goto('/dashboard');
   await settled(page);
   await page.locator('a.sidebar-link[href="/purchase#returns"]').click();
@@ -50,4 +50,14 @@ test('back and forward buttons follow the pages', async ({ page }) => {
   await expect(page).toHaveURL(/\/customers/);
   await page.goForward();
   await expect(page).toHaveURL(/\/orders/);
+});
+
+test('Sales Return sits under Sales and Purchase Return under Purchase in the sidebar', async ({ page }) => {
+  await page.goto('/dashboard');
+  await settled(page);
+  const order = await page.locator('a.sidebar-link').evaluateAll((els) => els.map((e) => e.getAttribute('data-nav-id')));
+  expect(order.indexOf('returns')).toBe(order.indexOf('sales') + 1);
+  expect(order.indexOf('purchase-returns')).toBe(order.indexOf('purchase') + 1);
+  await expect(page.locator('a[data-nav-id="returns"]')).toHaveText(/Sales Return/);
+  await expect(page.locator('li.sidebar-sub')).toHaveCount(2);
 });

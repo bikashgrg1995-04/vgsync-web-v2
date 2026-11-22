@@ -21,6 +21,8 @@ export interface NavItem {
   href: string;
   icon: string;
   group: string;
+  /** Shown indented under this item (its sub-menu entry). */
+  parent?: string;
   /** Permission code needed to see the item. Missing: everyone. */
   perm?: string;
   /** Special rules the app shell understands. */
@@ -46,12 +48,12 @@ const ALL_ITEMS: NavItem[] = [
   { id: 'branches', label: 'Branches', href: '/branches', icon: 'building', group: 'main', rule: 'company_owner' },
 
   { id: 'sales', label: 'Sales', href: '/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },
-  { id: 'returns', label: 'Returns', href: '/sales#returns', icon: 'returns', group: 'sales', perm: 'sales.view' },
+  { id: 'returns', label: 'Sales Return', href: '/sales#returns', icon: 'returns', group: 'sales', parent: 'sales', perm: 'sales.view' },
   { id: 'customers', label: 'Customers', href: '/customers', icon: 'users', group: 'sales', perm: 'sales.view' },
   { id: 'servicing', label: 'Follow-ups', href: '/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
 
   { id: 'purchase', label: 'Purchase', href: '/purchase', icon: 'clipboard', group: 'purchases', perm: 'purchases.view' },
-  { id: 'purchase-returns', label: 'Purchase Return', href: '/purchase#returns', icon: 'returns', group: 'purchases', perm: 'purchases.view' },
+  { id: 'purchase-returns', label: 'Purchase Return', href: '/purchase#returns', icon: 'returns', group: 'purchases', parent: 'purchase', perm: 'purchases.view' },
   { id: 'orders', label: 'Orders', href: '/orders', icon: 'truck', group: 'orders', perm: 'orders.view' },
   { id: 'suppliers', label: 'Suppliers', href: '/suppliers', icon: 'truck', group: 'purchases', perm: 'purchases.view' },
 

@@ -19,7 +19,7 @@ test('right password opens the dashboard, with a loading popup that shows a mess
   await expect(popup).toHaveCount(0, { timeout: 15_000 });
   await page.reload(); // not shown again on later visits
   await page.waitForTimeout(800);
-  await expect(page.locator('.boot-overlay')).toHaveCount(0);
+  await expect(page.locator('.boot-overlay')).toBeHidden();
 });
 
 test('opening a page without signing in sends you to login', async ({ page }) => {

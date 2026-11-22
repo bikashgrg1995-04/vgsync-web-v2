@@ -394,3 +394,19 @@
 /* Flat menu: every page is one click away; thin lines separate the areas. */
 .sidebar-divider { list-style: none; height: 1px; margin: 5px 8px; background: var(--border); }
 .sidebar-list > li { display: list-item; }
+
+/* Sub-menu entries (Sales Return under Sales, Purchase Return under Purchase). */
+.sidebar-list > li.sidebar-sub { position: relative; margin-left: 22px; }
+.sidebar-list > li.sidebar-sub::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: -3px;
+  bottom: 50%;
+  width: 10px;
+  border-left: 1.5px solid rgba(148, 163, 184, 0.3);
+  border-bottom: 1.5px solid rgba(148, 163, 184, 0.3);
+  border-bottom-left-radius: 8px;
+}
+.sidebar-list > li.sidebar-sub .sidebar-link { padding-top: 6px; padding-bottom: 6px; font-size: 0.82rem; }
+.sidebar-list > li.sidebar-sub .sidebar-icon svg { width: 15px; height: 15px; }
