@@ -34,6 +34,23 @@ const keyOf = (url: string) => {
   return u.pathname + u.search;
 };
 
+let revealNow: (() => void) | null = null;
+
+/** Hides the page content; the returned function shows it (also shown by itself after 700 ms). */
+function hideUntilReady(): () => void {
+  const el = content();
+  if (!el) return () => {};
+  el.classList.add('is-setting-up');
+  const show = () => {
+    el.classList.remove('is-setting-up');
+    window.clearTimeout(timer);
+    if (revealNow === show) revealNow = null;
+  };
+  const timer = window.setTimeout(show, 700);
+  revealNow = show;
+  return show;
+}
+
 const content = () => document.querySelector<HTMLElement>('.app-content-inner');
 
 // Listeners a page puts on the document, window or the shared header would
@@ -230,6 +247,10 @@ async function go(url: string, push: boolean, keepScroll = false): Promise<void>
     teardown();
     syncStyles(next);
     content()!.innerHTML = incoming.innerHTML;
+    // Keep the new page out of sight until its script has set it up (which, for
+    // example, opens the Follow-ups list). Otherwise the page's default view
+    // (Sales overview) shows for a moment first.
+    const reveal = hideUntilReady();
     if (push) window.history.pushState({ soft: true }, '', url);
     shown = keyOf(window.location.href);
     syncChrome(next);
@@ -238,10 +259,12 @@ async function go(url: string, push: boolean, keepScroll = false): Promise<void>
       document.getElementById('app-content')?.scrollTo({ top: 0 });
     }
     await runScripts(pageScripts(next));
+    reveal();
   } catch {
     window.location.assign(url);
     return;
   } finally {
+    revealNow?.();
     if (mine === token) shell?.classList.remove('is-navigating');
   }
 }

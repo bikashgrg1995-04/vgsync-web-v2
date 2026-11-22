@@ -77,3 +77,37 @@ test('Follow-ups and Sales Return open at once from Customers, not after the Sal
     await expect(page).toHaveURL(/\/customers/);
   }
 });
+
+test('no flash of the wrong view while opening Follow-ups, Sales Return or Purchase Return', async ({ page }) => {
+  await page.goto('/customers');
+  await settled(page);
+  await page.route('**:8000/**', async (r) => {
+    await new Promise((s) => setTimeout(s, 400));
+    await r.continue();
+  });
+  for (const href of ['/sales#followups', '/sales#returns', '/purchase#returns']) {
+    await page.evaluate(() => {
+      const w = window as unknown as { __bad: string[]; __stop: boolean };
+      w.__bad = [];
+      w.__stop = false;
+      const tick = () => {
+        const box = document.querySelector('.app-content-inner');
+        const shown = document.querySelector('[data-panel].is-active')?.getAttribute('data-panel');
+        const hidden = box?.classList.contains('is-setting-up');
+        if (location.hash && shown && shown !== location.hash.slice(1) && !hidden) w.__bad.push(`${shown} shown for ${location.hash}`);
+        if (!w.__stop) requestAnimationFrame(tick);
+      };
+      tick();
+    });
+    await page.locator(`a.sidebar-link[href="${href}"]`).click();
+    await page.waitForTimeout(1500);
+    const bad = await page.evaluate(() => {
+      const w = window as unknown as { __bad: string[]; __stop: boolean };
+      w.__stop = true;
+      return w.__bad;
+    });
+    expect(bad).toEqual([]);
+    await page.locator('a.sidebar-link[href="/customers"]').click();
+    await expect(page).toHaveURL(/\/customers/);
+  }
+});
