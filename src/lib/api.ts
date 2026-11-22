@@ -181,11 +181,18 @@ export function leavePage(): void {
 const FRESH_MS = 20_000;
 
 /** Never kept: sign-in, live counters and files. */
-const NOT_CACHED = /^\/(auth|notifications)\b|export|download|template|\.(xlsx|pdf|csv)\b/i;
+const NOT_CACHED = /^\/(auth|notifications|bootstrap)\b|export|download|template|\.(xlsx|pdf|csv)\b/i;
 
 function cachePrefix(): string | null {
   const a = readAuth();
   return a ? `${a.user.id}:${a.active_business.id}:` : null;
+}
+
+/** Save an answer the app already has (from the first-load packet) as if that address had been asked for. */
+export async function primeCache(path: string, data: unknown): Promise<void> {
+  const prefix = cachePrefix();
+  if (!prefix || NOT_CACHED.test(path)) return;
+  await cacheWrite(prefix + path, { data, etag: null, at: Date.now() });
 }
 
 const inflight = new Map<string, Promise<void>>();

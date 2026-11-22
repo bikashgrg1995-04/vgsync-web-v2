@@ -21,7 +21,7 @@ Sign-in uses `E2E_BRANCH`, `E2E_USER`, `E2E_PASS` (default: the demo owner of th
 
 | File | Checks |
 | --- | --- |
-| `login.spec.ts` | wrong password, right password, page without sign-in goes to login, first-load popup with message and progress |
+| `login.spec.ts` | wrong password, right password, page without sign-in goes to login, first-load popup with message and progress, saved data is encrypted and removed on sign-out |
 | `smoke.spec.ts` | every page opens, no JS errors, no `undefined`/`NaN` on screen, old `/dashboard/...` addresses |
 | `navigation.spec.ts` | sidebar links (Returns, Follow-ups, Purchase Return, Staffs, Position) open the right page and section, one active link, quick successive clicks cause no errors, back/forward |
 | `cache.spec.ts` | revisiting a list does not ask the server again, a page opened before still opens offline with the offline bar |

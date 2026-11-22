@@ -1,6 +1,11 @@
 import { ApiError, getSession, login, readRemembered } from '../lib/auth';
+import { cacheWipe } from '../lib/cache';
 
 const root = document.documentElement;
+
+// Nobody is signed in on this page, so no business data should be saved on the device
+// (a tab closed without signing out could have left some behind).
+if (!getSession()) void cacheWipe();
 
 const themeToggle = document.querySelector<HTMLButtonElement>('#theme-toggle');
 const themeLabel = document.querySelector<HTMLElement>('#theme-toggle-label');

@@ -5,7 +5,7 @@
  * while per tab. Any failure is ignored.
  */
 
-import { api } from './api';
+import { api, primeCache } from './api';
 import { getSession } from './auth';
 
 interface Warm {
@@ -68,6 +68,37 @@ async function fetchOne(w: Warm): Promise<void> {
   }
 }
 
+type Session = NonNullable<ReturnType<typeof getSession>>;
+
+/** The popup is closing; now quietly keep the pages themselves for offline use. */
+async function keepPages(s: Session): Promise<void> {
+  for (const w of PAGES) {
+    if (w.perm && !s.isOwner && !s.permissions.includes(w.perm)) continue;
+    if (!navigator.onLine) return;
+    try {
+      await fetch(w.path, { headers: { Accept: 'text/html' } });
+    } catch {
+      /* offline: skip */
+    }
+    await pause(200);
+  }
+}
+
+/** Asks for the first-load packet and saves each list in it. False when that did not work. */
+async function fromPacket(list: Warm[]): Promise<boolean> {
+  try {
+    const packet = await api<{ items: Record<string, unknown> }>('/bootstrap/', { keepAfterLeave: true });
+    const wanted = new Set(list.map((w) => w.path));
+    const saves = Object.entries(packet.items ?? {})
+      .filter(([path]) => wanted.has(path))
+      .map(([path, data]) => primeCache(path, data));
+    await Promise.all(saves);
+    return saves.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * right after sign-in (`eager`): everything this person can open is fetched at once
  * (a few at a time) while the loading popup is up. Otherwise: quietly, one at a
@@ -87,6 +118,16 @@ export async function warmUp(eager = false): Promise<void> {
   const list = WARM.filter((w) => !w.perm || s.isOwner || s.permissions.includes(w.perm));
 
   if (eager) {
+    // One request brings every list this person may open (see backend /bootstrap/).
+    report(list.length, 0, 0);
+    const got = await fromPacket(list);
+    if (got) {
+      report(list.length, list.length, list.length);
+      await keepPages(s);
+      return;
+    }
+
+    // Older server or a failed packet: ask for the lists one by one, a few at a time.
     let next = 0;
     let started = 0;
     let done = 0;
@@ -103,17 +144,7 @@ export async function warmUp(eager = false): Promise<void> {
     };
     await Promise.all(Array.from({ length: PARALLEL }, lane));
     report(list.length, started, list.length); // finished, even if some were skipped
-    // The popup is closing; now quietly keep the pages for offline use.
-    for (const w of PAGES) {
-      if (w.perm && !s.isOwner && !s.permissions.includes(w.perm)) continue;
-      if (!navigator.onLine) return;
-      try {
-        await fetch(w.path, { headers: { Accept: 'text/html' } });
-      } catch {
-        /* offline: skip */
-      }
-      await pause(200);
-    }
+    await keepPages(s);
     return;
   }
 
