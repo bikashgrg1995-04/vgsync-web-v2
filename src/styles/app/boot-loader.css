@@ -1,0 +1,54 @@
+/* Popup shown once right after sign-in, over the shimmering page. */
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--page-bg, #0b1220) 28%, transparent);
+  backdrop-filter: blur(1.5px);
+  transition: opacity 0.3s ease;
+}
+.boot-overlay.is-leaving { opacity: 0; pointer-events: none; }
+
+.boot-card {
+  width: min(360px, 100%);
+  padding: 26px 24px 22px;
+  text-align: center;
+  background: var(--panel-bg, #111a2e);
+  color: var(--text-primary, #e6ecf5);
+  border: 1px solid var(--panel-divider, rgba(255,255,255,0.1));
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  animation: boot-in 0.25s ease both;
+}
+.boot-title { margin: 14px 0 4px; font-size: 1.05rem; font-weight: 700; }
+.boot-msg { margin: 0 0 16px; min-height: 1.3em; font-size: 0.86rem; opacity: 0.75; }
+.boot-pct { margin: 8px 0 0; font-size: 0.78rem; font-variant-numeric: tabular-nums; opacity: 0.65; }
+
+.boot-spinner { display: inline-flex; gap: 6px; height: 22px; align-items: center; }
+.boot-spinner span {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent, #2563eb);
+  animation: boot-bounce 1s ease-in-out infinite;
+}
+.boot-spinner span:nth-child(2) { animation-delay: 0.15s; }
+.boot-spinner span:nth-child(3) { animation-delay: 0.3s; }
+
+.boot-track {
+  height: 8px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, var(--text-primary, #e6ecf5) 12%, transparent);
+}
+.boot-fill {
+  display: block; height: 100%; width: 0; border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent, #2563eb), #60a5fa, var(--accent, #2563eb));
+  background-size: 200% 100%;
+  animation: sk-shimmer 1.2s linear infinite;
+}
+
+@keyframes boot-bounce { 0%, 80%, 100% { transform: translateY(0); opacity: 0.45; } 40% { transform: translateY(-8px); opacity: 1; } }
+@keyframes boot-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .boot-spinner span, .boot-fill, .boot-card { animation: none; }
+}

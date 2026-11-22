@@ -61,7 +61,15 @@ function reach(ok: boolean): void {
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('vg:reach', { detail: ok }));
 }
 
+/** Requests started and finished so far; the first-load popup reads these to show progress. */
+let netStarted = 0;
+let netDone = 0;
+const netTick = () =>
+  window.dispatchEvent(new CustomEvent('vg:net', { detail: { started: netStarted, done: netDone } }));
+
 async function send(path: string, init: RequestInit): Promise<Response> {
+  netStarted++;
+  netTick();
   try {
     const res = await fetch(`${API_BASE}${path}`, init);
     reach(true);
@@ -69,6 +77,9 @@ async function send(path: string, init: RequestInit): Promise<Response> {
   } catch {
     reach(false);
     throw new ApiError(NETWORK_MESSAGE, 0, 'network');
+  } finally {
+    netDone++;
+    netTick();
   }
 }
 

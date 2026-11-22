@@ -138,6 +138,7 @@ loginForm?.addEventListener('submit', async (event: SubmitEvent) => {
     }
 
     showFormMessage(`Welcome, ${session.displayName}. Redirecting…`, 'success');
+    try { sessionStorage.setItem('vg:welcome', '1'); } catch { /* private mode: no welcome popup */ }
     window.location.href = '/dashboard';
   } catch (error) {
     showFormMessage(

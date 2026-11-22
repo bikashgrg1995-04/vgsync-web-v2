@@ -12,6 +12,7 @@ import { getNavItemsForRole, navItemVisible, type NavViewer } from '../lib/navig
 import { paintAvatar } from '../lib/avatar';
 import './table-cards';
 import './skeleton';
+import './boot-loader';
 import { warmUp } from '../lib/warmup';
 
 const root = document.documentElement;

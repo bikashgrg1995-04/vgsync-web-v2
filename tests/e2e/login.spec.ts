@@ -8,9 +8,18 @@ test('wrong password stays on the login page with a message', async ({ page }) =
   await expect(page.locator('#login-submit')).toBeVisible();
 });
 
-test('right password opens the dashboard', async ({ page }) => {
+// One real sign-in only: the server limits how often logins are allowed.
+test('right password opens the dashboard, with a loading popup that shows a message and progress and then goes away', async ({ page }) => {
   await signIn(page);
   await page.waitForURL(/\/dashboard/);
+  const popup = page.locator('.boot-overlay');
+  await expect(popup).toBeVisible();
+  await expect(popup.locator('#boot-msg')).not.toBeEmpty();
+  await expect(popup.locator('#boot-fill')).toBeAttached();
+  await expect(popup).toHaveCount(0, { timeout: 15_000 });
+  await page.reload(); // not shown again on later visits
+  await page.waitForTimeout(800);
+  await expect(page.locator('.boot-overlay')).toHaveCount(0);
 });
 
 test('opening a page without signing in sends you to login', async ({ page }) => {
