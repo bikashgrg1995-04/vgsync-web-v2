@@ -61,3 +61,19 @@ test('Sales Return sits under Sales and Purchase Return under Purchase in the si
   await expect(page.locator('a[data-nav-id="returns"]')).toHaveText(/Sales Return/);
   await expect(page.locator('li.sidebar-sub')).toHaveCount(2);
 });
+
+test('Follow-ups and Sales Return open at once from Customers, not after the Sales data loads', async ({ page }) => {
+  await page.goto('/customers');
+  await settled(page);
+  await page.route('**:8000/**', async (r) => {
+    await new Promise((s) => setTimeout(s, 1500)); // slow server
+    await r.continue();
+  });
+  for (const [href, title] of [['/sales#followups', 'Follow-ups'], ['/sales#returns', 'Sales Returns']] as const) {
+    await page.locator(`a.sidebar-link[href="${href}"]`).click();
+    // well before the 1.5 s answers arrive, the right list must already be showing
+    await expect(page.locator('.header-title')).toHaveText(title, { timeout: 1000 });
+    await page.locator('a.sidebar-link[href="/customers"]').click();
+    await expect(page).toHaveURL(/\/customers/);
+  }
+});

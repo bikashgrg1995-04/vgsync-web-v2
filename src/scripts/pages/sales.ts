@@ -834,4 +834,7 @@ async function init(): Promise<void> {
   void loadTab(activePanel);
 }
 
+// Open the linked list (Returns, Follow-ups) at once; waiting for all the Sales data first
+// showed the whole Sales page for seconds before switching.
+panelFromHash();
 void init().then(panelFromHash);
