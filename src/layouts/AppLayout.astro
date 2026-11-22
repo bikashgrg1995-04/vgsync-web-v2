@@ -56,6 +56,8 @@ const {
           }
         }
       } catch (e) {}
+      // If the page script never starts, show the menu anyway after a few seconds.
+      setTimeout(function () { document.documentElement.setAttribute('data-nav-ready', ''); }, 4000);
       if (has) document.documentElement.setAttribute('data-authed', '');
       else window.location.replace('/');
     })();

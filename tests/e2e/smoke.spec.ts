@@ -7,6 +7,7 @@ for (const path of PAGES) {
     await page.goto(path);
     await settled(page);
     expect(await page.title()).not.toBe('');
+    await expect(page.locator('html[data-nav-ready]')).toBeAttached(); // menu was filled in before being shown
     const text = await page.locator('main, .app-main, body').first().innerText();
     expect(text).not.toMatch(/\bundefined\b|\bNaN\b|\[object Object\]/);
     expect(errors).toEqual([]);

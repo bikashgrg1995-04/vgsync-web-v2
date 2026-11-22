@@ -359,6 +359,8 @@ if (branchSelect) {
 }
 
 applySessionUI();
+// The menu is now right for this person; until now it was kept out of sight (see responsive.css).
+document.documentElement.setAttribute('data-nav-ready', '');
 
 // Check with the server that the account and branch are still valid (it may
 // have been deactivated, or its password changed on another device).

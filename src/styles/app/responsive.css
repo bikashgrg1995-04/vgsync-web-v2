@@ -232,3 +232,9 @@ html:has(.app-shell) { font-size: 14px; }
 
 /* A page being set up after a menu click stays hidden for a moment (see soft-nav.ts). */
 .app-content-inner.is-setting-up { visibility: hidden; }
+
+/* The menu and profile card are filled in for the signed-in person by app-shell.ts.
+   Keep them out of sight until then so items do not pop in and out after the page shows. */
+html:not([data-nav-ready]) .sidebar-profile-card,
+html:not([data-nav-ready]) .sidebar-nav,
+html:not([data-nav-ready]) .branch-switcher { visibility: hidden; }
