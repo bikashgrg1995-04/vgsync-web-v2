@@ -595,8 +595,11 @@ async function init(): Promise<void> {
   $('or-new')!.hidden = !(isBranch && canWrite);
   selected = null;
   renderDetail();
-  try { stock = await listStock(); } catch { stock = []; }
+  // The list is what the person came for. Stock is only needed once "New order" is
+  // opened, so it loads beside the list instead of before it.
+  const stockLoad = listStock().then((x) => { stock = x; }).catch(() => { stock = []; });
   await loadList();
+  await stockLoad;
 }
 
 void init();

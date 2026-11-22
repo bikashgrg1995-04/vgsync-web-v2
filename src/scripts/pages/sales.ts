@@ -700,8 +700,7 @@ for (const id of ['fu-status', 'fu-kind', 'fu-overdue']) $(id)?.addEventListener
 
 async function loadBikes(): Promise<void> {
   try {
-    const all = await listBikes();
-    const lps = await listLocalProducts();
+    const [all, lps] = await Promise.all([listBikes(), listLocalProducts()]);
     localProducts = lps;
     loaded.bikes = true;
     $('bk-tbody')!.innerHTML = all.length === 0

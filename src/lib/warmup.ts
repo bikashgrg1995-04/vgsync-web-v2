@@ -26,6 +26,7 @@ const WARM: Warm[] = [
   { path: '/finance/expenses/summary/', perm: 'finance.view' },
   { path: '/staff/?page=1&page_size=100', perm: 'staff.view' },
   { path: '/positions/?page=1&page_size=100', perm: 'staff.view' },
+  { path: '/inventory/transfers/?page_size=100&page=1', perm: 'orders.view' },
   { path: '/tasks/summary/' },
   { path: '/businesses/branches/' },
 ];
