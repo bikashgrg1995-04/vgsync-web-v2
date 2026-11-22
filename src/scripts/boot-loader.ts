@@ -5,27 +5,32 @@
  * a few seconds. Only shown right after sign-in, not on later visits.
  */
 
-export {};
+import { firstLoad } from '../lib/first-load';
 
-const FLAG = 'vg:welcome';
 const MIN_MS = 900; // long enough to read, short enough not to get in the way
-const MAX_MS = 12_000;
+const MAX_MS = 15_000;
 
 const STEPS: Array<[number, string]> = [
   [0, 'Signing you in securely…'],
-  [25, 'Loading your dashboard…'],
-  [55, 'Getting your branch and stock…'],
-  [85, 'Almost ready…'],
+  [20, 'Loading your dashboard…'],
+  [45, 'Getting your stock and inventory…'],
+  [68, 'Getting sales, customers and purchases…'],
+  [88, 'Almost ready…'],
 ];
 
-function wanted(): boolean {
-  try {
-    if (sessionStorage.getItem(FLAG) !== '1') return false;
-    sessionStorage.removeItem(FLAG);
-    return true;
-  } catch {
-    return false;
-  }
+// Listen from the very start: the first requests are sent before the popup exists.
+let started = 0;
+let done = 0;
+let warm = { total: 0, started: 0, done: 0 };
+if (firstLoad) {
+  window.addEventListener('vg:net', (e) => {
+    const d = (e as CustomEvent<{ started: number; done: number }>).detail;
+    started = d.started;
+    done = d.done;
+  });
+  window.addEventListener('vg:warm', (e) => {
+    warm = (e as CustomEvent<typeof warm>).detail;
+  });
 }
 
 function start(): void {
@@ -48,25 +53,20 @@ function start(): void {
   const pct = root.querySelector<HTMLElement>('#boot-pct')!;
 
   const t0 = performance.now();
-  let started = 0;
-  let done = 0;
   let shown = 0; // what the bar shows now, only ever goes up
   let finished = false;
   let idleSince = 0;
 
-  window.addEventListener('vg:net', (e) => {
-    const d = (e as CustomEvent<{ started: number; done: number }>).detail;
-    started = d.started;
-    done = d.done;
-  });
-
   function frame(now: number): void {
     const age = now - t0;
     const pending = started - done;
+    // Page requests plus the data fetched for the other pages (announced up front).
+    const total = started - warm.started + warm.total;
+    const warming = warm.total > 0 && warm.done < warm.total;
 
     // Real part: share of requests finished. The rest creeps forward so the bar
     // never looks stuck while a slow request is on its way.
-    const real = started ? (done / started) * 90 : 0;
+    const real = total ? (Math.min(done, total) / total) * 90 : 0;
     const creep = Math.min(88, 8 + age / 60);
     const target = finished ? 100 : Math.min(real, 90) > creep ? Math.min(real, 90) : Math.min(creep, real + 12);
 
@@ -76,7 +76,7 @@ function start(): void {
     for (const [from, text] of STEPS) if (shown >= from && msg.textContent !== text && !finished) msg.textContent = text;
 
     if (!finished) {
-      if (started > 0 && pending === 0) idleSince ||= now;
+      if (started > 0 && pending === 0 && !warming) idleSince ||= now;
       else idleSince = 0;
       const quiet = idleSince && now - idleSince > 450;
       if ((age > MIN_MS && quiet) || age > MAX_MS) {
@@ -94,7 +94,7 @@ function start(): void {
   requestAnimationFrame(frame);
 }
 
-if (wanted()) {
+if (firstLoad) {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 }

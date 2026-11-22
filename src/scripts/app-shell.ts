@@ -14,6 +14,7 @@ import './table-cards';
 import './skeleton';
 import './boot-loader';
 import { warmUp } from '../lib/warmup';
+import { firstLoad } from '../lib/first-load';
 
 const root = document.documentElement;
 const shell = document.getElementById('app-shell');
@@ -461,7 +462,7 @@ function setupMenuGroups(): void {
   window.addEventListener('vg:reach', (e) => show((e as CustomEvent<boolean>).detail === false));
   if (navigator.onLine === false) show(true);
 
-  void warmUp();
+  void warmUp(firstLoad);
 }
 
 // Keep the app's pages and files on the device so it opens without internet.
