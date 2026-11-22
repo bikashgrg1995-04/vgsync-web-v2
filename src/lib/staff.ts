@@ -221,12 +221,13 @@ function positionFromApi(p: ApiPosition): Position {
   };
 }
 
-async function all<T>(path: string): Promise<T[]> {
+async function all<T>(path: string, onPage?: (page: Page<T> & Record<string, unknown>) => void): Promise<T[]> {
   const out: T[] = [];
   let page = 1;
   for (;;) {
     const sep = path.includes('?') ? '&' : '?';
     const data = await api<Page<T>>(`${path}${sep}page=${page}&page_size=100`);
+    onPage?.(data as Page<T> & Record<string, unknown>);
     out.push(...data.results);
     if (!data.next) break;
     page += 1;
@@ -312,8 +313,20 @@ export async function resetStaffPassword(id: number, password?: string): Promise
 
 // ---------- positions ----------
 
+let hiddenPositions = 0;
+
+/** How many positions the last list left out because they grant more access than the viewer has (always 0 for the owner). */
+export function hiddenPositionCount(): number {
+  return hiddenPositions;
+}
+
 export async function listPositions(): Promise<Position[]> {
-  return (await all<ApiPosition>('/positions/')).map(positionFromApi);
+  let hidden = 0;
+  const rows = await all<ApiPosition>('/positions/', (page) => {
+    hidden = Number(page.hidden_count ?? 0) || 0;
+  });
+  hiddenPositions = hidden;
+  return rows.map(positionFromApi);
 }
 
 function positionBody(input: PositionInput): Record<string, unknown> {

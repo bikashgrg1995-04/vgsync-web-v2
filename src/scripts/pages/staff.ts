@@ -12,6 +12,7 @@ import {
   reactivateStaff,
   resetStaffPassword,
   listPositions,
+  hiddenPositionCount,
   createPosition,
   updatePosition,
   setPositionActive,
@@ -302,7 +303,20 @@ function accessSummary(p: Position): string {
   return extra > 0 ? `${names} · ${p.granted.length} permissions` : names;
 }
 
+function showHiddenNote(): void {
+  const note = document.getElementById('position-hidden');
+  if (!note) return;
+  const n = hiddenPositionCount();
+  note.hidden = n === 0;
+  note.textContent =
+    n === 0
+      ? ''
+      : `${n} other position${n === 1 ? ' is' : 's are'} not shown because ${n === 1 ? 'it gives' : 'they give'} more access than you have. ` +
+        'Only the owner, or someone with the same access, can see and assign them.';
+}
+
 function renderPositions(): void {
+  showHiddenNote();
   const tbody = $('position-tbody');
   if (!tbody) return;
   if (positions.length === 0) {
