@@ -217,6 +217,8 @@ export interface PayBalance {
   currentRemaining: number;
   advance: number;
   nextSalaryDate: string | null;
+  /** Monthly only: the salary due on `nextSalaryDate`. */
+  nextSalaryAmount: number | null;
   lastPaymentDate: string | null;
 }
 
@@ -280,6 +282,7 @@ function balanceFromApi(r: Raw): PayBalance {
     currentRemaining: num(r.current_remaining),
     advance: num(r.advance),
     nextSalaryDate: r.next_salary_date ?? null,
+    nextSalaryAmount: r.next_salary_amount == null ? null : num(r.next_salary_amount),
     lastPaymentDate: r.last_payment_date ?? null,
   };
 }

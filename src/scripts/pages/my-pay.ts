@@ -39,6 +39,13 @@ async function load(): Promise<void> {
     $('mp-last').textContent = b.lastPaymentDate ? `Last paid ${b.lastPaymentDate}` : 'Nothing paid yet';
     $('mp-next').textContent = b.nextSalaryDate ?? '—';
     $('mp-type').textContent = pay.payType === 'monthly' ? 'Monthly salary' : 'Daily wage';
+    // Monthly: the next salary, what an advance already covers and what is left to receive then.
+    const nextAmt = b.nextSalaryAmount;
+    $('mp-next-note').hidden = daily || nextAmt === null;
+    if (!daily && nextAmt !== null) {
+      const covered = Math.min(b.advance, nextAmt);
+      $('mp-next-note').innerHTML = `Next salary ${formatNpr(nextAmt)}${b.nextSalaryDate ? ` on ${esc(b.nextSalaryDate)}` : ''}${covered > 0 ? ` · advance ${formatNpr(covered)} already covers it` : ''} · <strong>you will get ${formatNpr(nextAmt - covered)}</strong>`;
+    }
 
     $('mp-unsettled-card').hidden = pay.unsettled.length === 0;
     $('mp-unsettled').innerHTML = pay.unsettled.map((u) => `<tr>
