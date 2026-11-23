@@ -269,9 +269,9 @@ export function canEditPositions(session: AuthSession | null): boolean {
   return auth.user.role === 'owner';
 }
 
-/** The owner, or staff holding `staff.manage_positions` (never above their own access). */
+/** Creating and editing positions is the owner's alone; everyone else with staff access only reads them. */
 export function canManagePositions(session: AuthSession | null): boolean {
-  return canEditPositions(session) || (!!session && session.permissions.includes('staff.manage_positions'));
+  return canEditPositions(session);
 }
 
 /**

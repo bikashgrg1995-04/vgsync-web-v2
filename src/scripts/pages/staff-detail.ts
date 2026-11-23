@@ -200,7 +200,7 @@ function renderStaff(m: StaffMember): void {
   text('sd-k-password', m.mustChangePassword ? 'Must be changed at next sign-in' : 'Set by the user');
   document.title = `VGSync | ${m.name}`;
   const edit = $<HTMLAnchorElement>('sd-edit');
-  if (edit && getSession()?.accessMode !== 'read_only') {
+  if (edit && getSession()?.accessMode !== 'read_only' && getSession()?.isOwner) {
     edit.href = `/staff?edit=${m.id}`;
     edit.hidden = false;
   }

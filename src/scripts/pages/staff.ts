@@ -95,7 +95,10 @@ function selectTab(name: 'team' | 'positions'): void {
   }
   const look = pageLooks[name];
   $('st-title')!.textContent = look.title;
-  $('st-sub')!.textContent = look.sub;
+  const me = getSession();
+  // Someone who is not the owner (for example an administrator) can only read here.
+  const viewOnly = !!me && !me.isOwner && me.accessMode !== 'read_only';
+  $('st-sub')!.textContent = viewOnly ? 'You can view staff and positions. Only the owner can add or change them.' : look.sub;
   if (header) header.textContent = look.title;
   for (const id of ['st-kpis', 'member-add', 'st-scope']) {
     const el = $(id);
@@ -348,7 +351,8 @@ function renderPositions(): void {
 function applyWriteAccess(): void {
   // A company owner is read-only inside a branch.
   const current = getSession();
-  canWrite = current?.accessMode !== 'read_only';
+  // Adding and changing staff is the owner's alone; everyone else only reads the list.
+  canWrite = current?.accessMode !== 'read_only' && !!current?.isOwner;
   // Positions are changed by the owner only; others can read them.
   canEditPos = canWrite && canManagePositions(current);
   const add = $('member-add');
