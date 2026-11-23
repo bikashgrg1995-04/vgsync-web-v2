@@ -26,8 +26,14 @@ async function load(): Promise<void> {
     }).catch(() => { $('mp-incentive-card').hidden = true; });
     const b = pay.balance;
     $('mp-owed').textContent = formatNpr(b.remaining);
-    $('mp-owed-sub').textContent = b.previousRemaining > 0
+    $('mp-owed-sub').textContent = b.previousRemaining > 0 && pay.payType !== 'daily'
       ? `${formatNpr(b.previousRemaining)} from earlier, ${formatNpr(b.currentRemaining)} this month` : 'Earned but not paid yet';
+    const daily = pay.payType === 'daily';
+    // Daily wage is not fixed: no "advance", just a credit to pay (which can include earlier amounts).
+    $('mp-owed-label').textContent = daily ? 'Credit to pay' : 'Still to be paid';
+    $('mp-adv-card').hidden = daily && b.advance <= 0;
+    $('mp-adv-label').textContent = daily ? 'Paid ahead' : 'Advance';
+    $('mp-adv-sub').textContent = daily ? 'Paid more than was earned, used against the next wage' : 'Paid ahead, used against the next salary';
     $('mp-adv').textContent = formatNpr(b.advance);
     $('mp-paid').textContent = formatNpr(b.totalPaid);
     $('mp-last').textContent = b.lastPaymentDate ? `Last paid ${b.lastPaymentDate}` : 'Nothing paid yet';
@@ -36,7 +42,7 @@ async function load(): Promise<void> {
 
     $('mp-unsettled-card').hidden = pay.unsettled.length === 0;
     $('mp-unsettled').innerHTML = pay.unsettled.map((u) => `<tr>
-      <td>${esc(u.date)}</td><td>${esc(u.description || KIND[u.kind] || u.kind)}${u.carriedOver ? ' <span class="pu-count">(carried over)</span>' : ''}</td>
+      <td>${esc(u.date)}</td><td>${esc(u.description || KIND[u.kind] || u.kind)}${u.carriedOver && pay.payType !== 'daily' ? ' <span class="pu-count">(carried over)</span>' : ''}</td>
       <td class="num">${formatNpr(u.amount)}</td><td class="num">${formatNpr(u.paid)}</td><td class="num">${formatNpr(u.remaining)}</td></tr>`).join('');
 
     $('mp-count').textContent = `${statement.length} entries`;

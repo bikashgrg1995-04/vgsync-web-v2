@@ -115,3 +115,12 @@
 }
 .py-error { margin: 8px 0 0; font-size: 0.8rem; color: #ef334e; }
 .py-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+/* Pay dialog: how the amount owed is made up. */
+.py-pay-detail { margin: 6px 0 10px; }
+.py-pay-sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.py-pay-sum div { padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; }
+.py-pay-sum span { display: block; font-size: 0.64rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+.py-pay-sum strong { font-size: 0.95rem; }
+.py-pay-detail h4 { margin: 8px 0 4px; font-size: 0.72rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
+.py-pay-list { max-height: 150px; overflow: auto; }

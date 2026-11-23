@@ -31,6 +31,7 @@ import {
   type LedgerEntry,
   type LedgerSummary,
   type PayBalance,
+  type Unsettled,
   type PayMethod,
   type PayType,
   type EntryKind,
@@ -339,7 +340,7 @@ function renderBalances(): void {
       <td>${esc(b.name)}${b.isActive ? '' : ' <span class="muted">(inactive)</span>'}</td>
       <td>${payLabel(b.payType)}</td>
       <td class="num ${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}</td>
-      <td class="num">${b.advance > 0 ? formatNpr(b.advance) : '—'}</td>
+      <td class="num">${b.advance > 0 ? formatNpr(b.advance) + (isDaily(b) ? ' ahead' : '') : '—'}</td>
       <td>${b.nextSalaryDate ? esc(b.nextSalaryDate) : '—'}</td>
     </tr>`)
     .join('');
@@ -501,14 +502,16 @@ async function openStaff(id: number): Promise<void> {
       </div>
       <div class="py-detail-actions">${acts.join('')}</div>
       <div class="py-mini-kpis">
-        <div><span>Owed now</span><strong class="${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}</strong></div>
-        <div><span>Advance</span><strong>${formatNpr(b.advance)}</strong></div>
+        <div><span>${isDaily(b) ? 'Credit to pay' : 'Owed now'}</span><strong class="${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}</strong></div>
+        ${isDaily(b)
+          ? `<div><span>Unpaid entries</span><strong>${unsettled.length}</strong></div>`
+          : `<div><span>Advance</span><strong>${formatNpr(b.advance)}</strong></div>`}
         <div><span>Earned</span><strong>${formatNpr(b.totalEarned)}</strong></div>
         <div><span>Paid</span><strong>${formatNpr(b.totalPaid)}</strong></div>
       </div>
-      ${b.previousRemaining > 0 ? `<p class="py-note is-warn">${formatNpr(b.previousRemaining)} is carried over from earlier periods.</p>` : ''}
-      ${unsettled.length ? `<h4>Not paid yet</h4>
-        <ul class="py-list">${unsettled.map((u) => `<li><span>${esc(u.date)} · ${esc(pretty(u.kind))}${u.carriedOver ? ' · earlier' : ''}${u.description ? ` · ${esc(u.description)}` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`).join('')}</ul>` : ''}
+      ${b.previousRemaining > 0 && !isDaily(b) ? `<p class="py-note is-warn">${formatNpr(b.previousRemaining)} is carried over from earlier periods.</p>` : ''}
+      ${unsettled.length ? `<h4>${isDaily(b) ? 'Credit to pay, by day' : 'Not paid yet'}</h4>
+        <ul class="py-list">${unsettled.map((u) => `<li><span>${esc(u.date)} · ${esc(pretty(u.kind))}${u.carriedOver && !isDaily(b) ? ' · earlier' : ''}${u.description ? ` · ${esc(u.description)}` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`).join('')}</ul>` : ''}
       <h4>Statement</h4>
       ${statement.length === 0 ? `<p class="muted small">Nothing yet.</p>` : `
       <div class="py-table-wrap"><table class="py-table py-mini">
@@ -516,19 +519,19 @@ async function openStaff(id: number): Promise<void> {
         <tbody>${statement.slice(0, 60).map((s) => {
           const sign = s.direction === 'paid' ? '−' : s.direction === 'deducted' ? '−' : '+';
           const what = s.type === 'payment'
-            ? `Paid${s.method ? ` (${esc(METHOD_LABEL[s.method as PayMethod] ?? s.method)})` : ''}${s.advancePart > 0 ? ` · advance ${formatNpr(s.advancePart)}` : ''}`
+            ? `Paid${s.method ? ` (${esc(METHOD_LABEL[s.method as PayMethod] ?? s.method)})` : ''}${s.advancePart > 0 ? ` · ${isDaily(b) ? 'paid ahead' : 'advance'} ${formatNpr(s.advancePart)}` : ''}`
             : esc(pretty(s.type));
           const note = [s.description, s.reference ? `Ref ${s.reference}` : ''].filter(Boolean).map(esc).join(' · ');
           return `<tr><td>${esc(s.date)}</td><td>${what}${note ? `<br /><span class="muted">${note}</span>` : ''}</td>
             <td class="num">${sign}${formatNpr(s.amount)}</td>
-            <td class="num">${s.advanceAfter > 0 ? `<span class="muted">adv ${formatNpr(s.advanceAfter)}</span>` : formatNpr(s.owedAfter)}</td>
+            <td class="num">${s.advanceAfter > 0 ? `<span class="muted">${isDaily(b) ? 'ahead' : 'adv'} ${formatNpr(s.advanceAfter)}</span>` : formatNpr(s.owedAfter)}</td>
             <td>${canPay ? `<button class="btn-link is-danger" data-void-${s.type === 'payment' ? 'pay' : 'entry'}="${s.id}">Void</button>` : ''}</td></tr>`;
         }).join('')}</tbody></table></div>
       ${statement.length > 60 ? `<p class="muted small">Showing the latest 60 of ${statement.length}.</p>` : ''}`}`;
 
     el.querySelectorAll<HTMLButtonElement>('[data-act]').forEach((x) =>
       x.addEventListener('click', () => {
-        if (x.dataset.act === 'pay') openPay(b);
+        if (x.dataset.act === 'pay') openPay(b, unsettled);
         else if (x.dataset.act === 'entry') openEntry(b);
         else openSalary(id);
       }),
@@ -596,8 +599,36 @@ $('form-salary')?.addEventListener('submit', (e) => {
   });
 });
 
-function openPay(b: PayBalance): void {
-  $('pp-sub')!.textContent = `${b.name} · owed now ${formatNpr(b.remaining)}${b.advance > 0 ? ` · advance ${formatNpr(b.advance)}` : ''}`;
+const isDaily = (b: PayBalance) => b.payType === 'daily';
+
+function openPay(b: PayBalance, unsettled: Unsettled[] = []): void {
+  const daily = isDaily(b);
+  // Daily wage is not a fixed amount, so nothing is "advance" here: what is owed is a
+  // credit to pay, which can also hold amounts left from earlier days.
+  $('pp-sub')!.textContent = daily
+    ? `${b.name} · Daily wage · credit to pay ${formatNpr(b.remaining)}`
+    : `${b.name} · owed now ${formatNpr(b.remaining)}${b.advance > 0 ? ` · advance ${formatNpr(b.advance)}` : ''}`;
+
+  // For daily wage there is no pay cycle, so "this period / earlier" means nothing: show
+  // how many entries are unpaid and since when, then each one by date.
+  const earlyTag = (u: Unsettled) => (!daily && u.carriedOver ? ' · earlier' : '');
+  const rows = unsettled
+    .map((u) => `<li><span>${esc(u.date)} · ${esc(pretty(u.kind))}${earlyTag(u)}${u.description ? ` · ${esc(u.description)}` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`)
+    .join('');
+  const oldest = unsettled.map((u) => u.date).sort()[0];
+  $('pp-detail')!.innerHTML = `
+    <div class="py-pay-sum">
+      <div><span>${daily ? 'Credit to pay' : 'Owed now'}</span><strong>${formatNpr(b.remaining)}</strong></div>
+      ${daily
+        ? `<div><span>Unpaid entries</span><strong>${unsettled.length}</strong></div>
+           <div><span>Oldest unpaid</span><strong>${oldest ? esc(oldest) : '—'}</strong></div>`
+        : `<div><span>This period</span><strong>${formatNpr(b.currentRemaining)}</strong></div>
+           <div><span>From earlier</span><strong>${formatNpr(b.previousRemaining)}</strong></div>`}
+    </div>
+    ${rows ? `<h4>${daily ? 'Credit to pay, by day' : 'What makes it up'}</h4><ul class="py-list py-pay-list">${rows}</ul>` : `<p class="muted small">Nothing is owed right now.</p>`}`;
+  $('pp-note')!.textContent = daily
+    ? 'Daily wage is not fixed. Pay the amount you choose; whatever is not paid stays as credit to pay, together with any earlier amount.'
+    : 'Paying more than is owed, or before the salary day, is kept as an advance and used up by the next amount due.';
   $('form-pay')!.dataset.id = String(b.staffId);
   $<HTMLInputElement>('pp-amount')!.value = b.remaining > 0 ? String(b.remaining) : '';
   $<HTMLSelectElement>('pp-method')!.value = 'cash';

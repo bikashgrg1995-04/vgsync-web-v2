@@ -2,6 +2,7 @@
   <form method="dialog" class="py-dialog-inner" id="form-pay">
     <h2 class="py-dialog-title">Pay staff</h2>
     <p class="py-sub" id="pp-sub"></p>
+    <div class="py-pay-detail" id="pp-detail"></div>
     <div class="py-grid">
       <label class="py-field"><span>Amount *</span><input type="number" id="pp-amount" required min="0.01" step="0.01" /></label>
       <label class="py-field"><span>Method *</span>
@@ -10,7 +11,7 @@
       <label class="py-field"><span>Paid on</span><input type="date" id="pp-date" /></label>
       <label class="py-field"><span>Reference</span><input type="text" id="pp-ref" maxlength="100" /></label>
     </div>
-    <p class="py-note">Paying more than is owed, or before the salary day, is kept as an advance and used up by the next amount due.</p>
+    <p class="py-note" id="pp-note">Paying more than is owed, or before the salary day, is kept as an advance and used up by the next amount due.</p>
     <p class="py-error" id="pp-error" hidden></p>
     <div class="py-actions">
       <button type="button" class="btn-ghost-sm" data-close="dlg-pay">Cancel</button>
