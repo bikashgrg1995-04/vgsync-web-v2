@@ -509,6 +509,10 @@ async function openStaff(id: number): Promise<void> {
         <div><span>Earned</span><strong>${formatNpr(b.totalEarned)}</strong></div>
         <div><span>Paid</span><strong>${formatNpr(b.totalPaid)}</strong></div>
       </div>
+      ${(() => {
+        const n = nextSalary(b);
+        return n ? `<p class="py-note">Next salary ${formatNpr(n.amount)} on ${esc(n.date)}${n.covered > 0 ? ` · advance ${formatNpr(n.covered)} already covers it` : ''} · <strong>to pay ${formatNpr(n.toPay)}</strong></p>` : '';
+      })()}
       ${b.previousRemaining > 0 && !isDaily(b) ? `<p class="py-note is-warn">${formatNpr(b.previousRemaining)} is carried over from earlier periods.</p>` : ''}
       ${unsettled.length ? `<h4>${isDaily(b) ? 'Credit to pay, by day' : 'Not paid yet'}</h4>
         <ul class="py-list">${unsettled.map((u) => `<li><span>${esc(u.date)} · ${esc(pretty(u.kind))}${u.carriedOver && !isDaily(b) ? ' · earlier' : ''}${u.description ? ` · ${esc(u.description)}` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`).join('')}</ul>` : ''}
@@ -601,6 +605,15 @@ $('form-salary')?.addEventListener('submit', (e) => {
 
 const isDaily = (b: PayBalance) => b.payType === 'daily';
 
+/** Monthly only: the next salary, how much of it an advance already covers, and what is left to pay on that day. */
+function nextSalary(b: PayBalance): { amount: number; covered: number; toPay: number; date: string } | null {
+  const profile = salaries.find((x) => x.staffId === b.staffId);
+  if (isDaily(b) || !profile || !b.nextSalaryDate) return null;
+  const amount = profile.rate + profile.allowances;
+  const covered = Math.min(b.advance, amount);
+  return { amount, covered, toPay: amount - covered, date: b.nextSalaryDate };
+}
+
 function openPay(b: PayBalance, unsettled: Unsettled[] = []): void {
   const daily = isDaily(b);
   // Daily wage is not a fixed amount, so nothing is "advance" here: what is owed is a
@@ -625,6 +638,10 @@ function openPay(b: PayBalance, unsettled: Unsettled[] = []): void {
         : `<div><span>This period</span><strong>${formatNpr(b.currentRemaining)}</strong></div>
            <div><span>From earlier</span><strong>${formatNpr(b.previousRemaining)}</strong></div>`}
     </div>
+    ${(() => {
+      const n = nextSalary(b);
+      return n ? `<div class="py-pay-sum"><div><span>Next salary (${esc(n.date)})</span><strong>${formatNpr(n.amount)}</strong></div><div><span>Covered by advance</span><strong>${formatNpr(n.covered)}</strong></div><div><span>To pay then</span><strong>${formatNpr(n.toPay)}</strong></div></div>` : '';
+    })()}
     ${rows ? `<h4>${daily ? 'Credit to pay, by day' : 'What makes it up'}</h4><ul class="py-list py-pay-list">${rows}</ul>` : `<p class="muted small">Nothing is owed right now.</p>`}`;
   $('pp-note')!.textContent = daily
     ? 'Daily wage is not fixed. Pay the amount you choose; whatever is not paid stays as credit to pay, together with any earlier amount.'
