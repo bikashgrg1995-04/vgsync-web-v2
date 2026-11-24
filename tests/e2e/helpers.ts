@@ -18,7 +18,7 @@ export async function signIn(page: Page, pass = CREDS.pass, remember = false) {
 /** Every page a signed-in owner can open (path only). */
 export const PAGES = [
   '/dashboard', '/sales', '/customers', '/purchase', '/suppliers', '/orders', '/inventory',
-  '/payments', '/statements', '/approvals', '/reports', '/staff', '/tasks', '/branches',
+  '/payments', '/statements', '/reports', '/staff', '/tasks', '/branches',
   '/settings', '/help', '/notifications',
 ];
 

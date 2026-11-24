@@ -251,7 +251,6 @@ async function loadOwner(mine: number, s: NonNullable<ReturnType<typeof getSessi
     kpi('Cash in hand', formatNpr(m(d.cash.cash))),
     kpi('In the bank', formatNpr(m(d.cash.bank)), d.cash.other !== '0.00' ? `+ ${formatNpr(m(d.cash.other))} other` : ''),
     kpi('Stock value', formatNpr(m(d.stock.value)), d.stock.damaged_value !== '0.00' ? `${formatNpr(m(d.stock.damaged_value))} damaged` : '', '', '/inventory'),
-    kpi('Approvals waiting', String(d.approvals_pending), `${d.staff.active} active staff`, d.approvals_pending ? 'strong' : '', '/approvals'),
   ].join('');
 
   $('ov-low').innerHTML = d.low_stock.items.length

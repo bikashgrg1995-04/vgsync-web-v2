@@ -428,7 +428,6 @@ export interface Dashboard {
   income_expense_by_month: Array<{ month: string; income: string; expenses: string; profit: string }>;
   top_products: Array<{ name: string; quantity: string; revenue: string }>;
   low_stock: { count: number; items: Array<{ product: number; name: string; quantity: string; reorder_level: string }> };
-  approvals_pending: number;
   staff: { total: number; active: number; without_position: number };
   alerts: Array<{ kind: string; severity: 'info' | 'warning' | 'danger'; message: string }>;
   /** Head Office only: its branches, read-only. */

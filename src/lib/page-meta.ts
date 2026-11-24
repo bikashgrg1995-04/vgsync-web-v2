@@ -75,13 +75,6 @@ export const PAGE_META: Record<string, PageMeta> = {
     skeletonTitle: 'Statements',
     skeletonHint: 'Customer and supplier statements.',
   },
-  approvals: {
-    id: 'approvals',
-    title: 'Approvals',
-    breadcrumb: 'Finance /',
-    skeletonTitle: 'Approvals',
-    skeletonHint: 'Requests waiting for a decision.',
-  },
   customers: {
     id: 'customers',
     title: 'Customers',

@@ -26,7 +26,7 @@ export interface NavItem {
   /** Permission code needed to see the item. Missing: everyone. */
   perm?: string;
   /** Special rules the app shell understands. */
-  rule?: 'company_owner' | 'approvals' | 'statements' | 'not_owner';
+  rule?: 'company_owner' | 'statements' | 'not_owner';
 }
 
 export const NAV_GROUPS: NavGroup[] = [
@@ -59,7 +59,6 @@ const ALL_ITEMS: NavItem[] = [
 
   { id: 'payments', label: 'Payments', href: '/payments', icon: 'wallet', group: 'finance', perm: 'finance.view' },
   { id: 'statements', label: 'Statements', href: '/statements', icon: 'clipboard', group: 'finance', rule: 'statements' },
-  { id: 'approvals', label: 'Approvals', href: '/approvals', icon: 'shield', group: 'finance', rule: 'approvals' },
 
   { id: 'inventory', label: 'Inventory', href: '/inventory', icon: 'box', group: 'inventory', perm: 'inventory.view' },
 
@@ -68,14 +67,6 @@ const ALL_ITEMS: NavItem[] = [
   { id: 'staff', label: 'Staffs', href: '/staff#team', icon: 'users', group: 'staffmgmt', perm: 'staff.view' },
   { id: 'positions', label: 'Position / Role', href: '/staff#positions', icon: 'shield', group: 'staffmgmt', perm: 'staff.view' },
   { id: 'tasks', label: 'Tasks', href: '/tasks', icon: 'clipboard', group: 'staffmgmt' },
-];
-
-/** Codes that let a person decide an approval request. */
-export const APPROVER_CODES = [
-  'purchases.approve',
-  'finance.approve',
-  'inventory.approve',
-  'sales.approve',
 ];
 
 export interface NavViewer {
@@ -89,10 +80,6 @@ export interface NavViewer {
 export function navItemVisible(item: NavItem, viewer: NavViewer): boolean {
   if (item.rule === 'company_owner') return viewer.companyOwner;
   if (item.rule === 'not_owner') return !viewer.isOwner;
-
-  if (item.rule === 'approvals') {
-    return viewer.isOwner || APPROVER_CODES.some((c) => viewer.permissions.includes(c));
-  }
 
   if (item.rule === 'statements') {
     return viewer.isOwner || viewer.permissions.includes('sales.view') || viewer.permissions.includes('purchases.view');

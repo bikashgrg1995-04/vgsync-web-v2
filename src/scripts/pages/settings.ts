@@ -3,7 +3,6 @@ import { paintAvatar, setAvatarFromFile, clearAvatar } from '../../lib/avatar';
 import { getMyProfile, saveMyProfile, getBusiness, getCompanyName } from '../../lib/settings';
 import { api, apiDownload } from '../../lib/api';
 import { listStaff, listPositions, loadCatalogue } from '../../lib/staff';
-import { listRules, KIND_LABEL } from '../../lib/approvals';
 
 const THEME_KEY = 'vgsync-theme';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
@@ -33,7 +32,7 @@ function describe(error: unknown): string {
 }
 
 
-// ---- Users & Permissions: a read-only overview; the editing lives in Staff and Approvals.
+// ---- Users & Permissions: a read-only overview; the editing lives in Staff.
 const escHtml = (v: string) => v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 let usersLoaded = false;
 
@@ -41,7 +40,7 @@ async function loadUsersPanel(): Promise<void> {
   if (usersLoaded) return;
   usersLoaded = true;
   setError('u-error', null);
-  const [staff, positions, rules, catalogue] = await Promise.allSettled([listStaff(), listPositions(), listRules(), loadCatalogue()]);
+  const [staff, positions, catalogue] = await Promise.allSettled([listStaff(), listPositions(), loadCatalogue()]);
 
   if (staff.status === 'fulfilled') {
     setText('u-active', String(staff.value.filter((m) => m.isActive).length));
@@ -57,20 +56,13 @@ async function loadUsersPanel(): Promise<void> {
   } else {
     setError('u-error', describe(positions.reason));
   }
-  if (rules.status === 'fulfilled') {
-    const on = rules.value.filter((r) => r.isActive);
-    setText('u-rules', String(on.length));
-    $('u-rules-list')!.innerHTML = rules.value.length
-      ? rules.value.map((r) => `<li><span>${escHtml(KIND_LABEL[r.kind] ?? r.kind)}</span><strong>${r.isActive ? `above NPR ${r.threshold.toLocaleString('en-IN')}` : 'Off'}</strong></li>`).join('')
-      : '<li class="se-u-empty">No approval rules set.</li>';
-  }
   if (catalogue.status === 'fulfilled') {
     const reserved = catalogue.value.flatMap((m) => m.actions.filter((a) => a.reserved).map((a) => a.label));
     $('u-reserved')!.innerHTML = reserved.length ? reserved.map((l) => `<li>${escHtml(l)}</li>`).join('') : '<li class="se-u-empty">None.</li>';
   }
 
   try {
-    const models = ['accounts.position', 'accounts.positionpermission', 'accounts.staffpermissionoverride', 'approvals.approvalrule'];
+    const models = ['accounts.position', 'accounts.positionpermission', 'accounts.staffpermissionoverride'];
     const pages = await Promise.all(models.map((m) => api<{ results: Array<{ id: number; created_at: string; actor_name: string; summary: string }> }>(`/audit/?model=${m}&page_size=8`)));
     const rows = pages.flatMap((p) => p.results).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 10);
     $('u-audit-body')!.innerHTML = rows.length
@@ -375,7 +367,7 @@ else {
   // ---- Business details: owners can look, only VGSync support changes them.
   const isOwner = me.role === 'owner' || me.role === 'branch_owner';
   // Administrators see the Users & Permissions overview when they hold one of its parts.
-  if (isOwner || ['staff.view_audit', 'staff.manage_positions', 'finance.manage_rules'].some((c) => can(session, c))) {
+  if (isOwner || ['staff.view_audit', 'staff.manage_positions'].some((c) => can(session, c))) {
     $('tab-users')!.hidden = false;
   }
   if (isOwner) {
