@@ -1,9 +1,8 @@
 /**
  * Navigation menu definitions.
  *
- * Areas, in order: Dashboard, Inventory, Sales, Purchases, Orders, Staff
- * Management (staffs, positions, tasks), Finance, Reports & Analytics and Settings (the last
- * one lives in the sidebar footer). What each person sees follows their
+ * Areas, in order: Dashboard, Sales, Purchases, Inventory, Money (payments,
+ * statements, reports) and Team. Settings and Help live in the sidebar footer. What each person sees follows their
  * permissions: an item shows when the person holds its `perm`. The API
  * enforces the same rules; this only decides what is shown.
  */
@@ -31,42 +30,43 @@ export interface NavItem {
 
 export const NAV_GROUPS: NavGroup[] = [
   { id: 'main', label: null },
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'purchases', label: 'Purchases' },
   { id: 'sales', label: 'Sales' },
-  { id: 'orders', label: 'Orders' },
-  { id: 'finance', label: 'Finance' },
-  { id: 'reports', label: 'Reports & Analytics' },
-  { id: 'staffmgmt', label: 'Staff Management' },
+  { id: 'purchases', label: 'Purchases' },
+  { id: 'inventory', label: 'Inventory' },
+  { id: 'money', label: 'Money' },
+  { id: 'team', label: 'Team' },
 ];
 
+/*
+ * Ten entries at the top level. Everything else sits under the one it belongs
+ * to (`parent`) and opens when you are in that section.
+ */
 const ALL_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Dashboard', href: '/dashboard', icon: 'home', group: 'main' },
   // Everyone on the team can see their own pay; the owner has the Staff pay screen instead.
   { id: 'my-jobs', label: 'My jobs', href: '/my-jobs', icon: 'wrench', group: 'main', rule: 'not_owner' },
   { id: 'my-pay', label: 'My pay', href: '/my-pay', icon: 'wallet', group: 'main', rule: 'not_owner' },
+  { id: 'tasks', label: 'Tasks', href: '/tasks', icon: 'clipboard', group: 'main' },
   { id: 'branches', label: 'Branches', href: '/branches', icon: 'building', group: 'main', rule: 'company_owner' },
 
   { id: 'sales', label: 'Sales', href: '/sales', icon: 'cart', group: 'sales', perm: 'sales.view' },
   { id: 'returns', label: 'Sales Return', href: '/sales#returns', icon: 'returns', group: 'sales', parent: 'sales', perm: 'sales.view' },
-  { id: 'customers', label: 'Customers', href: '/customers', icon: 'users', group: 'sales', perm: 'sales.view' },
-  { id: 'servicing', label: 'Follow-ups', href: '/sales#followups', icon: 'wrench', group: 'sales', perm: 'sales.view' },
+  { id: 'servicing', label: 'Follow-ups', href: '/sales#followups', icon: 'wrench', group: 'sales', parent: 'sales', perm: 'sales.view' },
+  { id: 'customers', label: 'Customers', href: '/customers', icon: 'users', group: 'sales', parent: 'sales', perm: 'sales.view' },
+  { id: 'orders', label: 'Orders', href: '/orders', icon: 'truck', group: 'sales', parent: 'sales', perm: 'orders.view' },
 
   { id: 'purchase', label: 'Purchase', href: '/purchase', icon: 'clipboard', group: 'purchases', perm: 'purchases.view' },
   { id: 'purchase-returns', label: 'Purchase Return', href: '/purchase#returns', icon: 'returns', group: 'purchases', parent: 'purchase', perm: 'purchases.view' },
-  { id: 'orders', label: 'Orders', href: '/orders', icon: 'truck', group: 'orders', perm: 'orders.view' },
-  { id: 'suppliers', label: 'Suppliers', href: '/suppliers', icon: 'truck', group: 'purchases', perm: 'purchases.view' },
-
-  { id: 'payments', label: 'Payments', href: '/payments', icon: 'wallet', group: 'finance', perm: 'finance.view' },
-  { id: 'statements', label: 'Statements', href: '/statements', icon: 'clipboard', group: 'finance', rule: 'statements' },
+  { id: 'suppliers', label: 'Suppliers', href: '/suppliers', icon: 'truck', group: 'purchases', parent: 'purchase', perm: 'purchases.view' },
 
   { id: 'inventory', label: 'Inventory', href: '/inventory', icon: 'box', group: 'inventory', perm: 'inventory.view' },
 
-  { id: 'reports', label: 'Reports', href: '/reports', icon: 'chart', group: 'reports', perm: 'reports.view' },
+  { id: 'payments', label: 'Payments', href: '/payments', icon: 'wallet', group: 'money', perm: 'finance.view' },
+  { id: 'statements', label: 'Statements', href: '/statements', icon: 'clipboard', group: 'money', parent: 'payments', rule: 'statements' },
+  { id: 'reports', label: 'Reports', href: '/reports', icon: 'chart', group: 'money', parent: 'payments', perm: 'reports.view' },
 
-  { id: 'staff', label: 'Staffs', href: '/staff#team', icon: 'users', group: 'staffmgmt', perm: 'staff.view' },
-  { id: 'positions', label: 'Position / Role', href: '/staff#positions', icon: 'shield', group: 'staffmgmt', perm: 'staff.view' },
-  { id: 'tasks', label: 'Tasks', href: '/tasks', icon: 'clipboard', group: 'staffmgmt' },
+  { id: 'staff', label: 'Staffs', href: '/staff#team', icon: 'users', group: 'team', perm: 'staff.view' },
+  { id: 'positions', label: 'Position / Role', href: '/staff#positions', icon: 'shield', group: 'team', parent: 'staff', perm: 'staff.view' },
 ];
 
 export interface NavViewer {

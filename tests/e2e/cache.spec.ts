@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { settled } from './helpers';
+import { settled, sidebarClick } from './helpers';
 
 const apiCalls = (page: import('@playwright/test').Page, bucket: string[]) =>
   page.on('request', (r) => {
@@ -9,11 +9,11 @@ const apiCalls = (page: import('@playwright/test').Page, bucket: string[]) =>
 test('coming back to a list shows saved data without asking the server again', async ({ page }) => {
   await page.goto('/customers');
   await settled(page);
-  await page.locator('a.sidebar-link[href="/orders"]').click();
+  await sidebarClick(page, '/orders');
   await settled(page);
   const calls: string[] = [];
   apiCalls(page, calls);
-  await page.locator('a.sidebar-link[href="/customers"]').click();
+  await sidebarClick(page, '/customers');
   await expect(page).toHaveURL(/\/customers/);
   await page.waitForTimeout(1500);
   expect(calls.filter((c) => /customers/.test(c))).toEqual([]);

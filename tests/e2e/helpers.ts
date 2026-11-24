@@ -41,3 +41,19 @@ export async function settled(page: Page) {
   await page.waitForLoadState('networkidle');
   await expect(page.locator('.sk-bar:visible')).toHaveCount(0, { timeout: 15_000 });
 }
+
+/** Click a sidebar link; sub-menu entries are folded until their section is open, so open it first. */
+export async function sidebarClick(
+  page: import('@playwright/test').Page,
+  href: string,
+  beforeFinalClick?: () => Promise<void>,
+): Promise<void> {
+  const link = page.locator(`a.sidebar-link[href="${href}"]`);
+  if (!(await link.isVisible())) {
+    const parent = await link.evaluate((el) => el.closest('li')?.getAttribute('data-nav-parent') ?? '');
+    await page.locator(`a.sidebar-link[data-nav-id="${parent}"]`).click();
+    await expect(link).toBeVisible();
+  }
+  await beforeFinalClick?.();
+  await link.click();
+}

@@ -85,7 +85,7 @@ const initials = displayName
               <li class="sidebar-divider" data-nav-group={group.id} aria-hidden="true"></li>
             )}
             {groupItems.map((item) => (
-              <li data-nav-group-item={group.id} class:list={{ 'sidebar-sub': !!item.parent }}>
+              <li data-nav-group-item={group.id} data-nav-parent={item.parent} class:list={{ 'sidebar-sub': !!item.parent }}>
                 <a
                   href={item.href}
                   class:list={['sidebar-link', { 'is-active': item.id === activeId }]}

@@ -410,3 +410,18 @@
 }
 .sidebar-list > li.sidebar-sub .sidebar-link { padding-top: 6px; padding-bottom: 6px; font-size: 0.82rem; }
 .sidebar-list > li.sidebar-sub .sidebar-icon svg { width: 15px; height: 15px; }
+
+/* Sub-menus fold away until you are in their section. */
+.sidebar-list > li.sidebar-sub.is-folded { display: none; }
+.sidebar-link.has-sub::after {
+  content: '';
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  opacity: 0.55;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+.sidebar-link.has-sub[aria-expanded="true"]::after { transform: rotate(45deg); }

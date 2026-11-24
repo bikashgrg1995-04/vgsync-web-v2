@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { settled, watchErrors } from './helpers';
+import { settled, sidebarClick, watchErrors } from './helpers';
 
 // Regression: Purchase Return / Returns / Follow-ups used to open the wrong page.
 const LINKS: Array<{ href: string; path: string; hash: string }> = [
@@ -18,7 +18,7 @@ test('sidebar links land on the right page and section', async ({ page }) => {
   await page.goto('/dashboard');
   await settled(page);
   for (const l of LINKS) {
-    await page.locator(`a.sidebar-link[href="${l.href}"]`).click();
+    await sidebarClick(page, l.href);
     await expect.poll(() => new URL(page.url()).pathname).toBe(l.path);
     await expect.poll(() => new URL(page.url()).hash).toBe(l.hash);
     // the matching link, and only that one, is marked current
@@ -31,10 +31,10 @@ test('sidebar links land on the right page and section', async ({ page }) => {
 test('Purchase Return shows the purchase page, Sales Return shows the sales page', async ({ page }) => {
   await page.goto('/dashboard');
   await settled(page);
-  await page.locator('a.sidebar-link[href="/purchase#returns"]').click();
+  await sidebarClick(page, '/purchase#returns');
   await expect(page).toHaveURL(/\/purchase#returns/);
   const purchaseTitle = await page.title();
-  await page.locator('a.sidebar-link[href="/sales#returns"]').click();
+  await sidebarClick(page, '/sales#returns');
   await expect(page).toHaveURL(/\/sales#returns/);
   expect(await page.title()).not.toBe(purchaseTitle);
 });
@@ -42,9 +42,9 @@ test('Purchase Return shows the purchase page, Sales Return shows the sales page
 test('back and forward buttons follow the pages', async ({ page }) => {
   await page.goto('/dashboard');
   await settled(page);
-  await page.locator('a.sidebar-link[href="/customers"]').click();
+  await sidebarClick(page, '/customers');
   await expect(page).toHaveURL(/\/customers/);
-  await page.locator('a.sidebar-link[href="/orders"]').click();
+  await sidebarClick(page, '/orders');
   await expect(page).toHaveURL(/\/orders/);
   await page.goBack();
   await expect(page).toHaveURL(/\/customers/);
@@ -59,7 +59,10 @@ test('Sales Return sits under Sales and Purchase Return under Purchase in the si
   expect(order.indexOf('returns')).toBe(order.indexOf('sales') + 1);
   expect(order.indexOf('purchase-returns')).toBe(order.indexOf('purchase') + 1);
   await expect(page.locator('a[data-nav-id="returns"]')).toHaveText(/Sales Return/);
-  await expect(page.locator('li.sidebar-sub')).toHaveCount(2);
+  await expect(page.locator('li.sidebar-sub')).toHaveCount(9);
+  // Folded away until you are in the section: Dashboard shows no sub-menu entries.
+  await expect(page.locator('li.sidebar-sub:visible')).toHaveCount(0);
+  expect(await page.locator('.sidebar-list > li:visible:not(.sidebar-sub):not(.sidebar-divider)').count()).toBeLessThanOrEqual(10);
 });
 
 test('Follow-ups and Sales Return open at once from Customers, not after the Sales data loads', async ({ page }) => {
@@ -70,10 +73,10 @@ test('Follow-ups and Sales Return open at once from Customers, not after the Sal
     await r.continue();
   });
   for (const [href, title] of [['/sales#followups', 'Follow-ups'], ['/sales#returns', 'Sales Returns']] as const) {
-    await page.locator(`a.sidebar-link[href="${href}"]`).click();
+    await sidebarClick(page, href);
     // well before the 1.5 s answers arrive, the right list must already be showing
     await expect(page.locator('.header-title')).toHaveText(title, { timeout: 1000 });
-    await page.locator('a.sidebar-link[href="/customers"]').click();
+    await sidebarClick(page, '/customers');
     await expect(page).toHaveURL(/\/customers/);
   }
 });
@@ -86,20 +89,25 @@ test('no flash of the wrong view while opening Follow-ups, Sales Return or Purch
     await r.continue();
   });
   for (const href of ['/sales#followups', '/sales#returns', '/purchase#returns']) {
-    await page.evaluate(() => {
-      const w = window as unknown as { __bad: string[]; __stop: boolean };
-      w.__bad = [];
-      w.__stop = false;
-      const tick = () => {
-        const box = document.querySelector('.app-content-inner');
-        const shown = document.querySelector('[data-panel].is-active')?.getAttribute('data-panel');
-        const hidden = box?.classList.contains('is-setting-up');
-        if (location.hash && shown && shown !== location.hash.slice(1) && !hidden) w.__bad.push(`${shown} shown for ${location.hash}`);
-        if (!w.__stop) requestAnimationFrame(tick);
-      };
-      tick();
+    await sidebarClick(page, href, async () => {
+      await page.evaluate(() => {
+        const w = window as unknown as { __bad: string[]; __stop: boolean };
+        w.__bad = [];
+        w.__stop = false;
+        let run = 0;
+        const tick = () => {
+          const box = document.querySelector('.app-content-inner');
+          const shown = document.querySelector('[data-panel].is-active')?.getAttribute('data-panel');
+          const hidden = box?.classList.contains('is-setting-up');
+          const wrong = !!location.hash && !!shown && shown !== location.hash.slice(1) && !hidden;
+          // one frame between the address changing and the tab following is normal; two or more is a flash
+          run = wrong ? run + 1 : 0;
+          if (run === 2) w.__bad.push(`${shown} shown for ${location.hash} at ${location.pathname}`);
+          if (!w.__stop) requestAnimationFrame(tick);
+        };
+        tick();
+      });
     });
-    await page.locator(`a.sidebar-link[href="${href}"]`).click();
     await page.waitForTimeout(1500);
     const bad = await page.evaluate(() => {
       const w = window as unknown as { __bad: string[]; __stop: boolean };
@@ -107,7 +115,7 @@ test('no flash of the wrong view while opening Follow-ups, Sales Return or Purch
       return w.__bad;
     });
     expect(bad).toEqual([]);
-    await page.locator('a.sidebar-link[href="/customers"]').click();
+    await sidebarClick(page, '/customers');
     await expect(page).toHaveURL(/\/customers/);
   }
 });

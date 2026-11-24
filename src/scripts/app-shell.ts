@@ -192,6 +192,10 @@ function applySessionUI(): void {
     const target = (li ?? el) as HTMLElement;
 
     target.style.display = allowed.has(id) ? '' : 'none';
+
+    // Someone who may open "Orders" but not "Sales" still gets Orders in the menu, on its own.
+    const parent = li?.dataset.navParent;
+    if (li && parent) li.classList.toggle('sidebar-sub', allowed.has(parent));
   });
 
   // A section heading with nothing under it is hidden too.
@@ -381,36 +385,13 @@ window.addEventListener('storage', (event) => {
 import './notification-bell';
 
 
-// ---- Collapsible menu sections ----------------------------------------
-// Sections start folded; the one holding the open page is unfolded, and so
-// is anything the person unfolded earlier (kept in the browser, best effort).
-const OPEN_GROUPS_KEY = 'vgsync.menu.open';
+// ---- Sub-menus ------------------------------------------------------------
+// Items such as Sales Return or Customers sit under the one they belong to.
+// They show while you are anywhere in that section, and fold away otherwise.
 
-function readOpenGroups(): Set<string> {
-  try {
-    const raw = window.localStorage.getItem(OPEN_GROUPS_KEY);
-    const list = raw ? (JSON.parse(raw) as unknown) : [];
-    return new Set(Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string') : []);
-  } catch {
-    return new Set();
-  }
-}
-
-function saveOpenGroups(open: Set<string>): void {
-  try {
-    window.localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify([...open]));
-  } catch {
-    // Not saving is fine.
-  }
-}
-
-function setGroupOpen(group: string, open: boolean): void {
-  document
-    .querySelectorAll<HTMLElement>(`[data-nav-group-item="${group}"]`)
-    .forEach((li) => li.classList.toggle('is-folded', !open));
-  document
-    .querySelector<HTMLElement>(`[data-group-toggle="${group}"]`)
-    ?.setAttribute('aria-expanded', String(open));
+/** Which top-level item an entry belongs to, from the markup. */
+function subParent(li: Element): string {
+  return (li as HTMLElement).dataset.navParent ?? '';
 }
 
 export function refreshMenuGroups(): void {
@@ -418,27 +399,27 @@ export function refreshMenuGroups(): void {
 }
 
 function setupMenuGroups(): void {
-  const stored = readOpenGroups();
-  const groups = Array.from(document.querySelectorAll<HTMLElement>('[data-group-toggle]'));
+  const subs = Array.from(document.querySelectorAll<HTMLElement>('li.sidebar-sub[data-nav-parent]'));
+  const activeId = document.querySelector<HTMLElement>('.sidebar-list .sidebar-link.is-active')?.dataset.navId ?? '';
+  const open = new Set<string>();
 
-  for (const toggle of groups) {
-    const group = toggle.dataset.groupToggle!;
-    const holdsPage = !!document.querySelector(`[data-nav-group-item="${group}"] .sidebar-link.is-active`);
-
-    setGroupOpen(group, holdsPage || stored.has(group));
-
-    if (toggle.dataset.bound) continue;
-    toggle.dataset.bound = '1';
-    toggle.addEventListener('click', () => {
-      const open = toggle.getAttribute('aria-expanded') !== 'true';
-      const now = readOpenGroups();
-
-      setGroupOpen(group, open);
-      if (open) now.add(group);
-      else now.delete(group);
-      saveOpenGroups(now);
-    });
+  for (const li of subs) {
+    const parent = subParent(li);
+    const own = li.querySelector<HTMLElement>('.sidebar-link')?.dataset.navId;
+    if (activeId && (activeId === parent || activeId === own)) open.add(parent);
   }
+
+  for (const li of subs) li.classList.toggle('is-folded', !open.has(subParent(li)));
+
+  // The parent says it has a menu under it.
+  document.querySelectorAll<HTMLElement>('.sidebar-list .sidebar-link[data-nav-id]').forEach((a) => {
+    const id = a.dataset.navId!;
+    const hasSubs = subs.some((li) => subParent(li) === id && li.style.display !== 'none');
+
+    a.classList.toggle('has-sub', hasSubs);
+    if (hasSubs) a.setAttribute('aria-expanded', String(open.has(id)));
+    else a.removeAttribute('aria-expanded');
+  });
 }
 
 // ---- Offline bar + background warm-up ------------------------------------------
