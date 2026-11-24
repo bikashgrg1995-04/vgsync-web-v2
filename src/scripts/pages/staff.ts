@@ -486,6 +486,16 @@ function syncSignIn(): void {
 $('m-signin')?.addEventListener('change', syncSignIn);
 $('m-role')?.addEventListener('change', syncRole);
 
+function syncPay(): void {
+  const daily = document.querySelector<HTMLInputElement>('input[name="m-paytype"]:checked')?.value === 'daily';
+  $('m-rate-label')!.textContent = daily ? 'Daily wage (NPR) *' : 'Monthly salary (NPR) *';
+  $('m-day-wrap')!.hidden = daily;
+  $('m-pay-hint')!.textContent = daily
+    ? 'Daily wage is paid for the days worked, after the work is done. It cannot be paid in advance.'
+    : 'Monthly salary falls due on the salary day. An advance can be paid before it.';
+}
+document.querySelectorAll('input[name="m-paytype"]').forEach((r) => r.addEventListener('change', syncPay));
+
 function openMember(edit?: StaffMember): void {
   $('member-title')!.textContent = edit ? 'Edit team member' : 'Add team member';
   applyWriteAccess();
@@ -505,6 +515,15 @@ function openMember(edit?: StaffMember): void {
   fillPositionSelect(edit?.positionId ?? null);
   fillExtraPositions(edit?.extraPositionIds ?? []);
   syncRole();
+  // Pay is chosen when adding someone; it is changed later from their Salary tab.
+  for (const id of ['m-pay-wrap', 'm-rate-wrap', 'm-pay-hint']) $(id)!.hidden = !!edit;
+  $('m-day-wrap')!.hidden = !!edit;
+  if (!edit) {
+    document.querySelector<HTMLInputElement>('input[name="m-paytype"][value="monthly"]')!.checked = true;
+    $<HTMLInputElement>('m-rate')!.value = '';
+    $<HTMLInputElement>('m-day')!.value = '1';
+    syncPay();
+  }
   $('m-error')!.hidden = true;
   memberDialog?.showModal();
 }
@@ -556,12 +575,21 @@ $<HTMLFormElement>('member-form')?.addEventListener('submit', async (e) => {
     positionId,
     extraPositionIds: [...document.querySelectorAll<HTMLInputElement>('#m-extra input:checked')].map((i) => Number(i.value)),
     password: $<HTMLInputElement>('m-password')!.value,
+    pay: id
+      ? undefined
+      : {
+          payType: (document.querySelector<HTMLInputElement>('input[name="m-paytype"]:checked')?.value ?? 'monthly') as 'monthly' | 'daily',
+          rate: val('m-rate'),
+          salaryDay: Number(val('m-day')) || 1,
+        },
   };
 
   const problem = !input.firstName
     ? 'First name is required.'
     : !id && canSignIn && !input.username
       ? 'Username is required.'
+      : !id && !(Number(input.pay?.rate) > 0)
+        ? input.pay?.payType === 'daily' ? 'Enter the daily wage.' : 'Enter the monthly salary.'
       : role === 'staff' && !positionId && (canSignIn || (id && members.find((m) => m.id === id)?.canSignIn))
         ? 'Choose a position for staff.'
         : null;

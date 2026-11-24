@@ -71,6 +71,8 @@ export interface StaffInput {
   password?: string;
   /** Default true. False: no login, no password, position optional. */
   canSignIn?: boolean;
+  /** Set when adding someone: how they are paid. */
+  pay?: { payType: 'monthly' | 'daily'; rate: string; salaryDay: number };
 }
 
 export interface PositionPermission {
@@ -265,6 +267,13 @@ export async function createStaff(
   };
   if (signsIn) body.username = (input.username ?? '').trim();
   if (signsIn && input.password) body.password = input.password;
+  if (input.pay) {
+    body.pay = {
+      pay_type: input.pay.payType,
+      rate: input.pay.rate,
+      ...(input.pay.payType === 'monthly' ? { salary_day: input.pay.salaryDay } : {}),
+    };
+  }
 
   const data = await api<ApiStaff>('/staff/', { method: 'POST', body });
   return { member: staffFromApi(data), temporaryPassword: data.temporary_password ?? null };

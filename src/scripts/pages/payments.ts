@@ -644,10 +644,14 @@ function openPay(b: PayBalance, unsettled: Unsettled[] = []): void {
     })()}
     ${rows ? `<h4>${daily ? 'Credit to pay, by day' : 'What makes it up'}</h4><ul class="py-list py-pay-list">${rows}</ul>` : `<p class="muted small">Nothing is owed right now.</p>`}`;
   $('pp-note')!.textContent = daily
-    ? 'Daily wage is not fixed. Pay the amount you choose; whatever is not paid stays as credit to pay, together with any earlier amount.'
+    ? 'Daily wage is paid for work already done, so you can pay up to the credit to pay but never in advance. Whatever is not paid stays as credit to pay.'
     : 'Paying more than is owed, or before the salary day, is kept as an advance and used up by the next amount due.';
   $('form-pay')!.dataset.id = String(b.staffId);
-  $<HTMLInputElement>('pp-amount')!.value = b.remaining > 0 ? String(b.remaining) : '';
+  const amountInput = $<HTMLInputElement>('pp-amount')!;
+  amountInput.value = b.remaining > 0 ? String(b.remaining) : '';
+  // Only monthly pay takes an advance; daily wage is capped at what is owed.
+  if (daily) amountInput.max = String(b.remaining);
+  else amountInput.removeAttribute('max');
   $<HTMLSelectElement>('pp-method')!.value = 'cash';
   $<HTMLInputElement>('pp-date')!.value = today();
   $<HTMLInputElement>('pp-date')!.max = today();
@@ -659,6 +663,11 @@ function openPay(b: PayBalance, unsettled: Unsettled[] = []): void {
 $('form-pay')?.addEventListener('submit', (e) => {
   e.preventDefault();
   const id = Number($('form-pay')!.dataset.id);
+  const target = balances.find((x) => x.staffId === id);
+  if (target && isDaily(target) && Number(val('pp-amount')) > target.remaining) {
+    showError('pp-error', `Daily wage cannot be paid in advance. Owed now: ${formatNpr(target.remaining)}.`);
+    return;
+  }
   void submit('pp-save', 'pp-error', 'dlg-pay', async () => {
     await addPayrollPayment({
       staffId: id,
