@@ -1,3 +1,4 @@
+import { areasOf, levelOf, hiddenCodes, customLabel, LEVEL_LABEL, type Level } from '../../lib/access-levels';
 import { paintAvatar } from '../../lib/avatar';
 import { getSession, canManageStaff, canEditPositions, canManagePositions, refreshProfile } from '../../lib/auth';
 import { ApiError } from '../../lib/api';
@@ -449,6 +450,9 @@ function fillPositionSelect(selectedId: number | null): void {
 }
 
 // Checkboxes for the positions this person holds besides the main one.
+/** Extra positions are no longer offered, but anyone who already has some can clear them. */
+let editingHasExtras = false;
+
 function fillExtraPositions(selected: number[]): void {
   const box = $('m-extra');
   if (!box) return;
@@ -467,7 +471,7 @@ $('m-position')?.addEventListener('change', () => {
 function syncRole(): void {
   const isStaff = $<HTMLSelectElement>('m-role')?.value === 'staff';
   const extra = $('m-extra-wrap');
-  if (extra) extra.hidden = !isStaff;
+  if (extra) extra.hidden = !isStaff || !editingHasExtras;
   const wrap = $('m-position-wrap');
   if (wrap) wrap.hidden = !isStaff;
   syncSignIn();
@@ -513,6 +517,7 @@ function openMember(edit?: StaffMember): void {
   $('m-hint')!.hidden = !!edit;
   $<HTMLInputElement>('m-signin')!.checked = edit ? edit.canSignIn : true;
   fillPositionSelect(edit?.positionId ?? null);
+  editingHasExtras = (edit?.extraPositionIds ?? []).length > 0;
   fillExtraPositions(edit?.extraPositionIds ?? []);
   syncRole();
   // Pay is chosen when adding someone; it is changed later from their Salary tab.
@@ -716,6 +721,8 @@ const positionDialog = $<HTMLDialogElement>('position-dialog');
 
 let catalogue: CatalogueModule[] = [];
 let presets: Preset[] = [];
+/** The few starting points offered; the rest still work on the server. */
+const SIMPLE_PRESETS = ['administrator', 'sales_manager', 'sales_staff', 'accountant', 'store_keeper', 'technician'];
 
 async function ensureCatalogue(): Promise<void> {
   if (catalogue.length) return;
@@ -723,30 +730,63 @@ async function ensureCatalogue(): Promise<void> {
   const sel = $<HTMLSelectElement>('p-preset')!;
   sel.innerHTML =
     '<option value="">Blank</option>' +
-    presets.map((p) => `<option value="${esc(p.key)}">${esc(p.label)}</option>`).join('');
+    presets.filter((p) => SIMPLE_PRESETS.includes(p.key)).map((p) => `<option value="${esc(p.key)}">${esc(p.label)}</option>`).join('');
 }
 
+/** Codes a position already holds that this screen has no control for: kept as they are. */
+let keptCodes: string[] = [];
+
 function renderPermGroups(granted: Set<string>): void {
-  $('perm-groups')!.innerHTML = catalogue
-    .map((mod) => {
-      const boxes = mod.actions
-        .filter((a) => !a.reserved)
-        .map(
-          (a) => `<label class="st-perm-box">
-            <input type="checkbox" data-code="${a.code}" ${granted.has(a.code) ? 'checked' : ''} />
-            <span>${esc(a.label)}</span></label>`,
-        )
-        .join('');
-      return boxes ? `<fieldset class="st-perm-group"><legend>${esc(mod.label)}</legend>${boxes}</fieldset>` : '';
+  keptCodes = hiddenCodes(catalogue, granted);
+  $('perm-groups')!.innerHTML = areasOf(catalogue)
+    .map((area) => {
+      const level = levelOf(area, granted);
+      const options: Level[] = area.edit.length ? ['none', 'view', 'edit'] : ['none', 'view'];
+      if (level === 'custom') options.push('custom');
+      const select = `<select class="st-level" data-area="${area.module}" aria-label="${esc(area.label)} access">${options
+        .map((l) => `<option value="${l}"${l === level ? ' selected' : ''}>${l === 'edit' ? esc(area.editLabel) : l === 'custom' ? esc(customLabel(area, granted)) : LEVEL_LABEL[l]}</option>`)
+        .join('')}</select>`;
+      const special = area.special.length
+        ? `<details class="st-special"${area.special.some((s) => granted.has(s.code)) ? ' open' : ''}><summary>Special permissions</summary>${area.special
+            .map(
+              (s) => `<label class="st-perm-box"><input type="checkbox" data-code="${s.code}" ${granted.has(s.code) ? 'checked' : ''} /><span>${esc(s.label)}</span></label>`,
+            )
+            .join('')}</details>`
+        : '';
+      return `<div class="st-area" data-area="${area.module}"><div class="st-area-row"><strong>${esc(area.label)}</strong>${select}</div>${special}</div>`;
     })
     .join('');
+  syncSpecial();
+}
+
+/** Special permissions only make sense once the area can at least be viewed. */
+function syncSpecial(): void {
+  document.querySelectorAll<HTMLElement>('#perm-groups .st-area').forEach((row) => {
+    const level = row.querySelector<HTMLSelectElement>('select.st-level')!.value;
+    const sp = row.querySelector<HTMLElement>('.st-special');
+    if (!sp) return;
+    sp.hidden = level === 'none';
+    if (level === 'none') sp.querySelectorAll<HTMLInputElement>('input').forEach((b) => (b.checked = false));
+  });
 }
 
 function readCodes(): string[] {
-  return Array.from(document.querySelectorAll<HTMLInputElement>('#perm-groups input[data-code]'))
-    .filter((b) => b.checked)
-    .map((b) => b.dataset.code!);
+  const codes = new Set<string>(keptCodes);
+  const areas = new Map(areasOf(catalogue).map((a) => [a.module, a]));
+  document.querySelectorAll<HTMLSelectElement>('#perm-groups select.st-level').forEach((sel) => {
+    const area = areas.get(sel.dataset.area!);
+    if (!area || sel.value === 'none') return;
+    codes.add(area.view);
+    if (sel.value === 'edit') area.edit.forEach((c) => codes.add(c));
+    // "custom" keeps exactly what the position already holds in this area.
+    if (sel.value === 'custom') area.edit.filter((c) => customHeld.has(c)).forEach((c) => codes.add(c));
+  });
+  document.querySelectorAll<HTMLInputElement>('#perm-groups input[data-code]:checked').forEach((b) => codes.add(b.dataset.code!));
+  return [...codes];
 }
+
+/** The edit codes a position held when the dialog opened, for areas shown as "Custom". */
+let customHeld = new Set<string>();
 
 async function openPosition(edit?: Position): Promise<void> {
   $('position-title')!.textContent = edit ? 'Edit position' : 'New position';
@@ -763,7 +803,8 @@ async function openPosition(edit?: Position): Promise<void> {
   }
   $<HTMLSelectElement>('p-preset')!.value = '';
   $('p-preset-wrap')!.hidden = !!edit;
-  renderPermGroups(new Set(edit?.granted ?? []));
+  customHeld = new Set(edit?.granted ?? []);
+  renderPermGroups(customHeld);
   positionDialog?.showModal();
 }
 
@@ -771,30 +812,16 @@ async function openPosition(edit?: Position): Promise<void> {
 $('p-preset')?.addEventListener('change', (event) => {
   const preset = presets.find((p) => p.key === (event.target as HTMLSelectElement).value);
   if (!preset) return;
-  renderPermGroups(new Set(preset.permissions));
+  customHeld = new Set(preset.permissions);
+  renderPermGroups(customHeld);
   const dept = $<HTMLInputElement>('p-dept')!;
   if (!dept.value) dept.value = preset.department;
   const name = $<HTMLInputElement>('p-name')!;
   if (!name.value) name.value = preset.label;
 });
 
-// Create/Edit/Delete need View: tick View for them, untick the rest with it.
 $('perm-groups')?.addEventListener('change', (event) => {
-  const box = event.target as HTMLInputElement;
-  const code = box.dataset.code;
-  if (!code) return;
-  const [module, action] = code.split('.');
-  const get = (a: string) =>
-    document.querySelector<HTMLInputElement>(`#perm-groups input[data-code="${module}.${a}"]`);
-  if (action !== 'view' && box.checked) {
-    const view = get('view');
-    if (view) view.checked = true;
-  }
-  if (action === 'view' && !box.checked) {
-    document
-      .querySelectorAll<HTMLInputElement>(`#perm-groups input[data-code^="${module}."]`)
-      .forEach((b) => (b.checked = false));
-  }
+  if ((event.target as HTMLElement).closest('select.st-level')) syncSpecial();
 });
 
 $('position-add')?.addEventListener('click', () => void openPosition());

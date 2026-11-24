@@ -1,4 +1,5 @@
 import { getSession, canManageStaff, refreshProfile } from '../../lib/auth';
+import { areasOf, levelOf, customLabel, LEVEL_LABEL } from '../../lib/access-levels';
 import { api, ApiError } from '../../lib/api';
 import { paintAvatar } from '../../lib/avatar';
 import {
@@ -7,7 +8,6 @@ import {
   listPositions,
   loadCatalogue,
   ROLE_LABEL,
-  saveOverrides,
   type CatalogueModule,
   type OverrideEffect,
   type Position,
@@ -287,10 +287,8 @@ function renderStatement(rows: StatementRow[], bal: PayBalance | null): void {
 // deny single permissions for this one person. The API decides for real.
 let catalogue: CatalogueModule[] = [];
 let access: StaffAccess | null = null;
-const pending = new Map<string, OverrideEffect>();
 
 function accessState(code: string): OverrideEffect {
-  if (pending.has(code)) return pending.get(code)!;
   return access?.overrides[code] ?? 'inherit';
 }
 
@@ -320,43 +318,21 @@ function renderAccess(m: StaffMember, _positions: Position[]): void {
   }
   wrap.hidden = false;
 
-  const owner = !!getSession()?.isOwner && getSession()?.accessMode !== 'read_only';
-  save.hidden = !owner;
-  note.textContent = owner
-    ? `Access comes from the "${positionLabel(m)}" position${m.extraPositionNames.length ? 's' : ''}. Allow or deny single permissions for this person only. Changing the positions clears these exceptions.`
-    : `Access comes from the "${positionLabel(m)}" position${m.extraPositionNames.length ? 's' : ''}.`;
+  // One line per area: what this person can do there. Change it by editing the
+  // position (Staffs > Positions).
+  save.hidden = true;
+  const exceptions = Object.keys(access?.overrides ?? {}).length;
+  note.textContent =
+    `Access comes from the "${positionLabel(m)}" position${m.extraPositionNames.length ? 's' : ''}. To change it, edit the position under Staffs > Positions.` +
+    (exceptions ? ` This person also has ${exceptions} individual exception${exceptions > 1 ? 's' : ''}; changing their position clears them.` : '');
 
-  const mark = (on: boolean) => (on ? '<span class="sd-perm-on">✓</span>' : '<span class="sd-perm-off">—</span>');
-
-  body.innerHTML = catalogue
-    .map((mod) => {
-      const rows = mod.actions
-        .filter((a) => !a.reserved)
-        .map((a) => {
-          const inherited = !!access?.inherited.includes(a.code);
-          const state = accessState(a.code);
-          const control = owner
-            ? `<select class="sd-override" data-code="${a.code}" aria-label="${esc(a.label)}">
-                 <option value="inherit"${state === 'inherit' ? ' selected' : ''}>Inherited</option>
-                 <option value="allow"${state === 'allow' ? ' selected' : ''}>Allowed</option>
-                 <option value="deny"${state === 'deny' ? ' selected' : ''}>Denied</option>
-               </select>`
-            : state === 'inherit'
-              ? '<span class="sd-perm-off">Inherited</span>'
-              : `<span>${state === 'allow' ? 'Allowed' : 'Denied'}</span>`;
-          return `<div class="sd-perm-row">
-            <span class="sd-perm-name">${esc(a.label)}</span>
-            <span class="sd-perm-base" title="From the position">${mark(inherited)}</span>
-            <span class="sd-perm-now" title="Result">${mark(holds(a.code))}</span>
-            <span class="sd-perm-ctl">${control}</span>
-          </div>`;
-        })
-        .join('');
-      return rows
-        ? `<div class="sd-perm-group"><h4>${esc(mod.label)}</h4>
-            <div class="sd-perm-head"><span>Permission</span><span>Position</span><span>Result</span><span>This person</span></div>
-            ${rows}</div>`
-        : '';
+  const granted = new Set((access?.inherited ?? []).filter((c) => holds(c)).concat(Object.keys(access?.overrides ?? {}).filter((c) => holds(c))));
+  body.innerHTML = areasOf(catalogue)
+    .map((area) => {
+      const level = levelOf(area, granted);
+      const label = level === 'edit' ? area.editLabel : level === 'custom' ? customLabel(area, granted) : LEVEL_LABEL[level];
+      const specials = area.special.filter((s) => granted.has(s.code)).map((s) => esc(s.label));
+      return `<div class="sd-perm-row"><span class="sd-perm-name">${esc(area.label)}</span><span class="${level === 'none' ? 'sd-perm-off' : 'sd-perm-on'}">${esc(label)}</span>${specials.length ? `<small class="sd-hint">${specials.join(' · ')}</small>` : ''}</div>`;
     })
     .join('');
 }
@@ -365,7 +341,6 @@ async function loadAccess(m: StaffMember, positions: Position[]): Promise<void> 
   if (m.role === 'staff' && m.positionId) {
     try {
       [catalogue, access] = await Promise.all([loadCatalogue(), getAccess(m.id)]);
-      pending.clear();
     } catch (error) {
       const err = $('sd-access-error')!;
       err.textContent = error instanceof ApiError ? error.message : 'Could not load permissions.';
@@ -374,36 +349,6 @@ async function loadAccess(m: StaffMember, positions: Position[]): Promise<void> 
   }
   renderAccess(m, positions);
 }
-
-$('sd-access')?.addEventListener('change', (ev) => {
-  const sel = (ev.target as HTMLElement).closest<HTMLSelectElement>('select[data-code]');
-  if (!sel) return;
-  const code = sel.dataset.code!;
-  const value = sel.value as OverrideEffect;
-  if (value === (access?.overrides[code] ?? 'inherit')) pending.delete(code);
-  else pending.set(code, value);
-  // Update the "Result" tick of this row straight away.
-  const row = sel.closest('.sd-perm-row');
-  const now = row?.querySelector('.sd-perm-now');
-  if (now) now.innerHTML = holds(code) ? '<span class="sd-perm-on">✓</span>' : '<span class="sd-perm-off">—</span>';
-});
-
-$('sd-access-save')?.addEventListener('click', async () => {
-  const err = $('sd-access-error')!;
-  err.hidden = true;
-  if (!pending.size) return;
-  try {
-    access = await saveOverrides(
-      staffId,
-      [...pending].map(([permission, effect]) => ({ permission, effect })),
-    );
-    pending.clear();
-    if (currentMember) renderAccess(currentMember, []);
-  } catch (error) {
-    err.textContent = error instanceof ApiError ? error.message : 'Could not save.';
-    err.hidden = false;
-  }
-});
 
 // ---------- activity ----------
 interface AuditRow {

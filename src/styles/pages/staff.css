@@ -166,3 +166,11 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .st-perm-box { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 0.84rem; color: var(--text-secondary); cursor: pointer; }
 
 .st-hidden-note { margin: 0 0 10px; padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent, #2563eb) 10%, transparent); }
+
+/* Position editor: one choice per area */
+.st-area { border-bottom: 1px solid var(--border-subtle, rgba(128,128,128,.25)); padding: 8px 0; }
+.st-area-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.st-level { min-width: 170px; }
+.st-special { margin-top: 6px; padding-left: 4px; }
+.st-special summary { cursor: pointer; font-size: 13px; color: var(--text-muted); }
+.st-special[hidden] { display: none; }
