@@ -446,6 +446,21 @@ async function load(): Promise<void> {
   }
   renderStaff(member);
 
+  // Pay, attendance, documents and access & permissions are private to the owner.
+  if (!getSession()?.isOwner) {
+    ['salary', 'attendance', 'access', 'documents'].forEach((tab) => {
+      const b = document.querySelector<HTMLElement>(`#sd-nav button[data-tab="${tab}"]`);
+      if (b) b.hidden = true;
+    });
+    ['sd-salary-card', 'sd-recent-wrap'].forEach((id) => {
+      const el = $(id);
+      if (el) el.hidden = true;
+    });
+    currentMember = member;
+    void loadActivity();
+    return;
+  }
+
   const [positions, salaries, balance, statement] = await Promise.all([
     listPositions().catch(() => [] as Position[]),
     listSalaries().catch(() => [] as SalaryProfile[]),

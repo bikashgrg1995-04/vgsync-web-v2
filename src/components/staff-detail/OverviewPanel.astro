@@ -28,18 +28,20 @@ import { I, ic } from './icons';
         </dl>
       </section>
 
-      <section class="sd-card">
+      <section class="sd-card" id="sd-salary-card">
         <div class="sd-card-head"><h3>Salary</h3><span class="sd-pill is-earned" id="sd-pay-type" hidden></span></div>
         <div id="sd-salary-box"><p class="sd-hint">Loading…</p></div>
       </section>
     </div>
 
+    <div id="sd-recent-wrap">
     <div class="sd-card-head"><h3>Recent Salary Records</h3><button type="button" class="sd-link" data-goto="salary">View All Records →</button></div>
     <div class="sd-table-wrap">
       <table class="sd-table">
         <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Status</th><th class="num">Amount</th></tr></thead>
         <tbody id="sd-recent"><tr><td colspan="5" class="sd-empty">Loading…</td></tr></tbody>
       </table>
+    </div>
     </div>
   </div>
 </section>

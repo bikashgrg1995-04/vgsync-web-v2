@@ -89,8 +89,10 @@ export interface Position {
   isActive: boolean;
   staffCount: number;
   permissions: PositionPermission[];
-  /** Every `module.action` code the position grants. */
+  /** Every `module.action` code the position grants. Owner only; empty for others. */
   granted: string[];
+  /** Active people who hold this position. */
+  members: Array<{ id: number; name: string; username: string }>;
 }
 
 export interface PositionInput {
@@ -165,7 +167,8 @@ interface ApiPosition {
   granted?: string[];
   is_active: boolean;
   staff_count: number;
-  permissions: Array<{
+  members?: Array<{ id: number; name: string; username: string }>;
+  permissions?: Array<{
     module: string;
     can_view: boolean;
     can_create: boolean;
@@ -211,7 +214,8 @@ function positionFromApi(p: ApiPosition): Position {
     granted: p.granted ?? [],
     isActive: p.is_active,
     staffCount: p.staff_count,
-    permissions: p.permissions.map((x) => ({
+    members: p.members ?? [],
+    permissions: (p.permissions ?? []).map((x) => ({
       module: x.module,
       canView: x.can_view,
       canCreate: x.can_create,

@@ -318,12 +318,25 @@ function showHiddenNote(): void {
         'Only the owner, or someone with the same access, can see and assign them.';
 }
 
+function membersCell(p: Position): string {
+  if (p.members.length === 0) return '<span class="st-sub">Nobody yet</span>';
+  const MAX = 4;
+  const names = p.members.slice(0, MAX).map((m) => esc(m.name));
+  const more = p.members.length - MAX;
+  return `${names.join(', ')}${more > 0 ? ` <span class="st-sub">+${more} more</span>` : ''}`;
+}
+
 function renderPositions(): void {
   showHiddenNote();
   const tbody = $('position-tbody');
   if (!tbody) return;
+  // What a position grants is private to the owner.
+  const showAccess = !!getSession()?.isOwner;
+  const th = document.getElementById('pos-th-access');
+  if (th) th.hidden = !showAccess;
+  const cols = showAccess ? 6 : 5;
   if (positions.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="st-empty">No positions yet. Create one before adding staff.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="${cols}" class="st-empty">No positions yet. Create one before adding staff.</td></tr>`;
     return;
   }
   tbody.innerHTML = positions
@@ -337,7 +350,8 @@ function renderPositions(): void {
         : '';
       return `<tr>
         <td><strong>${esc(p.name)}</strong>${p.description ? `<br /><span class="st-sub">${esc(p.description)}</span>` : ''}</td>
-        <td class="st-access">${esc(accessSummary(p))}</td>
+        ${showAccess ? `<td class="st-access">${esc(accessSummary(p))}</td>` : ''}
+        <td>${membersCell(p)}</td>
         <td class="num">${p.staffCount}</td>
         <td><span class="st-badge st-badge-${p.isActive ? 'active' : 'inactive'}">${p.isActive ? 'Active' : 'Inactive'}</span></td>
         <td>${actions}</td>
