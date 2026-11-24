@@ -734,3 +734,40 @@ export async function saveCheck(input: {
     }),
   );
 }
+
+// ---- Plain-words view of what is owed ---------------------------------
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** `2026-10-01` -> `1 Oct 2026`. */
+export function niceDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return y && m && d ? `${d} ${MONTHS[m - 1]} ${y}` : iso;
+}
+
+export interface OwedGroup {
+  /** 'earlier' = unpaid from before this pay cycle, 'now' = the current cycle. */
+  when: 'earlier' | 'now';
+  /** "Earlier months" or "This month". */
+  title: string;
+  total: number;
+  items: Unsettled[];
+}
+
+/**
+ * What is owed, split the way a person thinks about it: money left from earlier
+ * months, and what is owed for this month. Items are oldest first.
+ */
+export function owedGroups(unsettled: Unsettled[]): OwedGroup[] {
+  const open = unsettled.filter((u) => u.remaining > 0).sort((a, b) => a.date.localeCompare(b.date));
+  const make = (when: 'earlier' | 'now', title: string): OwedGroup => {
+    const items = open.filter((u) => (u.carriedOver ? 'earlier' : 'now') === when);
+    return { when, title, total: items.reduce((s, u) => s + u.remaining, 0), items };
+  };
+  return [make('earlier', 'Earlier months'), make('now', 'This month')].filter((g) => g.items.length > 0);
+}
+
+/** What an owed line is for: "Salary due 1 Oct 2026", "Bonus · 5 Oct 2026". */
+export function owedWhat(u: Unsettled, kindLabel: string): string {
+  return `${kindLabel}${u.kind === 'salary' ? ' due ' : ' · '}${niceDate(u.date)}${u.description && u.kind !== 'salary' ? ` · ${u.description}` : ''}`;
+}

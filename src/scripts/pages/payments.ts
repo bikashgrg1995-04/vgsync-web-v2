@@ -41,6 +41,8 @@ import {
   listChecks,
   saveCheck,
   setOpeningBalance,
+  owedGroups,
+  owedWhat,
 } from '../../lib/payments';
 
 if (!getSession()) window.location.replace('/');
@@ -339,7 +341,7 @@ function renderBalances(): void {
     .map((b) => `<tr class="py-row ${selectedId === b.staffId ? 'is-selected' : ''}" data-id="${b.staffId}">
       <td>${esc(b.name)}${b.isActive ? '' : ' <span class="muted">(inactive)</span>'}</td>
       <td>${payLabel(b.payType)}</td>
-      <td class="num ${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}</td>
+      <td class="num ${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}${!isDaily(b) && b.previousRemaining > 0 ? `<small class="py-split">${formatNpr(b.previousRemaining)} from earlier months<br />${formatNpr(b.currentRemaining)} this month</small>` : ''}</td>
       <td class="num">${b.advance > 0 ? formatNpr(b.advance) + (isDaily(b) ? ' ahead' : '') : '—'}</td>
       <td>${b.nextSalaryDate ? esc(b.nextSalaryDate) : '—'}</td>
     </tr>`)
@@ -502,20 +504,25 @@ async function openStaff(id: number): Promise<void> {
       </div>
       <div class="py-detail-actions">${acts.join('')}</div>
       <div class="py-mini-kpis">
-        <div><span>${isDaily(b) ? 'Credit to pay' : 'Owed now'}</span><strong class="${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}</strong></div>
         ${isDaily(b)
-          ? `<div><span>Unpaid entries</span><strong>${unsettled.length}</strong></div>`
-          : `<div><span>Advance</span><strong>${formatNpr(b.advance)}</strong></div>`}
-        <div><span>Earned</span><strong>${formatNpr(b.totalEarned)}</strong></div>
-        <div><span>Paid</span><strong>${formatNpr(b.totalPaid)}</strong></div>
+          ? `<div><span>Credit to pay</span><strong class="${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}</strong></div>
+             <div><span>Unpaid entries</span><strong>${unsettled.length}</strong></div>
+             <div><span>Earned</span><strong>${formatNpr(b.totalEarned)}</strong></div>
+             <div><span>Paid</span><strong>${formatNpr(b.totalPaid)}</strong></div>`
+          : `<div><span>Earlier months</span><strong class="${b.previousRemaining > 0 ? 'neg' : ''}">${formatNpr(b.previousRemaining)}</strong></div>
+             <div><span>This month</span><strong>${formatNpr(b.currentRemaining)}</strong></div>
+             <div><span>Owed now</span><strong class="${b.remaining > 0 ? 'neg' : ''}">${formatNpr(b.remaining)}</strong></div>
+             ${b.advance > 0 ? `<div><span>Advance paid</span><strong>${formatNpr(b.advance)}</strong></div>` : ''}`}
       </div>
       ${(() => {
         const n = nextSalary(b);
         return n ? `<p class="py-note">Next salary ${formatNpr(n.amount)} on ${esc(n.date)}${n.covered > 0 ? ` · advance ${formatNpr(n.covered)} already covers it` : ''} · <strong>to pay ${formatNpr(n.toPay)}</strong></p>` : '';
       })()}
-      ${b.previousRemaining > 0 && !isDaily(b) ? `<p class="py-note is-warn">${formatNpr(b.previousRemaining)} is carried over from earlier periods.</p>` : ''}
-      ${unsettled.length ? `<h4>${isDaily(b) ? 'Credit to pay, by day' : 'Not paid yet'}</h4>
-        <ul class="py-list">${unsettled.map((u) => `<li><span>${esc(u.date)} · ${esc(pretty(u.kind))}${u.carriedOver && !isDaily(b) ? ' · earlier' : ''}${u.description ? ` · ${esc(u.description)}` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`).join('')}</ul>` : ''}
+      ${b.previousRemaining > 0 && !isDaily(b) ? `<p class="py-note is-warn">${formatNpr(b.previousRemaining)} was not paid in earlier months and is still owed. Any payment goes to the oldest amount first.</p>` : ''}
+      ${unsettled.length ? (isDaily(b)
+        ? `<h4>Credit to pay, by day</h4>
+        <ul class="py-list">${unsettled.map((u) => `<li><span>${esc(u.date)} · ${esc(pretty(u.kind))}${u.description ? ` · ${esc(u.description)}` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`).join('')}</ul>`
+        : `<h4>Not paid yet</h4>${owedByMonthHtml(unsettled)}`) : ''}
       <h4>Statement</h4>
       ${statement.length === 0 ? `<p class="muted small">Nothing yet.</p>` : `
       <div class="py-table-wrap"><table class="py-table py-mini">
@@ -605,6 +612,21 @@ $('form-salary')?.addEventListener('submit', (e) => {
 
 const isDaily = (b: PayBalance) => b.payType === 'daily';
 
+/** Monthly: what is owed, grouped as "Earlier months" and "This month", each line with its due date. */
+function owedByMonthHtml(unsettled: Unsettled[]): string {
+  return owedGroups(unsettled)
+    .map(
+      (g) => `<div class="py-owed-group${g.when === 'earlier' ? ' is-earlier' : ''}">
+        <div class="py-owed-head"><strong>${g.title}</strong><strong>${formatNpr(g.total)}</strong></div>
+        <ul class="py-list">${g.items
+          .map(
+            (u) => `<li><span>${esc(owedWhat(u, pretty(u.kind)))}${u.paid > 0 ? `<br /><span class="muted">${formatNpr(u.amount)} total, ${formatNpr(u.paid)} paid</span>` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`,
+          )
+          .join('')}</ul></div>`,
+    )
+    .join('');
+}
+
 /** Monthly only: the next salary, how much of it an advance already covers, and what is left to pay on that day. */
 function nextSalary(b: PayBalance): { amount: number; covered: number; toPay: number; date: string } | null {
   const profile = salaries.find((x) => x.staffId === b.staffId);
@@ -624,9 +646,8 @@ function openPay(b: PayBalance, unsettled: Unsettled[] = []): void {
 
   // For daily wage there is no pay cycle, so "this period / earlier" means nothing: show
   // how many entries are unpaid and since when, then each one by date.
-  const earlyTag = (u: Unsettled) => (!daily && u.carriedOver ? ' · earlier' : '');
   const rows = unsettled
-    .map((u) => `<li><span>${esc(u.date)} · ${esc(pretty(u.kind))}${earlyTag(u)}${u.description ? ` · ${esc(u.description)}` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`)
+    .map((u) => `<li><span>${esc(u.date)} · ${esc(pretty(u.kind))}${u.description ? ` · ${esc(u.description)}` : ''}</span><strong>${formatNpr(u.remaining)}</strong></li>`)
     .join('');
   const oldest = unsettled.map((u) => u.date).sort()[0];
   $('pp-detail')!.innerHTML = `
@@ -635,17 +656,21 @@ function openPay(b: PayBalance, unsettled: Unsettled[] = []): void {
       ${daily
         ? `<div><span>Unpaid entries</span><strong>${unsettled.length}</strong></div>
            <div><span>Oldest unpaid</span><strong>${oldest ? esc(oldest) : '—'}</strong></div>`
-        : `<div><span>This period</span><strong>${formatNpr(b.currentRemaining)}</strong></div>
-           <div><span>From earlier</span><strong>${formatNpr(b.previousRemaining)}</strong></div>`}
+        : `<div><span>Earlier months</span><strong>${formatNpr(b.previousRemaining)}</strong></div>
+           <div><span>This month</span><strong>${formatNpr(b.currentRemaining)}</strong></div>`}
     </div>
     ${(() => {
       const n = nextSalary(b);
       return n ? `<div class="py-pay-sum"><div><span>Next salary (${esc(n.date)})</span><strong>${formatNpr(n.amount)}</strong></div><div><span>Covered by advance</span><strong>${formatNpr(n.covered)}</strong></div><div><span>To pay then</span><strong>${formatNpr(n.toPay)}</strong></div></div>` : '';
     })()}
-    ${rows ? `<h4>${daily ? 'Credit to pay, by day' : 'What makes it up'}</h4><ul class="py-list py-pay-list">${rows}</ul>` : `<p class="muted small">Nothing is owed right now.</p>`}`;
+    ${unsettled.length
+      ? daily
+        ? `<h4>Credit to pay, by day</h4><ul class="py-list py-pay-list">${rows}</ul>`
+        : `<h4>What makes it up</h4>${owedByMonthHtml(unsettled)}`
+      : `<p class="muted small">Nothing is owed right now.</p>`}`;
   $('pp-note')!.textContent = daily
     ? 'Daily wage is paid for work already done, so you can pay up to the credit to pay but never in advance. Whatever is not paid stays as credit to pay.'
-    : 'Paying more than is owed, or before the salary day, is kept as an advance and used up by the next amount due.';
+    : 'A payment goes to the oldest unpaid amount first. Paying more than is owed, or before the salary day, is kept as an advance and used up by the next salary.';
   $('form-pay')!.dataset.id = String(b.staffId);
   const amountInput = $<HTMLInputElement>('pp-amount')!;
   amountInput.value = b.remaining > 0 ? String(b.remaining) : '';

@@ -1,5 +1,5 @@
 import { getSession } from '../../lib/auth';
-import { getMyPay, getMyIncentive, listMyStatement, formatNpr } from '../../lib/payments';
+import { getMyPay, getMyIncentive, listMyStatement, formatNpr, niceDate } from '../../lib/payments';
 
 const $ = (id: string) => document.getElementById(id)!;
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -27,7 +27,7 @@ async function load(): Promise<void> {
     const b = pay.balance;
     $('mp-owed').textContent = formatNpr(b.remaining);
     $('mp-owed-sub').textContent = b.previousRemaining > 0 && pay.payType !== 'daily'
-      ? `${formatNpr(b.previousRemaining)} from earlier, ${formatNpr(b.currentRemaining)} this month` : 'Earned but not paid yet';
+      ? `${formatNpr(b.previousRemaining)} from earlier months + ${formatNpr(b.currentRemaining)} this month` : 'Earned but not paid yet';
     const daily = pay.payType === 'daily';
     // Daily wage is not fixed: no "advance", just a credit to pay (which can include earlier amounts).
     $('mp-owed-label').textContent = daily ? 'Credit to pay' : 'Still to be paid';
@@ -48,8 +48,10 @@ async function load(): Promise<void> {
     }
 
     $('mp-unsettled-card').hidden = pay.unsettled.length === 0;
-    $('mp-unsettled').innerHTML = pay.unsettled.map((u) => `<tr>
-      <td>${esc(u.date)}</td><td>${esc(u.description || KIND[u.kind] || u.kind)}${u.carriedOver && pay.payType !== 'daily' ? ' <span class="pu-count">(carried over)</span>' : ''}</td>
+    // Monthly pay: money left from earlier months first, then this month.
+    const unsettledRows = [...pay.unsettled].sort((a, b2) => a.date.localeCompare(b2.date));
+    $('mp-unsettled').innerHTML = unsettledRows.map((u) => `<tr${u.carriedOver && pay.payType !== 'daily' ? ' class="pu-earlier"' : ''}>
+      <td>${esc(niceDate(u.date))}</td><td>${esc(u.description || KIND[u.kind] || u.kind)}${u.carriedOver && pay.payType !== 'daily' ? ' <span class="pu-count">(earlier month, still unpaid)</span>' : ''}</td>
       <td class="num">${formatNpr(u.amount)}</td><td class="num">${formatNpr(u.paid)}</td><td class="num">${formatNpr(u.remaining)}</td></tr>`).join('');
 
     $('mp-count').textContent = `${statement.length} entries`;

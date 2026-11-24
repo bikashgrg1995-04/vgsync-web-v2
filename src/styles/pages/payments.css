@@ -124,3 +124,9 @@
 .py-pay-sum strong { font-size: 0.95rem; }
 .py-pay-detail h4 { margin: 8px 0 4px; font-size: 0.72rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); }
 .py-pay-list { max-height: 150px; overflow: auto; }
+
+/* Owed money, grouped as earlier months and this month */
+.py-split { display: block; margin-top: 2px; font-size: 0.7rem; font-weight: 400; color: var(--text-muted); line-height: 1.35; }
+.py-owed-group { margin: 8px 0 12px; }
+.py-owed-head { display: flex; justify-content: space-between; gap: 10px; padding: 6px 10px; border-radius: 6px; background: var(--bg-subtle, rgba(128, 128, 128, 0.12)); font-size: 0.82rem; }
+.py-owed-group.is-earlier .py-owed-head { background: rgba(245, 158, 11, 0.16); }
