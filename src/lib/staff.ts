@@ -270,8 +270,7 @@ export async function createStaff(
   if (input.pay) {
     body.pay = {
       pay_type: input.pay.payType,
-      rate: input.pay.rate,
-      ...(input.pay.payType === 'monthly' ? { salary_day: input.pay.salaryDay } : {}),
+      ...(input.pay.payType === 'monthly' ? { rate: input.pay.rate, salary_day: input.pay.salaryDay } : {}),
     };
   }
 

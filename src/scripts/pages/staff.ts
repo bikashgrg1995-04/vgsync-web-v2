@@ -492,10 +492,11 @@ $('m-role')?.addEventListener('change', syncRole);
 
 function syncPay(): void {
   const daily = document.querySelector<HTMLInputElement>('input[name="m-paytype"]:checked')?.value === 'daily';
-  $('m-rate-label')!.textContent = daily ? 'Daily wage (NPR) *' : 'Monthly salary (NPR) *';
+  $('m-rate-label')!.textContent = 'Monthly salary (NPR) *';
+  $('m-rate-wrap')!.hidden = daily;
   $('m-day-wrap')!.hidden = daily;
   $('m-pay-hint')!.textContent = daily
-    ? 'Daily wage is paid for the days worked, after the work is done. It cannot be paid in advance.'
+    ? 'No wage is set now. At the end of each day the wage is worked out and paid for the days worked. It cannot be paid in advance.'
     : 'Monthly salary falls due on the salary day. An advance can be paid before it.';
 }
 document.querySelectorAll('input[name="m-paytype"]').forEach((r) => r.addEventListener('change', syncPay));
@@ -521,7 +522,8 @@ function openMember(edit?: StaffMember): void {
   fillExtraPositions(edit?.extraPositionIds ?? []);
   syncRole();
   // Pay is chosen when adding someone; it is changed later from their Salary tab.
-  for (const id of ['m-pay-wrap', 'm-rate-wrap', 'm-pay-hint']) $(id)!.hidden = !!edit;
+  for (const id of ['m-pay-wrap', 'm-pay-hint']) $(id)!.hidden = !!edit;
+  if (edit) $('m-rate-wrap')!.hidden = true;
   $('m-day-wrap')!.hidden = !!edit;
   if (!edit) {
     document.querySelector<HTMLInputElement>('input[name="m-paytype"][value="monthly"]')!.checked = true;
@@ -593,8 +595,8 @@ $<HTMLFormElement>('member-form')?.addEventListener('submit', async (e) => {
     ? 'First name is required.'
     : !id && canSignIn && !input.username
       ? 'Username is required.'
-      : !id && !(Number(input.pay?.rate) > 0)
-        ? input.pay?.payType === 'daily' ? 'Enter the daily wage.' : 'Enter the monthly salary.'
+      : !id && input.pay?.payType === 'monthly' && !(Number(input.pay?.rate) > 0)
+        ? 'Enter the monthly salary.'
       : role === 'staff' && !positionId && (canSignIn || (id && members.find((m) => m.id === id)?.canSignIn))
         ? 'Choose a position for staff.'
         : null;
